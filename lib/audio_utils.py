@@ -33,9 +33,10 @@ def getAudioSamples(fn, min_dur=50, max_dur=-1, fft=2048, hop_length=512):
     return samples
 
 # Taken from: https://github.com/ml4a/ml4a-guides/blob/master/notebooks/audio-tsne.ipynb
-def getFeatureVector(fn, start, dur):
-    # load audio
-    y, sr = librosa.load(fn)
+def getFeatureVector(y, sr, start, dur):
+
+    # take at most one second
+    dur = min(dur, 1000)
 
     # analyze just the sample
     i0 = int(round(start / 1000.0 * sr))

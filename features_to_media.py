@@ -16,7 +16,7 @@ from lib import readCsv
 parser = argparse.ArgumentParser()
 parser.add_argument('-in', dest="INPUT_FILE", default="tmp/samples_tsne.csv", help="Input file")
 parser.add_argument('-dir', dest="AUDIO_DIRECTORY", default="audio/sample/", help="Input file")
-parser.add_argument('-sort', dest="SORT_BY", default="x", help="Key to sort by")
+parser.add_argument('-sort', dest="SORT_BY", default="tsne", help="Key to sort by")
 parser.add_argument('-left', dest="PAD_LEFT", default=2000, type=int, help="Pad left in milliseconds")
 parser.add_argument('-right', dest="PAD_RIGHT", default=2000, type=int, help="Pad right in milliseconds")
 parser.add_argument('-out', dest="OUTPUT_FILE", default="output/sort_tsne.mp3", help="Output media file")

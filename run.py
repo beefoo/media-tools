@@ -36,8 +36,7 @@ finished = subprocess.check_call(command)
 
 # Compile features into media file
 dir = os.path.dirname(INPUT_FILES) + "/"
-sortBy = "x" if SORT_BY == "tsne" else SORT_BY
-command = ['python', '-W', 'ignore', "features_to_media.py", '-in', featurePath, '-dir', dir, '-sort', sortBy, '-out', args.OUTPUT_FILE]
+command = ['python', '-W', 'ignore', "features_to_media.py", '-in', featurePath, '-dir', dir, '-sort', SORT_BY, '-out', args.OUTPUT_FILE]
 print("------")
 print(" ".join(command))
 finished = subprocess.check_call(command)

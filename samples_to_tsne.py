@@ -54,39 +54,56 @@ outDir = os.path.dirname(OUTPUT_FILE)
 if not os.path.exists(outDir):
     os.makedirs(outDir)
 
+# find unique filepaths
+filepaths = list(set([row["path"] for row in rows]))
+params = [{
+    "samples": [row for row in rows if row["path"]==fp],
+    "path": fp
+} for fp in filepaths]
+fileCount = len(params)
+
 progress = 0
-def doTSNE(row):
+def doTSNE(p):
     global progress
     global rowCount
 
-    featureVector = getFeatureVector(row["path"], row["start"], row["dur"])
+    fn = p["path"]
+    samples = p["samples"]
+    featureVectors = []
 
-    progress += 1
-    sys.stdout.write('\r')
-    sys.stdout.write("%s%%" % round(1.0*progress/rowCount*100,1))
-    sys.stdout.flush()
+    # load audio
+    y, sr = librosa.load(fn)
+    for sample in samples:
+        featureVector = getFeatureVector(y, sr, sample["start"], sample["dur"])
+        featureVectors.append({
+            "filename": sample["filename"],
+            "start": sample["start"],
+            "dur": sample["dur"],
+            "featureVector": featureVector
+        })
 
-    return {
-        "filename": row["filename"],
-        "start": row["start"],
-        "dur": row["dur"],
-        "featureVector": featureVector
-    }
+        progress += 1
+        sys.stdout.write('\r')
+        sys.stdout.write("%s%%" % round(1.0*progress/rowCount*100,1))
+        sys.stdout.flush()
+
+    return featureVectors
 
 # files = files[:1]
 # for fn in files:
 #     doTSNE(fn)
 pool = ThreadPool()
-data = pool.map(doTSNE, rows)
+data = pool.map(doTSNE, params)
 pool.close()
 pool.join()
 # sys.exit(1)
 
+data = [item for sublist in data for item in sublist]
 featureVectors = [d["featureVector"] for d in data]
 model = TSNE(n_components=COMPONENTS, learning_rate=LEARNING_RATE, verbose=VERBOSITY, angle=ANGLE).fit_transform(featureVectors)
 
 print("Writing data to file...")
-dims = ["x", "y", "z"]
+dims = ["tsne", "tsne2", "tsne3"]
 headings = ["filename", "start", "dur"]
 modelNorm = []
 
