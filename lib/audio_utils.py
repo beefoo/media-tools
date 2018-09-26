@@ -1,7 +1,7 @@
 import librosa
+import numpy as np
 import os
 from pprint import pprint
-from pydub import AudioSegment
 
 def getAudioSamples(fn, min_dur=50, max_dur=-1, fft=2048, hop_length=512):
     basename = os.path.basename(fn)
@@ -31,3 +31,22 @@ def getAudioSamples(fn, min_dur=50, max_dur=-1, fft=2048, hop_length=512):
             })
 
     return samples
+
+# Taken from: https://github.com/ml4a/ml4a-guides/blob/master/notebooks/audio-tsne.ipynb
+def getFeatureVector(fn, start, dur):
+    # load audio
+    y, sr = librosa.load(fn)
+
+    # analyze just the sample
+    i0 = int(round(start / 1000.0 * sr))
+    i1 = int(round((start+dur) / 1000.0 * sr))
+    y = y[i0:i1]
+
+    S = librosa.feature.melspectrogram(y, sr=sr, n_mels=128)
+    log_S = librosa.amplitude_to_db(S, ref=np.max)
+    mfcc = librosa.feature.mfcc(S=log_S, n_mfcc=13)
+    delta_mfcc = librosa.feature.delta(mfcc, mode='nearest')
+    delta2_mfcc = librosa.feature.delta(mfcc, order=2, mode='nearest')
+    feature_vector = np.concatenate((np.mean(mfcc,1), np.mean(delta_mfcc,1), np.mean(delta2_mfcc,1)))
+    feature_vector = (feature_vector-np.mean(feature_vector))/np.std(feature_vector)
+    return feature_vector
