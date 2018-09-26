@@ -40,7 +40,7 @@ HOP_LEN = FFT/4
 # Check if file exists already
 if os.path.isfile(OUTPUT_FILE) and not OVERWRITE:
     print("%s already exists. Skipping." % OUTPUT_FILE)
-    sys.exit(1)
+    sys.exit()
 
 # Read files
 files = []
