@@ -11,7 +11,7 @@ import numpy as np
 from pprint import pprint
 from sklearn.manifold import TSNE
 import sys
-from lib import getFeatureVector, readCsv
+from lib import getAudioFile, getFeatureVector, readCsv
 
 # input
 parser = argparse.ArgumentParser()
@@ -72,6 +72,7 @@ def doTSNE(p):
     featureVectors = []
 
     # load audio
+    fn = getAudioFile(fn)
     y, sr = librosa.load(fn)
     for sample in samples:
         featureVector = getFeatureVector(y, sr, sample["start"], sample["dur"])
@@ -98,7 +99,10 @@ pool.close()
 pool.join()
 # sys.exit(1)
 
+# flatten data
 data = [item for sublist in data for item in sublist]
+# remove invalid vectors
+data = [d for d in data if True not in np.isnan(d["featureVector"])]
 featureVectors = [d["featureVector"] for d in data]
 model = TSNE(n_components=COMPONENTS, learning_rate=LEARNING_RATE, verbose=VERBOSITY, angle=ANGLE).fit_transform(featureVectors)
 

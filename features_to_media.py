@@ -10,7 +10,7 @@ from pprint import pprint
 from pydub import AudioSegment
 import sys
 import time
-from lib import readCsv
+from lib import getAudioFile, readCsv
 
 # input
 parser = argparse.ArgumentParser()
@@ -78,6 +78,7 @@ def makeTrack(p):
     filepath = p["path"]
     samples = p["samples"]
 
+    filepath = getAudioFile(filepath)
     fformat = filepath.split(".")[-1].lower()
     audio = AudioSegment.from_file(filepath, format=fformat)
 
