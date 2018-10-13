@@ -1,7 +1,9 @@
 import librosa
+from math_utils import weighted_mean
 import numpy as np
 import os
 from pprint import pprint
+import re
 import subprocess
 
 def getAudioFile(fn):
@@ -49,6 +51,34 @@ def getAudioSamples(fn, min_dur=50, max_dur=-1, fft=2048, hop_length=512):
             })
 
     return samples
+
+def getFeatures(y, sr, start, dur, fft=2048, hop_length=512):
+    # analyze just the sample
+    i0 = int(round(start / 1000.0 * sr))
+    i1 = int(round((start+dur) / 1000.0 * sr))
+    y = y[i0:i1]
+
+    stft = librosa.feature.rmse(S=librosa.stft(y, n_fft=fft, hop_length=hop_length))[0]
+    rolloff = librosa.feature.spectral_rolloff(y=y, sr=sr)[0]
+
+    power = round(weighted_mean(stft), 2)
+    hz = round(weighted_mean(rolloff), 2)
+    note = librosa.hz_to_note(hz)
+
+    # parse note
+    octave = -1
+    matches = re.match("([A-Z]\#?b?)(\-?[0-9]+)", note)
+    if matches:
+        note = matches.group(1)
+        octave = int(matches.group(2))
+
+    return {
+        "power": power,
+        "hz": hz,
+        "note": note,
+        "octave": octave
+    }
+
 
 # Taken from: https://github.com/ml4a/ml4a-guides/blob/master/notebooks/audio-tsne.ipynb
 def getFeatureVector(y, sr, start, dur):
