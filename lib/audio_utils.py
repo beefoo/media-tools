@@ -1,4 +1,5 @@
 import librosa
+import math
 from math_utils import weighted_mean
 import numpy as np
 import os
@@ -63,7 +64,15 @@ def getFeatures(y, sr, start, dur, fft=2048, hop_length=512):
 
     power = round(weighted_mean(stft), 2)
     hz = round(weighted_mean(rolloff), 2)
-    note = librosa.hz_to_note(hz)
+    note = "-"
+
+    if math.isinf(power):
+        power = -1
+
+    try:
+        note = librosa.hz_to_note(hz)
+    except OverflowError:
+        hz = -1
 
     # parse note
     octave = -1

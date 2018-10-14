@@ -27,15 +27,15 @@ print(" ".join(command))
 finished = subprocess.check_call(command)
 
 # Extract features out of samples
+dir = os.path.dirname(INPUT_FILES) + "/"
 featurePath = TMP_DIR + UID + "_features.csv"
 featureScript = "samples_to_tsne.py" if SORT_BY == "tsne" else "samples_to_features.py"
-command = ['python', '-W', 'ignore', featureScript, '-in', samplePath, '-out', featurePath, '-overwrite', args.OVERWRITE]
+command = ['python', '-W', 'ignore', featureScript, '-in', samplePath, '-dir', dir, '-out', featurePath, '-overwrite', args.OVERWRITE]
 print("------")
 print(" ".join(command))
 finished = subprocess.check_call(command)
 
 # Compile features into media file
-dir = os.path.dirname(INPUT_FILES) + "/"
 command = ['python', '-W', 'ignore', "features_to_media.py", '-in', featurePath, '-dir', dir, '-sort', SORT_BY, '-out', args.OUTPUT_FILE]
 print("------")
 print(" ".join(command))

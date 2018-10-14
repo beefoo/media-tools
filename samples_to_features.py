@@ -84,13 +84,14 @@ def samplesToFeatures(p):
     return features
 
 # files = files[:1]
-# for fn in files:
-#     samplesToFeatures(fn)
+# for p in params:
+#     samplesToFeatures(p)
+# sys.exit(1)
 pool = ThreadPool()
 data = pool.map(samplesToFeatures, params)
 pool.close()
 pool.join()
-# sys.exit(1)
+
 
 # flatten data
 data = [item for sublist in data for item in sublist]
