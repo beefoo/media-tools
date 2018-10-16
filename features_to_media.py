@@ -4,6 +4,7 @@
 
 import argparse
 import csv
+from lib import *
 from multiprocessing import Pool
 from multiprocessing.dummy import Pool as ThreadPool
 import os
@@ -12,7 +13,7 @@ from pprint import pprint
 from pydub import AudioSegment
 import sys
 import time
-from lib import getAudioFile, readCsv
+
 
 # input
 parser = argparse.ArgumentParser()
@@ -39,7 +40,7 @@ SAMPLE_WIDTH = 2
 FRAME_RATE = 44100
 
 # Read files
-rows = readCsv(INPUT_FILE)
+fieldNames, rows = readCsv(INPUT_FILE)
 rowCount = len(rows)
 print("Found %s rows" % rowCount)
 

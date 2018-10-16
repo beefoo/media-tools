@@ -2,6 +2,7 @@
 
 import argparse
 import csv
+from lib import *
 import librosa
 from matplotlib import pyplot as plt
 from multiprocessing import Pool
@@ -11,13 +12,13 @@ import numpy as np
 from pprint import pprint
 from sklearn.manifold import TSNE
 import sys
-from lib import getAudioFile, getFeatureVector, readCsv
 
 # input
 parser = argparse.ArgumentParser()
 parser.add_argument('-in', dest="INPUT_FILE", default="tmp/samples.csv", help="Input file")
 parser.add_argument('-dir', dest="AUDIO_DIRECTORY", default="audio/sample/", help="Input file")
 parser.add_argument('-out', dest="OUTPUT_FILE", default="tmp/samples_tsne.csv", help="CSV output file")
+parser.add_argument('-append', dest="APPEND", default=1, type=int, help="Append to existing data?")
 parser.add_argument('-overwrite', dest="OVERWRITE", default=0, type=int, help="Overwrite existing data?")
 parser.add_argument('-plot', dest="PLOT", default=0, type=int, help="Show plot?")
 args = parser.parse_args()
@@ -26,24 +27,32 @@ args = parser.parse_args()
 INPUT_FILE = args.INPUT_FILE
 AUDIO_DIRECTORY = args.AUDIO_DIRECTORY
 OUTPUT_FILE = args.OUTPUT_FILE
+APPEND = args.APPEND > 0
 OVERWRITE = args.OVERWRITE > 0
 PLOT = args.PLOT > 0
 PRECISION = 5
 
 # TSNE config
+DIMS = ["tsne", "tsne2", "tsne3"]
 COMPONENTS = 1
 LEARNING_RATE = 150 # increase if too dense, decrease if too uniform
 VERBOSITY = 2
 ANGLE = 0.1 # increase to make faster, decrease to make more accurate
+FEATURES_TO_ADD = DIMS[:COMPONENTS]
 
 # Read files
-rows = readCsv(INPUT_FILE)
+rows = []
+fieldNames, rows = readCsv(INPUT_FILE)
 rowCount = len(rows)
 print("Found %s rows" % rowCount)
 
 # Check if file exists already
-if os.path.isfile(OUTPUT_FILE) and not OVERWRITE:
+if os.path.isfile(OUTPUT_FILE) and not OVERWRITE and not APPEND:
     print("%s already exists. Skipping." % OUTPUT_FILE)
+    sys.exit()
+
+if APPEND and set(FEATURES_TO_ADD).issubset(set(fieldNames)) and not OVERWRITE:
+    print("Headers already exists in %s. Skipping." % OUTPUT_FILE)
     sys.exit()
 
 for i, row in enumerate(rows):
@@ -107,12 +116,12 @@ featureVectors = [d["featureVector"] for d in data]
 model = TSNE(n_components=COMPONENTS, learning_rate=LEARNING_RATE, verbose=VERBOSITY, angle=ANGLE).fit_transform(featureVectors)
 
 print("Writing data to file...")
-dims = ["tsne", "tsne2", "tsne3"]
-headings = ["filename", "start", "dur"]
+headings = fieldNames[:]
 modelNorm = []
 
 for i in range(COMPONENTS):
-    headings.append(dims[i])
+    if DIMS[i] not in headings:
+        headings.append(DIMS[i])
     # normalize model between 0 and 1
     if COMPONENTS > 1:
         values = model[:,i]
@@ -127,9 +136,13 @@ with open(OUTPUT_FILE, 'wb') as f:
     writer = csv.writer(f)
     writer.writerow(headings)
     for i, d in enumerate(data):
-        row = [d["filename"], d["start"], d["dur"]]
-        for j in range(COMPONENTS):
-            row.append(round(modelNorm[j][i], PRECISION))
+        row = []
+        for h in headings:
+            if h in DIMS:
+                j = DIMS.index(h)
+                row.append(round(modelNorm[j][i], PRECISION))
+            else:
+                row.append(d[h])
         writer.writerow(row)
 print("Wrote %s rows to %s" % (len(data), OUTPUT_FILE))
 

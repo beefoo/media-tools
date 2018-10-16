@@ -2,6 +2,7 @@
 
 import argparse
 import csv
+from lib import *
 import librosa
 from matplotlib import pyplot as plt
 from multiprocessing import Pool
@@ -10,13 +11,13 @@ import os
 import numpy as np
 from pprint import pprint
 import sys
-from lib import getAudioFile, getFeatures, readCsv
 
 # input
 parser = argparse.ArgumentParser()
 parser.add_argument('-in', dest="INPUT_FILE", default="tmp/samples.csv", help="Input file")
 parser.add_argument('-dir', dest="AUDIO_DIRECTORY", default="audio/sample/", help="Input file")
 parser.add_argument('-out', dest="OUTPUT_FILE", default="tmp/samples_features.csv", help="CSV output file")
+parser.add_argument('-append', dest="APPEND", default=1, type=int, help="Append to existing data?")
 parser.add_argument('-overwrite', dest="OVERWRITE", default=0, type=int, help="Overwrite existing data?")
 parser.add_argument('-plot', dest="PLOT", default=0, type=int, help="Show plot?")
 args = parser.parse_args()
@@ -25,17 +26,25 @@ args = parser.parse_args()
 INPUT_FILE = args.INPUT_FILE
 AUDIO_DIRECTORY = args.AUDIO_DIRECTORY
 OUTPUT_FILE = args.OUTPUT_FILE
+APPEND = args.APPEND > 0
 OVERWRITE = args.OVERWRITE > 0
 PLOT = args.PLOT > 0
 
+FEATURES_TO_ADD = ["power", "hz", "note", "octave"]
+
 # Read files
-rows = readCsv(INPUT_FILE)
+rows = []
+fieldNames, rows = readCsv(INPUT_FILE)
 rowCount = len(rows)
 print("Found %s rows" % rowCount)
 
 # Check if file exists already
-if os.path.isfile(OUTPUT_FILE) and not OVERWRITE:
+if os.path.isfile(OUTPUT_FILE) and not OVERWRITE and not APPEND:
     print("%s already exists. Skipping." % OUTPUT_FILE)
+    sys.exit()
+
+if APPEND and set(FEATURES_TO_ADD).issubset(set(fieldNames)) and not OVERWRITE:
+    print("Headers already exists in %s. Skipping." % OUTPUT_FILE)
     sys.exit()
 
 for i, row in enumerate(rows):
@@ -68,12 +77,8 @@ def samplesToFeatures(p):
     y, sr = librosa.load(fn)
 
     for sample in samples:
-        sfeatures = getFeatures(y, sr, sample["start"], sample["dur"])
-        sfeatures.update({
-            "filename": sample["filename"],
-            "start": sample["start"],
-            "dur": sample["dur"]
-        })
+        sfeatures = sample.copy()
+        sfeatures.update(getFeatures(y, sr, sample["start"], sample["dur"]))
         features.append(sfeatures)
 
         progress += 1
@@ -96,7 +101,10 @@ pool.join()
 # flatten data
 data = [item for sublist in data for item in sublist]
 
-headings = ["filename", "start", "dur", "power", "hz", "note", "octave"]
+headings = fieldNames[:]
+for feature in FEATURES_TO_ADD:
+    if feature not in headings:
+        headings.append(feature)
 with open(OUTPUT_FILE, 'wb') as f:
     writer = csv.writer(f)
     writer.writerow(headings)

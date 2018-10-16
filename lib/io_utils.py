@@ -31,6 +31,7 @@ def parseNumbers(arr):
 
 def readCsv(filename, headings=False, doParseNumbers=True):
     rows = []
+    fieldnames = []
     if os.path.isfile(filename):
         with open(filename, 'rb') as f:
             lines = [line for line in f if not line.startswith("#")]
@@ -40,4 +41,5 @@ def readCsv(filename, headings=False, doParseNumbers=True):
                 rows = parseHeadings(rows, headings)
             if doParseNumbers:
                 rows = parseNumbers(rows)
-    return rows
+            fieldnames = list(reader.fieldnames)
+    return (fieldnames, rows)

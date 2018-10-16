@@ -5,7 +5,7 @@
 import argparse
 import csv
 import glob
-from lib import getAudioSamples
+from lib import *
 import librosa
 from multiprocessing import Pool
 from multiprocessing.dummy import Pool as ThreadPool
