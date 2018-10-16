@@ -14,7 +14,6 @@ from pydub import AudioSegment
 import sys
 import time
 
-
 # input
 parser = argparse.ArgumentParser()
 parser.add_argument('-in', dest="INPUT_FILE", default="tmp/samples_tsne.csv", help="Input file")

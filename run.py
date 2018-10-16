@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+# python run.py -in "audio/downloads/vivaldi/*.mp3" -steps 2 -plot 1
+
 import argparse
 import os
 import subprocess
