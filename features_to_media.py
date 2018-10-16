@@ -38,6 +38,7 @@ CLIP_FADE_IN_DUR = 100
 CLIP_FADE_OUT_DUR = 100
 SAMPLE_WIDTH = 2
 FRAME_RATE = 44100
+CHANNELS = 2
 
 # Read files
 fieldNames, rows = readCsv(INPUT_FILE)
@@ -86,9 +87,9 @@ def makeTrack(p):
     audio = AudioSegment.from_file(filepath, format=fformat)
 
     # convert to stereo
-    if audio.channels != 2:
-        print("Notice: changed %s to stereo" % filepath)
-        audio = audio.set_channels(2)
+    if audio.channels != CHANNELS:
+        print("Notice: changed %s to %s channels" % (filepath, CHANNELS))
+        audio = audio.set_channels(CHANNELS)
     # convert sample width
     if audio.sample_width != SAMPLE_WIDTH:
         print("Warning: sample width changed to %s from %s in %s" % (SAMPLE_WIDTH, audio.sample_width, filepath))
@@ -100,7 +101,8 @@ def makeTrack(p):
 
     # build audio
     baseAudio = AudioSegment.silent(duration=duration, frame_rate=frameRate)
-    baseAudio = baseAudio.set_channels(2)
+    baseAudio = baseAudio.set_channels(CHANNELS)
+    baseAudio = baseAudio.set_sample_width(SAMPLE_WIDTH)
     for i, sample in enumerate(samples):
         # retrieve clip of audio
         clipStart = sample["start"]
@@ -129,6 +131,8 @@ pool.join()
 
 print("Combining tracks...")
 baseAudio = AudioSegment.silent(duration=sequenceDuration, frame_rate=FRAME_RATE)
+baseAudio = baseAudio.set_channels(CHANNELS)
+baseAudio = baseAudio.set_sample_width(SAMPLE_WIDTH)
 for track in tracks:
     baseAudio = baseAudio.overlay(track)
 
