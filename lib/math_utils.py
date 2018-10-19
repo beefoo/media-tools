@@ -2,10 +2,18 @@
 
 import math
 import numpy as np
+import time
+
+def formatSeconds(s):
+    return time.strftime('%H:%M:%S', time.gmtime(s))
 
 def lerp(ab, amount):
     a, b = ab
     return (b-a) * amount + a
+
+def lim(value, ab):
+    a, b = ab
+    return max(a, min(b, value))
 
 def norm(value, ab):
     a, b = ab

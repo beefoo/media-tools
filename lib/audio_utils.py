@@ -108,3 +108,9 @@ def getFeatureVector(y, sr, start, dur):
     feature_vector = np.concatenate((np.mean(mfcc,1), np.mean(delta_mfcc,1), np.mean(delta2_mfcc,1)))
     feature_vector = (feature_vector-np.mean(feature_vector))/np.std(feature_vector)
     return feature_vector
+
+def volumeToDb(volume):
+    db = 0.0
+    if volume < 1.0 or volume > 1.0:
+        db = 10.0 * math.log(volume**2)
+    return db
