@@ -4,8 +4,26 @@ from math_utils import weighted_mean
 import numpy as np
 import os
 from pprint import pprint
+from pysndfx import AudioEffectsChain
 import re
 import subprocess
+
+def addReverb(sound, reverberance=50):
+    # convert pydub sound to np array
+    samples = np.array(sound.get_array_of_samples())
+    samples = samples.astype(np.int16)
+
+    # apply reverb effect
+    fx = (
+        AudioEffectsChain()
+        .reverb(reverberance=reverberance)
+    )
+    y = fx(samples)
+
+    # convert it back to an array and create a new sound clip
+    newData = array.array(sound.array_type, y)
+    newSound = sound._spawn(newData)
+    return newSound
 
 def getAudioFile(fn):
     format = fn.split(".")[-1]
