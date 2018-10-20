@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# python -W ignore mix.py -in "../latitude/output/mix.csv" -inaudio "../latitude/output/mix_audio.csv" -dir "audio/downloads/vivaldi/" -s1 60000
+# python -W ignore mix.py -in "../latitude/output/mix.csv" -inaudio "../latitude/output/mix_audio.csv" -dir "audio/downloads/vivaldi/" -sd 60
 
 import argparse
 import math
@@ -19,8 +19,9 @@ parser.add_argument('-inaudio', dest="INPUT_AUDIO_FILE", default="data/mix_audio
 parser.add_argument('-dir', dest="AUDIO_DIR", default="audio/sample/", help="Input audio directory")
 parser.add_argument('-left', dest="PAD_LEFT", default=1000, type=int, help="Pad left in milliseconds")
 parser.add_argument('-right', dest="PAD_RIGHT", default=3000, type=int, help="Pad right in milliseconds")
-parser.add_argument('-s0', dest="EXCERPT_START", default=0, type=int, help="Slice start in ms")
-parser.add_argument('-s1', dest="EXCERPT_END", default=-1, type=int, help="Slice end in ms")
+parser.add_argument('-ss', dest="EXCERPT_START", default=0, type=float, help="Slice start in seconds")
+parser.add_argument('-sd', dest="EXCERPT_DUR", default=-1, type=float, help="Slice duration in seconds")
+parser.add_argument('-fx', dest="SOUND_FX", default=1, type=int, help="Apply sound effects? (takes longer)")
 parser.add_argument('-out', dest="OUTPUT_FILE", default="output/sample_mix.mp3", help="Output audio file")
 args = parser.parse_args()
 
@@ -29,18 +30,24 @@ INPUT_AUDIO_FILE = args.INPUT_AUDIO_FILE
 AUDIO_DIR = args.AUDIO_DIR
 PAD_LEFT = args.PAD_LEFT
 PAD_RIGHT = args.PAD_RIGHT
-EXCERPT_START = args.EXCERPT_START
-EXCERPT_END = args.EXCERPT_END
+EXCERPT_START = int(round(args.EXCERPT_START * 1000))
+EXCERPT_DUR = int(round(args.EXCERPT_DUR * 1000))
+SOUND_FX = (args.SOUND_FX > 0)
 OUTPUT_FILE = args.OUTPUT_FILE
 
 MIN_VOLUME = 0.01
 MAX_VOLUME = 10.0
 CLIP_FADE_IN_DUR = 100
 CLIP_FADE_OUT_DUR = 100
-REVERB_PAD = 3000
+FX_PAD = 3000
 SAMPLE_WIDTH = 2
 FRAME_RATE = 44100
 CHANNELS = 2
+
+# Make sure output dir exist
+outDir = os.path.dirname(OUTPUT_FILE)
+if not os.path.exists(outDir):
+    os.makedirs(outDir)
 
 # Read input file
 fieldnames, audioFiles = readCsv(INPUT_AUDIO_FILE)
@@ -50,7 +57,8 @@ print("%s instructions found" % len(instructions))
 
 # Make excerpt
 instructions = [i for i in instructions if i["ms"] >= EXCERPT_START]
-if EXCERPT_END > 0:
+if EXCERPT_DUR > 0:
+    EXCERPT_END = EXCERPT_START + EXCERPT_DUR
     instructions = [i for i in instructions if i["ms"] <= EXCERPT_END]
 
 instructions = sorted(instructions, key=lambda k: k['ms'])
@@ -143,12 +151,19 @@ def makeTrack(p):
 
         if i["db"] != 0.0:
             audio = audio.apply_gain(i["db"])
-        if i["pan"] != 0.0:
+        if "pan" in i and i["pan"] != 0.0:
             audio = audio.pan(i["pan"])
         if "fadeIn" in i and i["fadeIn"] > 0:
             audio = audio.fade_in(i["fadeIn"])
         if "fadeOut" in i and i["fadeOut"] > 0:
             audio = audio.fade_out(i["fadeOut"])
+        if SOUND_FX:
+            effects = []
+            for effect in ["reverb", "distortion", "highpass", "lowpass"]:
+                if effect in i and i[effect] > 0:
+                    effects.append((effect, i[effect]))
+            if len(effects) > 0:
+                audio = addFx(audio, effects, pad=FX_PAD)
         baseAudio = baseAudio.overlay(audio, position=i["ms"])
 
         progress += 1

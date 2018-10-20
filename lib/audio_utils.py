@@ -1,23 +1,37 @@
+import array
 import librosa
 import math
 from math_utils import weighted_mean
 import numpy as np
 import os
 from pprint import pprint
+from pydub import AudioSegment
 from pysndfx import AudioEffectsChain
 import re
 import subprocess
 
-def addReverb(sound, reverberance=50):
+def addFx(sound, effects, pad=3000):
+    # Add padding
+    if pad > 0:
+        sound += AudioSegment.silent(duration=pad, frame_rate=sound.frame_rate)
+
     # convert pydub sound to np array
     samples = np.array(sound.get_array_of_samples())
     samples = samples.astype(np.int16)
 
+    chain = AudioEffectsChain()
+    for effect, value in effects:
+        if effect == "reverb":
+            chain.reverb(reverberance=value)
+        elif effect == "distortion":
+            chain.overdrive(gain=value)
+        elif effect == "highpass":
+            chain.highpass(value)
+        elif effect == "lowpass":
+            chain.lowpass(value)
+
     # apply reverb effect
-    fx = (
-        AudioEffectsChain()
-        .reverb(reverberance=reverberance)
-    )
+    fx = (chain)
     y = fx(samples)
 
     # convert it back to an array and create a new sound clip
