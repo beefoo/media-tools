@@ -10,7 +10,7 @@ from pysndfx import AudioEffectsChain
 import re
 import subprocess
 
-def addFx(sound, effects, pad=3000):
+def addFx(sound, effects, pad=3000, fade_in=100, fade_out=100):
     # Add padding
     if pad > 0:
         sound += AudioSegment.silent(duration=pad, frame_rate=sound.frame_rate)
@@ -37,6 +37,8 @@ def addFx(sound, effects, pad=3000):
     # convert it back to an array and create a new sound clip
     newData = array.array(sound.array_type, y)
     newSound = sound._spawn(newData)
+    dur = len(newSound)
+    newSound = newSound.fade_in(min(fade_in, dur)).fade_out(min(fade_out, dur))
     return newSound
 
 def getAudioFile(fn):
@@ -296,7 +298,7 @@ def paulStretch(samplerate, smp, stretch, windowsize_seconds=0.25, onset_level=1
     sdata = sdata.astype(np.int16)
     return sdata
 
-def stretchSound(sound, amount=2.0):
+def stretchSound(sound, amount=2.0, fade_out=0.8):
     channels = sound.channels
     frame_rate = sound.frame_rate
     samples = np.array(sound.get_array_of_samples())
@@ -307,6 +309,9 @@ def stretchSound(sound, amount=2.0):
     newData = paulStretch(frame_rate, samples, amount)
     newData = array.array(sound.array_type, newData)
     newSound = sound._spawn(newData)
+    if fade_out > 0:
+        fadeMs = int(round(len(newSound) * fade_out))
+        newSound = newSound.fade_out(fadeMs)
     return newSound
 
 def volumeToDb(volume):

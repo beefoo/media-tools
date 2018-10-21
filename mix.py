@@ -148,15 +148,6 @@ def makeTrack(p):
     for index, i in enumerate(instructions):
         segment = [s for s in segments if s["id"]==(i["start"], i["dur"])].pop()
         audio = segment["audio"]
-        if SOUND_FX:
-            effects = []
-            for effect in ["reverb", "distortion", "highpass", "lowpass"]:
-                if effect in i and i[effect] > 0:
-                    effects.append((effect, i[effect]))
-            if len(effects) > 0:
-                audio = addFx(audio, effects, pad=FX_PAD)
-            if "stretch" in i and i["stretch"] > 1.0:
-                audio = stretchSound(audio, i["stretch"])
         if i["db"] != 0.0:
             audio = audio.apply_gain(i["db"])
         if "pan" in i and i["pan"] != 0.0:
@@ -165,6 +156,15 @@ def makeTrack(p):
             audio = audio.fade_in(i["fadeIn"])
         if "fadeOut" in i and i["fadeOut"] > 0:
             audio = audio.fade_out(i["fadeOut"])
+        if SOUND_FX:
+            if "stretch" in i and i["stretch"] > 1.0:
+                audio = stretchSound(audio, i["stretch"])
+            effects = []
+            for effect in ["reverb", "distortion", "highpass", "lowpass"]:
+                if effect in i and i[effect] > 0:
+                    effects.append((effect, i[effect]))
+            if len(effects) > 0:
+                audio = addFx(audio, effects, pad=FX_PAD)
         baseAudio = baseAudio.overlay(audio, position=i["ms"])
         progress += 1
         sys.stdout.write('\r')
