@@ -29,6 +29,10 @@ def addFx(sound, effects, pad=3000, fade_in=100, fade_out=100):
             chain.highpass(value)
         elif effect == "lowpass":
             chain.lowpass(value)
+        elif effect == "bass":
+            chain.lowshelf(gain=value)
+        elif effect == "echo":
+            chain.custom("echo 0.8 0.9 %s 0.3" % value)
 
     # apply reverb effect
     fx = (chain)
