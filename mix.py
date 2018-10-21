@@ -164,8 +164,9 @@ def makeTrack(p):
                     effects.append((effect, i[effect]))
             if len(effects) > 0:
                 audio = addFx(audio, effects, pad=FX_PAD)
+            if "stretch" in i and i["stretch"] > 1.0:
+                audio = stretchSound(audio, i["stretch"])
         baseAudio = baseAudio.overlay(audio, position=i["ms"])
-
         progress += 1
         sys.stdout.write('\r')
         sys.stdout.write("%s%%" % round(1.0*progress/INSTRUCTION_COUNT*100,1))
