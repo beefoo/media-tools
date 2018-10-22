@@ -45,7 +45,7 @@ TMP_FILE = "../tmp/recompose.csv"
 AUDIO_TMP_FILE = TMP_FILE.replace(".csv", "_audio.csv")
 
 # Make sure output dir exist
-outDirs = [os.path.dirname(OUTPUT_FILE), os.path.dirname(TMP_FILE)]
+outDirs = [os.path.dirname(TMP_FILE)]
 for outDir in outDirs:
     if not os.path.exists(outDir):
         os.makedirs(outDir)
