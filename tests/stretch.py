@@ -28,6 +28,11 @@ clipDur = args.CLIP_DUR
 stretchAmounts = [float(amt) for amt in args.STRETCH_AMOUNTS.split(",")]
 outputFile = args.OUTPUT_FILE
 
+# Make sure output dir exist
+outDir = os.path.dirname(outputFile)
+if not os.path.exists(outDir):
+    os.makedirs(outDir)
+
 fformat = filename.split(".")[-1]
 clip = AudioSegment.from_file(filename, format=fformat)
 clip = clip[clipStart:(clipStart+clipDur)]

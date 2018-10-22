@@ -23,6 +23,7 @@ parser.add_argument('-ss', dest="EXCERPT_START", default=0, type=float, help="Sl
 parser.add_argument('-sd', dest="EXCERPT_DUR", default=-1, type=float, help="Slice duration in seconds")
 parser.add_argument('-fx', dest="SOUND_FX", default=1, type=int, help="Apply sound effects? (takes longer)")
 parser.add_argument('-out', dest="OUTPUT_FILE", default="output/sample_mix.mp3", help="Output audio file")
+parser.add_argument('-overwrite', dest="OVERWRITE", default=1, type=int, help="Overwrite existing audio?")
 args = parser.parse_args()
 
 INPUT_FILE = args.INPUT_FILE
@@ -34,6 +35,7 @@ EXCERPT_START = int(round(args.EXCERPT_START * 1000))
 EXCERPT_DUR = int(round(args.EXCERPT_DUR * 1000))
 SOUND_FX = (args.SOUND_FX > 0)
 OUTPUT_FILE = args.OUTPUT_FILE
+OVERWRITE = (args.OVERWRITE > 0)
 
 MIN_VOLUME = 0.01
 MAX_VOLUME = 10.0
@@ -43,6 +45,11 @@ FX_PAD = 3000
 SAMPLE_WIDTH = 2
 FRAME_RATE = 44100
 CHANNELS = 2
+
+# Check if file exists already
+if os.path.isfile(OUTPUT_FILE) and not OVERWRITE:
+    print("%s already exists. Skipping." % OUTPUT_FILE)
+    sys.exit()
 
 # Make sure output dir exist
 outDir = os.path.dirname(OUTPUT_FILE)
@@ -67,7 +74,7 @@ INSTRUCTION_COUNT = len(instructions)
 # Add features
 for i, step in enumerate(instructions):
     instructions[i]["filename"] = AUDIO_DIR + audioFiles[step["ifilename"]]["filename"]
-    instructions[i]["volume"] = lim(step["volume"], (MIN_VOLUME, MAX_VOLUME))
+    instructions[i]["volume"] = 1.0 if "volume" not in step else lim(step["volume"], (MIN_VOLUME, MAX_VOLUME))
     instructions[i]["db"] = volumeToDb(instructions[i]["volume"])
     instructions[i]["ms"] = step["ms"] - EXCERPT_START + PAD_LEFT
 audioFiles = list(set([i["filename"] for i in instructions]))
