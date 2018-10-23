@@ -85,6 +85,21 @@ def readCsv(filename, headings=False, doParseNumbers=True):
             fieldnames = list(reader.fieldnames)
     return (fieldnames, rows)
 
+def sortAndTrim(arr, sorters):
+    if isinstance(sorters, tuple):
+        sorters = [sorters]
+
+    if len(arr) <= 0:
+        return arr
+
+    for s in sorters:
+        key, direction, trim = s
+        arr = sortBy(arr, (key, direction))
+        count = int(round(len(arr) * trim))
+        arr = arr[:count]
+
+    return arr
+
 def sortBy(arr, sorters):
     if isinstance(sorters, tuple):
         sorters = [sorters]

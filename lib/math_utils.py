@@ -22,6 +22,9 @@ def norm(value, ab):
 def roundToNearest(n, nearest):
     return 1.0 * round(1.0*n/nearest) * nearest
 
+def roundInt(n):
+    return int(round(n))
+
 def weighted_mean(values):
     count = len(values)
     if count <= 0:

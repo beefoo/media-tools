@@ -66,6 +66,7 @@ filenamesOut = [{"filename": f} for f in filenames]
 
 # filename,start,dur,tsne,power,hz,note,octave
 rows = sortBy(rows, ("start", "asc"))
+duration = rows[-1]["start"] + rows[-1]["dur"]
 
 def compose(instructions, audiofiles, filename):
     writeCsv(TMP_FILE, instructions)
@@ -253,3 +254,60 @@ if "pairs" in COMPOSITIONS:
         dur = r1["dur"] * pulses - r1["dur"] * overlap * (pulses-1)
         ms += int(round(dur * 0.5 + r1["dur"] * 0.5))
     compose(instructions, filenamesOut, OUTPUT_FILE % "pairs")
+
+if "counterpoint" in COMPOSITIONS:
+    instructions = []
+    # step 1: add bass
+    # take low frequency instruments
+    lowfreq = sortBy(rows, ("hz", "asc"))
+    lowfreq = sortAndTrim(rows, [
+        ("hz", "asc", 0.2),
+        ("power", "asc", 0.5),
+        ("dur", "desc", 0.5),
+        ("hz", "asc", 1.0)
+    ])
+    count = 4
+    lowfreq = lowfreq[:count]
+    if len(lowfreq) < count:
+        print("Warning: not enough lowfreq")
+    stretchTo = 12000
+    interval = 4000
+    loops = int(round(1.0 * duration / (interval * count)))
+    for loop in range(loops):
+        ms = loop * (count * interval)
+        for i, row in enumerate(lowfreq):
+            stretch = max(stretchTo / row["dur"], 1.0)
+            instructions.append({
+                "ms": ms + i * interval,
+                "ifilename": filenames.index(row["filename"]),
+                "start": row["start"],
+                "dur": row["dur"],
+                "stretch": stretch,
+                "volume": 0.8
+            })
+    # step two: add short pulses
+    short = sortAndTrim(rows, [
+        ("power", "desc", 0.6),
+        ("dur", "desc", 0.9),
+        ("dur", "asc", 1.0)
+    ])
+    stretchTo = 6.0
+    pulses = 32
+    ms = 0
+    overlap = 0.2
+    for i, row in enumerate(short):
+        for pulse in range(pulses):
+            progress = 1.0 * pulse / (pulses-1)
+            volume = (0.5*math.sin(progress * math.pi)+0.5) * 2
+            easedProgress = 0.5*math.sin(progress * math.pi)+0.5
+            instructions.append({
+                "ms": roundInt(ms + pulse * (row["dur"] * (1.0-overlap))),
+                "ifilename": filenames.index(row["filename"]),
+                "start": row["start"],
+                "dur": row["dur"],
+                "volume": volume,
+                "stretch": lerp((stretchTo, 1.0), easedProgress)
+            })
+        dur = row["dur"] * pulses - row["dur"] * overlap * (pulses-1)
+        ms += int(round(dur * 0.5 + row["dur"] * 0.5))
+    compose(instructions, filenamesOut, OUTPUT_FILE % "counterpoint")
