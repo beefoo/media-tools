@@ -1,35 +1,16 @@
 # -*- coding: utf-8 -*-
 
 import csv
+from math_utils import *
 import os
 
-def filterByQueryString(arr, queryString):
-    return filterWhere(arr, parseQueryString(queryString))
-
-def filterWhere(arr, filters):
-    if isinstance(filters, tuple):
-        filters = [filters]
-
-    if len(arr) <= 0:
-        return arr
-
-    # Filter array
-    for f in filters:
-        key, value, mode = f
-        if mode == "<=":
-            arr = [a for a in arr if a[key] <= value]
-        elif mode == ">=":
-            arr = [a for a in arr if a[key] >= value]
-        elif mode == "<":
-            arr = [a for a in arr if a[key] < value]
-        elif mode == ">":
-            arr = [a for a in arr if a[key] > value]
-        elif mode == "~=":
-            arr = [a for a in arr if value in a[key]]
-        else:
-            arr = [a for a in arr if a[key] == value]
-
-    return arr
+def makeDirectories(filenames):
+    if not isinstance(filenames, list):
+        filenames = [filenames]
+    for filename in filenames:
+        dirname = os.path.dirname(filename)
+        if not os.path.exists(dirname):
+            os.makedirs(dirname)
 
 def parseHeadings(arr, headings):
     newArr = []
@@ -41,34 +22,6 @@ def parseHeadings(arr, headings):
                 newItem[headings[key]] = item[key]
         newArr.append(newItem)
     return newArr
-
-def parseNumber(string):
-    try:
-        num = float(string)
-        if "." not in string:
-            num = int(string)
-        return num
-    except ValueError:
-        return string
-
-def parseNumbers(arr):
-    for i, item in enumerate(arr):
-        for key in item:
-            arr[i][key] = parseNumber(item[key])
-    return arr
-
-def parseQueryString(str):
-    conditionStrings = str.split("&")
-    conditions = []
-    modes = ["<=", ">=", "~=", ">", "<", "="]
-    for cs in conditionStrings:
-        for mode in modes:
-            if mode in cs:
-                parts = cs.split(mode)
-                parts.append(mode)
-                conditions.append(tuple(parts))
-                break
-    return conditions
 
 def readCsv(filename, headings=False, doParseNumbers=True):
     rows = []
@@ -84,35 +37,6 @@ def readCsv(filename, headings=False, doParseNumbers=True):
                 rows = parseNumbers(rows)
             fieldnames = list(reader.fieldnames)
     return (fieldnames, rows)
-
-def sortAndTrim(arr, sorters):
-    if isinstance(sorters, tuple):
-        sorters = [sorters]
-
-    if len(arr) <= 0:
-        return arr
-
-    for s in sorters:
-        key, direction, trim = s
-        arr = sortBy(arr, (key, direction))
-        count = int(round(len(arr) * trim))
-        arr = arr[:count]
-
-    return arr
-
-def sortBy(arr, sorters):
-    if isinstance(sorters, tuple):
-        sorters = [sorters]
-
-    if len(arr) <= 0:
-        return arr
-
-    # Sort array
-    for key, direction in sorters:
-        reversed = (direction == "desc")
-        arr = sorted(arr, key=lambda k: k[key], reverse=reversed)
-
-    return arr
 
 def writeCsv(filename, arr, headings="auto"):
     if headings == "auto":

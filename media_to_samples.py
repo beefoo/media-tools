@@ -51,10 +51,8 @@ else:
 fileCount = len(files)
 print("Found %s files" % fileCount)
 
-# Make sure output dir exist
-outDir = os.path.dirname(OUTPUT_FILE)
-if not os.path.exists(outDir):
-    os.makedirs(outDir)
+# Make sure output dirs exist
+makeDirectories(OUTPUT_FILE)
 
 progress = 0
 # files = files[:1]

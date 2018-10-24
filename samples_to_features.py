@@ -50,10 +50,8 @@ if APPEND and set(FEATURES_TO_ADD).issubset(set(fieldNames)) and not OVERWRITE:
 for i, row in enumerate(rows):
     rows[i]["path"] = AUDIO_DIRECTORY + row["filename"]
 
-# Make sure output dir exist
-outDir = os.path.dirname(OUTPUT_FILE)
-if not os.path.exists(outDir):
-    os.makedirs(outDir)
+# Make sure output dirs exist
+makeDirectories(OUTPUT_FILE)
 
 # find unique filepaths
 filepaths = list(set([row["path"] for row in rows]))
@@ -105,15 +103,7 @@ headings = fieldNames[:]
 for feature in FEATURES_TO_ADD:
     if feature not in headings:
         headings.append(feature)
-with open(OUTPUT_FILE, 'wb') as f:
-    writer = csv.writer(f)
-    writer.writerow(headings)
-    for i, d in enumerate(data):
-        row = []
-        for h in headings:
-            row.append(d[h])
-        writer.writerow(row)
-print("Wrote %s rows to %s" % (len(data), OUTPUT_FILE))
+writeCsv(OUTPUT_FILE, data, headings)
 
 if PLOT:
     plt.figure(figsize = (10,6))

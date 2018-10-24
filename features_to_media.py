@@ -54,10 +54,8 @@ for i, row in enumerate(rows):
 sequenceDuration = ms + PAD_RIGHT
 print("Total time: %s" % time.strftime('%H:%M:%S', time.gmtime(sequenceDuration/1000)))
 
-# Make sure output dir exist
-outDir = os.path.dirname(OUTPUT_FILE)
-if not os.path.exists(outDir):
-    os.makedirs(outDir)
+# Make sure output dirs exist
+makeDirectories(OUTPUT_FILE)
 
 # make one track per audio file
 filepaths = list(set([row["path"] for row in rows]))

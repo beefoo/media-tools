@@ -19,6 +19,21 @@ def norm(value, ab):
     a, b = ab
     return 1.0 * (value - a) / (b - a)
 
+def parseNumber(string):
+    try:
+        num = float(string)
+        if "." not in string:
+            num = int(string)
+        return num
+    except ValueError:
+        return string
+
+def parseNumbers(arr):
+    for i, item in enumerate(arr):
+        for key in item:
+            arr[i][key] = parseNumber(item[key])
+    return arr
+
 def roundToNearest(n, nearest):
     return 1.0 * round(1.0*n/nearest) * nearest
 

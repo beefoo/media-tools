@@ -51,10 +51,8 @@ if os.path.isfile(OUTPUT_FILE) and not OVERWRITE:
     print("%s already exists. Skipping." % OUTPUT_FILE)
     sys.exit()
 
-# Make sure output dir exist
-outDir = os.path.dirname(OUTPUT_FILE)
-if not os.path.exists(outDir):
-    os.makedirs(outDir)
+# Make sure output dirs exist
+makeDirectories(OUTPUT_FILE)
 
 # Read input file
 fieldnames, audioFiles = readCsv(INPUT_AUDIO_FILE)
