@@ -61,7 +61,7 @@ def getAudioFile(fn):
         fn = target
     return fn
 
-def getAudioSamples(fn, min_dur=50, max_dur=-1, fft=2048, hop_length=512):
+def getAudioSamples(fn, min_dur=50, max_dur=-1, fft=2048, hop_length=512, backtrack=True, superFlux=True):
     basename = os.path.basename(fn)
     fn = getAudioFile(fn)
 
@@ -71,10 +71,24 @@ def getAudioSamples(fn, min_dur=50, max_dur=-1, fft=2048, hop_length=512):
     ylen = len(y)
     duration = int(round(ylen / sr * 1000))
 
-    # retrieve onsets
-    onsets = librosa.onset.onset_detect(y=y, sr=sr, hop_length=hop_length)
-    times = [int(round(1.0 * hop_length * onset / sr * 1000)) for onset in onsets]
+    # retrieve onsets using superflux method
+    # https://librosa.github.io/librosa/auto_examples/plot_superflux.html#sphx-glr-auto-examples-plot-superflux-py
+    # http://dafx13.nuim.ie/papers/09.dafx2013_submission_12.pdf
+    if superFlux:
+        lag = 2
+        n_mels = 138
+        fmin = 27.5
+        fmax = 16000.0
+        max_size = 3
+        S = librosa.feature.melspectrogram(y, sr=sr, n_fft=fft, hop_length=hop_length, fmin=fmin, fmax=fmax, n_mels=n_mels)
+        odf = librosa.onset.onset_strength(S=librosa.power_to_db(S, ref=np.max), sr=sr, hop_length=hop_length, lag=lag, max_size=max_size)
+        onsets = librosa.onset.onset_detect(onset_envelope=odf, sr=sr, hop_length=hop_length, backtrack=backtrack)
 
+    # retrieve onsets using default method
+    else:
+        onsets = librosa.onset.onset_detect(y=y, sr=sr, hop_length=hop_length, backtrack=backtrack)
+
+    times = [int(round(1.0 * hop_length * onset / sr * 1000)) for onset in onsets]
     # add the end of the audio
     times.append(duration-1)
 
@@ -99,9 +113,11 @@ def getFeatures(y, sr, start, dur, fft=2048, hop_length=512):
 
     stft = librosa.feature.rmse(S=librosa.stft(y, n_fft=fft, hop_length=hop_length))[0]
     rolloff = librosa.feature.spectral_rolloff(y=y, sr=sr)[0]
+    flatness = librosa.feature.spectral_flatness(y=y)[0]
 
     power = round(weighted_mean(stft), 2)
     hz = round(weighted_mean(rolloff), 2)
+    flatness = round(weighted_mean(flatness), 5)
     note = "-"
 
     if math.isinf(power):
@@ -122,6 +138,7 @@ def getFeatures(y, sr, start, dur, fft=2048, hop_length=512):
     return {
         "power": power,
         "hz": hz,
+        "flatness": flatness,
         "note": note,
         "octave": octave
     }

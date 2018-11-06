@@ -30,7 +30,7 @@ APPEND = args.APPEND > 0
 OVERWRITE = args.OVERWRITE > 0
 PLOT = args.PLOT > 0
 
-FEATURES_TO_ADD = ["power", "hz", "note", "octave"]
+FEATURES_TO_ADD = ["power", "hz", "flatness", "note", "octave"]
 
 # Read files
 rows = []
@@ -95,7 +95,6 @@ data = pool.map(samplesToFeatures, params)
 pool.close()
 pool.join()
 
-
 # flatten data
 data = [item for sublist in data for item in sublist]
 
@@ -109,14 +108,19 @@ if PLOT:
     plt.figure(figsize = (10,6))
     pows = [d["power"] for d in data]
     hzs = [d["hz"] for d in data]
+    flts = [d["flatness"] for d in data]
 
-    ax = plt.subplot(1, 2, 1)
+    ax = plt.subplot(1, 3, 1)
     ax.set_title("Power distribution")
     plt.hist(pows, bins=50)
 
-    ax = plt.subplot(1, 2, 2)
+    ax = plt.subplot(1, 3, 2)
     ax.set_title("Frequency distribution")
     plt.hist(hzs, bins=50)
+
+    ax = plt.subplot(1, 3, 3)
+    ax.set_title("Flatness distribution")
+    plt.hist(flts, bins=50)
 
     plt.tight_layout()
     plt.show()

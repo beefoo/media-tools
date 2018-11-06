@@ -10,7 +10,7 @@ import sys
 # input
 parser = argparse.ArgumentParser()
 parser.add_argument('-in', dest="INPUT_FILES", default="audio/sample/bird.wav", help="Input file pattern")
-parser.add_argument('-sort', dest="SORT_BY", default="tsne", help="What to sort by: tsne, hz, power, dur")
+parser.add_argument('-sort', dest="SORT_BY", default="tsne", help="What to sort by: tsne, hz, power, dur, flatness")
 parser.add_argument('-uid', dest="UID", default="auto", help="ID used for creating temporary and output files")
 parser.add_argument('-out', dest="OUTPUT_FILE", default="output/%s.mp3", help="ID used for creating temporary and output files")
 parser.add_argument('-overwrite', dest="OVERWRITE", default="0", help="Overwrite existing data?")
