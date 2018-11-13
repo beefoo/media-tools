@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import argparse
-import glob
 from lib import *
 import librosa
 from matplotlib import pyplot as plt
@@ -33,9 +32,9 @@ APPEND = args.APPEND > 0
 OVERWRITE = args.OVERWRITE > 0
 PLOT = args.PLOT > 0
 
-files = glob.glob(INPUT_FILES)
+# Read files
+files = getFilenames(INPUT_FILES)
 fileCount = len(files)
-print("Found %s files" % fileCount)
 filenames = [os.path.basename(fn) for fn in files]
 rows = [{"index": i, "filename": os.path.basename(fn), "filepath": fn} for i, fn in enumerate(files)]
 

@@ -4,7 +4,6 @@
 
 import argparse
 import csv
-import glob
 from lib import *
 import librosa
 from multiprocessing import Pool
@@ -43,13 +42,8 @@ if os.path.isfile(OUTPUT_FILE) and not OVERWRITE:
     sys.exit()
 
 # Read files
-files = []
-if "*" in INPUT_FILES:
-    files = glob.glob(INPUT_FILES)
-else:
-    files = [INPUT_FILES]
+files = getFilenames(INPUT_FILES)
 fileCount = len(files)
-print("Found %s files" % fileCount)
 
 # Make sure output dirs exist
 makeDirectories(OUTPUT_FILE)

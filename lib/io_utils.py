@@ -1,8 +1,19 @@
 # -*- coding: utf-8 -*-
 
 import csv
+import glob
 from math_utils import *
 import os
+
+def getfilenames(fileString):
+    files = []
+    if "*" in fileString:
+        files = glob.glob(fileString)
+    else:
+        files = [fileString]
+    fileCount = len(files)
+    print("Found %s files" % fileCount)
+    return files
 
 def makeDirectories(filenames):
     if not isinstance(filenames, list):
