@@ -16,7 +16,7 @@ import sys
 # input
 parser = argparse.ArgumentParser()
 parser.add_argument('-in', dest="INPUT_FILE", default="tmp/samples.csv", help="Input file")
-parser.add_argument('-dir', dest="AUDIO_DIRECTORY", default="audio/sample/", help="Input file")
+parser.add_argument('-dir', dest="AUDIO_DIRECTORY", default="media/sample/", help="Input file")
 parser.add_argument('-out', dest="OUTPUT_FILE", default="tmp/samples_tsne.csv", help="CSV output file")
 parser.add_argument('-append', dest="APPEND", default=1, type=int, help="Append to existing data?")
 parser.add_argument('-overwrite', dest="OVERWRITE", default=0, type=int, help="Overwrite existing data?")

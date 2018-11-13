@@ -17,7 +17,7 @@ import sys
 
 # input
 parser = argparse.ArgumentParser()
-parser.add_argument('-in', dest="INPUT_FILES", default="audio/sample/bird.wav", help="Input file pattern")
+parser.add_argument('-in', dest="INPUT_FILES", default="media/sample/bird.wav", help="Input file pattern")
 parser.add_argument('-samples', dest="SAMPLES", default=-1, type=int, help="Max samples to produce per media file, -1 for all")
 parser.add_argument('-min', dest="MIN_DUR", default=50, type=int, help="Minimum sample duration in ms")
 parser.add_argument('-max', dest="MAX_DUR", default=-1, type=int, help="Maximum sample duration in ms, -1 for no max")

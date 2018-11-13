@@ -2,4 +2,4 @@
 .DS_Store
 output/*
 tmp/*
-audio/downloads/*
+media/downloads/*

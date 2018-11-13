@@ -15,7 +15,7 @@ import sys
 
 # input
 parser = argparse.ArgumentParser()
-parser.add_argument('-in', dest="INPUT_FILES", default="audio/downloads/double-bass/*.mp3", help="Input files")
+parser.add_argument('-in', dest="INPUT_FILES", default="media/downloads/double-bass/*.mp3", help="Input files")
 parser.add_argument('-pattern', dest="PATTERN", default="([a-z\-]+)\_([A-Z]s?)([0-9])\_([0-9]+)\_([a-z\-]+)\_([a-z\-]+)\.mp3", help="File pattern")
 parser.add_argument('-features', dest="PATTERN_FEATURES", default="group,note,octave,note_dur,dynamic,articulation", help="Features that the pattern maps to")
 parser.add_argument('-out', dest="OUTPUT_FILE", default="tmp/double-bass_features.csv", help="CSV output file")

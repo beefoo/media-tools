@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# python sort_audio.py -in "audio/downloads/vivaldi/*.mp3" -steps 2 -plot 1
+# python sort_audio.py -in "media/downloads/vivaldi/*.mp3" -steps 2 -plot 1
 
 import argparse
 import os
@@ -9,7 +9,7 @@ import sys
 
 # input
 parser = argparse.ArgumentParser()
-parser.add_argument('-in', dest="INPUT_FILES", default="audio/sample/bird.wav", help="Input file pattern")
+parser.add_argument('-in', dest="INPUT_FILES", default="media/sample/bird.wav", help="Input file pattern")
 parser.add_argument('-sort', dest="SORT_BY", default="tsne", help="What to sort by: tsne, hz, power, dur, flatness")
 parser.add_argument('-uid', dest="UID", default="auto", help="ID used for creating temporary and output files")
 parser.add_argument('-out', dest="OUTPUT_FILE", default="output/%s.mp3", help="ID used for creating temporary and output files")

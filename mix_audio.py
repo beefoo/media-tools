@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# python -W ignore mix_audio.py -in "../latitude/output/mix.csv" -inaudio "../latitude/output/mix_audio.csv" -dir "audio/downloads/vivaldi/" -sd 60
+# python -W ignore mix_audio.py -in "../latitude/output/mix.csv" -inaudio "../latitude/output/mix_audio.csv" -dir "media/downloads/vivaldi/" -sd 60
 
 import argparse
 import math
@@ -16,7 +16,7 @@ from lib import *
 parser = argparse.ArgumentParser()
 parser.add_argument('-in', dest="INPUT_FILE", default="data/mix.csv", help="Input sequence csv file")
 parser.add_argument('-inaudio', dest="INPUT_AUDIO_FILE", default="data/mix_audio.csv", help="Input audio csv file")
-parser.add_argument('-dir', dest="AUDIO_DIR", default="audio/sample/", help="Input audio directory")
+parser.add_argument('-dir', dest="AUDIO_DIR", default="media/sample/", help="Input audio directory")
 parser.add_argument('-left', dest="PAD_LEFT", default=1000, type=int, help="Pad left in milliseconds")
 parser.add_argument('-right', dest="PAD_RIGHT", default=3000, type=int, help="Pad right in milliseconds")
 parser.add_argument('-ss', dest="EXCERPT_START", default=0, type=float, help="Slice start in seconds")

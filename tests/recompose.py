@@ -16,7 +16,7 @@ from lib import *
 # input
 parser = argparse.ArgumentParser()
 parser.add_argument('-in', dest="INPUT_FILE", default="../tmp/vivaldi_samples.csv", help="Input file")
-parser.add_argument('-dir', dest="AUDIO_DIRECTORY", default="../audio/downloads/vivaldi/", help="Input directory")
+parser.add_argument('-dir', dest="AUDIO_DIRECTORY", default="../media/downloads/vivaldi/", help="Input directory")
 parser.add_argument('-comps', dest="COMPOSITIONS", default="start,even,stagger,echo,pulse,dissolve,tpulse,pairs", help="List of compositions to make")
 parser.add_argument('-interval', dest="INTERVAL", default=200, type=int, help="Interval")
 parser.add_argument('-filter', dest="FILTER", default="filename=01_-_Vivaldi_Spring_mvt_1_Allegro.mp3", help="Query string")

@@ -20,7 +20,7 @@ sys.path.insert(0,parentdir)
 from lib import addFx
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-in', dest="INPUT_FILE", default="../audio/downloads/vivaldi/01_-_Vivaldi_Spring_mvt_1_Allegro.mp3", help="Input file")
+parser.add_argument('-in', dest="INPUT_FILE", default="../media/downloads/vivaldi/01_-_Vivaldi_Spring_mvt_1_Allegro.mp3", help="Input file")
 parser.add_argument('-start', dest="CLIP_START", default=0, type=int, help="Clip start in ms")
 parser.add_argument('-dur', dest="CLIP_DUR", default=3100, type=int, help="Clip duration in ms")
 parser.add_argument('-effect', dest="EFFECT", default="reverb", help="Effect name")
