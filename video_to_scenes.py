@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # Looks for scenes in arbitrary video
-# python -W ignore video_to_scenes.py -in media/sample/LivingSt1958.mp4
+# python -W ignore video_to_scenes.py -in media/sample/LivingSt1958.mp4 -overwrite 1 -threshold 24
 
 import argparse
 import csv
@@ -20,15 +20,17 @@ import sys
 parser = argparse.ArgumentParser()
 parser.add_argument('-in', dest="INPUT_FILES", default="media/sample/moonlight.mp4", help="Input file pattern")
 parser.add_argument('-out', dest="OUTPUT_FILE", default="tmp/scenes.csv", help="CSV output file")
+parser.add_argument('-threshold', dest="THRESHOLD", default=30.0, type=float, help="Threshold for scene detection; lower number = more scenes")
 parser.add_argument('-overwrite', dest="OVERWRITE", default=0, type=int, help="Overwrite existing data?")
-parser.add_argument('-stats', dest="STATS", default=0, type=int, help="Write stats?")
+parser.add_argument('-plot', dest="PLOT", default=0, type=int, help="Draw plot?")
 args = parser.parse_args()
 
 # Parse arguments
 INPUT_FILES = args.INPUT_FILES
 OUTPUT_FILE = args.OUTPUT_FILE
+THRESHOLD = args.THRESHOLD
 OVERWRITE = args.OVERWRITE > 0
-STATS = args.STATS > 0
+PLOT = args.PLOT > 0
 
 # Check if file exists already
 if os.path.isfile(OUTPUT_FILE) and not OVERWRITE:
@@ -44,7 +46,7 @@ makeDirectories(OUTPUT_FILE)
 
 progress = 0
 
-def getScenes(video_path):
+def getScenes(video_path, threshold=30.0, min_scene_len=15):
     global progress
     global fileCount
 
@@ -58,7 +60,7 @@ def getScenes(video_path):
 
     # Add ContentDetector algorithm (each detector's constructor
     # takes detector options, e.g. threshold).
-    scene_manager.add_detector(ContentDetector())
+    scene_manager.add_detector(ContentDetector(threshold=threshold))
     base_timecode = video_manager.get_base_timecode()
 
     # We save our stats file to {VIDEO_PATH}.stats.csv.
@@ -88,21 +90,36 @@ def getScenes(video_path):
         scenes = scene_manager.get_scene_list(base_timecode)
         # Each scene is a tuple of (start, end) FrameTimecodes.
 
-        # print('List of scenes obtained:')
-        for i, scene in enumerate(scenes):
-            start = roundInt(scene[0].get_seconds()*1000)
-            end = roundInt(scene[1].get_seconds()*1000)
-            scene_list.append({
-                "filename": basename,
-                "index": i,
-                "start": start,
-                "dur": end - start
-            })
-
         # We only write to the stats file if a save is required:
-        if STATS and stats_manager.is_save_required():
+        if stats_manager.is_save_required():
             with open(stats_file_path, 'w') as stats_file:
                 stats_manager.save_to_csv(stats_file, base_timecode)
+
+        # Manually determine scenes from raw data (for greater control over thresholds)
+        fieldNames, sceneData = readCsv(stats_file_path, skipLines=1)
+        sceneIndex = 0
+        start = 0
+        dlen = len(sceneData)
+        lastFrameScene = 0
+        for i, d in enumerate(sceneData):
+            if i > 0:
+                ms = timecodeToMs(d["Timecode"])
+                value = d["content_val"]
+                frame = d["Frame Number"]
+                prev = sceneData[i-1]["content_val"]
+                delta = abs(value-prev)
+
+                if (delta >= threshold or i >= dlen-1) and (frame-lastFrameScene+1) >= min_scene_len:
+                    end = ms
+                    scene_list.append({
+                        "filename": basename,
+                        "index": sceneIndex,
+                        "start": start,
+                        "dur": end - start
+                    })
+                    sceneIndex += 1
+                    start = end
+                    lastFrameScene = frame
 
     finally:
         video_manager.release()
@@ -116,7 +133,7 @@ def getScenes(video_path):
 
 scenes = []
 for fn in files:
-    scenes += getScenes(fn)
+    scenes += getScenes(fn, threshold=THRESHOLD)
 
 headings = ["filename", "index", "start", "dur"]
 writeCsv(OUTPUT_FILE, scenes, headings)

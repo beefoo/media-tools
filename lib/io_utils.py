@@ -34,12 +34,14 @@ def parseHeadings(arr, headings):
         newArr.append(newItem)
     return newArr
 
-def readCsv(filename, headings=False, doParseNumbers=True):
+def readCsv(filename, headings=False, doParseNumbers=True, skipLines=0):
     rows = []
     fieldnames = []
     if os.path.isfile(filename):
         with open(filename, 'rb') as f:
             lines = [line for line in f if not line.startswith("#")]
+            if skipLines > 0:
+                lines = lines[skipLines:]
             reader = csv.DictReader(lines, skipinitialspace=True)
             rows = list(reader)
             if headings:

@@ -40,6 +40,11 @@ def roundToNearest(n, nearest):
 def roundInt(n):
     return int(round(n))
 
+def timecodeToMs(tc):
+    hours, minutes, seconds = tuple([float(v) for v in tc.split(":")])
+    seconds = seconds + minutes * 60 + hours * 3600
+    return roundInt(seconds*1000)
+
 def weighted_mean(values):
     count = len(values)
     if count <= 0:
