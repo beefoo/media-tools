@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# python -W ignore mix.py -in "../latitude/output/mix.csv" -inaudio "../latitude/output/mix_audio.csv" -dir "audio/downloads/vivaldi/" -sd 60
+# python -W ignore mix_audio.py -in "../latitude/output/mix.csv" -inaudio "../latitude/output/mix_audio.csv" -dir "audio/downloads/vivaldi/" -sd 60
 
 import argparse
 import math

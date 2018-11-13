@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# python run.py -in "audio/downloads/vivaldi/*.mp3" -steps 2 -plot 1
+# python sort_audio.py -in "audio/downloads/vivaldi/*.mp3" -steps 2 -plot 1
 
 import argparse
 import os
@@ -40,7 +40,7 @@ if "%s" in OUTPUT_FILE:
 
 # Create samples
 samplePath = TMP_DIR + UID + "_samples.csv"
-command = ['python', '-W', 'ignore', 'media_to_samples.py', '-in', INPUT_FILES, '-out', samplePath, '-overwrite', OVERWRITE]
+command = ['python', '-W', 'ignore', 'audio_to_samples.py', '-in', INPUT_FILES, '-out', samplePath, '-overwrite', OVERWRITE]
 print("------")
 print(" ".join(command))
 finished = subprocess.check_call(command)
@@ -59,7 +59,7 @@ if STEPS <= 2:
     sys.exit()
 
 # Compile features into media file
-command = ['python', '-W', 'ignore', "features_to_media.py", '-in', featurePath, '-dir', dir, '-sort', SORT_BY, '-out', OUTPUT_FILE]
+command = ['python', '-W', 'ignore', "features_to_audio.py", '-in', featurePath, '-dir', dir, '-sort', SORT_BY, '-out', OUTPUT_FILE]
 print("------")
 print(" ".join(command))
 finished = subprocess.check_call(command)

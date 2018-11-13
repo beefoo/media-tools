@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# python features_to_media.py -in tmp/samples_features.csv -sort hz -out output/sort_hz.mp3
+# python features_to_audio.py -in tmp/samples_features.csv -sort hz -out output/sort_hz.mp3
 
 import argparse
 import csv
