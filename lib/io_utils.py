@@ -5,7 +5,7 @@ import glob
 from math_utils import *
 import os
 
-def getfilenames(fileString):
+def getFilenames(fileString):
     files = []
     if "*" in fileString:
         files = glob.glob(fileString)
