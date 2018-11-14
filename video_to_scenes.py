@@ -6,8 +6,9 @@
 import argparse
 import csv
 from lib import *
-import os
+import matplotlib.pyplot as plt
 import numpy as np
+import os
 from pprint import pprint
 from scenedetect.video_manager import VideoManager
 from scenedetect.scene_manager import SceneManager
@@ -22,7 +23,7 @@ parser.add_argument('-in', dest="INPUT_FILES", default="media/sample/moonlight.m
 parser.add_argument('-out', dest="OUTPUT_FILE", default="tmp/scenes.csv", help="CSV output file")
 parser.add_argument('-threshold', dest="THRESHOLD", default=30.0, type=float, help="Threshold for scene detection; lower number = more scenes")
 parser.add_argument('-overwrite', dest="OVERWRITE", default=0, type=int, help="Overwrite existing data?")
-parser.add_argument('-plot', dest="PLOT", default=0, type=int, help="Draw plot?")
+parser.add_argument('-plot', dest="PLOT", default="", help="Draw plot frames (e.g. 30:90)")
 args = parser.parse_args()
 
 # Parse arguments
@@ -30,7 +31,15 @@ INPUT_FILES = args.INPUT_FILES
 OUTPUT_FILE = args.OUTPUT_FILE
 THRESHOLD = args.THRESHOLD
 OVERWRITE = args.OVERWRITE > 0
-PLOT = args.PLOT > 0
+PLOT = args.PLOT.strip()
+
+# Determine plot frames
+if ":" in PLOT:
+    PLOT = tuple([int(p) for p in PLOT.split(":")])
+elif len(PLOT) > 0:
+    PLOT = (0, int(PLOT))
+else:
+    PLOT = False
 
 # Check if file exists already
 if os.path.isfile(OUTPUT_FILE) and not OVERWRITE:
@@ -114,12 +123,25 @@ def getScenes(video_path, threshold=30.0, min_scene_len=15):
                     scene_list.append({
                         "filename": basename,
                         "index": sceneIndex,
+                        "frame": frame,
                         "start": start,
-                        "dur": end - start
+                        "dur": end - start,
+                        "value": value
                     })
                     sceneIndex += 1
                     start = end
                     lastFrameScene = frame
+
+        if PLOT:
+            f0, f1 = PLOT
+            xs = [d["Frame Number"]-1 for d in sceneData if f0 <= d["Frame Number"] <= f1]
+            ys = [d["content_val"] for d in sceneData if f0 <= d["Frame Number"] <= f1]
+            plt.plot(xs, ys)
+            plt.plot([xs[0], xs[-1]], [threshold, threshold], "go--")
+            xs = [d["frame"]-1 for d in scene_list if f0 <= d["frame"] <= f1]
+            ys = [d["value"] for d in scene_list if f0 <= d["frame"] <= f1]
+            plt.scatter(xs, ys, c="red")
+            plt.show()
 
     finally:
         video_manager.release()
