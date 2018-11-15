@@ -2,8 +2,10 @@
 
 import csv
 import glob
+import json
 from math_utils import *
 import os
+import requests
 
 def getFilenames(fileString):
     files = []
@@ -14,6 +16,11 @@ def getFilenames(fileString):
     fileCount = len(files)
     print("Found %s files" % fileCount)
     return files
+
+def getJSONFromURL(url):
+    print("Downloading %s" % url)
+    r = requests.get(url)
+    return r.json()
 
 def makeDirectories(filenames):
     if not isinstance(filenames, list):
