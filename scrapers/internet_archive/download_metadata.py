@@ -20,7 +20,7 @@ from lib.io_utils import *
 # input
 parser = argparse.ArgumentParser()
 parser.add_argument('-query', dest="QUERY", default="collection:(prelinger) AND mediatype:(movies)", help="Query. See reference: https://archive.org/advancedsearch.php")
-parser.add_argument('-keys', dest="RETURN_KEYS", default="date,description,format,identifier,item_size,mediatype,publicdate,subject,title,type", help="List of keys to return")
+parser.add_argument('-keys', dest="RETURN_KEYS", default="date,description,identifier,item_size,mediatype,publicdate,subject,title,type", help="List of keys to return")
 parser.add_argument('-sort', dest="SORT_BY", default="downloads desc", help="Sort string")
 parser.add_argument('-rows', dest="ROWS", default=100, type=int, help="Rows per page")
 parser.add_argument('-out', dest="OUTPUT_FILE", default="../../tmp/internet_archive_metadata.csv", help="CSV output file")
@@ -71,5 +71,5 @@ writeCsv(OUTPUT_FILE, rows, fieldNames)
 while page < pages:
     page += 1
     data = getJSONFromURL(url + "&page=%s" % page)
-    rows += data["response"]["docs"]
-    appendCsv(OUTPUT_FILE, rows, fieldNames)
+    rows = data["response"]["docs"]
+    writeCsv(OUTPUT_FILE, rows, fieldNames, append=True)

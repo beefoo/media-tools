@@ -8,16 +8,7 @@ import os
 import requests
 
 def appendCsv(filename, arr, headings="auto"):
-    if headings == "auto":
-        headings = arr[0].keys()
-    with open(filename, 'a') as f:
-        writer = csv.writer(f)
-        for i, d in enumerate(arr):
-            row = []
-            for h in headings:
-                row.append(d[h])
-            writer.writerow(row)
-    print("Appended %s rows to %s" % (len(arr), filename))
+    writeCsv(filename, arr, headings, append=True)
 
 def getFilenames(fileString):
     files = []
@@ -70,15 +61,20 @@ def readCsv(filename, headings=False, doParseNumbers=True, skipLines=0):
             fieldnames = list(reader.fieldnames)
     return (fieldnames, rows)
 
-def writeCsv(filename, arr, headings="auto"):
+def writeCsv(filename, arr, headings="auto", append=False):
     if headings == "auto":
         headings = arr[0].keys()
-    with open(filename, 'wb') as f:
+    mode = 'wb' if not append else 'a'
+    with open(filename, mode) as f:
         writer = csv.writer(f)
-        writer.writerow(headings)
+        if not append:
+            writer.writerow(headings)
         for i, d in enumerate(arr):
             row = []
             for h in headings:
-                row.append(d[h])
+                value = d[h]
+                if not isinstance(value, list):
+                    value = ",".join(value)
+                row.append(value)
             writer.writerow(row)
     print("Wrote %s rows to %s" % (len(arr), filename))
