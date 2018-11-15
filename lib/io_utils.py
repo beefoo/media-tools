@@ -7,6 +7,18 @@ from math_utils import *
 import os
 import requests
 
+def appendCsv(filename, arr, headings="auto"):
+    if headings == "auto":
+        headings = arr[0].keys()
+    with open(filename, 'a') as f:
+        writer = csv.writer(f)
+        for i, d in enumerate(arr):
+            row = []
+            for h in headings:
+                row.append(d[h])
+            writer.writerow(row)
+    print("Appended %s rows to %s" % (len(arr), filename))
+
 def getFilenames(fileString):
     files = []
     if "*" in fileString:

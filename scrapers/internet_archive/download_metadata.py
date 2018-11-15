@@ -72,4 +72,4 @@ while page < pages:
     page += 1
     data = getJSONFromURL(url + "&page=%s" % page)
     rows += data["response"]["docs"]
-    writeCsv(OUTPUT_FILE, rows, fieldNames)
+    appendCsv(OUTPUT_FILE, rows, fieldNames)
