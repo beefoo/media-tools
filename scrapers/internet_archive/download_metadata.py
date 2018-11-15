@@ -23,7 +23,7 @@ parser.add_argument('-query', dest="QUERY", default="collection:(prelinger) AND 
 parser.add_argument('-keys', dest="RETURN_KEYS", default="date,description,format,identifier,item_size,mediatype,publicdate,subject,title,type", help="List of keys to return")
 parser.add_argument('-sort', dest="SORT_BY", default="downloads desc", help="Sort string")
 parser.add_argument('-rows', dest="ROWS", default=100, type=int, help="Rows per page")
-parser.add_argument('-out', dest="OUTPUT_FILE", default="../tmp/internet_archive_metadata.csv", help="CSV output file")
+parser.add_argument('-out', dest="OUTPUT_FILE", default="../../tmp/internet_archive_metadata.csv", help="CSV output file")
 parser.add_argument('-overwrite', dest="OVERWRITE", default=0, type=int, help="Overwrite existing data?")
 args = parser.parse_args()
 
