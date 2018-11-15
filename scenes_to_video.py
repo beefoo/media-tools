@@ -2,7 +2,9 @@
 
 import argparse
 import csv
-from lib import *
+from lib.io_utils import *
+from lib.math_utils import *
+from lib.video_utils import *
 import os
 from moviepy.editor import VideoFileClip, CompositeVideoClip, concatenate_videoclips
 import sys

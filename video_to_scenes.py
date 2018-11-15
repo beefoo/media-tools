@@ -5,7 +5,9 @@
 
 import argparse
 import csv
-from lib import *
+from lib.io_utils import *
+from lib.math_utils import *
+from lib.video_utils import *
 import matplotlib.pyplot as plt
 import numpy as np
 import os

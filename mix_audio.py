@@ -4,13 +4,15 @@
 
 import argparse
 import math
+from lib.audio_utils import *
+from lib.io_utils import *
+from lib.math_utils import *
 from multiprocessing import Pool
 from multiprocessing.dummy import Pool as ThreadPool
 import os
 from pprint import pprint
 from pydub import AudioSegment
 import sys
-from lib import *
 
 # input
 parser = argparse.ArgumentParser()

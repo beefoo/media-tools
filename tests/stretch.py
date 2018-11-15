@@ -11,7 +11,7 @@ import sys
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0,parentdir)
-from lib import stretchSound
+from lib.audio_utils import stretchSound
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-in', dest="INPUT_FILE", default="../media/downloads/vivaldi/01_-_Vivaldi_Spring_mvt_1_Allegro.mp3", help="Input file")

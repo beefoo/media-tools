@@ -4,7 +4,9 @@
 
 import argparse
 import csv
-from lib import *
+from lib.audio_utils import *
+from lib.io_utils import *
+from lib.math_utils import *
 import librosa
 from multiprocessing import Pool
 from multiprocessing.dummy import Pool as ThreadPool

@@ -11,7 +11,11 @@ import sys
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0,parentdir)
-from lib import *
+
+from lib.audio_utils import *
+from lib.collection_utils import *
+from lib.io_utils import *
+from lib.math_utils import *
 
 # input
 parser = argparse.ArgumentParser()

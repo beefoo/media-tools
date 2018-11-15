@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import argparse
-from lib import *
+from lib.io_utils import *
+from lib.math_utils import *
 import librosa
 from matplotlib import pyplot as plt
 from multiprocessing import Pool
