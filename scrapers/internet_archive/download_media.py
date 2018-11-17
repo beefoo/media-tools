@@ -50,8 +50,9 @@ for i, row in enumerate(rows):
     if os.path.isfile(filepath) and not OVERWRITE:
         print("Already downloaded %s" % filename)
         continue
-    command = ['curl', '-o', '-L', filepath, url]
+    command = ['curl', '-O', '-L', url] # We need -L because the URL redirects
     print(" ".join(command))
     finished = subprocess.check_call(command)
+    os.rename(filename, filepath) # Move the file to the target location
 
 print("Done.")
