@@ -72,12 +72,12 @@ for i, row in enumerate(rows):
         writeCsv(INPUT_FILE, rows, fieldNames)
 
     url = "https://archive.org/download/%s/%s" % (id, filename)
-    if "/" in filename:
-        makeDirectories(filename)
     filepath = OUTPUT_DIR + filename
     if os.path.isfile(filepath) and not OVERWRITE:
         print("Already downloaded %s" % filename)
         continue
+    if "/" in filename:
+        makeDirectories(filepath)
     command = ['curl', '-O', '-L', url] # We need -L because the URL redirects
     print(" ".join(command))
     finished = subprocess.check_call(command)
