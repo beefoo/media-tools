@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 
+# python download_metadata.py -query " collection:(HillaryClinton) AND mediatype:(movies)" -out "../../tmp/ia_HillaryClinton.csv"
+# python download_metadata.py -query " collection:(DonaldTrump) AND mediatype:(movies)" -out "../../tmp/ia_DonaldTrump.csv"
+
 import argparse
 import csv
 import inspect

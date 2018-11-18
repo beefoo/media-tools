@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 
+# python download_media.py -in "../../tmp/ia_HillaryClinton.csv" -out "../../media/downloads/ia_HillaryClinton/"
+# python download_media.py -in "../../tmp/ia_DonaldTrump.csv" -out "../../media/landscapes/downloads/ia_DonaldTrump/"
+
 import argparse
 import csv
 import inspect
@@ -39,9 +42,10 @@ makeDirectories(OUTPUT_DIR)
 
 # Get existing data
 fieldNames, rows = readCsv(INPUT_FILE)
+errors = []
 
 for i, row in enumerate(rows):
-    if LIMIT > 0 and i > LIMIT:
+    if LIMIT > 0 and i >= LIMIT:
         break
     id = row["identifier"]
     filename = "%s.%s" % (id, DERIVATIVE)
@@ -53,6 +57,18 @@ for i, row in enumerate(rows):
     command = ['curl', '-O', '-L', url] # We need -L because the URL redirects
     print(" ".join(command))
     finished = subprocess.check_call(command)
-    os.rename(filename, filepath) # Move the file to the target location
+    size = os.path.getsize(filename)
+    # Remove file if not downloaded properly
+    if size < 43000:
+        print("Error: could not properly download %s" % url)
+        os.remove(filename)
+        errors.append(url)
+     # Move the file to the target location
+    else:
+        os.rename(filename, filepath)
 
-print("Done.")
+if len(errors) > 0:
+    print("Done with %s errors" % len(errors))
+    pprint(errors)
+else:
+    print("Done.")
