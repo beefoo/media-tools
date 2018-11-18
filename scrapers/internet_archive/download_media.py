@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# python download_media.py -in "../../tmp/ia_HillaryClinton.csv" -out "../../media/downloads/ia_HillaryClinton/"
-# python download_media.py -in "../../tmp/ia_DonaldTrump.csv" -out "../../media/landscapes/downloads/ia_DonaldTrump/"
+# python download_media.py -in "../../tmp/ia_politicaladarchive.csv" -id archive_id -out "../../media/landscapes/downloads/ia_politicaladarchive/"
 
 import argparse
 import csv
@@ -24,6 +23,7 @@ from lib.io_utils import *
 # input
 parser = argparse.ArgumentParser()
 parser.add_argument('-in', dest="INPUT_FILE", default="../../tmp/internet_archive_metadata.csv", help="Path to csv file")
+parser.add_argument('-id', dest="ID_KEY", default="identifier", help="Key to retrieve IA identifier from")
 parser.add_argument('-deriv', dest="DERIVATIVE", default="mp4", help="Derivative to download")
 parser.add_argument('-limit', dest="LIMIT", default=100, type=int, help="Limit downloads; -1 for no limit")
 parser.add_argument('-out', dest="OUTPUT_DIR", default="../../media/downloads/internet_archive/", help="Output directory")
@@ -32,6 +32,7 @@ args = parser.parse_args()
 
 # Parse arguments
 INPUT_FILE = args.INPUT_FILE.strip()
+ID_KEY = args.ID_KEY
 DERIVATIVE = args.DERIVATIVE
 LIMIT = args.LIMIT
 OUTPUT_DIR = args.OUTPUT_DIR.strip()
@@ -47,7 +48,7 @@ errors = []
 for i, row in enumerate(rows):
     if LIMIT > 0 and i >= LIMIT:
         break
-    id = row["identifier"]
+    id = row[ID_KEY]
     filename = "%s.%s" % (id, DERIVATIVE)
     url = "https://archive.org/download/%s/%s" % (id, filename)
     filepath = OUTPUT_DIR + filename
