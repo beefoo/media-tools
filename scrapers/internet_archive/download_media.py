@@ -24,7 +24,7 @@ from lib.io_utils import *
 parser = argparse.ArgumentParser()
 parser.add_argument('-in', dest="INPUT_FILE", default="../../tmp/internet_archive_metadata.csv", help="Path to csv file")
 parser.add_argument('-id', dest="ID_KEY", default="identifier", help="Key to retrieve IA identifier from")
-parser.add_argument('-format', dest="FORMAT", default="h.264", help="Derivative to download")
+parser.add_argument('-format', dest="FORMAT", default=".mp4", help="Derivative to download")
 parser.add_argument('-limit', dest="LIMIT", default=-1, type=int, help="Limit downloads; -1 for no limit")
 parser.add_argument('-out', dest="OUTPUT_DIR", default="../../media/downloads/internet_archive/", help="Output directory")
 parser.add_argument('-overwrite', dest="OVERWRITE", default=0, type=int, help="Overwrite existing data?")
@@ -60,7 +60,7 @@ for i, row in enumerate(rows):
     else:
         metadataUrl = "https://archive.org/metadata/%s" % id
         data = getJSONFromURL(metadataUrl)
-        files = [f for f in data["files"] if FORMAT in f["format"]]
+        files = [f for f in data["files"] if f["name"].endswith(FORMAT)]
         files = sorted(files, key=lambda k: int(k['width']), reverse=True)
         if len(files) <= 0:
             print("No valid derivative format found in %s" % metadataUrl)
@@ -72,6 +72,8 @@ for i, row in enumerate(rows):
         writeCsv(INPUT_FILE, rows, fieldNames)
 
     url = "https://archive.org/download/%s/%s" % (id, filename)
+    if "/" in filename:
+        makeDirectories(filename)
     filepath = OUTPUT_DIR + filename
     if os.path.isfile(filepath) and not OVERWRITE:
         print("Already downloaded %s" % filename)
@@ -79,14 +81,15 @@ for i, row in enumerate(rows):
     command = ['curl', '-O', '-L', url] # We need -L because the URL redirects
     print(" ".join(command))
     finished = subprocess.check_call(command)
-    size = os.path.getsize(filename)
+    basename = os.path.basename(filename)
+    size = os.path.getsize(basename)
     # Remove file if not downloaded properly
     if size < 43000:
         print("Error: could not properly download %s" % url)
         # os.remove(filename)
         errors.append(url)
      # Move the file to the target location
-    os.rename(filename, filepath)
+    os.rename(basename, filepath)
 
 if len(errors) > 0:
     print("Done with %s errors" % len(errors))
