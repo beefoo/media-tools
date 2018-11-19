@@ -7,9 +7,6 @@ from math_utils import *
 import os
 import requests
 
-def appendCsv(filename, arr, headings="auto"):
-    writeCsv(filename, arr, headings, append=True)
-
 def getFilenames(fileString):
     files = []
     if "*" in fileString:
