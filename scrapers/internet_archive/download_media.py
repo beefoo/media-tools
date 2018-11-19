@@ -101,7 +101,7 @@ def downloadMedia(row):
     if size < 43000:
         error = "Error: could not properly download %s" % url
         print(error)
-        # os.remove(filename)
+        os.remove(basename)
         return error
      # Move the file to the target location
     os.rename(basename, filepath)
