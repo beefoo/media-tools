@@ -54,7 +54,7 @@ for i, row in enumerate(rows):
     rows[i]["sequenceStart"] = ms
     ms += row["dur"]
 sequenceDuration = ms + PAD_RIGHT
-print("Total time: %s" % time.strftime('%H:%M:%S', time.gmtime(sequenceDuration/1000)))
+print("Total time: %s" % formatSeconds(sequenceDuration/1000))
 
 # Make sure output dirs exist
 makeDirectories(OUTPUT_FILE)
