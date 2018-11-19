@@ -5,7 +5,12 @@ import glob
 import json
 from math_utils import *
 import os
+from pprint import pprint
 import requests
+import sys
+
+reload(sys)
+sys.setdefaultencoding('utf8')
 
 def getFilenames(fileString):
     files = []
@@ -41,7 +46,13 @@ def parseHeadings(arr, headings):
         newArr.append(newItem)
     return newArr
 
-def readCsv(filename, headings=False, doParseNumbers=True, skipLines=0):
+def parseUnicode(arr):
+    for i, value in enumerate(arr):
+        if isinstance(value, basestring) and not isinstance(value, unicode):
+            arr[i] = unicode(value, "utf-8")
+    return arr
+
+def readCsv(filename, headings=False, doParseNumbers=True, skipLines=0, encoding="utf-8"):
     rows = []
     fieldnames = []
     if os.path.isfile(filename):
@@ -55,13 +66,15 @@ def readCsv(filename, headings=False, doParseNumbers=True, skipLines=0):
                 rows = parseHeadings(rows, headings)
             if doParseNumbers:
                 rows = parseNumbers(rows)
+            if encoding=="utf-8":
+                rows = parseUnicode(rows)
             fieldnames = list(reader.fieldnames)
     return (fieldnames, rows)
 
-def writeCsv(filename, arr, headings="auto", append=False):
+def writeCsv(filename, arr, headings="auto", append=False, encoding="utf-8"):
     if headings == "auto":
         headings = arr[0].keys()
-    mode = 'wb' if not append else 'a'
+    mode = 'wb' if not append else 'ab'
     with open(filename, mode) as f:
         writer = csv.writer(f)
         if not append:
@@ -69,9 +82,13 @@ def writeCsv(filename, arr, headings="auto", append=False):
         for i, d in enumerate(arr):
             row = []
             for h in headings:
-                value = d[h]
-                if not isinstance(value, list):
+                value = ""
+                if h in d:
+                    value = d[h]
+                if isinstance(value, list):
                     value = ",".join(value)
+                if encoding and isinstance(value, basestring):
+                    value = value.encode(encoding)
                 row.append(value)
             writer.writerow(row)
     print("Wrote %s rows to %s" % (len(arr), filename))

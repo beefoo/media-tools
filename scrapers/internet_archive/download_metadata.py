@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 
+# python download_metadata.py -query " collection:(HillaryClinton) AND mediatype:(movies)" -out "../../tmp/ia_HillaryClinton.csv"
+# python download_metadata.py -query " collection:(DonaldTrump) AND mediatype:(movies)" -out "../../tmp/ia_DonaldTrump.csv"
+
 import argparse
 import csv
 import inspect
@@ -19,8 +22,8 @@ from lib.io_utils import *
 
 # input
 parser = argparse.ArgumentParser()
-parser.add_argument('-query', dest="QUERY", default="collection:(prelinger) AND mediatype:(movies)", help="Query. See reference: https://archive.org/advancedsearch.php")
-parser.add_argument('-keys', dest="RETURN_KEYS", default="date,description,identifier,item_size,mediatype,publicdate,subject,title,type", help="List of keys to return")
+parser.add_argument('-query', dest="QUERY", default="collection:(prelingerhomemovies) AND mediatype:(movies)", help="Query. See reference: https://archive.org/advancedsearch.php")
+parser.add_argument('-keys', dest="RETURN_KEYS", default="date,description,identifier,item_size,publicdate,subject,title", help="List of keys to return")
 parser.add_argument('-sort', dest="SORT_BY", default="downloads desc", help="Sort string")
 parser.add_argument('-rows', dest="ROWS", default=100, type=int, help="Rows per page")
 parser.add_argument('-out', dest="OUTPUT_FILE", default="../../tmp/internet_archive_metadata.csv", help="CSV output file")
@@ -53,7 +56,7 @@ numFound = firstPage["response"]["numFound"]
 pages = int(math.ceil(1.0*numFound/ROWS))
 print("Found %s results in %s pages" % (numFound, pages))
 
-if numFound >= rowCount and not OVERWRITE:
+if rowCount >= numFound and not OVERWRITE:
     print("Already found enough existing data, exiting...")
     sys.exit()
 
@@ -65,11 +68,11 @@ if rowCount > 0:
     print("Partial file found. Starting at page %s" % page)
 else:
     rows = firstPage["response"]["docs"]
-fieldNames = rows[0].keys()
-writeCsv(OUTPUT_FILE, rows, fieldNames)
+
+writeCsv(OUTPUT_FILE, rows, RETURN_KEYS)
 
 while page < pages:
     page += 1
     data = getJSONFromURL(url + "&page=%s" % page)
     rows = data["response"]["docs"]
-    writeCsv(OUTPUT_FILE, rows, fieldNames, append=True)
+    writeCsv(OUTPUT_FILE, rows, RETURN_KEYS, append=True)
