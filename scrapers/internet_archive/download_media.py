@@ -66,29 +66,12 @@ def downloadMedia(row):
     filename = ""
     i = row["index"]
 
-    if "filename" in row and len(row["filename"]) > 0:
-        filename = row["filename"]
+    if "filename" not in row or len(row["filename"]) <= 0:
+        error = "No files for %s" % id
+        print(error)
+        return error
 
-    # we must look it up
-    else:
-        metadataUrl = "https://archive.org/metadata/%s" % id
-        data = getJSONFromURL(metadataUrl)
-        if not data or "files" not in data:
-            error = "No valid derivative format found in %s" % metadataUrl
-            print(error)
-            return error
-        files = [f for f in data["files"] if "name" in f and f["name"].endswith(FORMAT)]
-        files = sorted(files, key=lambda k: int(k['width']), reverse=True)
-        if len(files) <= 0:
-            error = "No valid derivative format found in %s" % metadataUrl
-            print(error)
-            return error
-        file = files[0]
-        filename = file["name"]
-        rows[i]["filename"] = filename
-        # update source with filename
-        writeCsv(INPUT_FILE, rows, fieldNames)
-
+    filename = row["filename"]
     url = "https://archive.org/download/%s/%s" % (id, filename)
     filepath = OUTPUT_DIR + filename
     if os.path.isfile(filepath) and not OVERWRITE:
