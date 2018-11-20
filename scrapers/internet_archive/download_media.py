@@ -74,8 +74,9 @@ def downloadMedia(row):
         metadataUrl = "https://archive.org/metadata/%s" % id
         data = getJSONFromURL(metadataUrl)
         if not data or "files" not in data:
-            print("No valid derivative format found in %s" % metadataUrl)
-            continue
+            error = "No valid derivative format found in %s" % metadataUrl
+            print(error)
+            return error
         files = [f for f in data["files"] if "name" in f and f["name"].endswith(FORMAT)]
         files = sorted(files, key=lambda k: int(k['width']), reverse=True)
         if len(files) <= 0:
