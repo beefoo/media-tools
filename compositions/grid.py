@@ -2,8 +2,9 @@
 
 # Instructions:
 # 1. Place all scenes in a grid
-# 2. Duration is the length of the longest scene
-# 3. Loop shorter scenes
+# 2. Pan down if the grid goes off-screen
+# 3. Duration is the longer of: (1) the length of the longest scene or (2) the time it takes to pan down
+# 4. Loop shorter scenes
 
 import argparse
 import csv
@@ -42,8 +43,9 @@ parser.add_argument('-fps', dest="FPS", default=30, type=int, help="Output video
 parser.add_argument('-pps', dest="PIXELS_PER_SECOND", default=30, type=int, help="Numper of pixels to move the composition per second (if necessary)")
 parser.add_argument('-frames', dest="SAVE_FRAMES", default=0, type=int, help="Save frames?")
 parser.add_argument('-loop', dest="LOOP", default=1, type=int, help="Loop around to the beginning frame?")
-parser.add_argument('-outframe', dest="OUTPUT_FRAME", default="../tmp/grid/frame_%s.png", help="Output frames pattern")
+parser.add_argument('-outframe', dest="OUTPUT_FRAME", default="../tmp/grid/frame.%s.png", help="Output frames pattern")
 parser.add_argument('-out', dest="OUTPUT_FILE", default="../output/grid.mp4", help="Output media file")
+parser.add_argument('-overwrite', dest="OVERWRITE", default=0, type=int, help="Overwrite existing frames?")
 args = parser.parse_args()
 
 # Parse arguments
@@ -60,6 +62,7 @@ SAVE_FRAMES = args.SAVE_FRAMES > 0
 LOOP = args.LOOP > 0
 OUTPUT_FRAME = args.OUTPUT_FRAME
 OUTPUT_FILE = args.OUTPUT_FILE
+OVERWRITE = args.OVERWRITE > 0
 
 makeDirectories([OUTPUT_FRAME, OUTPUT_FILE])
 
@@ -93,12 +96,13 @@ if isMoving and LOOP:
         scenes += [None for s in range(remainder)]
     # add scenes in the beginning to the end
     rowsToAdd = int(rowsPerScreen)
-    scenesToAdd = scenes[:(rowsToAdd * COLUMNS)]
+    scenesToAdd = [s.copy() for s in scenes[:(rowsToAdd * COLUMNS)]]
     scenes += scenesToAdd
     # re-calculate height
     sceneCount = len(scenes)
     rowCount = ceilInt(1.0*sceneCount/COLUMNS)
     totalHeight = roundInt(rowCount * cellH)
+    print("%s scenes with looping" % sceneCount)
 
 # calculate target duration based on the longest scene
 targetDuration = max([s["dur"] for s in scenes])
@@ -115,15 +119,17 @@ if isMoving:
 targetFrames = int(targetDuration / 1000.0 * FPS)
 print("Total duration: %s" % formatSeconds(targetDuration/1000))
 print("%s frames" % targetFrames)
-sys.exit()
 
 # assign positions to scenes
 for i, scene in enumerate(scenes):
-    scenes[i]["y"] = 1.0 * i / COLUMNS * cellH
-    scenes[i]["x"] = 1.0 * i % COLUMNS * cellW
+    if not scene:
+        continue
+    scenes[i]["y"] = int(i / COLUMNS) * cellH
+    scenes[i]["x"] = int(i % COLUMNS) * cellW
 
 params = []
 padZeros = len(str(targetFrames))
+
 for frame in range(targetFrames):
     progress = 1.0 * frame / (targetFrames-1)
     second = 1.0 * frame / FPS
@@ -131,14 +137,20 @@ for frame in range(targetFrames):
 
     clips = []
     for scene in scenes:
+        if not scene:
+            continue
         y = scene["y"] - offsetY
         # skip if we are off screen
-        if y > HEIGHT or y < -cellH:
+        if y >= HEIGHT or y <= -cellH:
             continue
         video = [v["video"] for v in videos if v["filename"]==scene["filename"]].pop(0)
+        sceneStart = scene["start"] / 1000.0
+        sceneDur = scene["dur"] / 1000.0
+        remainder = second % sceneDur
+        t = sceneStart + remainder
         clips.append({
             "video": video,
-            "t": second,
+            "t": t,
             "x": scene["x"],
             "y": y,
             "w": cellW,
@@ -151,13 +163,21 @@ for frame in range(targetFrames):
         "saveFrame": True,
         "clips": clips,
         "width": WIDTH,
-        "height": HEIGHT
+        "height": HEIGHT,
+        "overwrite": OVERWRITE
     })
 
-
+print("Generating frames...")
 for p in params:
     clipsToFrame(p)
-# pool = ThreadPool(THREADS)
+# pool = ThreadPool()
 # result = pool.map(clipsToFrame, params)
 # pool.close()
 # pool.join()
+
+print("Compiling frames...")
+padStr = '%0'+str(padZeros)+'d'
+command = ['ffmpeg','-framerate',str(FPS)+'/1','-i',OUTPUT_FRAME % padStr,'-c:v','libx264','-r',str(FPS),'-pix_fmt','yuv420p','-q:v','1',OUTPUT_FILE]
+print(" ".join(command))
+finished = subprocess.check_call(command)
+print("Done.")

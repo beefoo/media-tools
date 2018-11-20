@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from math_utils import *
+import numpy as np
 import os
 from PIL import Image
 
@@ -10,32 +11,38 @@ def clipsToFrame(p):
     saveFrame = p["saveFrame"]
     width = p["width"]
     height = p["height"]
+    overwrite = p["overwrite"]
     im = None
-    fileExists = os.path.isfile(filename)
+    fileExists = os.path.isfile(filename) and not overwrite
 
     # frame already exists, read it directly
-    if fileExists:
-        im = Image.open(filename)
-
-    else:
+    if not fileExists:
         im = Image.new(mode="RGB", size=(width, height), color=(0, 0, 0))
         for clip in clips:
             video = clip["video"]
             videoDur = video.duration
             videoT = clip["t"]
+            cw = roundInt(clip["w"])
+            ch = roundInt(clip["h"])
             # check if we need to loop video clip
             if videoT > videoDur:
                 videoT = videoT % videoDur
             # a numpy array representing the RGB picture of the clip
-            videoPixels = video.get_frame(videoT)
+            try:
+                videoPixels = video.get_frame(videoT)
+            except IOError:
+                print("Could not read pixels for %s at time %s" % (video.filename, videoT))
+                videoPixels = np.zeros((ch, cw, 3), dtype='uint8')
             clipImg = Image.fromarray(videoPixels, mode="RGB")
-            clipImg = clipImg.resize((clip["w"], clip["h"]))
-            im.paste(clipImg, (clip["x"], clip["y"]))
+            w, h = clipImg.size
+            if w != cw or h != ch:
+                clipImg = clipImg.resize((cw, ch))
+            im.paste(clipImg, (roundInt(clip["x"]), roundInt(clip["y"])))
 
-    if saveFrame and not fileExists:
-        im.save(filename)
+        if saveFrame:
+            im.save(filename)
+            print("Saved frame %s" % filename)
 
-    return im
 
 # resize video using fill method
 def fillVideo(video, w, h):
