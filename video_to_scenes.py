@@ -2,6 +2,7 @@
 
 # Looks for scenes in arbitrary video
 # python -W ignore video_to_scenes.py -in media/sample/LivingSt1958.mp4 -overwrite 1 -threshold 24 -fade 1 -plot 800
+# python -W ignore video_to_scenes.py -in "media/downloads/ia_politicaladarchive/*.mp4" -threshold 24 -out "tmp/ia_politicaladarchive_scenes.csv"
 
 import argparse
 import csv
@@ -26,6 +27,7 @@ parser.add_argument('-out', dest="OUTPUT_FILE", default="tmp/scenes.csv", help="
 parser.add_argument('-threshold', dest="THRESHOLD", default=30.0, type=float, help="Threshold for scene detection; lower number = more scenes")
 parser.add_argument('-min', dest="MIN_SCENE_DUR", default=500, type=int, help="Minimum scene duration in milliseconds")
 parser.add_argument('-fade', dest="CHECK_FOR_FADE", default=0, type=int, help="Check for crossfades?")
+parser.add_argument('-stats', dest="SAVE_STATS", default=0, type=int, help="Save statistics?")
 parser.add_argument('-window', dest="WINDOW_SIZE", default=60, type=int, help="For fades, this is the window size in frames")
 parser.add_argument('-fthreshold', dest="FADE_THRESHOLD", default=3.0, type=float, help="Threshold for crossfade detection; lower number = more scenes")
 parser.add_argument('-overwrite', dest="OVERWRITE", default=0, type=int, help="Overwrite existing data?")
@@ -38,6 +40,7 @@ OUTPUT_FILE = args.OUTPUT_FILE
 THRESHOLD = args.THRESHOLD
 MIN_SCENE_DUR = args.MIN_SCENE_DUR
 CHECK_FOR_FADE = args.CHECK_FOR_FADE > 0
+SAVE_STATS = args.SAVE_STATS > 0
 WINDOW_SIZE = args.WINDOW_SIZE
 FADE_THRESHOLD = args.FADE_THRESHOLD
 OVERWRITE = args.OVERWRITE > 0
@@ -70,6 +73,7 @@ def getScenes(video_path, threshold=30.0, minSceneDur=500, windowSize=50, fadeTh
     global fileCount
 
     basename = os.path.basename(video_path)
+    doStats = CHECK_FOR_FADE or PLOT or SAVE_STATS
 
     # type: (str) -> List[Tuple[FrameTimecode, FrameTimecode]]
     video_manager = VideoManager([video_path])
@@ -83,7 +87,6 @@ def getScenes(video_path, threshold=30.0, minSceneDur=500, windowSize=50, fadeTh
     # Add ContentDetector algorithm (each detector's constructor
     # takes detector options, e.g. threshold).
     min_scene_len = roundInt(minSceneDur / 1000.0 * framerate)
-    print(min_scene_len)
     scene_manager.add_detector(ContentDetector(threshold=threshold, min_scene_len=min_scene_len))
 
     # We save our stats file to {VIDEO_PATH}.stats.csv.
@@ -95,7 +98,7 @@ def getScenes(video_path, threshold=30.0, minSceneDur=500, windowSize=50, fadeTh
     print("Looking for scenes in %s" % video_path)
     try:
         # If stats file exists, load it.
-        if os.path.exists(stats_file_path):
+        if doStats and os.path.exists(stats_file_path):
             # Read stats from CSV file opened in read mode:
             with open(stats_file_path, 'r') as stats_file:
                 stats_manager.load_from_csv(stats_file, base_timecode)
@@ -127,7 +130,7 @@ def getScenes(video_path, threshold=30.0, minSceneDur=500, windowSize=50, fadeTh
             })
 
         # We only write to the stats file if a save is required:
-        if stats_manager.is_save_required():
+        if SAVE_STATS and stats_manager.is_save_required():
             with open(stats_file_path, 'w') as stats_file:
                 stats_manager.save_to_csv(stats_file, base_timecode)
 

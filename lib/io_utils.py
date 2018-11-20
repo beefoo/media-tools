@@ -12,9 +12,6 @@ import sys
 reload(sys)
 sys.setdefaultencoding('utf8')
 
-def appendCsv(filename, arr, headings="auto"):
-    writeCsv(filename, arr, headings, append=True)
-
 def getFilenames(fileString):
     files = []
     if "*" in fileString:

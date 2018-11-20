@@ -1,12 +1,15 @@
 # -*- coding: utf-8 -*-
 
-# python download_media.py -in "../../tmp/ia_politicaladarchive.csv" -id archive_id -out "../../media/landscapes/downloads/ia_politicaladarchive/"
+# python download_media.py -in "../../tmp/ia_politicaladarchive.csv" -id archive_id -out "../../media/downloads/ia_politicaladarchive/" -limit 10
 
 import argparse
 import csv
 import inspect
 import json
 import math
+import multiprocessing
+from multiprocessing import Pool
+from multiprocessing.dummy import Pool as ThreadPool
 import os
 from pprint import pprint
 import subprocess
@@ -26,6 +29,7 @@ parser.add_argument('-in', dest="INPUT_FILE", default="../../tmp/internet_archiv
 parser.add_argument('-id', dest="ID_KEY", default="identifier", help="Key to retrieve IA identifier from")
 parser.add_argument('-format', dest="FORMAT", default=".mp4", help="Derivative to download")
 parser.add_argument('-limit', dest="LIMIT", default=-1, type=int, help="Limit downloads; -1 for no limit")
+parser.add_argument('-threads', dest="THREADS", default=2, type=int, help="Limit parallel downloads (limited to # of cores), -1 for max")
 parser.add_argument('-out', dest="OUTPUT_DIR", default="../../media/downloads/internet_archive/", help="Output directory")
 parser.add_argument('-overwrite', dest="OVERWRITE", default=0, type=int, help="Overwrite existing data?")
 args = parser.parse_args()
@@ -35,6 +39,7 @@ INPUT_FILE = args.INPUT_FILE.strip()
 ID_KEY = args.ID_KEY
 FORMAT = args.FORMAT
 LIMIT = args.LIMIT
+THREADS = min(args.THREADS, multiprocessing.cpu_count()) if args.THREADS > 0 else multiprocessing.cpu_count()
 OUTPUT_DIR = args.OUTPUT_DIR.strip()
 OVERWRITE = args.OVERWRITE > 0
 
@@ -47,11 +52,19 @@ if "filename" not in fieldNames:
     fieldNames.append("filename")
 errors = []
 
+if LIMIT > 0:
+    rows = rows[:LIMIT]
+
 for i, row in enumerate(rows):
-    if LIMIT > 0 and i >= LIMIT:
-        break
+    rows[i]["index"] = i
+
+def downloadMedia(row):
+    global rows
+    global fieldNames
+
     id = row[ID_KEY]
     filename = ""
+    i = row["index"]
 
     if "filename" in row and len(row["filename"]) > 0:
         filename = row["filename"]
@@ -66,8 +79,9 @@ for i, row in enumerate(rows):
         files = [f for f in data["files"] if "name" in f and f["name"].endswith(FORMAT)]
         files = sorted(files, key=lambda k: int(k['width']), reverse=True)
         if len(files) <= 0:
-            print("No valid derivative format found in %s" % metadataUrl)
-            continue
+            error = "No valid derivative format found in %s" % metadataUrl
+            print(error)
+            return error
         file = files[0]
         filename = file["name"]
         rows[i]["filename"] = filename
@@ -78,7 +92,7 @@ for i, row in enumerate(rows):
     filepath = OUTPUT_DIR + filename
     if os.path.isfile(filepath) and not OVERWRITE:
         print("Already downloaded %s" % filename)
-        continue
+        return None
     if "/" in filename:
         makeDirectories(filepath)
     command = ['curl', '-O', '-L', url] # We need -L because the URL redirects
@@ -88,12 +102,22 @@ for i, row in enumerate(rows):
     size = os.path.getsize(basename)
     # Remove file if not downloaded properly
     if size < 43000:
-        print("Error: could not properly download %s" % url)
-        # os.remove(filename)
-        errors.append(url)
+        error = "Error: could not properly download %s" % url
+        print(error)
+        os.remove(basename)
+        return error
      # Move the file to the target location
     os.rename(basename, filepath)
+    return None
 
+pool = ThreadPool(THREADS)
+errors = pool.map(downloadMedia, rows)
+pool.close()
+pool.join()
+
+errors = [e for e in errors if e is not None]
+
+print("-----")
 if len(errors) > 0:
     print("Done with %s errors" % len(errors))
     pprint(errors)

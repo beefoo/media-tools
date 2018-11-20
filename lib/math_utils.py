@@ -4,6 +4,12 @@ import math
 import numpy as np
 import time
 
+def ceilInt(n):
+    return int(math.ceil(n))
+
+def floorInt(n):
+    return int(math.floor(n))
+
 def formatSeconds(s):
     return time.strftime('%H:%M:%S', time.gmtime(s))
 
