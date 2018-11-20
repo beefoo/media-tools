@@ -60,7 +60,10 @@ for i, row in enumerate(rows):
     else:
         metadataUrl = "https://archive.org/metadata/%s" % id
         data = getJSONFromURL(metadataUrl)
-        files = [f for f in data["files"] if f["name"].endswith(FORMAT)]
+        if not data or "files" not in data:
+            print("No valid derivative format found in %s" % metadataUrl)
+            continue
+        files = [f for f in data["files"] if "name" in f and f["name"].endswith(FORMAT)]
         files = sorted(files, key=lambda k: int(k['width']), reverse=True)
         if len(files) <= 0:
             print("No valid derivative format found in %s" % metadataUrl)
