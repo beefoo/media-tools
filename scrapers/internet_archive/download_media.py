@@ -14,6 +14,7 @@ import os
 from pprint import pprint
 import subprocess
 import sys
+import urllib
 
 # add parent directory to sys path to import relative modules
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
@@ -72,7 +73,7 @@ def downloadMedia(row):
         return error
 
     filename = row["filename"]
-    url = "https://archive.org/download/%s/%s" % (id, filename)
+    url = "https://archive.org/download/%s/%s" % (id, urllib.quote(filename))
     filepath = OUTPUT_DIR + filename
     if os.path.isfile(filepath) and not OVERWRITE:
         print("Already downloaded %s" % filename)
