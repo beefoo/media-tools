@@ -73,7 +73,8 @@ def downloadMedia(row):
         return error
 
     filename = row["filename"]
-    url = "https://archive.org/download/%s/%s" % (id, urllib.quote(filename))
+    encodedFilename = urllib.quote(filename)
+    url = "https://archive.org/download/%s/%s" % (id, encodedFilename)
     filepath = OUTPUT_DIR + filename
     if os.path.isfile(filepath) and not OVERWRITE:
         print("Already downloaded %s" % filename)
@@ -83,7 +84,7 @@ def downloadMedia(row):
     command = ['curl', '-O', '-L', url] # We need -L because the URL redirects
     print(" ".join(command))
     finished = subprocess.check_call(command)
-    basename = os.path.basename(filename)
+    basename = os.path.basename(encodedFilename)
     size = os.path.getsize(basename)
     # Remove file if not downloaded properly
     if size < 43000:
