@@ -5,6 +5,7 @@ from moviepy.editor import VideoFileClip
 import numpy as np
 import os
 from PIL import Image
+import subprocess
 
 def clipsToFrame(p):
     clips = p["clips"]
@@ -53,6 +54,14 @@ def clipsToFrame(p):
         if saveFrame:
             im.save(filename)
             print("Saved frame %s" % filename)
+
+def compileFrames(infile, fps, outfile, padZeros):
+    print("Compiling frames...")
+    padStr = '%0'+str(padZeros)+'d'
+    command = ['ffmpeg','-framerate',str(fps)+'/1','-i',infile % padStr,'-c:v','libx264','-r',str(fps),'-pix_fmt','yuv420p','-q:v','1',outfile]
+    print(" ".join(command))
+    finished = subprocess.check_call(command)
+    print("Done.")
 
 def fillImage(img, w, h):
     ratio = 1.0 * w / h

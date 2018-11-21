@@ -18,7 +18,6 @@ from multiprocessing import Pool
 from multiprocessing.dummy import Pool as ThreadPool
 import os
 from pprint import pprint
-import subprocess
 import sys
 
 # add parent directory to sys path to import relative modules
@@ -171,9 +170,4 @@ result = pool.map(clipsToFrame, params)
 pool.close()
 pool.join()
 
-print("Compiling frames...")
-padStr = '%0'+str(padZeros)+'d'
-command = ['ffmpeg','-framerate',str(FPS)+'/1','-i',OUTPUT_FRAME % padStr,'-c:v','libx264','-r',str(FPS),'-pix_fmt','yuv420p','-q:v','1',OUTPUT_FILE]
-print(" ".join(command))
-finished = subprocess.check_call(command)
-print("Done.")
+compileFrames(OUTPUT_FRAME, FPS, OUTPUT_FILE, padZeros)
