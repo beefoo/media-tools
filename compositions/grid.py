@@ -6,12 +6,13 @@
 # 3. Duration is the longer of: (1) the length of the longest scene or (2) the time it takes to pan down
 # 4. Loop shorter scenes
 
+# python -W ignore grid.py -cols 4 -width 640 -height 480 -pps 60
+
 import argparse
 import csv
 import inspect
 import json
 import math
-from moviepy.editor import VideoFileClip
 import multiprocessing
 from multiprocessing import Pool
 from multiprocessing.dummy import Pool as ThreadPool
@@ -45,6 +46,7 @@ parser.add_argument('-frames', dest="SAVE_FRAMES", default=0, type=int, help="Sa
 parser.add_argument('-loop', dest="LOOP", default=1, type=int, help="Loop around to the beginning frame?")
 parser.add_argument('-outframe', dest="OUTPUT_FRAME", default="../tmp/grid/frame.%s.png", help="Output frames pattern")
 parser.add_argument('-out', dest="OUTPUT_FILE", default="../output/grid.mp4", help="Output media file")
+parser.add_argument('-threads', dest="THREADS", default=2, type=int, help="Amount of parallel frames to process (too many may result in too many open files)")
 parser.add_argument('-overwrite', dest="OVERWRITE", default=0, type=int, help="Overwrite existing frames?")
 args = parser.parse_args()
 
@@ -62,6 +64,7 @@ SAVE_FRAMES = args.SAVE_FRAMES > 0
 LOOP = args.LOOP > 0
 OUTPUT_FRAME = args.OUTPUT_FRAME
 OUTPUT_FILE = args.OUTPUT_FILE
+THREADS = min(args.THREADS, multiprocessing.cpu_count()) if args.THREADS > 0 else multiprocessing.cpu_count()
 OVERWRITE = args.OVERWRITE > 0
 
 makeDirectories([OUTPUT_FRAME, OUTPUT_FILE])
@@ -73,11 +76,6 @@ cellH = cellW / ASPECT_RATIO
 # get unique video files
 print("Reading and resizing clips...")
 fieldNames, scenes = readCsv(INPUT_FILE)
-filenames = list(set([f["filename"] for f in scenes]))
-videos = [{
-    "filename": fn,
-    "video": fillVideo(VideoFileClip(VIDEO_DIRECTORY + fn, audio=False), cellW, cellH)
-} for fn in filenames]
 sceneCount = len(scenes)
 print("%s scenes found" % sceneCount)
 rowCount = ceilInt(1.0*sceneCount/COLUMNS)
@@ -113,8 +111,7 @@ if isMoving:
     print("Will be moving")
     movePixels = totalHeight - HEIGHT
     moveDuration = roundInt(1.0 * movePixels / PIXELS_PER_SECOND * 1000)
-    if moveDuration > targetDuration:
-        targetDuration = moveDuration
+    targetDuration = moveDuration
 
 targetFrames = int(targetDuration / 1000.0 * FPS)
 print("Total duration: %s" % formatSeconds(targetDuration/1000))
@@ -143,13 +140,12 @@ for frame in range(targetFrames):
         # skip if we are off screen
         if y >= HEIGHT or y <= -cellH:
             continue
-        video = [v["video"] for v in videos if v["filename"]==scene["filename"]].pop(0)
         sceneStart = scene["start"] / 1000.0
         sceneDur = scene["dur"] / 1000.0
         remainder = second % sceneDur
         t = sceneStart + remainder
         clips.append({
-            "video": video,
+            "filename": VIDEO_DIRECTORY + scene["filename"],
             "t": t,
             "x": scene["x"],
             "y": y,
@@ -168,12 +164,12 @@ for frame in range(targetFrames):
     })
 
 print("Generating frames...")
-for p in params:
-    clipsToFrame(p)
-# pool = ThreadPool()
-# result = pool.map(clipsToFrame, params)
-# pool.close()
-# pool.join()
+# for p in params:
+#     clipsToFrame(p)
+pool = ThreadPool(THREADS)
+result = pool.map(clipsToFrame, params)
+pool.close()
+pool.join()
 
 print("Compiling frames...")
 padStr = '%0'+str(padZeros)+'d'

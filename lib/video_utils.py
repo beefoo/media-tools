@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from math_utils import *
+from moviepy.editor import VideoFileClip
 import numpy as np
 import os
 from PIL import Image
@@ -18,31 +19,67 @@ def clipsToFrame(p):
     # frame already exists, read it directly
     if not fileExists:
         im = Image.new(mode="RGB", size=(width, height), color=(0, 0, 0))
-        for clip in clips:
-            video = clip["video"]
+
+        # load videos
+        filenames = list(set([clip["filename"] for clip in clips]))
+
+        # only open one video at a time
+        for fn in filenames:
+            video = VideoFileClip(fn, audio=False)
             videoDur = video.duration
-            videoT = clip["t"]
-            cw = roundInt(clip["w"])
-            ch = roundInt(clip["h"])
-            # check if we need to loop video clip
-            if videoT > videoDur:
-                videoT = videoT % videoDur
-            # a numpy array representing the RGB picture of the clip
-            try:
-                videoPixels = video.get_frame(videoT)
-            except IOError:
-                print("Could not read pixels for %s at time %s" % (video.filename, videoT))
-                videoPixels = np.zeros((ch, cw, 3), dtype='uint8')
-            clipImg = Image.fromarray(videoPixels, mode="RGB")
-            w, h = clipImg.size
-            if w != cw or h != ch:
-                clipImg = clipImg.resize((cw, ch))
-            im.paste(clipImg, (roundInt(clip["x"]), roundInt(clip["y"])))
+            vclips = [c for c in clips if fn==c["filename"]]
+
+            # extract frames from videos
+            for clip in vclips:
+                videoT = clip["t"]
+                cw = roundInt(clip["w"])
+                ch = roundInt(clip["h"])
+                # check if we need to loop video clip
+                if videoT > videoDur:
+                    videoT = videoT % videoDur
+                # a numpy array representing the RGB picture of the clip
+                try:
+                    videoPixels = video.get_frame(videoT)
+                except IOError:
+                    print("Could not read pixels for %s at time %s" % (video.filename, videoT))
+                    videoPixels = np.zeros((ch, cw, 3), dtype='uint8')
+                clipImg = Image.fromarray(videoPixels, mode="RGB")
+                w, h = clipImg.size
+                if w != cw or h != ch:
+                    # clipImg = clipImg.resize((cw, ch))
+                    clipImg = fillImage(clipImg, cw, ch)
+                im.paste(clipImg, (roundInt(clip["x"]), roundInt(clip["y"])))
 
         if saveFrame:
             im.save(filename)
             print("Saved frame %s" % filename)
 
+def fillImage(img, w, h):
+    ratio = 1.0 * w / h
+    vw, vh = img.size
+    vratio = 1.0 * vw / vh
+
+    # first, resize video
+    newW = w
+    newH = h
+    if vratio > ratio:
+        newW = h * vratio
+    else:
+        newH = w / vratio
+    resized = img.resize((roundInt(newW), roundInt(newH)))
+
+    # and then crop
+    x = 0
+    y = 0
+    if vratio > ratio:
+        x = roundInt((newW - w) * 0.5)
+    else:
+        y = roundInt((newH - h) * 0.5)
+    x1 = x + w
+    y1 = y + h
+    cropped = resized.crop((x, y, x1, y1))
+
+    return cropped
 
 # resize video using fill method
 def fillVideo(video, w, h):
@@ -57,7 +94,7 @@ def fillVideo(video, w, h):
         newW = h * vratio
     else:
         newH = w / vratio
-    resized = video.resize((newW, newH))
+    resized = video.resize((roundInt(newW), roundInt(newH)))
 
     # and then crop
     x = 0
