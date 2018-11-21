@@ -130,7 +130,7 @@ def getScenes(video_path, threshold=30.0, minSceneDur=500, windowSize=50, fadeTh
             })
 
         # We only write to the stats file if a save is required:
-        if SAVE_STATS and stats_manager.is_save_required():
+        if doStats and stats_manager.is_save_required():
             with open(stats_file_path, 'w') as stats_file:
                 stats_manager.save_to_csv(stats_file, base_timecode)
 
@@ -213,6 +213,9 @@ def getScenes(video_path, threshold=30.0, minSceneDur=500, windowSize=50, fadeTh
             ys = [sceneData[d["frameEnd"]-1]["content_val"] for d in scene_list if f0 <= d["frameEnd"] <= f1]
             plt.scatter(xs, ys, c="red")
             plt.show()
+
+        if os.path.exists(stats_file_path) and not SAVE_STATS:
+            os.remove(stats_file_path)
 
     finally:
         video_manager.release()
