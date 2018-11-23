@@ -162,6 +162,17 @@ for frame in range(targetFrames):
         "overwrite": OVERWRITE
     })
 
+# add opacity via sound data
+timecodes = []
+for i, p in enumerate(params):
+    for j, c in enumerate(p["clips"]):
+        timecodes.append({
+            "index": (i, j),
+            "filename": c["filename"],
+            "t": c["t"]
+        })
+powerData = gePowerFromTimecodes(timecodes)
+
 print("Generating frames...")
 # for p in params:
 #     clipsToFrame(p)

@@ -1,7 +1,7 @@
 import array
 import librosa
 import math
-from math_utils import weighted_mean
+from math_utils import *
 import numpy as np
 import os
 from pprint import pprint
@@ -68,8 +68,7 @@ def getAudioSamples(fn, min_dur=50, max_dur=-1, fft=2048, hop_length=512, backtr
     # load audio
     y, sr = librosa.load(fn)
     y /= y.max()
-    ylen = len(y)
-    duration = int(round(ylen / sr * 1000))
+    duration = roundInt(getDuration(y, sr) * 1000)
 
     # retrieve onsets using superflux method
     # https://librosa.github.io/librosa/auto_examples/plot_superflux.html#sphx-glr-auto-examples-plot-superflux-py
@@ -105,13 +104,23 @@ def getAudioSamples(fn, min_dur=50, max_dur=-1, fft=2048, hop_length=512, backtr
 
     return samples
 
-def getFeatures(y, sr, start, dur, fft=2048, hop_length=512):
+def getDuration(y, sr):
+    ylen = len(y)
+    return 1.0 * ylen / sr
+
+def getFeatures(y, sr, start, dur=100, fft=2048, hop_length=512):
     # analyze just the sample
     i0 = int(round(start / 1000.0 * sr))
     i1 = int(round((start+dur) / 1000.0 * sr))
+    if i1 >= len(y):
+        delta = i1 - len(y) + 1
+        i1 -= delta
+        i0 -= delta
+    i0 = max(i0, 0)
+    i1 = max(i1, 0)
     y = y[i0:i1]
 
-    stft = librosa.feature.rmse(S=librosa.stft(y, n_fft=fft, hop_length=hop_length))[0]
+    stft = getStft(y, n_fft=fft, hop_length=hop_length)
     rolloff = librosa.feature.spectral_rolloff(y=y, sr=sr)[0]
     flatness = librosa.feature.spectral_flatness(y=y)[0]
 
@@ -143,10 +152,34 @@ def getFeatures(y, sr, start, dur, fft=2048, hop_length=512):
         "octave": octave
     }
 
+def gePowerFromTimecodes(timecodes):
+    # add indices
+    for i, t in enumerate(timecodes):
+        if "index" not in t:
+            timecodes[i]["index"] = i
+    # get unique filenames
+    filenames = list(set([t["filename"] for t in timecodes]))
+    powerData = []
+    # get features for each timecode in file
+    for filename in filenames:
+        y, sr = librosa.load(getAudioFile(filename))
+        duration = getDuration(y, sr)
+        stft = getStft(y)
+        maxStft = max(stft)
+        stftLen = len(stft)
+        fileTimecodes = [t for t in timecodes if t["filename"]==filename]
+        # len(y) = hop_length * len(stft)
+        for t in fileTimecodes:
+            p = 1.0 * t["t"] / duration
+            p = lim(p)
+            j = roundInt(p * (stftLen-1))
+            power = 1.0 * stft[j] / maxStft
+            powerData.append((t["index"], power))
+    powerData = sorted(powerData, key=lambda k: k[0])
+    return powerData
 
 # Taken from: https://github.com/ml4a/ml4a-guides/blob/master/notebooks/audio-tsne.ipynb
 def getFeatureVector(y, sr, start, dur):
-
     # take at most one second
     dur = min(dur, 1000)
 
@@ -163,6 +196,9 @@ def getFeatureVector(y, sr, start, dur):
     feature_vector = np.concatenate((np.mean(mfcc,1), np.mean(delta_mfcc,1), np.mean(delta2_mfcc,1)))
     feature_vector = (feature_vector-np.mean(feature_vector))/np.std(feature_vector)
     return feature_vector
+
+def getStft(y, n_fft=2048, hop_length=512):
+    return librosa.feature.rmse(S=librosa.stft(y, n_fft=n_fft, hop_length=hop_length))[0]
 
 # Adapted from: https://github.com/paulnasca/paulstretch_python/blob/master/paulstretch_newmethod.py
 def paulStretch(samplerate, smp, stretch, windowsize_seconds=0.25, onset_level=10.0):

@@ -17,7 +17,7 @@ def lerp(ab, amount):
     a, b = ab
     return (b-a) * amount + a
 
-def lim(value, ab):
+def lim(value, ab=(0, 1)):
     a, b = ab
     return max(a, min(b, value))
 

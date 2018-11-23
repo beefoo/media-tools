@@ -115,3 +115,13 @@ def fillVideo(video, w, h):
     cropped = resized.crop(x, y, w, h)
 
     return cropped
+
+# e.g. returns ['audio', 'video'] for a/v files
+def getMediaTypes(filename):
+    command = ['ffprobe', '-loglevel', 'error', '-show_entries', 'stream=codec_type', '-of', 'csv=p=0', filename]
+    # print(" ".join(command))
+    result = subprocess.check_output(command).splitlines()
+    return result
+
+def hasAudio(filename):
+    return ("audio" in getMediaTypes(filename))
