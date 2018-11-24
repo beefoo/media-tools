@@ -45,7 +45,7 @@ parser.add_argument('-frames', dest="SAVE_FRAMES", default=0, type=int, help="Sa
 parser.add_argument('-loop', dest="LOOP", default=1, type=int, help="Loop around to the beginning frame?")
 parser.add_argument('-outframe', dest="OUTPUT_FRAME", default="../tmp/grid/frame.%s.png", help="Output frames pattern")
 parser.add_argument('-out', dest="OUTPUT_FILE", default="../output/grid.mp4", help="Output media file")
-parser.add_argument('-threads', dest="THREADS", default=1, type=int, help="Amount of parallel frames to process (too many may result in too many open files)")
+parser.add_argument('-threads', dest="THREADS", default=3, type=int, help="Amount of parallel frames to process (too many may result in too many open files)")
 parser.add_argument('-overwrite', dest="OVERWRITE", default=0, type=int, help="Overwrite existing frames?")
 args = parser.parse_args()
 

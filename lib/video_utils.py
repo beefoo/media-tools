@@ -51,21 +51,18 @@ def clipsToFrame(p):
                 w, h = clipImg.size
                 if w != cw or h != ch:
                     # clipImg = clipImg.resize((cw, ch))
-                    clipImg = fillImage(clipImg, cw, ch)
+                    clipImg = fillImage(clipImg.copy(), cw, ch)
                 # create a staging image at the same size of the base image, so we can blend properly
                 stagingImg = Image.new(mode="RGBA", size=(width, height), color=(0, 0, 0, 0))
                 stagingImg.paste(clipImg, (roundInt(clip["x"]), roundInt(clip["y"])))
                 im.paste(stagingImg, (0, 0), mask=stagingImg)
-                stagingImg.close()
-                clipImg.close()
-            del video.reader
+                
+            video.reader.close()
             del video
 
         if saveFrame:
             im.save(filename)
             print("Saved frame %s" % filename)
-
-        im.close()
 
     return True
 
@@ -129,6 +126,11 @@ def fillVideo(video, w, h):
     cropped = resized.crop(x, y, w, h)
 
     return cropped
+
+def getDurationFromFile(filename):
+    command = ['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', filename]
+    result = subprocess.check_output(command).trim()
+    return float(result)
 
 # e.g. returns ['audio', 'video'] for a/v files
 def getMediaTypes(filename):
