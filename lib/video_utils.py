@@ -52,14 +52,22 @@ def clipsToFrame(p):
                 if w != cw or h != ch:
                     # clipImg = clipImg.resize((cw, ch))
                     clipImg = fillImage(clipImg, cw, ch)
-                im.paste(clipImg, (roundInt(clip["x"]), roundInt(clip["y"])))
+                # create a staging image at the same size of the base image, so we can blend properly
+                stagingImg = Image.new(mode="RGBA", size=(width, height), color=(0, 0, 0, 0))
+                stagingImg.paste(clipImg, (roundInt(clip["x"]), roundInt(clip["y"])))
+                im.paste(stagingImg, (0, 0), mask=stagingImg)
+                stagingImg.close()
                 clipImg.close()
+            del video.reader
+            del video
 
         if saveFrame:
             im.save(filename)
             print("Saved frame %s" % filename)
 
         im.close()
+
+    return True
 
 def compileFrames(infile, fps, outfile, padZeros):
     print("Compiling frames...")

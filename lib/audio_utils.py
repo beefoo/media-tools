@@ -152,7 +152,7 @@ def getFeatures(y, sr, start, dur=100, fft=2048, hop_length=512):
         "octave": octave
     }
 
-def gePowerFromTimecodes(timecodes):
+def gePowerFromTimecodes(timecodes, method="max"):
     # add indices
     for i, t in enumerate(timecodes):
         if "index" not in t:
@@ -165,7 +165,11 @@ def gePowerFromTimecodes(timecodes):
         y, sr = librosa.load(getAudioFile(filename))
         duration = getDuration(y, sr)
         stft = getStft(y)
-        maxStft = max(stft)
+        maxStft = 1
+        if method=="mean":
+            maxStft = np.mean(stft)
+        else:
+            maxStft = max(stft)
         stftLen = len(stft)
         fileTimecodes = [t for t in timecodes if t["filename"]==filename]
         # len(y) = hop_length * len(stft)
@@ -173,7 +177,7 @@ def gePowerFromTimecodes(timecodes):
             p = 1.0 * t["t"] / duration
             p = lim(p)
             j = roundInt(p * (stftLen-1))
-            power = 1.0 * stft[j] / maxStft
+            power = lim(1.0 * stft[j] / maxStft)
             powerData[t["index"]] = power
     return powerData
 
