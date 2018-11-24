@@ -56,7 +56,7 @@ def clipsToFrame(p):
                 stagingImg = Image.new(mode="RGBA", size=(width, height), color=(0, 0, 0, 0))
                 stagingImg.paste(clipImg, (roundInt(clip["x"]), roundInt(clip["y"])))
                 im.paste(stagingImg, (0, 0), mask=stagingImg)
-                
+
             video.reader.close()
             del video
 
@@ -128,15 +128,19 @@ def fillVideo(video, w, h):
     return cropped
 
 def getDurationFromFile(filename):
-    command = ['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', filename]
-    result = subprocess.check_output(command).trim()
+    result = 0
+    if os.path.isfile(filename):
+        command = ['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', filename]
+        result = subprocess.check_output(command).strip()
     return float(result)
 
 # e.g. returns ['audio', 'video'] for a/v files
 def getMediaTypes(filename):
-    command = ['ffprobe', '-loglevel', 'error', '-show_entries', 'stream=codec_type', '-of', 'csv=p=0', filename]
-    # print(" ".join(command))
-    result = subprocess.check_output(command).splitlines()
+    result = []
+    if os.path.isfile(filename):
+        command = ['ffprobe', '-loglevel', 'error', '-show_entries', 'stream=codec_type', '-of', 'csv=p=0', filename]
+        # print(" ".join(command))
+        result = subprocess.check_output(command).splitlines()
     return result
 
 def hasAudio(filename):

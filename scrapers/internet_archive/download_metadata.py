@@ -95,7 +95,7 @@ if FORMAT:
             print("No valid derivative format found in %s" % metadataUrl)
             continue
         files = [f for f in data["files"] if "name" in f and f["name"].endswith(FORMAT)]
-        files = sorted(files, key=lambda k: int(k['width']), reverse=True)
+        files = sorted(files, key=lambda k: int(k['size']), reverse=True)
         if len(files) <= 0:
             print("No valid derivative format found in %s" % metadataUrl)
             continue
