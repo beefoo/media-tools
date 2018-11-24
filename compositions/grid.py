@@ -45,7 +45,7 @@ parser.add_argument('-frames', dest="SAVE_FRAMES", default=0, type=int, help="Sa
 parser.add_argument('-loop', dest="LOOP", default=1, type=int, help="Loop around to the beginning frame?")
 parser.add_argument('-outframe', dest="OUTPUT_FRAME", default="../tmp/grid/frame.%s.png", help="Output frames pattern")
 parser.add_argument('-out', dest="OUTPUT_FILE", default="../output/grid.mp4", help="Output media file")
-parser.add_argument('-threads', dest="THREADS", default=2, type=int, help="Amount of parallel frames to process (too many may result in too many open files)")
+parser.add_argument('-threads', dest="THREADS", default=3, type=int, help="Amount of parallel frames to process (too many may result in too many open files)")
 parser.add_argument('-overwrite', dest="OVERWRITE", default=0, type=int, help="Overwrite existing frames?")
 args = parser.parse_args()
 
@@ -102,7 +102,7 @@ if isMoving and LOOP:
     print("%s scenes with looping" % sceneCount)
 
 # calculate target duration based on the longest scene
-targetDuration = max([s["dur"] for s in scenes])
+targetDuration = max([s["dur"] for s in scenes if s])
 
 # if moving, see if that duration is longer than longest scene
 movePixels = 0
@@ -162,7 +162,8 @@ for frame in range(targetFrames):
         "overwrite": OVERWRITE
     })
 
-# add opacity via sound data
+# add alpha via sound data
+print("Analyzing sound...")
 timecodes = []
 for i, p in enumerate(params):
     for j, c in enumerate(p["clips"]):
@@ -172,13 +173,23 @@ for i, p in enumerate(params):
             "t": c["t"]
         })
 powerData = gePowerFromTimecodes(timecodes)
+alphaRange = (0.25, 1.0)
+for i, p in enumerate(params):
+    for j, c in enumerate(p["clips"]):
+        params[i]["clips"][j]["alpha"] = lerp(alphaRange, powerData[(i, j)])
 
 print("Generating frames...")
-# for p in params:
-#     clipsToFrame(p)
-pool = ThreadPool(THREADS)
-result = pool.map(clipsToFrame, params)
-pool.close()
-pool.join()
+
+if (THREADS > 1):
+    pool = ThreadPool(THREADS)
+    pool.map(clipsToFrame, params)
+    pool.close()
+    pool.join()
+else:
+    for i, p in enumerate(params):
+        clipsToFrame(p)
+        sys.stdout.write('\r')
+        sys.stdout.write("%s%%" % round(1.0*i/(targetFrames-1)*100,1))
+        sys.stdout.flush()
 
 compileFrames(OUTPUT_FRAME, FPS, OUTPUT_FILE, padZeros)

@@ -159,7 +159,7 @@ def gePowerFromTimecodes(timecodes):
             timecodes[i]["index"] = i
     # get unique filenames
     filenames = list(set([t["filename"] for t in timecodes]))
-    powerData = []
+    powerData = {}
     # get features for each timecode in file
     for filename in filenames:
         y, sr = librosa.load(getAudioFile(filename))
@@ -174,8 +174,7 @@ def gePowerFromTimecodes(timecodes):
             p = lim(p)
             j = roundInt(p * (stftLen-1))
             power = 1.0 * stft[j] / maxStft
-            powerData.append((t["index"], power))
-    powerData = sorted(powerData, key=lambda k: k[0])
+            powerData[t["index"]] = power
     return powerData
 
 # Taken from: https://github.com/ml4a/ml4a-guides/blob/master/notebooks/audio-tsne.ipynb

@@ -19,7 +19,7 @@ def clipsToFrame(p):
 
     # frame already exists, read it directly
     if not fileExists:
-        im = Image.new(mode="RGB", size=(width, height), color=(0, 0, 0))
+        im = Image.new(mode="RGBA", size=(width, height), color=(0, 0, 0, 255))
 
         # load videos
         filenames = list(set([clip["filename"] for clip in clips]))
@@ -45,20 +45,26 @@ def clipsToFrame(p):
                     print("Could not read pixels for %s at time %s" % (video.filename, videoT))
                     videoPixels = np.zeros((ch, cw, 3), dtype='uint8')
                 clipImg = Image.fromarray(videoPixels, mode="RGB")
+                clipImg = clipImg.convert("RGBA")
+                if "alpha" in clip and clip["alpha"] < 1.0:
+                    clipImg.putalpha(roundInt(clip["alpha"]*255))
                 w, h = clipImg.size
                 if w != cw or h != ch:
                     # clipImg = clipImg.resize((cw, ch))
                     clipImg = fillImage(clipImg, cw, ch)
                 im.paste(clipImg, (roundInt(clip["x"]), roundInt(clip["y"])))
+                clipImg.close()
 
         if saveFrame:
             im.save(filename)
             print("Saved frame %s" % filename)
 
+        im.close()
+
 def compileFrames(infile, fps, outfile, padZeros):
     print("Compiling frames...")
     padStr = '%0'+str(padZeros)+'d'
-    command = ['ffmpeg','-framerate',str(fps)+'/1','-i',infile % padStr,'-c:v','libx264','-r',str(fps),'-pix_fmt','yuv420p','-q:v','1',outfile]
+    command = ['ffmpeg','-y','-framerate',str(fps)+'/1','-i',infile % padStr,'-c:v','libx264','-r',str(fps),'-pix_fmt','yuv420p','-q:v','1',outfile]
     print(" ".join(command))
     finished = subprocess.check_call(command)
     print("Done.")
