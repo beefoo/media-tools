@@ -46,8 +46,8 @@ def clipsToFrame(p):
                     videoPixels = np.zeros((ch, cw, 3), dtype='uint8')
                 clipImg = Image.fromarray(videoPixels, mode="RGB")
                 clipImg = clipImg.convert("RGBA")
-                if "alpha" in clip and clip["alpha"] < 1.0:
-                    clipImg.putalpha(roundInt(clip["alpha"]*255))
+                alpha = clip["alpha"] if "alpha" in clip and clip["alpha"] < 1.0 else 1.0
+                clipImg.putalpha(roundInt(alpha*255))
                 w, h = clipImg.size
                 if w != cw or h != ch:
                     # clipImg = clipImg.resize((cw, ch))
@@ -55,8 +55,10 @@ def clipsToFrame(p):
                 # create a staging image at the same size of the base image, so we can blend properly
                 stagingImg = Image.new(mode="RGBA", size=(width, height), color=(0, 0, 0, 0))
                 stagingImg.paste(clipImg, (roundInt(clip["x"]), roundInt(clip["y"])))
-                im.paste(stagingImg, (0, 0), mask=stagingImg)
-
+                # stagingImg.save(filename.replace(".png", "%s.png" % videoT))
+                # im.paste(stagingImg, (0, 0), mask=stagingImg)
+                # im = Image.blend(im, stagingImg, alpha=alpha)
+                im = Image.alpha_composite(im, stagingImg)
             video.reader.close()
             del video
 
