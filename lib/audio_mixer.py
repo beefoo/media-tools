@@ -4,12 +4,7 @@ import os
 from pydub import AudioSegment
 import sys
 
-def makeTrack(p, sfx=True, sampleWidth=2, sampleRate=44100, channels=2, fxPad=3000):
-    duration = p["duration"]
-    instructions = p["instructions"]
-    audiofile = p["audiofile"]
-    segments = audiofile["segments"]
-
+def makeTrack(duration, instructions, segments, sfx=True, sampleWidth=2, sampleRate=44100, channels=2, fxPad=3000):
     # build audio
     baseAudio = AudioSegment.silent(duration=duration, frame_rate=sampleRate)
     baseAudio = baseAudio.set_channels(channels)
@@ -41,14 +36,20 @@ def mixAudio(instructions, duration, outfilename, sfx=True, sampleWidth=2, sampl
     audioFiles = list(set([i["filename"] for i in instructions]))
     audioFiles = [{"filename": f} for f in audioFiles]
     instructionCount = len(instructions)
+    trackCount = len(audioFiles)
 
     # calculate db
     for i, step in enumerate(instructions):
         if "volume" in step:
             instructions[i]["db"] = volumeToDb(step["volume"])
 
+    # create base audio
+    baseAudio = AudioSegment.silent(duration=duration, frame_rate=sampleRate)
+    baseAudio = baseAudio.set_channels(channels)
+    baseAudio = baseAudio.set_sample_width(sampleWidth)
+
     # Load sounds
-    print("Loading audio...")
+    print("Adding tracks...")
     for i, af in enumerate(audioFiles):
         filename = af["filename"]
         audioFiles[i]["index"] = i
@@ -93,37 +94,15 @@ def mixAudio(instructions, duration, outfilename, sfx=True, sampleWidth=2, sampl
                 "dur": clipDur,
                 "audio": clip
             })
-        audioFiles[i]["segments"] = segments
 
-    print("Loaded %s audio files" % len(audioFiles))
+        # make the track
+        trackInstructions = [ii for ii in instructions if ii["filename"]==af["filename"]]
+        trackAudio = makeTrack(duration, trackInstructions, segments, sfx=sfx, sampleWidth=sampleWidth, sampleRate=sampleRate, channels=channels, fxPad=fxPad)
+        baseAudio = baseAudio.overlay(trackAudio)
 
-    if instructionCount <= 0 or len(audioFiles) <= 0:
-        print("No instructions or audio files")
-        sys.exit()
-
-    # Build track parameters
-    trackParams = [{
-        "duration": duration,
-        "instructions": [i for i in instructions if i["filename"]==af["filename"]],
-        "audiofile": af
-    } for af in audioFiles]
-
-    trackCount = len(trackParams)
-    print("Building %s tracks..." % trackCount)
-
-    tracks = []
-    for i, p in enumerate(trackParams):
-        tracks.append(makeTrack(p, sfx=sfx, sampleWidth=sampleWidth, sampleRate=sampleRate, channels=channels, fxPad=fxPad))
         sys.stdout.write('\r')
         sys.stdout.write("%s%%" % round(1.0*(i+1)/trackCount*100,1))
         sys.stdout.flush()
-
-    print("Combining tracks...")
-    baseAudio = AudioSegment.silent(duration=duration, frame_rate=sampleRate)
-    baseAudio = baseAudio.set_channels(channels)
-    baseAudio = baseAudio.set_sample_width(sampleWidth)
-    for track in tracks:
-        baseAudio = baseAudio.overlay(track)
 
     print("Writing to file...")
     format = outfilename.split(".")[-1]
