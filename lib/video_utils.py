@@ -66,10 +66,31 @@ def clipsToFrame(p):
 
     return True
 
-def compileFrames(infile, fps, outfile, padZeros):
+def compileFrames(infile, fps, outfile, padZeros, audioFile=None):
     print("Compiling frames...")
     padStr = '%0'+str(padZeros)+'d'
-    command = ['ffmpeg','-y','-framerate',str(fps)+'/1','-i',infile % padStr,'-c:v','libx264','-r',str(fps),'-pix_fmt','yuv420p','-q:v','1',outfile]
+    if audioFile:
+        command = ['ffmpeg','-y',
+                    '-framerate',str(fps)+'/1',
+                    '-i',infile % padStr,
+                    '-i',audioFile,
+                    '-c:v','libx264',
+                    '-r',str(fps),
+                    '-pix_fmt','yuv420p',
+                    '-c:a','aac',
+                    '-q:v','1',
+                    '-b:a', '192k',
+                    '-shortest',
+                    outfile]
+    else:
+        command = ['ffmpeg','-y',
+                    '-framerate',str(fps)+'/1',
+                    '-i',infile % padStr,
+                    '-c:v','libx264',
+                    '-r',str(fps),
+                    '-pix_fmt','yuv420p',
+                    '-q:v','1',
+                    outfile]
     print(" ".join(command))
     finished = subprocess.check_call(command)
     print("Done.")

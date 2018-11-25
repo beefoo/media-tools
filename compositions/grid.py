@@ -25,6 +25,7 @@ currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfram
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0,parentdir)
 
+from lib.audio_mixer import *
 from lib.audio_utils import *
 from lib.collection_utils import *
 from lib.io_utils import *
@@ -65,6 +66,7 @@ OUTPUT_FRAME = args.OUTPUT_FRAME
 OUTPUT_FILE = args.OUTPUT_FILE
 THREADS = min(args.THREADS, multiprocessing.cpu_count()) if args.THREADS > 0 else multiprocessing.cpu_count()
 OVERWRITE = args.OVERWRITE > 0
+AUDIO_OUTPUT_FILE = OUTPUT_FILE.replace(".mp4", ".mp3")
 
 makeDirectories([OUTPUT_FRAME, OUTPUT_FILE])
 
@@ -192,4 +194,37 @@ else:
         sys.stdout.write("%s%%" % round(1.0*i/(targetFrames-1)*100,1))
         sys.stdout.flush()
 
-compileFrames(OUTPUT_FRAME, FPS, OUTPUT_FILE, padZeros)
+# create instructions for the audio track
+if not os.path.isfile(AUDIO_OUTPUT_FILE) or OVERWRITE:
+    instructions = []
+    halfH = HEIGHT * 0.5
+    lowerBounds = halfH - halfH * 0.5
+    upperBounds = halfH + halfH * 0.5
+    for scene in scenes:
+        if not scene:
+            continue
+        sceneDur = scene["dur"] / 1000.0
+        elapsed = 0.0
+        pan = (scene["x"] + cellW * 0.5) / WIDTH * 2.0 - 1.0
+        sceneY = scene["y"] + cellH * 0.5
+        while elapsed < targetDuration:
+            progress = elapsed / targetDuration
+            y = lerp((sceneY, sceneY-movePixels), progress)
+            if lowerBounds < y < upperBounds:
+                volume = norm(y, (lowerBounds, upperBounds)) * 2.0
+                if volume > 1.0:
+                    volume = abs(volume - 2.0)
+                instructions.append({
+                    "ms": roundInt(elapsed*1000),
+                    "filename": VIDEO_DIRECTORY + scene["filename"],
+                    "start": scene["start"],
+                    "dur": scene["dur"],
+                    "pan": pan,
+                    "volume": volume
+                })
+            elapsed += sceneDur
+    mixAudio(instructions, targetDuration, AUDIO_OUTPUT_FILE)
+else:
+    print("%s already exists, skipping..." % AUDIO_OUTPUT_FILE)
+
+compileFrames(OUTPUT_FRAME, FPS, OUTPUT_FILE, padZeros, audioFile=AUDIO_OUTPUT_FILE)
