@@ -126,96 +126,113 @@ for i, scene in enumerate(scenes):
     scenes[i]["x"] = int(i % COLUMNS) * cellW
 
 params = []
-padZeros = len(str(targetFrames))
+padZeros = getZeroPadding(targetFrames)
 
-for frame in range(targetFrames):
-    progress = 1.0 * frame / (targetFrames-1)
-    second = 1.0 * frame / FPS
-    offsetY = progress * movePixels
+# gives volume based on scene position
+def baseVolume(scene, progress):
+    global movePixels
+    global cellH
 
-    clips = []
-    for scene in scenes:
-        if not scene:
-            continue
-        y = scene["y"] - offsetY
-        # skip if we are off screen
-        if y >= HEIGHT or y <= -cellH:
-            continue
-        sceneStart = scene["start"] / 1000.0
-        sceneDur = scene["dur"] / 1000.0
-        remainder = second % sceneDur
-        t = sceneStart + remainder
-        clips.append({
-            "filename": VIDEO_DIRECTORY + scene["filename"],
-            "t": t,
-            "x": scene["x"],
-            "y": y,
-            "w": cellW,
-            "h": cellH
+    halfH = HEIGHT * 0.5
+    lowerBounds = halfH - cellH
+    upperBounds = halfH + cellH
+    sceneY = scene["y"] + cellH * 0.5
+    y = lerp((sceneY, sceneY-movePixels), progress)
+    volume = norm(y, (lowerBounds, upperBounds)) * 2.0
+    if volume > 1.0:
+        volume = abs(volume - 2.0)
+    if not (0.0 <= volume <= 1.0):
+        volume = 0.0
+    return volume
+
+if not framesExist(OUTPUT_FRAME, targetFrames) or OVERWRITE:
+
+    for frame in range(targetFrames):
+        progress = 1.0 * frame / (targetFrames-1)
+        second = 1.0 * frame / FPS
+        offsetY = progress * movePixels
+
+        clips = []
+        for scene in scenes:
+            if not scene:
+                continue
+            y = scene["y"] - offsetY
+            # skip if we are off screen
+            if y >= HEIGHT or y <= -cellH:
+                continue
+            sceneStart = scene["start"] / 1000.0
+            sceneDur = scene["dur"] / 1000.0
+            remainder = second % sceneDur
+            t = sceneStart + remainder
+            volume = baseVolume(scene, progress)
+            clips.append({
+                "filename": VIDEO_DIRECTORY + scene["filename"],
+                "t": t,
+                "x": scene["x"],
+                "y": y,
+                "w": cellW,
+                "h": cellH,
+                "volume": volume
+            })
+
+        filename = OUTPUT_FRAME % str(frame+1).zfill(padZeros)
+        params.append({
+            "filename": filename,
+            "saveFrame": True,
+            "clips": clips,
+            "width": WIDTH,
+            "height": HEIGHT,
+            "overwrite": OVERWRITE
         })
 
-    filename = OUTPUT_FRAME % str(frame+1).zfill(padZeros)
-    params.append({
-        "filename": filename,
-        "saveFrame": True,
-        "clips": clips,
-        "width": WIDTH,
-        "height": HEIGHT,
-        "overwrite": OVERWRITE
-    })
-
-# add alpha via sound data
-print("Analyzing sound...")
-timecodes = []
-for i, p in enumerate(params):
-    for j, c in enumerate(p["clips"]):
-        timecodes.append({
-            "index": (i, j),
-            "filename": c["filename"],
-            "t": c["t"]
-        })
-powerData = gePowerFromTimecodes(timecodes, method="mean")
-alphaRange = (0.1, 1.0)
-for i, p in enumerate(params):
-    for j, c in enumerate(p["clips"]):
-        params[i]["clips"][j]["alpha"] = lerp(alphaRange, powerData[(i, j)])
-
-print("Generating frames...")
-
-if (THREADS > 1):
-    pool = ThreadPool(THREADS)
-    results = pool.map(clipsToFrame, params)
-    pool.close()
-    pool.join()
-else:
+    # add alpha via sound data
+    print("Analyzing sound...")
+    timecodes = []
     for i, p in enumerate(params):
-        clipsToFrame(p)
-        sys.stdout.write('\r')
-        sys.stdout.write("%s%%" % round(1.0*i/(targetFrames-1)*100,1))
-        sys.stdout.flush()
+        for j, c in enumerate(p["clips"]):
+            timecodes.append({
+                "index": (i, j),
+                "filename": c["filename"],
+                "t": c["t"]
+            })
+    powerData = gePowerFromTimecodes(timecodes, method="mean")
+    alphaRange = (0.1, 1.0)
+    for i, p in enumerate(params):
+        for j, c in enumerate(p["clips"]):
+            params[i]["clips"][j]["alpha"] = lerp(alphaRange, powerData[(i, j)] * c["volume"])
+
+    print("Generating frames...")
+
+    if (THREADS > 1):
+        pool = ThreadPool(THREADS)
+        results = pool.map(clipsToFrame, params)
+        pool.close()
+        pool.join()
+    else:
+        for i, p in enumerate(params):
+            clipsToFrame(p)
+            sys.stdout.write('\r')
+            sys.stdout.write("%s%%" % round(1.0*i/(targetFrames-1)*100,1))
+            sys.stdout.flush()
+else:
+    print("Frames already exist. Skipping.")
 
 # create instructions for the audio track
 if not os.path.isfile(AUDIO_OUTPUT_FILE) or OVERWRITE:
     instructions = []
-    halfH = HEIGHT * 0.5
-    lowerBounds = halfH - halfH * 0.5
-    upperBounds = halfH + halfH * 0.5
+
     for scene in scenes:
         if not scene:
             continue
-        sceneDur = scene["dur"] / 1000.0
-        elapsed = 0.0
+        sceneDur = scene["dur"]
+        elapsed = 0
         pan = (scene["x"] + cellW * 0.5) / WIDTH * 2.0 - 1.0
-        sceneY = scene["y"] + cellH * 0.5
         while elapsed < targetDuration:
-            progress = elapsed / targetDuration
-            y = lerp((sceneY, sceneY-movePixels), progress)
-            if lowerBounds < y < upperBounds:
-                volume = norm(y, (lowerBounds, upperBounds)) * 2.0
-                if volume > 1.0:
-                    volume = abs(volume - 2.0)
+            progress = 1.0 * elapsed / targetDuration
+            volume = baseVolume(scene, progress)
+            if volume > 0:
                 instructions.append({
-                    "ms": roundInt(elapsed*1000),
+                    "ms": elapsed,
                     "filename": VIDEO_DIRECTORY + scene["filename"],
                     "start": scene["start"],
                     "dur": scene["dur"],
@@ -223,6 +240,8 @@ if not os.path.isfile(AUDIO_OUTPUT_FILE) or OVERWRITE:
                     "volume": volume
                 })
             elapsed += sceneDur
+    # pprint([ii["volume"] for ii in instructions])
+    # sys.exit()
     mixAudio(instructions, targetDuration, AUDIO_OUTPUT_FILE)
 else:
     print("%s already exists, skipping..." % AUDIO_OUTPUT_FILE)

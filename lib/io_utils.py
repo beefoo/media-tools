@@ -12,6 +12,16 @@ import sys
 reload(sys)
 sys.setdefaultencoding('utf8')
 
+def framesExist(filePattern, frameCount):
+    padZeros = getZeroPadding(frameCount)
+    exist = True
+    for frame in range(frameCount):
+        filename = filePattern % str(frame+1).zfill(padZeros)
+        if not os.path.isfile(filename):
+            exist = False
+            break
+    return exist
+
 def getFilenames(fileString):
     files = []
     if "*" in fileString:
@@ -26,6 +36,9 @@ def getJSONFromURL(url):
     print("Downloading %s" % url)
     r = requests.get(url)
     return r.json()
+
+def getZeroPadding(count):
+    return len(str(count))
 
 def makeDirectories(filenames):
     if not isinstance(filenames, list):

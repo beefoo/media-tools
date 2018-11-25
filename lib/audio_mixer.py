@@ -9,6 +9,7 @@ def makeTrack(duration, instructions, segments, sfx=True, sampleWidth=2, sampleR
     baseAudio = AudioSegment.silent(duration=duration, frame_rate=sampleRate)
     baseAudio = baseAudio.set_channels(channels)
     baseAudio = baseAudio.set_sample_width(sampleWidth)
+    instructionCount = len(instructions)
     for index, i in enumerate(instructions):
         segment = [s for s in segments if s["id"]==(i["start"], i["dur"])].pop()
         audio = segment["audio"]
@@ -30,6 +31,9 @@ def makeTrack(duration, instructions, segments, sfx=True, sampleWidth=2, sampleR
             if len(effects) > 0:
                 audio = addFx(audio, effects, pad=fxPad)
         baseAudio = baseAudio.overlay(audio, position=i["ms"])
+        sys.stdout.write('\r')
+        sys.stdout.write("%s%%" % round(1.0*(index+1)/instructionCount*100,1))
+        sys.stdout.flush()
     return baseAudio
 
 def mixAudio(instructions, duration, outfilename, sfx=True, sampleWidth=2, sampleRate=44100, channels=2, clipFadeIn=100, clipFadeOut=100, fxPad=3000):
@@ -97,12 +101,10 @@ def mixAudio(instructions, duration, outfilename, sfx=True, sampleWidth=2, sampl
 
         # make the track
         trackInstructions = [ii for ii in instructions if ii["filename"]==af["filename"]]
+        print("Making track %s of %s with %s segments and %s instructions..." % (i+1, trackCount, len(segments), len(trackInstructions)))
         trackAudio = makeTrack(duration, trackInstructions, segments, sfx=sfx, sampleWidth=sampleWidth, sampleRate=sampleRate, channels=channels, fxPad=fxPad)
         baseAudio = baseAudio.overlay(trackAudio)
-
-        sys.stdout.write('\r')
-        sys.stdout.write("%s%%" % round(1.0*(i+1)/trackCount*100,1))
-        sys.stdout.flush()
+        print("Track %s of %s complete." % (i+1, trackCount))
 
     print("Writing to file...")
     format = outfilename.split(".")[-1]
