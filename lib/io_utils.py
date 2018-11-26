@@ -29,6 +29,7 @@ def getFilenames(fileString):
     else:
         files = [fileString]
     fileCount = len(files)
+    files = sorted(files)
     print("Found %s files" % fileCount)
     return files
 

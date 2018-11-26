@@ -9,6 +9,7 @@ from pydub import AudioSegment
 from pysndfx import AudioEffectsChain
 import re
 import subprocess
+import sys
 
 def addFx(sound, effects, pad=3000, fade_in=100, fade_out=100):
     # Add padding
@@ -151,6 +152,25 @@ def getFeatures(y, sr, start, dur=100, fft=2048, hop_length=512):
         "note": note,
         "octave": octave
     }
+
+def getFeaturesFromSamples(filename, samples):
+    # load audio
+    sampleCount = len(samples)
+    print("Getting features from %s samples in %s..." % (sampleCount, filename))
+    fn = getAudioFile(filename)
+    y, sr = librosa.load(fn)
+
+    features = []
+    for i, sample in enumerate(samples):
+        sfeatures = sample.copy()
+        sfeatures.update(getFeatures(y, sr, sample["start"], sample["dur"]))
+        features.append(sfeatures)
+
+        sys.stdout.write('\r')
+        sys.stdout.write("%s%%" % round(1.0*(i+1)/sampleCount*100,1))
+        sys.stdout.flush()
+
+    return features
 
 def gePowerFromTimecodes(timecodes, method="max"):
     # add indices

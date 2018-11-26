@@ -63,29 +63,10 @@ params = [{
 } for fp in filepaths]
 fileCount = len(params)
 
-progress = 0
 def samplesToFeatures(p):
-    global progress
-    global rowCount
-
     fn = p["path"]
     samples = p["samples"]
-    features = []
-
-    # load audio
-    fn = getAudioFile(fn)
-    y, sr = librosa.load(fn)
-
-    for sample in samples:
-        sfeatures = sample.copy()
-        sfeatures.update(getFeatures(y, sr, sample["start"], sample["dur"]))
-        features.append(sfeatures)
-
-        progress += 1
-        sys.stdout.write('\r')
-        sys.stdout.write("%s%%" % round(1.0*progress/rowCount*100,1))
-        sys.stdout.flush()
-
+    features = getFeaturesFromSamples(fn, samples)
     return features
 
 # files = files[:1]

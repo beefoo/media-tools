@@ -44,6 +44,14 @@ def parseQueryString(str):
                 break
     return conditions
 
+def parseSortString(str):
+    conditionStrings = str.split("&")
+    conditions = []
+    for cs in conditionStrings:
+        parts = cs.split("=")
+        conditions.append(tuple(parts))
+    return conditions
+
 def sortAndTrim(arr, sorters):
     if isinstance(sorters, tuple):
         sorters = [sorters]
@@ -53,6 +61,7 @@ def sortAndTrim(arr, sorters):
 
     for s in sorters:
         key, direction, trim = s
+        trim = float(trim)
         arr = sortBy(arr, (key, direction))
         count = int(round(len(arr) * trim))
         arr = arr[:count]
@@ -72,3 +81,14 @@ def sortBy(arr, sorters):
         arr = sorted(arr, key=lambda k: k[key], reverse=reversed)
 
     return arr
+
+def sortByQueryString(arr, sortString):
+    sorters = parseSortString(sortString)
+
+    if len(sorters) <= 0:
+        return arr
+
+    if len(sorters[0]) > 2:
+        return sortAndTrim(arr, sorters)
+    else:
+        return sortBy(arr, sorters)
