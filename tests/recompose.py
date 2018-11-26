@@ -264,7 +264,7 @@ if "counterpoint" in COMPOSITIONS:
     # step 1: add bass
     # take low frequency instruments
     lowfreq = sortBy(rows, ("hz", "asc"))
-    lowfreq = sortAndTrim(rows, [
+    lowfreq = sortBy(rows, [
         ("hz", "asc", 0.2),
         ("power", "asc", 0.5),
         ("dur", "desc", 0.5),
@@ -290,7 +290,7 @@ if "counterpoint" in COMPOSITIONS:
                 "volume": 0.8
             })
     # step two: add short pulses
-    short = sortAndTrim(rows, [
+    short = sortBy(rows, [
         ("power", "desc", 0.6),
         ("dur", "desc", 0.9),
         ("dur", "asc", 1.0)
