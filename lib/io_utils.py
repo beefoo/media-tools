@@ -85,6 +85,13 @@ def readCsv(filename, headings=False, doParseNumbers=True, skipLines=0, encoding
             fieldnames = list(reader.fieldnames)
     return (fieldnames, rows)
 
+def readJSON(filename):
+    data = {}
+    if os.path.isfile(filename):
+        with open(filename) as f:
+            data = json.load(f)
+    return data
+
 def writeCsv(filename, arr, headings="auto", append=False, encoding="utf-8"):
     if headings == "auto":
         headings = arr[0].keys()
@@ -106,3 +113,11 @@ def writeCsv(filename, arr, headings="auto", append=False, encoding="utf-8"):
                 row.append(value)
             writer.writerow(row)
     print("Wrote %s rows to %s" % (len(arr), filename))
+
+def writeJSON(filename, data):
+    with open(filename, 'w') as f:
+        json.dump(data, f)
+
+def zeroPad(value, total):
+    padding = getZeroPadding(total)
+    return str(value).zfill(padding)

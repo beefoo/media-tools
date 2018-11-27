@@ -8,6 +8,9 @@
 
 import argparse
 import inspect
+import multiprocessing
+from multiprocessing import Pool
+from multiprocessing.dummy import Pool as ThreadPool
 import os
 from pprint import pprint
 import sys
@@ -41,6 +44,8 @@ parser.add_argument('-outframe', dest="OUTPUT_FRAME", default="../tmp/layers/fra
 parser.add_argument('-out', dest="OUTPUT_FILE", default="../output/layers.mp4", help="Output media file")
 parser.add_argument('-threads', dest="THREADS", default=3, type=int, help="Amount of parallel frames to process (too many may result in too many open files)")
 parser.add_argument('-overwrite', dest="OVERWRITE", default=0, type=int, help="Overwrite existing frames?")
+parser.add_argument('-ao', dest="AUDIO_ONLY", default=0, type=int, help="Render audio only?")
+parser.add_argument('-vo', dest="VIDEO_ONLY", default=0, type=int, help="Render video only?")
 args = parser.parse_args()
 
 # Parse arguments

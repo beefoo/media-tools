@@ -13,6 +13,9 @@ def floorInt(n):
 def formatSeconds(s):
     return time.strftime('%H:%M:%S', time.gmtime(s))
 
+def isNumber(n):
+    return isinstance(n, (int, float))
+
 def lerp(ab, amount):
     a, b = ab
     return (b-a) * amount + a
@@ -25,10 +28,13 @@ def norm(value, ab):
     a, b = ab
     return 1.0 * (value - a) / (b - a)
 
-def parseNumber(string):
+def parseFloat(string):
+    return parseNumber(string, alwaysFloat=True)
+
+def parseNumber(string, alwaysFloat=False):
     try:
         num = float(string)
-        if "." not in string:
+        if "." not in str(string) and not alwaysFloat:
             num = int(string)
         return num
     except ValueError:
@@ -50,6 +56,9 @@ def timecodeToMs(tc):
     hours, minutes, seconds = tuple([float(v) for v in tc.split(":")])
     seconds = seconds + minutes * 60 + hours * 3600
     return roundInt(seconds*1000)
+
+def unique(arr):
+    return list(set(arr))
 
 def weighted_mean(values):
     count = len(values)

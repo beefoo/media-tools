@@ -1,3 +1,4 @@
+from pprint import pprint
 
 def filterByQueryString(arr, queryString):
     return filterWhere(arr, parseQueryString(queryString))
