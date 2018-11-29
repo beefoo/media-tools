@@ -56,10 +56,11 @@ def mixAudio(instructions, duration, outfilename, sfx=True, sampleWidth=2, sampl
     print("Adding tracks...")
     for i, af in enumerate(audioFiles):
         filename = af["filename"]
+        audiofilename = getAudioFile(filename)
         audioFiles[i]["index"] = i
         # load audio file
-        fformat = filename.split(".")[-1].lower()
-        audio = AudioSegment.from_file(filename, format=fformat)
+        fformat = audiofilename.split(".")[-1].lower()
+        audio = AudioSegment.from_file(audiofilename, format=fformat)
         # convert to stereo
         if audio.channels != channels:
             print("Warning: channels changed to %s from %s in %s" % (channels, audio.channels, filename))

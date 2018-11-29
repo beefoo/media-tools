@@ -10,10 +10,10 @@ import subprocess
 def clipsToFrame(p):
     clips = p["clips"]
     filename = p["filename"]
-    saveFrame = p["saveFrame"]
+    saveFrame = p["saveFrame"] if "saveFrame" in p else True
     width = p["width"]
     height = p["height"]
-    overwrite = p["overwrite"]
+    overwrite = p["overwrite"] if "overwrite" in p else False
     im = None
     fileExists = os.path.isfile(filename) and not overwrite
 

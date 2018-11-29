@@ -8,7 +8,7 @@ from pprint import pprint
 from pydub import AudioSegment
 from pysndfx import AudioEffectsChain
 import re
-from skimage.measure import block_reduce
+# from skimage.measure import block_reduce
 import subprocess
 import sys
 

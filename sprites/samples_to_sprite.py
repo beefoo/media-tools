@@ -3,6 +3,7 @@
 import argparse
 import inspect
 import os
+from PIL import Image
 from pprint import pprint
 import sys
 import time
@@ -16,6 +17,7 @@ from lib.audio_mixer import *
 from lib.collection_utils import *
 from lib.io_utils import *
 from lib.math_utils import *
+from lib.video_utils import *
 
 # input
 parser = argparse.ArgumentParser()
@@ -24,6 +26,8 @@ parser.add_argument('-dir', dest="AUDIO_DIRECTORY", default="../media/sample/", 
 parser.add_argument('-prop', dest="PROPERTY", default="tsne", help="Key to sort by (tsne, hz, pow, dur, flatness)")
 parser.add_argument('-sort', dest="SORT", default="flatness=desc=0.75&power=desc", help="Query string to sort by")
 parser.add_argument('-lim', dest="LIMIT", default=1296, type=int, help="Target total sample count, -1 for everything")
+parser.add_argument('-cell', dest="CELL_DIMENSIONS", default="40x40", help="Dimensions of each cell")
+parser.add_argument('-cols', dest="COLUMNS", default=48, type=int, help="Number of cells per row")
 parser.add_argument('-count', dest="FILE_COUNT", default=6, type=int, help="Number of audio files to produce")
 parser.add_argument('-id', dest="UNIQUE_ID", default="sample", help="Key for naming files")
 parser.add_argument('-overwrite', dest="OVERWRITE", default=0, type=int, help="Overwrite existing?")
@@ -35,6 +39,8 @@ AUDIO_DIRECTORY = args.AUDIO_DIRECTORY
 PROPERTY = args.PROPERTY
 SORT = args.SORT
 LIMIT = args.LIMIT
+CELL_W, CELL_H = tuple([int(d) for d in args.CELL_DIMENSIONS.split("x")])
+COLUMNS = args.COLUMNS
 FILE_COUNT = args.FILE_COUNT
 UNIQUE_ID = args.UNIQUE_ID
 OVERWRITE = args.OVERWRITE > 0
@@ -54,6 +60,7 @@ jsonData = readJSON(MANIFEST_FILE)
 rows = sortByQueryString(rows, SORT)
 if LIMIT > 0 and len(rows) > LIMIT:
     rows = rows[:LIMIT]
+rowCount = len(rows)
 
 # Sort rows and add sequence
 totalDur = sum([r["dur"] for r in rows])
@@ -95,3 +102,31 @@ for file in range(FILE_COUNT):
 jsonData["audioSpriteFiles"] = audioSpriteFiles
 jsonData["sprites"] = sprites
 writeJSON(MANIFEST_FILE, jsonData)
+
+# Now create the sprite image
+ROWS = ceilInt(1.0 * rowCount / COLUMNS)
+IMAGE_W = CELL_W * COLUMNS
+IMAGE_H = CELL_H * ROWS
+clips = []
+x = 0
+y = 0
+for row in rows:
+    clips.append({
+        "x": x,
+        "y": y,
+        "w": CELL_W,
+        "h": CELL_H,
+        "filename": AUDIO_DIRECTORY + row["filename"],
+        "t": row["start"] / 1000.0
+    })
+    x += CELL_W
+    if x >= IMAGE_W:
+        x = 0
+        y += CELL_H
+clipsToFrame({
+    "filename": IMAGE_FILE,
+    "overwrite": OVERWRITE,
+    "width": IMAGE_W,
+    "height": IMAGE_H,
+    "clips": clips
+})
