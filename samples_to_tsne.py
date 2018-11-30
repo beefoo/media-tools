@@ -22,6 +22,9 @@ parser.add_argument('-dir', dest="AUDIO_DIRECTORY", default="media/sample/", hel
 parser.add_argument('-out', dest="OUTPUT_FILE", default="tmp/samples_tsne.csv", help="CSV output file")
 parser.add_argument('-append', dest="APPEND", default=1, type=int, help="Append to existing data?")
 parser.add_argument('-overwrite', dest="OVERWRITE", default=0, type=int, help="Overwrite existing data?")
+parser.add_argument('-components', dest="COMPONENTS", default=1, type=int, help="Number of components (1, 2, or 3)")
+parser.add_argument('-rate', dest="LEARNING_RATE", default=150, type=int, help="Learning rate: increase if too dense, decrease if too uniform")
+parser.add_argument('-angle', dest="ANGLE", default=0.1, type=float, help="Angle: increase to make faster, decrease to make more accurate")
 parser.add_argument('-plot', dest="PLOT", default=0, type=int, help="Show plot?")
 args = parser.parse_args()
 
@@ -31,19 +34,18 @@ AUDIO_DIRECTORY = args.AUDIO_DIRECTORY
 OUTPUT_FILE = args.OUTPUT_FILE
 APPEND = args.APPEND > 0
 OVERWRITE = args.OVERWRITE > 0
+COMPONENTS = args.COMPONENTS
+LEARNING_RATE = args.LEARNING_RATE
+ANGLE = args.ANGLE
 PLOT = args.PLOT > 0
 PRECISION = 5
 
 # TSNE config
-DIMS = ["tsne", "tsne2", "tsne3"]
-COMPONENTS = 1
-LEARNING_RATE = 150 # increase if too dense, decrease if too uniform
 VERBOSITY = 2
-ANGLE = 0.1 # increase to make faster, decrease to make more accurate
+DIMS = ["tsne", "tsne2", "tsne3"]
 FEATURES_TO_ADD = DIMS[:COMPONENTS]
 
 # Read files
-rows = []
 fieldNames, rows = readCsv(INPUT_FILE)
 rowCount = len(rows)
 print("Found %s rows" % rowCount)
@@ -135,7 +137,7 @@ for i in range(COMPONENTS):
 with open(OUTPUT_FILE, 'wb') as f:
     writer = csv.writer(f)
     writer.writerow(headings)
-    for i, d in enumerate(data):
+    for i, d in enumerate(rows):
         row = []
         for h in headings:
             if h in DIMS:
