@@ -117,6 +117,7 @@ def writeCsv(filename, arr, headings="auto", append=False, encoding="utf-8"):
 def writeJSON(filename, data):
     with open(filename, 'w') as f:
         json.dump(data, f)
+        print("Wrote data to %s" % filename)
 
 def zeroPad(value, total):
     padding = getZeroPadding(total)

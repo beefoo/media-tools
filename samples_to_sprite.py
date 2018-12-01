@@ -100,7 +100,7 @@ for file in range(FILE_COUNT):
     # build the audio
     instructions = []
     ms = 0
-    for row in rows:
+    for row in fileRows:
         instructions.append({
             "ms": ms,
             "filename": AUDIO_DIRECTORY + row["filename"],

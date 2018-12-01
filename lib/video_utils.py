@@ -62,6 +62,8 @@ def clipsToFrame(p):
             video.reader.close()
             del video
 
+        im = im.convert("RGB")
+
         if saveFrame:
             im.save(filename)
             print("Saved frame %s" % filename)
