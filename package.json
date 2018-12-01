@@ -1,0 +1,10 @@
+{
+  "name": "media-tools",
+  "description": "Media tools",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "devDependencies": {
+    "express": "^4.16.4"
+  }
+}

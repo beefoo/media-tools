@@ -52,8 +52,6 @@ fieldNames, rows = readCsv(INPUT_FILE)
 rowCount = len(rows)
 print("Found %s rows" % rowCount)
 
-jsonData = readJSON(MANIFEST_FILE)
-
 # Sort and limit
 rows = sortByQueryString(rows, SORT)
 if LIMIT > 0 and len(rows) > LIMIT:
@@ -114,11 +112,7 @@ for file in range(FILE_COUNT):
         mixAudio(instructions, ms+1000, outfilename)
     else:
         print("Already created %s" % outfilename)
-    audioSpriteFiles.append(outfilename)
-
-jsonData["audioSpriteFiles"] = audioSpriteFiles
-jsonData["sprites"] = sprites
-writeJSON(MANIFEST_FILE, jsonData)
+    audioSpriteFiles.append(os.path.basename(outfilename))
 
 # Now create the sprite image
 IMAGE_W = CELL_W * COLUMNS
@@ -146,3 +140,14 @@ clipsToFrame({
     "height": IMAGE_H,
     "clips": clips
 })
+
+# Write json sprite file
+jsonData = readJSON(MANIFEST_FILE)
+jsonData["audioSpriteFiles"] = audioSpriteFiles
+jsonData["sprites"] = sprites
+jsonData["image"] = os.path.basename(IMAGE_FILE)
+jsonData["width"] = IMAGE_W
+jsonData["height"] = IMAGE_H
+jsonData["cols"] = COLUMNS
+jsonData["rows"] = ROWS
+writeJSON(MANIFEST_FILE, jsonData)
