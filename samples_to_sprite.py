@@ -21,9 +21,8 @@ from lib.video_utils import *
 
 # input
 parser = argparse.ArgumentParser()
-parser.add_argument('-in', dest="INPUT_FILE", default="../tmp/samples_tsne.csv", help="Input file")
-parser.add_argument('-dir', dest="AUDIO_DIRECTORY", default="../media/sample/", help="Input file")
-parser.add_argument('-prop', dest="PROPERTY", default="tsne", help="Key to sort by (tsne, hz, pow, dur, flatness)")
+parser.add_argument('-in', dest="INPUT_FILE", default="tmp/samples_tsne.csv", help="Input file")
+parser.add_argument('-dir', dest="AUDIO_DIRECTORY", default="media/sample/", help="Input file")
 parser.add_argument('-sort', dest="SORT", default="flatness=desc=0.75&power=desc", help="Query string to sort by")
 parser.add_argument('-lim', dest="LIMIT", default=1296, type=int, help="Target total sample count, -1 for everything")
 parser.add_argument('-cell', dest="CELL_DIMENSIONS", default="40x40", help="Dimensions of each cell")
@@ -36,7 +35,6 @@ args = parser.parse_args()
 # Parse arguments
 INPUT_FILE = args.INPUT_FILE
 AUDIO_DIRECTORY = args.AUDIO_DIRECTORY
-PROPERTY = args.PROPERTY
 SORT = args.SORT
 LIMIT = args.LIMIT
 CELL_W, CELL_H = tuple([int(d) for d in args.CELL_DIMENSIONS.split("x")])
@@ -45,9 +43,9 @@ FILE_COUNT = args.FILE_COUNT
 UNIQUE_ID = args.UNIQUE_ID
 OVERWRITE = args.OVERWRITE > 0
 
-AUDIO_FILE = "audio/%s.mp3" % UNIQUE_ID
+AUDIO_FILE = "sprites/%s/%s.mp3" % (UNIQUE_ID, UNIQUE_ID)
 MANIFEST_FILE = AUDIO_FILE.replace(".mp3", ".json")
-IMAGE_FILE = "img/%s.png" % UNIQUE_ID
+IMAGE_FILE = "sprites/%s/%s.png" % (UNIQUE_ID, UNIQUE_ID)
 
 # Read files
 fieldNames, rows = readCsv(INPUT_FILE)
@@ -61,6 +59,25 @@ rows = sortByQueryString(rows, SORT)
 if LIMIT > 0 and len(rows) > LIMIT:
     rows = rows[:LIMIT]
 rowCount = len(rows)
+ROWS = ceilInt(1.0 * rowCount / COLUMNS)
+
+# Check for 1-d TSNE
+if "tsne" in fieldNames:
+    rows = sortBy(rows, ("tsne", "asc"))
+
+    # Check for 2-d TSNE
+    if "tsne2" in fieldNames:
+        newRows = []
+        for i in range(ROWS):
+            i0 = i * COLUMNS
+            i1 = (i+1) * COLUMNS
+            if i >= ROWS-1:
+                row = rows[i0:]
+            else:
+                row = rows[i0:i1]
+            sortedRow = sorted(row, key=lambda k: k['tsne2'])
+            newRows += sortedRow
+        rows = newRows[:]
 
 # Sort rows and add sequence
 totalDur = sum([r["dur"] for r in rows])
@@ -104,7 +121,6 @@ jsonData["sprites"] = sprites
 writeJSON(MANIFEST_FILE, jsonData)
 
 # Now create the sprite image
-ROWS = ceilInt(1.0 * rowCount / COLUMNS)
 IMAGE_W = CELL_W * COLUMNS
 IMAGE_H = CELL_H * ROWS
 clips = []
