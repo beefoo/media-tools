@@ -97,7 +97,9 @@ def getAudioSamples(fn, min_dur=50, max_dur=-1, fft=2048, hop_length=512, backtr
     for i, t in enumerate(times):
         prev = times[i-1] if i > 0 else 0
         dur = t - prev
-        if dur >= min_dur and (max_dur <= 0 or dur <= max_dur):
+        if max_dur > 0 and dur > max_dur:
+            dur = max_dur
+        if dur >= min_dur:
             samples.append({
                 "filename": basename,
                 "start": prev,
