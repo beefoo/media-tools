@@ -6,8 +6,8 @@ var App = (function() {
     var defaults = {
       "uid": "ia_politicaladarchive"
     };
-
-    this.opt = _.extend({}, defaults, config);
+    var q = queryParams();
+    this.opt = _.extend({}, defaults, config, q);
     this.init();
   }
 
@@ -15,6 +15,11 @@ var App = (function() {
     var dx = x2 - x1;
     var dy = y2 - y1;
     return Math.sqrt(dx*dx + dy*dy);
+  }
+
+  function queryParams(){
+    var search = location.search.substring(1);
+    return JSON.parse('{"' + search.replace(/&/g, '","').replace(/=/g,'":"') + '"}', function(key, value) { return key===""?value:decodeURIComponent(value) });
   }
 
   App.prototype.init = function(){
