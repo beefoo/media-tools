@@ -1,17 +1,10 @@
 # -*- coding: utf-8 -*-
 
 import argparse
-import inspect
 import os
 from PIL import Image
 from pprint import pprint
 import sys
-import time
-
-# add parent directory to sys path to import relative modules
-currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-parentdir = os.path.dirname(currentdir)
-sys.path.insert(0,parentdir)
 
 from lib.audio_mixer import *
 from lib.collection_utils import *

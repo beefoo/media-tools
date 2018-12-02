@@ -49,8 +49,9 @@ def parseSortString(str):
     conditionStrings = str.split("&")
     conditions = []
     for cs in conditionStrings:
-        parts = cs.split("=")
-        conditions.append(tuple(parts))
+        if "=" in cs:
+            parts = cs.split("=")
+            conditions.append(tuple(parts))
     return conditions
 
 def sortBy(arr, sorters):
