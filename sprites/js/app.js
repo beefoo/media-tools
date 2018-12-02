@@ -11,20 +11,16 @@ var App = (function() {
     this.init();
   }
 
-  function lerp(a, b, percent) {
-    return (1.0*b - a) * percent + a;
-  }
-
-  function norm(value, a, b){
-    var denom = (b - a);
-    if (denom > 0 || denom < 0) return (1.0 * value - a) / denom;
-    else return 0;
+  function distance(x1, y1, x2, y2){
+    var dx = x2 - x1;
+    var dy = y2 - y1;
+    return Math.sqrt(dx*dx + dy*dy);
   }
 
   App.prototype.init = function(){
     var _this = this;
 
-    this.currentCell = "";
+    this.currentCell = -1;
 
     var dataPromise = this.loadData();
     $.when(dataPromise).done(function(results){
@@ -45,21 +41,20 @@ var App = (function() {
     var cols = options.cols;
 
     var allSprites = _.map(options.sprites, function(s, i){
-      var row = Math.floor(i / cols);
-      var col = i % cols;
-      var id = row + "-" + col;
       return {
-        "id": id,
+        "id": i,
         "fileIndex": s[0],
-        "position": s.slice(1)
+        "audioPosition": [s[1], s[2]],
+        "nx": s[3],
+        "ny": s[4]
       }
     });
-    this.spriteLookup = _.object(_.map(allSprites, function(s){ return [s.id, s.fileIndex]; }));
+    this.sprites = allSprites;
 
     _.each(options.audioSpriteFiles, function(fn, i){
       var audioFilename = uid + "/" + fn;
       var sprites = _.filter(allSprites, function(s){ return s.fileIndex===i; });
-      sprites = _.map(sprites, function(s, i){ return [s.id, s.position]; });
+      sprites = _.map(sprites, function(s, i){ return [""+s.id, s.audioPosition]; });
       sprites = _.object(sprites);
       var promise = $.Deferred();
       var sound = new Howl({
@@ -73,7 +68,6 @@ var App = (function() {
       spritePromises.push(promise);
       sounds.push(sound);
     });
-
     this.sounds = sounds;
 
     $.when.apply(null, spritePromises).done(function() {
@@ -108,8 +102,8 @@ var App = (function() {
   App.prototype.loadUI = function(options){
     this.imageW = options.width;
     this.imageH = options.height;
-    this.cols = options.cols;
-    this.rows = options.rows;
+    this.cellNW = options.cellW / options.width;
+    this.cellNH = options.cellH / options.height;
 
     var imageUrl = this.opt.uid + "/" + options.image;
 
@@ -118,6 +112,10 @@ var App = (function() {
     this.$imageWrapper.append(this.$image);
 
     this.$label = $("#label");
+    this.$label.css({
+      "width": (this.cellNW * 100) + "%",
+      "height": (this.cellNH * 100) + "%"
+    });
 
     this.onResize();
   };
@@ -129,6 +127,8 @@ var App = (function() {
   };
 
   App.prototype.onResize = function(){
+    var _this = this;
+
     this.width = $(window).width();
     this.height = $(window).height();
 
@@ -163,11 +163,14 @@ var App = (function() {
     }
 
     this.imageOffset = this.$imageWrapper.offset();
-    this.cellW = this.imageRW / this.cols;
-    this.cellH = this.imageRH / this.rows;
-    this.$label.css({
-      "width": this.cellW + "px",
-      "height": this.cellH + "px"
+
+    var cellNW = this.cellNW;
+    var cellNH = this.cellNH;
+    _.each(this.sprites, function(s, i){
+      _this.sprites[i]["cx"] = (s["nx"] + cellNW * 0.5) * _this.imageRW;
+      _this.sprites[i]["cy"] = (s["ny"] + cellNH * 0.5) * _this.imageRH;
+      _this.sprites[i]["x"] = s["nx"] * _this.imageRW;
+      _this.sprites[i]["y"] = s["ny"] * _this.imageRH;
     });
   };
 
@@ -181,23 +184,19 @@ var App = (function() {
     // check for out of bounds
     if (x < 0 || y < 0 || x >= imgW || y >= imgH) return;
 
-    var cellW = this.cellW;
-    var cellH = this.cellH;
+    var sorted = _.sortBy(this.sprites, function(s){ return distance(s.cx, s.cy, x, y); });
+    var first = sorted[0];
+    var id = first.id;
+    var cx = first.x;
+    var cy = first.y;
 
-    var col = Math.floor(x / cellW);
-    var row = Math.floor(y / cellH);
-
-    // move the label
-    var cx = col * cellW;
-    var cy = row * cellH;
     this.$label.css("transform", "translate3d("+cx+"px, "+cy+"px, 0)");
 
     // play the cell if not already playing
-    var id = row + "-" + col;
     if (this.currentCell !== id) {
-      var fileIndex = this.spriteLookup[id];
+      var fileIndex = first.fileIndex;
       var sound = this.sounds[fileIndex];
-      sound.play(id);
+      sound.play(""+id);
       this.currentCell = id;
     }
   };
