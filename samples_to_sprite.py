@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import argparse
+import math
 import os
 from PIL import Image
 from pprint import pprint
@@ -24,6 +25,7 @@ parser.add_argument('-height', dest="IMAGE_H", default=1080, type=int, help="Ima
 parser.add_argument('-cell', dest="CELL_DIMENSIONS", default="40x40", help="Dimensions of each cell")
 parser.add_argument('-count', dest="FILE_COUNT", default=6, type=int, help="Number of audio files to produce")
 parser.add_argument('-id', dest="UNIQUE_ID", default="sample", help="Key for naming files")
+parser.add_argument('-log', dest="LOG", default=0, type=int, help="Display using log?")
 parser.add_argument('-overwrite', dest="OVERWRITE", default=0, type=int, help="Overwrite existing?")
 args = parser.parse_args()
 
@@ -31,7 +33,7 @@ args = parser.parse_args()
 INPUT_FILE = args.INPUT_FILE
 AUDIO_DIRECTORY = args.AUDIO_DIRECTORY
 SORT = args.SORT
-PROP1, PROP2 = tuple([p for p in args.PROPS.split(",")])
+PROP1, PROP2 = tuple([p for p in args.PROPS.strip().split(",")])
 LIMIT = args.LIMIT
 IMAGE_W = args.IMAGE_W
 IMAGE_H = args.IMAGE_H
@@ -39,6 +41,7 @@ CELL_W, CELL_H = tuple([int(d) for d in args.CELL_DIMENSIONS.split("x")])
 FILE_COUNT = args.FILE_COUNT
 UNIQUE_ID = args.UNIQUE_ID
 OVERWRITE = args.OVERWRITE > 0
+LOG = args.LOG
 
 AUDIO_FILE = "sprites/%s/%s.mp3" % (UNIQUE_ID, UNIQUE_ID)
 MANIFEST_FILE = AUDIO_FILE.replace(".mp3", ".json")
@@ -54,6 +57,13 @@ rows = sortByQueryString(rows, SORT)
 if LIMIT > 0 and len(rows) > LIMIT:
     rows = rows[:LIMIT]
 rowCount = len(rows)
+
+# use logarithmic scale
+if LOG > 0:
+    for i, row in enumerate(rows):
+        base = LOG if LOG > 1 else math.e
+        rows[i][PROP1] = math.log(row[PROP1], base)
+        rows[i][PROP2] = math.log(row[PROP2], base)
 
 # Sort rows and add sequence
 totalDur = sum([r["dur"] for r in rows])
