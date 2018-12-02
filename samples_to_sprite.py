@@ -23,7 +23,7 @@ from lib.video_utils import *
 parser = argparse.ArgumentParser()
 parser.add_argument('-in', dest="INPUT_FILE", default="tmp/samples_tsne.csv", help="Input file")
 parser.add_argument('-dir', dest="AUDIO_DIRECTORY", default="media/sample/", help="Input file")
-parser.add_argument('-sort', dest="SORT", default="flatness=desc=0.75&power=desc", help="Query string to sort by")
+parser.add_argument('-sort', dest="SORT", default="flatness=desc=0.5&power=desc", help="Query string to sort by")
 parser.add_argument('-lim', dest="LIMIT", default=1296, type=int, help="Target total sample count, -1 for everything")
 parser.add_argument('-cell', dest="CELL_DIMENSIONS", default="40x40", help="Dimensions of each cell")
 parser.add_argument('-cols', dest="COLUMNS", default=48, type=int, help="Number of cells per row")
