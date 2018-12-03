@@ -6,6 +6,7 @@ import numpy as np
 import os
 from PIL import Image
 import subprocess
+import sys
 
 def clipsToFrame(p):
     clips = p["clips"]
@@ -14,6 +15,7 @@ def clipsToFrame(p):
     width = p["width"]
     height = p["height"]
     overwrite = p["overwrite"] if "overwrite" in p else False
+    verbose = p["verbose"] if "verbose" in p else False
     im = None
     fileExists = os.path.isfile(filename) and not overwrite
 
@@ -23,9 +25,10 @@ def clipsToFrame(p):
 
         # load videos
         filenames = list(set([clip["filename"] for clip in clips]))
+        fileCount = len(filenames)
 
         # only open one video at a time
-        for fn in filenames:
+        for i, fn in enumerate(filenames):
             video = VideoFileClip(fn, audio=False)
             videoDur = video.duration
             vclips = [c for c in clips if fn==c["filename"]]
@@ -61,6 +64,11 @@ def clipsToFrame(p):
                 im = Image.alpha_composite(im, stagingImg)
             video.reader.close()
             del video
+
+            if verbose:
+                sys.stdout.write('\r')
+                sys.stdout.write("%s%%" % round(1.0*(i+1)/fileCount*100,1))
+                sys.stdout.flush()
 
         im = im.convert("RGB")
 

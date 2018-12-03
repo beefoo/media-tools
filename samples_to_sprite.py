@@ -110,7 +110,7 @@ range1 = (min(values1), max(values1))
 range2 = (min(values2), max(values2))
 for i, row in enumerate(rows):
     nx = norm(row[PROP1], range1)
-    ny = norm(row[PROP2], range2)
+    ny = 1.0 - norm(row[PROP2], range2)
     x = roundInt((IMAGE_W - CELL_W) * nx)
     y = roundInt((IMAGE_H - CELL_H) * ny)
     clips.append({
@@ -129,7 +129,8 @@ clipsToFrame({
     "overwrite": OVERWRITE,
     "width": IMAGE_W,
     "height": IMAGE_H,
-    "clips": clips
+    "clips": clips,
+    "verbose": True
 })
 
 # Write json sprite file
