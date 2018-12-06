@@ -86,3 +86,15 @@ def sortByQueryString(arr, sortString):
         return arr
 
     return sortBy(arr, sorters)
+
+def sortMatrix(arr, sortY, sortX, rowCount):
+    count = len(arr)
+    cols = ceilInt(1.0 * count / rowCount)
+    arr = sortBy(arr, sortY)
+    arrSorted = []
+    for col in range(cols):
+        i0 = col * rowCount
+        i1 = min(i0 + rowCount, count)
+        row = sortBy(arr[i0:i1], sortX)
+        arrSorted += row
+    return arrSorted

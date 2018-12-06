@@ -2,11 +2,29 @@
 
 from math_utils import *
 from moviepy.editor import VideoFileClip
+import multiprocessing
 import numpy as np
 import os
 from PIL import Image
 import subprocess
 import sys
+
+def addVideoArgs(parser):
+    parser.add_argument('-in', dest="INPUT_FILE", default="../tmp/samples.csv", help="Input file")
+    parser.add_argument('-ss', dest="EXCERPT_START", type=float, default=-1, help="Excerpt start in seconds")
+    parser.add_argument('-sd', dest="EXCERPT_DUR", type=float, default=-1, help="Excerpt duration in seconds")
+    parser.add_argument('-dir', dest="VIDEO_DIRECTORY", default="../media/sample/", help="Input file")
+    parser.add_argument('-aspect', dest="ASPECT_RATIO", default="16:9", help="Aspect ratio of each cell")
+    parser.add_argument('-width', dest="WIDTH", default=1920, type=int, help="Output video width")
+    parser.add_argument('-height', dest="HEIGHT", default=1080, type=int, help="Output video height")
+    parser.add_argument('-fps', dest="FPS", default=30, type=int, help="Output video frames per second")
+    parser.add_argument('-frames', dest="SAVE_FRAMES", default=0, type=int, help="Save frames?")
+    parser.add_argument('-outframe', dest="OUTPUT_FRAME", default="../tmp/sample/frame.%s.png", help="Output frames pattern")
+    parser.add_argument('-out', dest="OUTPUT_FILE", default="../output/sample.mp4", help="Output media file")
+    parser.add_argument('-threads', dest="THREADS", default=3, type=int, help="Amount of parallel frames to process (too many may result in too many open files)")
+    parser.add_argument('-overwrite', dest="OVERWRITE", default=0, type=int, help="Overwrite existing frames?")
+    parser.add_argument('-ao', dest="AUDIO_ONLY", default=0, type=int, help="Render audio only?")
+    parser.add_argument('-vo', dest="VIDEO_ONLY", default=0, type=int, help="Render video only?")
 
 def clipsToFrame(p):
     clips = p["clips"]
@@ -178,3 +196,12 @@ def getMediaTypes(filename):
 
 def hasAudio(filename):
     return ("audio" in getMediaTypes(filename))
+
+def parseVideoArgs(args):
+    d = vars(args)
+    aspectW, aspectH = tuple([int(p) for p in args.ASPECT_RATIO.split(":")])
+    d["ASPECT_RATIO"] = 1.0 * aspectW / aspectH
+    d["SAVE_FRAMES"] = args.SAVE_FRAMES > 0
+    d["THREADS"] = min(args.THREADS, multiprocessing.cpu_count()) if args.THREADS > 0 else multiprocessing.cpu_count()
+    d["OVERWRITE"] = args.OVERWRITE > 0
+    d["AUDIO_OUTPUT_FILE"] = args.OUTPUT_FILE.replace(".mp4", ".mp3")
