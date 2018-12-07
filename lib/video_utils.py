@@ -9,10 +9,28 @@ from PIL import Image
 import subprocess
 import sys
 
+def addGridPositions(clips, cols, width, height):
+    rows = ceilInt(1.0 * len(clips) / cols)
+    cellW = 1.0 * width / cols
+    cellH = 1.0 * height / rows
+    for i, c in enumerate(clips):
+        row = i / cols
+        col = i % cols
+        clips[i]["col"] = col
+        clips[i]["row"] = row
+        clips[i]["x"] = col * cellW
+        clips[i]["y"] = row * cellH
+        clips[i]["w"] = cellW
+        clips[i]["h"] = cellH
+    return clips
+
 def addVideoArgs(parser):
     parser.add_argument('-in', dest="INPUT_FILE", default="../tmp/samples.csv", help="Input file")
     parser.add_argument('-ss', dest="EXCERPT_START", type=float, default=-1, help="Excerpt start in seconds")
     parser.add_argument('-sd', dest="EXCERPT_DUR", type=float, default=-1, help="Excerpt duration in seconds")
+    # parser.add_argument('-sort', dest="SORT", default="", help="Query string to sort by")
+    # parser.add_argument('-count', dest="COUNT", default=-1, type=int, help="Target total sample count, -1 for everything")
+    # parser.add_argument('-filter', dest="FILTER", default="", help="Query string to filter by")
     parser.add_argument('-dir', dest="VIDEO_DIRECTORY", default="../media/sample/", help="Input file")
     parser.add_argument('-aspect', dest="ASPECT_RATIO", default="16:9", help="Aspect ratio of each cell")
     parser.add_argument('-width', dest="WIDTH", default=1920, type=int, help="Output video width")
@@ -178,6 +196,9 @@ def fillVideo(video, w, h):
 
     return cropped
 
+def frameToMs(frame, fps):
+    return roundInt((1.0 * frame / fps) * 1000.0)
+
 def getDurationFromFile(filename):
     result = 0
     if os.path.isfile(filename):
@@ -204,4 +225,22 @@ def parseVideoArgs(args):
     d["SAVE_FRAMES"] = args.SAVE_FRAMES > 0
     d["THREADS"] = min(args.THREADS, multiprocessing.cpu_count()) if args.THREADS > 0 else multiprocessing.cpu_count()
     d["OVERWRITE"] = args.OVERWRITE > 0
+    d["AUDIO_ONLY"] = args.AUDIO_ONLY > 0
+    d["VIDEO_ONLY"] = args.VIDEO_ONLY > 0
     d["AUDIO_OUTPUT_FILE"] = args.OUTPUT_FILE.replace(".mp4", ".mp3")
+    d["MS_PER_FRAME"] = 1.0 / (args.FPS / 1000.0)
+
+def processFrames(params, threads=1, verbose=True):
+    count = len(params)
+    if threads > 1:
+        pool = ThreadPool(threads)
+        results = pool.map(clipsToFrame, params)
+        pool.close()
+        pool.join()
+    else:
+        for i, p in enumerate(params):
+            clipsToFrame(p)
+            if verbose:
+                sys.stdout.write('\r')
+                sys.stdout.write("%s%%" % round(1.0*i/(count-1)*100,1))
+                sys.stdout.flush()

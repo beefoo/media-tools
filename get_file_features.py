@@ -18,7 +18,8 @@ args = parser.parse_args()
 INPUT_FILE = args.INPUT_FILE
 MEDIA_DIRECTORY = args.MEDIA_DIRECTORY
 FILENAME_KEY = args.FILENAME_KEY
-DURATION_KEY = args.DURATION_KEY
+
+keysToAdd = ["duration", "hasAudio", "hasVideo"]
 
 # get unique video files
 print("Reading file...")
@@ -26,17 +27,25 @@ fieldNames, rows = readCsv(INPUT_FILE)
 rowCount = len(rows)
 print("Found %s rows" % rowCount)
 
-# add duration key
-if DURATION_KEY not in fieldNames:
-    fieldNames.append(DURATION_KEY)
+# add keys
+for key in keysToAdd:
+    if key not in fieldNames:
+        fieldNames.append(key)
 
-print("Getting durations...")
+print("Getting file features...")
 for i, row in enumerate(rows):
     duration = 0
+    hasAudio = 0
+    hasVideo = 0
     if FILENAME_KEY in row and len(row[FILENAME_KEY]) > 0:
         filepath = MEDIA_DIRECTORY + row[FILENAME_KEY]
         duration = getDurationFromFile(filepath)
-    rows[i][DURATION_KEY] = duration
+        types = getMediaTypes(filepath)
+        hasAudio = 1 if "audio" in types else 0
+        hasVideo = 1 if "video" in types else 0
+    rows[i]["duration"] = duration
+    rows[i]["hasAudio"] = hasAudio
+    rows[i]["hasVideo"] = hasVideo
     sys.stdout.write('\r')
     sys.stdout.write("%s%%" % round(1.0*i/(rowCount-1)*100,1))
     sys.stdout.flush()

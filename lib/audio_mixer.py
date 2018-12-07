@@ -4,6 +4,11 @@ import os
 from pydub import AudioSegment
 import sys
 
+def getAudioSequenceDuration(sequence):
+    sequence = sorted(sequence, key=lambda s: s["ms"]+s["dur"])
+    lastAudioClip = sequence[-1]
+    return lastAudioClip["ms"] + lastAudioClip["dur"]
+
 def makeTrack(duration, instructions, segments, sfx=True, sampleWidth=2, sampleRate=44100, channels=2, fxPad=3000):
     # build audio
     baseAudio = AudioSegment.silent(duration=duration, frame_rate=sampleRate)

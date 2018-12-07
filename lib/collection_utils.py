@@ -1,4 +1,10 @@
 from pprint import pprint
+from math_utils import *
+
+def addIndices(arr, keyName="index"):
+    for i, item in enumerate(arr):
+        arr[i][keyName] = i
+    return arr
 
 def filterByQueryString(arr, queryString):
     return filterWhere(arr, parseQueryString(queryString))
@@ -98,3 +104,14 @@ def sortMatrix(arr, sortY, sortX, rowCount):
         row = sortBy(arr[i0:i1], sortX)
         arrSorted += row
     return arrSorted
+
+def updateAll(arr, updates):
+    if isinstance(updates, tuple):
+        updates = [updates]
+
+    for i, item in enumerate(arr):
+        for u in updates:
+            key, value = u
+            arr[i][key] = value
+
+    return arr
