@@ -135,12 +135,11 @@ for frame in range(FRAMES_PER_PAN):
     panProgress = 1.0 * frame / (FRAMES_PER_PAN-1.0)
     clips = []
     for i, s in enumerate(samples):
-        alpha = s["alpha"]
         if panProgress >= s["colSort"] and not s["played"]:
             audioSequence.append(frameToAudioInstruction(currentFrame+frame, s))
             samples[s["index"]]["played"] = True
-            alpha = 1.0
-            samples[s["index"]]["alpha"] = alpha
+            samples[s["index"]]["alpha"] = 1.0
+        alpha = samples[s["index"]]["alpha"]
         if alpha > 0.0:
             clips.append(sampleToClipData(samples[s["index"]]))
             samples[s["index"]]["alpha"] = max(0.0, alpha - ALPHA_STEP_PER_FRAME)
