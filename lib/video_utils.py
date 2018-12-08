@@ -3,6 +3,8 @@
 from math_utils import *
 from moviepy.editor import VideoFileClip
 import multiprocessing
+from multiprocessing import Pool
+from multiprocessing.dummy import Pool as ThreadPool
 import numpy as np
 import os
 from PIL import Image
@@ -28,6 +30,7 @@ def addVideoArgs(parser):
     parser.add_argument('-in', dest="INPUT_FILE", default="../tmp/samples.csv", help="Input file")
     parser.add_argument('-ss', dest="EXCERPT_START", type=float, default=-1, help="Excerpt start in seconds")
     parser.add_argument('-sd', dest="EXCERPT_DUR", type=float, default=-1, help="Excerpt duration in seconds")
+    parser.add_argument('-vol', dest="VOLUME", type=float, default=1.0, help="Master volume applied to all clips")
     # parser.add_argument('-sort', dest="SORT", default="", help="Query string to sort by")
     # parser.add_argument('-count', dest="COUNT", default=-1, type=int, help="Target total sample count, -1 for everything")
     # parser.add_argument('-filter', dest="FILTER", default="", help="Query string to filter by")
