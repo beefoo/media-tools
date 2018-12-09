@@ -7,6 +7,12 @@ import time
 def ceilInt(n):
     return int(math.ceil(n))
 
+def easeIn(n):
+    return (math.sin((n+1.5)*math.pi)+1.0) / 2.0
+
+def easeInOut(n):
+    return (math.sin((2.0*n+1.5)*math.pi)+1.0) / 2.0
+
 def floorInt(n):
     return int(math.floor(n))
 

@@ -42,6 +42,8 @@ def makeTrack(duration, instructions, segments, sfx=True, sampleWidth=2, sampleR
     return baseAudio
 
 def mixAudio(instructions, duration, outfilename, sfx=True, sampleWidth=2, sampleRate=44100, channels=2, clipFadeIn=100, clipFadeOut=100, fxPad=3000):
+    # remove instructions with no volume
+    instructions = [i for i in instructions if "volume" not in i or i["volume"] > 0]
     audioFiles = list(set([i["filename"] for i in instructions]))
     audioFiles = [{"filename": f} for f in audioFiles]
     instructionCount = len(instructions)

@@ -35,7 +35,7 @@ from lib.video_utils import *
 # input
 parser = argparse.ArgumentParser()
 addVideoArgs(parser)
-parser.add_argument('-pand', dest="PAN_DURATION", default=4.0, type=float, help="Pan duration in seconds")
+parser.add_argument('-pand', dest="PAN_DURATION", default=5.0, type=float, help="Pan duration in seconds")
 parser.add_argument('-paused', dest="PAUSE_DURATION", default=3.0, type=float, help="Pause duration in seconds")
 parser.add_argument('-grid', dest="GRID", default="192x108", help="Grid dimensions")
 a = parser.parse_args()
@@ -105,7 +105,7 @@ def clipsToFrameData(frame, clips):
         "overwrite": a.OVERWRITE
     }
 
-def frameToAudioInstruction(frame, sample):
+def frameToAudioInstruction(frame, sample, volume=1.0):
     global a
     pan = lerp((-1.0, 1.0), 1.0 * (sample["x"] + sample["w"] * 0.5) / a.WIDTH)
     return {
@@ -114,7 +114,7 @@ def frameToAudioInstruction(frame, sample):
         "start": sample["start"],
         "dur": sample["dur"],
         "pan": pan,
-        "volume": a.VOLUME,
+        "volume": volume * a.VOLUME,
         "fadeOut": sample["dur"]
     }
 
@@ -139,7 +139,8 @@ for frame in range(FRAMES_PER_PAN):
     clips = []
     for i, s in enumerate(samples):
         if panProgress >= s["colSort"] and not s["played"]:
-            audioSequence.append(frameToAudioInstruction(currentFrame+frame, s))
+            volume = easeInOut(1.0 * s["col"] / GRID_ROWS)
+            audioSequence.append(frameToAudioInstruction(currentFrame+frame, s, volume))
             samples[s["index"]]["played"] = True
             samples[s["index"]]["startMs"] = ms
             samples[s["index"]]["endMs"] = ms + s["dur"]

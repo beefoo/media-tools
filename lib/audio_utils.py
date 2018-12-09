@@ -423,6 +423,6 @@ def stretchSound(sound, amount=2.0, fade_out=0.8):
 
 def volumeToDb(volume):
     db = 0.0
-    if volume < 1.0 or volume > 1.0:
+    if 0.0 < volume < 1.0 or volume > 1.0:
         db = 10.0 * math.log(volume**2)
     return db
