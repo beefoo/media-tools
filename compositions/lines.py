@@ -37,13 +37,22 @@ parser = argparse.ArgumentParser()
 addVideoArgs(parser)
 parser.add_argument('-pand', dest="PAN_DURATION", default=5.0, type=float, help="Pan duration in seconds")
 parser.add_argument('-paused', dest="PAUSE_DURATION", default=3.0, type=float, help="Pause duration in seconds")
-parser.add_argument('-grid', dest="GRID", default="192x108", help="Grid dimensions")
+parser.add_argument('-grid', dest="GRID", default="96x54", help="Grid dimensions")
+parser.add_argument('-vgrid', dest="VISIBLE_GRID", default="48x27", help="Grid dimensions")
 a = parser.parse_args()
 parseVideoArgs(a)
 makeDirectories([a.OUTPUT_FRAME, a.OUTPUT_FILE])
 
 GRID_COLS, GRID_ROWS = tuple([int(d) for d in a.GRID.split("x")])
+VGRID_COLS, VGRID_ROWS = tuple([int(d) for d in a.VISIBLE_GRID.split("x")])
 COUNT = GRID_COLS * GRID_ROWS
+VCOUNT = VGRID_COLS * VGRID_ROWS
+VWIDTH = a.WIDTH
+VHEIGHT = a.HEIGHT
+WIDTH = roundInt(VWIDTH * (1.0 * GRID_COLS / VGRID_COLS))
+HEIGHT = roundInt(VHEIGHT * (1.0 * GRID_ROWS / VGRID_ROWS))
+VOFFSET_X = (WIDTH - VWIDTH) / 2
+VOFFSET_Y = (HEIGHT - VHEIGHT) / 2
 FRAMES_PER_PAN = roundInt(a.FPS * a.PAN_DURATION)
 FRAMES_PER_PAUSE = roundInt(a.FPS * a.PAUSE_DURATION)
 
@@ -139,7 +148,7 @@ for frame in range(FRAMES_PER_PAN):
     clips = []
     for i, s in enumerate(samples):
         if panProgress >= s["colSort"] and not s["played"]:
-            volume = easeInOut(1.0 * s["col"] / GRID_ROWS)
+            volume = easeInOut(1.0 * s["row"] / GRID_ROWS)
             audioSequence.append(frameToAudioInstruction(currentFrame+frame, s, volume))
             samples[s["index"]]["played"] = True
             samples[s["index"]]["startMs"] = ms
