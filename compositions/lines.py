@@ -27,6 +27,7 @@ sys.path.insert(0,parentdir)
 
 from lib.audio_mixer import *
 from lib.audio_utils import *
+from lib.clip import *
 from lib.collection_utils import *
 from lib.io_utils import *
 from lib.math_utils import *
@@ -51,8 +52,8 @@ VWIDTH = a.WIDTH
 VHEIGHT = a.HEIGHT
 WIDTH = roundInt(VWIDTH * (1.0 * GRID_COLS / VGRID_COLS))
 HEIGHT = roundInt(VHEIGHT * (1.0 * GRID_ROWS / VGRID_ROWS))
-VOFFSET_X = (WIDTH - VWIDTH) / 2
-VOFFSET_Y = (HEIGHT - VHEIGHT) / 2
+VOFFSET_X = -(WIDTH - VWIDTH) / 2
+VOFFSET_Y = -(HEIGHT - VHEIGHT) / 2
 FRAMES_PER_PAN = roundInt(a.FPS * a.PAN_DURATION)
 FRAMES_PER_PAUSE = roundInt(a.FPS * a.PAUSE_DURATION)
 
@@ -76,7 +77,7 @@ if sampleCount > COUNT:
 # 1. Place clips in a grid, sorting vertically by frequency and horizontally by power
 samples = sortMatrix(samples, sortY=("hz", "asc"), sortX=("power", "asc"), rowCount=GRID_COLS)
 samples = addIndices(samples)
-samples = addGridPositions(samples, GRID_COLS, a.WIDTH, a.HEIGHT)
+samples = addGridPositions(samples, GRID_COLS, WIDTH, HEIGHT, offsetX=VOFFSET_X, offsetY=VOFFSET_Y)
 
 # add sorter keys within each row and column by duration; this will determine the order at which clips will play
 unit = 1.0 / GRID_ROWS
@@ -98,87 +99,64 @@ for col in range(GRID_COLS):
 # pprint([c["rowSort"] for c in row])
 # sys.exit()
 
-audioSequence = []
-videoFrames = []
+# create clips, viewport, and container
+clips = samplesToClips(samples)
+clips = updateClipStates(clips, [("played", False), ("displayed", False)])
 currentFrame = 1
-samples = updateAll(samples, [("startMs", -2), ("endMs", -1), ("played", False)])
 
-def clipsToFrameData(frame, clips):
+def getPan(clip):
     global a
-    global totalFrames
-    return {
-        "filename": a.OUTPUT_FRAME % zeroPad(frame, totalFrames),
-        "clips": clips,
-        "width": a.WIDTH,
-        "height": a.HEIGHT,
-        "overwrite": a.OVERWRITE
-    }
+    return lerp((-1.0, 1.0), 1.0 * clip.props["col"] / (GRID_COLS-1))
 
-def frameToAudioInstruction(frame, sample, volume=1.0):
-    global a
-    pan = lerp((-1.0, 1.0), 1.0 * (sample["x"] + sample["w"] * 0.5) / a.WIDTH)
-    return {
-        "filename": a.VIDEO_DIRECTORY + sample["filename"],
-        "ms": frameToMs(frame, a.FPS),
-        "start": sample["start"],
-        "dur": sample["dur"],
-        "pan": pan,
-        "volume": volume * a.VOLUME,
-        "fadeOut": sample["dur"]
-    }
-
-def sampleToClipData(sample, progress):
-    global a
-    alpha = 1.0 - progress
-    time = lerp((sample["start"], sample["start"] + sample["dur"]), progress) / 1000.0
-    return {
-        "filename": a.VIDEO_DIRECTORY + sample["filename"],
-        "t": time,
-        "x": sample["x"],
-        "y": sample["y"],
-        "w": sample["w"],
-        "h": sample["h"],
-        "alpha": alpha
-    }
+def getVolume(clip, key, denom):
+    return easeInOut(1.0 * clip.props[key] / denom)
 
 # 2. Play clips from left-to-right
 for frame in range(FRAMES_PER_PAN):
     panProgress = 1.0 * frame / (FRAMES_PER_PAN-1.0)
     ms = frameToMs(currentFrame+frame, a.FPS)
-    clips = []
-    for i, s in enumerate(samples):
-        if panProgress >= s["colSort"] and not s["played"]:
-            volume = easeInOut(1.0 * s["row"] / GRID_ROWS)
-            audioSequence.append(frameToAudioInstruction(currentFrame+frame, s, volume))
-            samples[s["index"]]["played"] = True
-            samples[s["index"]]["startMs"] = ms
-            samples[s["index"]]["endMs"] = ms + s["dur"]
-        s = samples[s["index"]]
-        sampleProgress = norm(ms, (s["startMs"], s["endMs"]))
-        if 0.0 < sampleProgress < 1.0:
-            clips.append(sampleToClipData(s, sampleProgress))
-    videoFrames.append(clipsToFrameData(currentFrame+frame, clips))
+    for i, clip in enumerate(clips):
+        if panProgress >= clip.props["colSort"] and not clip.state["played"]:
+            volume = getVolume(clip, "row", GRID_ROWS)
+            pan = getPan(clip)
+            clip.setState("played", True)
+            clip.queueTween(ms, tweens=("alpha", 1.0, 0.0))
+            clip.queuePlay(ms, {"volume": volume, "pan": pan})
 
 currentFrame += FRAMES_PER_PAN
-samples = updateAll(samples, ("played", False))
-
-def doPause():
-    global videoFrames
-    global samples
-    global currentFrame
-
-    for frame in range(FRAMES_PER_PAUSE):
-        pauseProgress = 1.0 * frame / (FRAMES_PER_PAUSE-1.0)
-        ms = frameToMs(currentFrame+frame, a.FPS)
-        clips = []
-        for i, s in enumerate(samples):
-            sampleProgress = norm(ms, (s["startMs"], s["endMs"]))
-            if 0.0 < sampleProgress < 1.0:
-                clips.append(sampleToClipData(s, sampleProgress))
-        videoFrames.append(clipsToFrameData(currentFrame+frame, clips))
-
-doPause()
+clips = updateClipStates(clips, [("played", False), ("displayed", False)])
 currentFrame += FRAMES_PER_PAUSE
+
+# get audio sequence
+audioSequence = []
+for clip in clips:
+    for play in clip.plays:
+        start, end, params = play
+        p = {
+            "filename": a.VIDEO_DIRECTORY + clip.filename,
+            "ms": start,
+            "start": clip.start,
+            "dur": clip.dur,
+            "fadeOut": clip.dur
+        }
+        p.update(params)
+        audioSequence.append(p)
+
+
+
+# get frame sequence
+videoFrames = []
+for f in range(currentFrame):
+    frame = f + 1
+    ms = frameToMs(frame, a.FPS)
+    frameClips = clipsToParams(clips, ms)
+    videoFrames.append({
+        "filename": a.OUTPUT_FRAME % zeroPad(frame, totalFrames),
+        "clips": frameClips,
+        "width": a.WIDTH,
+        "height": a.HEIGHT,
+        "overwrite": a.OVERWRITE
+    })
 
 videoDurationMs = frameToMs(currentFrame, a.FPS)
 audioDurationMs = getAudioSequenceDuration(audioSequence)
@@ -187,6 +165,8 @@ print("Video time: %s" % formatSeconds(videoDurationMs/1000.0))
 print("Audio time: %s" % formatSeconds(audioDurationMs/1000.0))
 print("Total time: %s" % formatSeconds(durationMs/1000.0))
 print("Total frames: %s" % currentFrame)
+
+# sys.exit()
 
 if not a.VIDEO_ONLY and (not os.path.isfile(a.AUDIO_OUTPUT_FILE) or a.OVERWRITE):
     mixAudio(audioSequence, audioDurationMs, a.AUDIO_OUTPUT_FILE)

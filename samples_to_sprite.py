@@ -116,8 +116,8 @@ for i, row in enumerate(rows):
     clips.append({
         "x": x,
         "y": y,
-        "w": CELL_W,
-        "h": CELL_H,
+        "width": CELL_W,
+        "height": CELL_H,
         "filename": AUDIO_DIRECTORY + row["filename"],
         "t": row["start"] / 1000.0
     })

@@ -170,8 +170,8 @@ if not framesExist(OUTPUT_FRAME, targetFrames) or OVERWRITE:
                 "t": t,
                 "x": scene["x"],
                 "y": y,
-                "w": cellW,
-                "h": cellH,
+                "width": cellW,
+                "height": cellH,
                 "volume": volume
             })
 

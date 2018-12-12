@@ -11,7 +11,7 @@ from PIL import Image
 import subprocess
 import sys
 
-def addGridPositions(clips, cols, width, height):
+def addGridPositions(clips, cols, width, height, offsetX=0, offsetY=0):
     rows = ceilInt(1.0 * len(clips) / cols)
     cellW = 1.0 * width / cols
     cellH = 1.0 * height / rows
@@ -20,10 +20,10 @@ def addGridPositions(clips, cols, width, height):
         col = i % cols
         clips[i]["col"] = col
         clips[i]["row"] = row
-        clips[i]["x"] = col * cellW
-        clips[i]["y"] = row * cellH
-        clips[i]["w"] = cellW
-        clips[i]["h"] = cellH
+        clips[i]["x"] = col * cellW + offsetX
+        clips[i]["y"] = row * cellH + offsetY
+        clips[i]["width"] = cellW
+        clips[i]["height"] = cellH
     return clips
 
 def addVideoArgs(parser):
@@ -47,6 +47,9 @@ def addVideoArgs(parser):
     parser.add_argument('-ao', dest="AUDIO_ONLY", default=0, type=int, help="Render audio only?")
     parser.add_argument('-vo', dest="VIDEO_ONLY", default=0, type=int, help="Render video only?")
 
+def isClipVisible(clip, width, height):
+    return clip["x"]+clip["width"] > 0 and clip["y"]+clip["height"] > 0 and clip["x"] < width and clip["y"] < height
+
 def clipsToFrame(p):
     clips = p["clips"]
     filename = p["filename"]
@@ -62,6 +65,9 @@ def clipsToFrame(p):
     if not fileExists:
         im = Image.new(mode="RGBA", size=(width, height), color=(0, 0, 0, 255))
 
+        # filter out clips that are not visible
+        clips = [clip for clip in clips if isClipVisible(clip)]
+
         # load videos
         filenames = list(set([clip["filename"] for clip in clips]))
         fileCount = len(filenames)
@@ -75,8 +81,8 @@ def clipsToFrame(p):
             # extract frames from videos
             for clip in vclips:
                 videoT = clip["t"]
-                cw = roundInt(clip["w"])
-                ch = roundInt(clip["h"])
+                cw = roundInt(clip["width"])
+                ch = roundInt(clip["height"])
                 # check if we need to loop video clip
                 if videoT > videoDur:
                     videoT = videoT % videoDur
