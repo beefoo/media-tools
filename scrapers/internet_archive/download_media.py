@@ -12,6 +12,7 @@ from multiprocessing import Pool
 from multiprocessing.dummy import Pool as ThreadPool
 import os
 from pprint import pprint
+import shutil
 import subprocess
 import sys
 import urllib
@@ -93,7 +94,8 @@ def downloadMedia(row):
         os.remove(basename)
         return error
      # Move the file to the target location
-    os.rename(basename, filepath)
+    # os.rename(basename, filepath)
+    shutil.move(basename, filepath)
     return None
 
 pool = ThreadPool(THREADS)
