@@ -60,6 +60,17 @@ def parseSortString(str):
             conditions.append(tuple(parts))
     return conditions
 
+def prependAll(arr, prepends):
+    if isinstance(prepends, tuple):
+        prepends = [prepends]
+
+    for i, item in enumerate(arr):
+        for p in prepends:
+            key, value = p
+            arr[i][key] = value + item[key]
+
+    return arr
+
 def sortBy(arr, sorters):
     if isinstance(sorters, tuple):
         sorters = [sorters]

@@ -146,6 +146,7 @@ def clipsToParams(clips, ms):
     for clip in clips:
         props = clip.getTweenedProperties(ms)
         props["t"] = clip.getClipTime(ms)
+        props["filename"] = clip.filename
         params.append(props)
     return params
 

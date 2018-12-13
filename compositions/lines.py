@@ -74,6 +74,9 @@ if sampleCount > COUNT:
     samples = sortBy(samples, ("flatness", "asc"))
     samples = samples[:COUNT]
 
+# Add dir to filenames
+samples = prependAll(samples, ("filename", a.VIDEO_DIRECTORY))
+
 # 1. Place clips in a grid, sorting vertically by frequency and horizontally by power
 samples = sortMatrix(samples, sortY=("hz", "asc"), sortX=("power", "asc"), rowCount=GRID_COLS)
 samples = addIndices(samples)
@@ -133,7 +136,7 @@ for clip in clips:
     for play in clip.plays:
         start, end, params = play
         p = {
-            "filename": a.VIDEO_DIRECTORY + clip.filename,
+            "filename": clip.filename,
             "ms": start,
             "start": clip.start,
             "dur": clip.dur,
@@ -141,8 +144,6 @@ for clip in clips:
         }
         p.update(params)
         audioSequence.append(p)
-
-
 
 # get frame sequence
 videoFrames = []

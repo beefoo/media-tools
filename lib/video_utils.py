@@ -66,7 +66,7 @@ def clipsToFrame(p):
         im = Image.new(mode="RGBA", size=(width, height), color=(0, 0, 0, 255))
 
         # filter out clips that are not visible
-        clips = [clip for clip in clips if isClipVisible(clip)]
+        clips = [clip for clip in clips if isClipVisible(clip, width, height)]
 
         # load videos
         filenames = list(set([clip["filename"] for clip in clips]))
