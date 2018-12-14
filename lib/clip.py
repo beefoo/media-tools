@@ -86,11 +86,15 @@ class Clip:
     def getClipTime(self, ms):
         plays = [t for t in self.plays if t[0] <= ms <= t[1]]
         time = 0.0
-        for p in plays:
-            start, end, params = p
-            n = norm(ms, (start, end))
-            if 0.0 <= n <= 1.0:
-                time = n * self.dur / 1000.0
+        if len(plays) > 0:
+            for p in plays:
+                start, end, params = p
+                n = norm(ms, (start, end))
+                if 0.0 <= n <= 1.0:
+                    time = n * self.dur / 1000.0
+        else:
+            remainder = ms % self.dur
+            time = (self.start + remainder) / 1000.0
         return time
 
     def getTweenedProperties(self, ms):

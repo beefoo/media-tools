@@ -133,7 +133,7 @@ for frame in range(FRAMES_PER_PAN):
             clip.setState("played", True)
             clip.queueTween(ms-clip.dur, tweens=("alpha", 0.0, 1.0))
             clip.queueTween(ms, tweens=("alpha", 1.0, 0.0))
-            clip.queuePlay(ms-clip.dur, {"volume": 0.0})
+            # clip.queuePlay(ms-clip.dur, {"volume": 0.0})
             clip.queuePlay(ms, {"volume": volume, "pan": pan})
 
 currentFrame += FRAMES_PER_PAN
