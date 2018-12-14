@@ -30,9 +30,12 @@ def lim(value, ab=(0, 1)):
     a, b = ab
     return max(a, min(b, value))
 
-def norm(value, ab):
+def norm(value, ab, limit=False):
     a, b = ab
-    return 1.0 * (value - a) / (b - a)
+    n = 1.0 * (value - a) / (b - a)
+    if limit:
+        n = lim(n)
+    return n
 
 def parseFloat(string):
     return parseNumber(string, alwaysFloat=True)

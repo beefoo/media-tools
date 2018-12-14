@@ -54,6 +54,8 @@ WIDTH = roundInt(VWIDTH * (1.0 * GRID_COLS / VGRID_COLS))
 HEIGHT = roundInt(VHEIGHT * (1.0 * GRID_ROWS / VGRID_ROWS))
 VOFFSET_X = -(WIDTH - VWIDTH) / 2
 VOFFSET_Y = -(HEIGHT - VHEIGHT) / 2
+VOFFSET_NX = -1.0 * VOFFSET_X / WIDTH
+VOFFSET_NY = -1.0 * VOFFSET_Y / HEIGHT
 FRAMES_PER_PAN = roundInt(a.FPS * a.PAN_DURATION)
 FRAMES_PER_PAUSE = roundInt(a.FPS * a.PAUSE_DURATION)
 
@@ -111,10 +113,14 @@ def getPan(clip):
     global a
     return lerp((-1.0, 1.0), 1.0 * clip.props["col"] / (GRID_COLS-1))
 
-def getVolume(clip, key1, denom1, key2, denom2):
-    volume1 = easeInOut(1.0 * clip.props[key1] / denom1)
+def getVolume(clip, key1, denom1, key2, denom2, offset1=0.0):
+    global a
+    n1 = 1.0 * clip.props[key1] / denom1
+    volume1 = easeInOut(n1)
+    if offset1 > 0.0 and (n1 < offset1 or n1 > (1.0-offset1)):
+        volume1 = 0.0
     volume2 = easeInOut(1.0 * clip.props[key2] / denom2)
-    return volume1 * volume2
+    return volume1 * volume2 * a.VOLUME
 
 # 2. Play clips from left-to-right
 for frame in range(FRAMES_PER_PAN):
@@ -122,11 +128,12 @@ for frame in range(FRAMES_PER_PAN):
     ms = frameToMs(currentFrame+frame, a.FPS)
     for i, clip in enumerate(clips):
         if panProgress >= clip.props["colSort"] and not clip.state["played"]:
-            volume = getVolume(clip, "row", GRID_ROWS, "col", GRID_COLS)
+            volume = getVolume(clip, "row", GRID_ROWS, "col", GRID_COLS, VOFFSET_NY)
             pan = getPan(clip)
             clip.setState("played", True)
             clip.queueTween(ms-clip.dur, tweens=("alpha", 0.0, 1.0))
             clip.queueTween(ms, tweens=("alpha", 1.0, 0.0))
+            clip.queuePlay(ms-clip.dur, {"volume": 0.0})
             clip.queuePlay(ms, {"volume": volume, "pan": pan})
 
 currentFrame += FRAMES_PER_PAN
