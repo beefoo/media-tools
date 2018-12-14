@@ -104,7 +104,7 @@ for col in range(GRID_COLS):
 
 # create clips, viewport, and container
 clips = samplesToClips(samples)
-clips = updateClipStates(clips, [("played", False), ("displayed", False)])
+clips = updateClipStates(clips, [("played", False)])
 currentFrame = 1
 
 def getPan(clip):
@@ -125,11 +125,12 @@ for frame in range(FRAMES_PER_PAN):
             volume = getVolume(clip, "row", GRID_ROWS, "col", GRID_COLS)
             pan = getPan(clip)
             clip.setState("played", True)
+            clip.queueTween(ms-clip.dur, tweens=("alpha", 0.0, 1.0))
             clip.queueTween(ms, tweens=("alpha", 1.0, 0.0))
             clip.queuePlay(ms, {"volume": volume, "pan": pan})
 
 currentFrame += FRAMES_PER_PAN
-clips = updateClipStates(clips, [("played", False), ("displayed", False)])
+clips = updateClipStates(clips, [("played", False)])
 currentFrame += FRAMES_PER_PAUSE
 
 # get audio sequence

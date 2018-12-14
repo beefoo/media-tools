@@ -94,7 +94,7 @@ class Clip:
         return time
 
     def getTweenedProperties(self, ms):
-        tweens = [t for t in self.tweens if t[0] < ms < t[1]]
+        tweens = [t for t in self.tweens if t[0] < ms <= t[1]]
         props = {
             "x": self.vector.x,
             "y": self.vector.y,
@@ -111,7 +111,7 @@ class Clip:
         return props
 
     def isTweening(self, ms):
-        tweens = [t for t in self.tweens if t[0] < ms < t[1]]
+        tweens = [t for t in self.tweens if t[0] < ms <= t[1]]
         return len(tweens) > 0
 
     def queuePlay(self, ms, params={}):

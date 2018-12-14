@@ -68,6 +68,7 @@ def mixAudio(instructions, duration, outfilename, sfx=True, sampleWidth=2, sampl
         # load audio file
         fformat = audiofilename.split(".")[-1].lower()
         audio = AudioSegment.from_file(audiofilename, format=fformat)
+        audioDurationMs = len(audio)
         # convert to stereo
         if audio.channels != channels:
             print("Warning: channels changed to %s from %s in %s" % (channels, audio.channels, filename))
@@ -91,13 +92,21 @@ def mixAudio(instructions, duration, outfilename, sfx=True, sampleWidth=2, sampl
             clipEnd = None
             if clipDur > 0:
                 clipEnd = clipStart + clipDur
+            else:
+                clipEnd = audioDurationMs
+
+            # check bounds
+            clipStart = lim(clipStart, (0, audioDurationMs))
+            clipEnd = lim(clipEnd, (0, audioDurationMs))
+            if clipStart >= clipEnd:
+                continue
+            newClipDur = clipEnd - clipStart
+
             clip = audio[clipStart:clipEnd]
-            if clipEnd is None:
-                clip = audio[clipStart:]
 
             # add a fade in/out to avoid clicking
-            fadeInDur = clipFadeIn if clipDur <= 0 else min(clipFadeIn, clipDur)
-            fadeOutDur = clipFadeOut if clipDur <= 0 else min(clipFadeOut, clipDur)
+            fadeInDur = min(clipFadeIn, newClipDur)
+            fadeOutDur = min(clipFadeOut, newClipDur)
             clip = clip.fade_in(fadeInDur).fade_out(fadeOutDur)
 
             segments.append({
