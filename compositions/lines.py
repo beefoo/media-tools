@@ -36,7 +36,7 @@ from lib.video_utils import *
 # input
 parser = argparse.ArgumentParser()
 addVideoArgs(parser)
-parser.add_argument('-pand', dest="PAN_DURATION", default=5.0, type=float, help="Pan duration in seconds")
+parser.add_argument('-pand', dest="PAN_DURATION", default=6.0, type=float, help="Pan duration in seconds")
 parser.add_argument('-paused', dest="PAUSE_DURATION", default=3.0, type=float, help="Pause duration in seconds")
 parser.add_argument('-grid', dest="GRID", default="96x54", help="Grid dimensions")
 parser.add_argument('-vgrid', dest="VISIBLE_GRID", default="48x27", help="Grid dimensions")
@@ -111,8 +111,10 @@ def getPan(clip):
     global a
     return lerp((-1.0, 1.0), 1.0 * clip.props["col"] / (GRID_COLS-1))
 
-def getVolume(clip, key, denom):
-    return easeInOut(1.0 * clip.props[key] / denom)
+def getVolume(clip, key1, denom1, key2, denom2):
+    volume1 = easeInOut(1.0 * clip.props[key1] / denom1)
+    volume2 = easeInOut(1.0 * clip.props[key2] / denom2)
+    return volume1 * volume2
 
 # 2. Play clips from left-to-right
 for frame in range(FRAMES_PER_PAN):
@@ -120,7 +122,7 @@ for frame in range(FRAMES_PER_PAN):
     ms = frameToMs(currentFrame+frame, a.FPS)
     for i, clip in enumerate(clips):
         if panProgress >= clip.props["colSort"] and not clip.state["played"]:
-            volume = getVolume(clip, "row", GRID_ROWS)
+            volume = getVolume(clip, "row", GRID_ROWS, "col", GRID_COLS)
             pan = getPan(clip)
             clip.setState("played", True)
             clip.queueTween(ms, tweens=("alpha", 1.0, 0.0))
@@ -150,7 +152,7 @@ videoFrames = []
 for f in range(currentFrame):
     frame = f + 1
     ms = frameToMs(frame, a.FPS)
-    frameClips = clipsToParams(clips, ms)
+    frameClips = tweenedClipsToParams(clips, ms)
     videoFrames.append({
         "filename": a.OUTPUT_FRAME % zeroPad(frame, totalFrames),
         "clips": frameClips,

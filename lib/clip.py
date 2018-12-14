@@ -110,6 +110,10 @@ class Clip:
                 props[name] = lerp((tfrom, tto), p)
         return props
 
+    def isTweening(self, ms):
+        tweens = [t for t in self.tweens if t[0] < ms < t[1]]
+        return len(tweens) > 0
+
     def queuePlay(self, ms, params={}):
         dur = self.dur
         self.plays.append((ms, ms+dur, params))
@@ -141,21 +145,23 @@ def getTweenedClips(clips, ms):
         props.append(clip.getTweenedProperties(ms))
     return props
 
-def clipsToParams(clips, ms):
-    params = []
-    for clip in clips:
-        props = clip.getTweenedProperties(ms)
-        props["t"] = clip.getClipTime(ms)
-        props["filename"] = clip.filename
-        params.append(props)
-    return params
-
 def samplesToClips(samples):
     clips = []
     for sample in samples:
         clip = Clip(sample)
         clips.append(clip)
     return clips
+
+def tweenedClipsToParams(clips, ms):
+    params = []
+    tclips = [clip for clip in clips if clip.isTweening(ms)]
+    for clip in tclips:
+        props = clip.getTweenedProperties(ms)
+        props["t"] = clip.getClipTime(ms)
+        props["filename"] = clip.filename
+        params.append(props)
+    return params
+
 
 def updateClipStates(clips, updates):
     if isinstance(updates, tuple):
