@@ -241,6 +241,7 @@ def parseVideoArgs(args):
 
 def processFrames(params, threads=1, verbose=True):
     count = len(params)
+    print("Processing %s frames" % count)
     if threads > 1:
         pool = ThreadPool(threads)
         results = pool.map(clipsToFrame, params)

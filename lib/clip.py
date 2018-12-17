@@ -86,12 +86,25 @@ class Clip:
     def getClipTime(self, ms):
         plays = [t for t in self.plays if t[0] <= ms <= t[1]]
         time = 0.0
+
+        # check if we are playing this clip at this time
         if len(plays) > 0:
             for p in plays:
                 start, end, params = p
                 n = norm(ms, (start, end))
                 if 0.0 <= n <= 1.0:
                     time = n * self.dur / 1000.0
+
+        # otherwise, find the closest play
+        elif len(self.plays) > 0:
+            plays = sorted(self.plays, key=lambda p: abs(ms - lerp((p[0], p[1]), 0.5)))
+            closestPlay = plays[0]
+            start, end, params =  closestPlay
+            msSincePlay = ms - start
+            remainder = msSincePlay % self.dur
+            time = (self.start + remainder) / 1000.0
+
+        # just loop the clip if there are no plays
         else:
             remainder = ms % self.dur
             time = (self.start + remainder) / 1000.0
@@ -99,6 +112,7 @@ class Clip:
 
     def getTweenedProperties(self, ms):
         tweens = [t for t in self.tweens if t[0] < ms <= t[1]]
+        # set default properties that can be tweened
         props = {
             "x": self.vector.x,
             "y": self.vector.y,
@@ -110,7 +124,14 @@ class Clip:
             start, end, tprops = t
             p = norm(ms, (start, end))
             for tprop in tprops:
-                name, tfrom, tto = tprop
+                name = tfrom = tto = None
+                easing = "linear"
+                if len(tprop) == 3:
+                    name, tfrom, tto = tprop
+                elif len(tprop) == 4:
+                    name, tfrom, tto, easing = tprop
+                if easing == "sin":
+                    p = easeIn(p)
                 props[name] = lerp((tfrom, tto), p)
         return props
 

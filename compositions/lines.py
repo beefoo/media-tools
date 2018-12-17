@@ -1,18 +1,14 @@
 # -*- coding: utf-8 -*-
 
 # Instructions:
-# 1. Place clips in a grid, sorting vertically by frequency and horizontally by power
+# 1. Place clips in a grid, sorting vertically by pitch and horizontally by volume
 # 2. Play clips from left-to-right
 # 3. Play clips from right-to-left
 # 4. Play clips from top-to-bottom
 # 5. Play clips from bottom-to-top
-# 6. Play clips from left-to-right and right-to-left, simultaneously
-# 7. Play clips from top-to-bottom and bottom-to-top, simultaneously
-# 8. Play clips from left-to-right and top-to-bottom, simultaneously
-# 9. Play clips from right-to-left and bottom-to-top, simultaneously
-# 10. Play clips from left-to-right and bottom-to-top, simultaneously
-# 11. Play clips from right-to-left and top-to-bottom, simultaneously
-# 12. Play clips from left-to-right, right-to-left, top-to-bottom, bottom-to-top, simultaneously
+# 6. Do steps 4 and 5 simultaneously
+# 7. Do steps 2 and 3 simultaneously
+# 8. Do steps 6 and 7 simultaneously
 
 import argparse
 import inspect
@@ -40,6 +36,7 @@ parser.add_argument('-pand', dest="PAN_DURATION", default=6.0, type=float, help=
 parser.add_argument('-paused', dest="PAUSE_DURATION", default=3.0, type=float, help="Pause duration in seconds")
 parser.add_argument('-grid', dest="GRID", default="96x54", help="Grid dimensions")
 parser.add_argument('-vgrid', dest="VISIBLE_GRID", default="48x27", help="Grid dimensions")
+parser.add_argument('-fadem', dest="FADE_MULTIPLIER", default=3, type=int, help="e.g. 3 = fade in/out 3x the duration of the clip")
 a = parser.parse_args()
 parseVideoArgs(a)
 makeDirectories([a.OUTPUT_FRAME, a.OUTPUT_FILE])
@@ -130,10 +127,9 @@ for frame in range(FRAMES_PER_PAN):
         if panProgress >= clip.props["colSort"] and not clip.state["played"]:
             volume = getVolume(clip, "row", GRID_ROWS, "col", GRID_COLS, VOFFSET_NY)
             pan = getPan(clip)
+            fadeDur = a.FADE_MULTIPLIER * clip.dur
             clip.setState("played", True)
-            clip.queueTween(ms-clip.dur, tweens=("alpha", 0.0, 1.0))
-            clip.queueTween(ms, tweens=("alpha", 1.0, 0.0))
-            # clip.queuePlay(ms-clip.dur, {"volume": 0.0})
+            clip.queueTween(ms, dur=fadeDur, tweens=("alpha", 1.0, 0.0, "sin"))
             clip.queuePlay(ms, {"volume": volume, "pan": pan})
 
 currentFrame += FRAMES_PER_PAN
