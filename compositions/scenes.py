@@ -149,7 +149,7 @@ if not framesExist(OUTPUT_FRAME, targetFrames) or OVERWRITE:
 
     for frame in range(targetFrames):
         progress = 1.0 * frame / (targetFrames-1)
-        second = 1.0 * frame / FPS
+        ms = roundInt(1.0 * frame / FPS * 1000.0)
         offsetY = progress * movePixels
 
         clips = []
@@ -160,10 +160,10 @@ if not framesExist(OUTPUT_FRAME, targetFrames) or OVERWRITE:
             # skip if we are off screen
             if y >= HEIGHT or y <= -cellH:
                 continue
-            sceneStart = scene["start"] / 1000.0
-            sceneDur = scene["dur"] / 1000.0
-            remainder = second % sceneDur
-            t = sceneStart + remainder
+            sceneStart = scene["start"]
+            sceneDur = scene["dur"]
+            remainder = ms % sceneDur
+            t = roundInt(sceneStart + remainder)
             volume = baseVolume(scene, progress)
             clips.append({
                 "filename": VIDEO_DIRECTORY + scene["filename"],

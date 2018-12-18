@@ -210,7 +210,7 @@ def gePowerFromTimecodes(timecodes, method="max"):
     # get features for each timecode in file
     for filename in filenames:
         y, sr = librosa.load(getAudioFile(filename))
-        duration = getDuration(y, sr)
+        duration = roundInt(getDuration(y, sr) * 1000)
         stft = getStft(y)
         maxStft = 1
         if method=="mean":

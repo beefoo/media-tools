@@ -93,7 +93,7 @@ class Clip:
                 start, end, params = p
                 n = norm(ms, (start, end))
                 if 0.0 <= n <= 1.0:
-                    time = n * self.dur / 1000.0
+                    time = n * self.dur
 
         # otherwise, find the closest play
         elif len(self.plays) > 0:
@@ -102,24 +102,21 @@ class Clip:
             start, end, params =  closestPlay
             msSincePlay = ms - start
             remainder = msSincePlay % self.dur
-            time = (self.start + remainder) / 1000.0
+            time = self.start + remainder
 
         # just loop the clip if there are no plays
         else:
             remainder = ms % self.dur
-            time = (self.start + remainder) / 1000.0
+            time = self.start + remainder
+
+        time = roundInt(time)
+
         return time
 
     def getTweenedProperties(self, ms):
         tweens = [t for t in self.tweens if t[0] < ms <= t[1]]
         # set default properties that can be tweened
-        props = {
-            "x": self.vector.x,
-            "y": self.vector.y,
-            "width": self.vector.width,
-            "height": self.vector.height,
-            "alpha": self.alpha
-        }
+        props = {}
         for t in tweens:
             start, end, tprops = t
             p = norm(ms, (start, end))
@@ -164,11 +161,29 @@ class Clip:
     def setVector(self, vector):
         self.vector = Vector() if vector is None else vector
 
-def getTweenedClips(clips, ms):
-    props = []
+    def toDict(self, ms):
+        props = self.props.copy()
+        t = self.getClipTime(ms)
+        props.update({
+            "x": self.vector.x,
+            "y": self.vector.y,
+            "width": self.vector.width,
+            "height": self.vector.height,
+            "alpha": self.alpha,
+            "t": t,
+            "tn": norm(t, (self.start, self.start+self.dur), limit=True)
+        })
+        if len(self.tweens) > 0:
+            props.update(self.getTweenedProperties(ms))
+        return props
+
+def clipsToDicts(clips, ms, tweeningOnly=False):
+    dicts = []
+    if tweeningOnly:
+        clips = [clip for clip in clips if clip.isTweening(ms)]
     for clip in clips:
-        props.append(clip.getTweenedProperties(ms))
-    return props
+        dicts.append(clip.toDict(ms))
+    return dicts
 
 def samplesToClips(samples):
     clips = []
@@ -176,17 +191,6 @@ def samplesToClips(samples):
         clip = Clip(sample)
         clips.append(clip)
     return clips
-
-def tweenedClipsToParams(clips, ms):
-    params = []
-    tclips = [clip for clip in clips if clip.isTweening(ms)]
-    for clip in tclips:
-        props = clip.getTweenedProperties(ms)
-        props["t"] = clip.getClipTime(ms)
-        props["filename"] = clip.filename
-        params.append(props)
-    return params
-
 
 def updateClipStates(clips, updates):
     if isinstance(updates, tuple):

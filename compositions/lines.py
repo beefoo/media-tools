@@ -39,7 +39,7 @@ parser.add_argument('-vgrid', dest="VISIBLE_GRID", default="48x27", help="Grid d
 parser.add_argument('-fadem', dest="FADE_MULTIPLIER", default=3, type=int, help="e.g. 3 = fade in/out 3x the duration of the clip")
 a = parser.parse_args()
 parseVideoArgs(a)
-makeDirectories([a.OUTPUT_FRAME, a.OUTPUT_FILE])
+makeDirectories([a.OUTPUT_FRAME, a.OUTPUT_FILE, a.CACHE_FILE])
 
 GRID_COLS, GRID_ROWS = tuple([int(d) for d in a.GRID.split("x")])
 VGRID_COLS, VGRID_ROWS = tuple([int(d) for d in a.VISIBLE_GRID.split("x")])
@@ -80,6 +80,10 @@ samples = prependAll(samples, ("filename", a.VIDEO_DIRECTORY))
 samples = sortMatrix(samples, sortY=("hz", "asc"), sortX=("power", "asc"), rowCount=GRID_COLS)
 samples = addIndices(samples)
 samples = addGridPositions(samples, GRID_COLS, WIDTH, HEIGHT, offsetX=VOFFSET_X, offsetY=VOFFSET_Y)
+
+# Pre-process pixel data for videos
+if a.CACHE_VIDEO:
+    samples = loadVideoPixelData(samples, a.FPS, filename=a.CACHE_FILE, width=a.WIDTH, height=a.HEIGHT)
 
 # add sorter keys within each row and column by duration; this will determine the order at which clips will play
 unit = 1.0 / GRID_ROWS
@@ -156,7 +160,7 @@ videoFrames = []
 for f in range(currentFrame):
     frame = f + 1
     ms = frameToMs(frame, a.FPS)
-    frameClips = tweenedClipsToParams(clips, ms)
+    frameClips = clipsToDicts(clips, ms, tweeningOnly=True)
     videoFrames.append({
         "filename": a.OUTPUT_FRAME % zeroPad(frame, totalFrames),
         "clips": frameClips,

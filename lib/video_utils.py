@@ -46,9 +46,8 @@ def addVideoArgs(parser):
     parser.add_argument('-overwrite', dest="OVERWRITE", default=0, type=int, help="Overwrite existing frames?")
     parser.add_argument('-ao', dest="AUDIO_ONLY", default=0, type=int, help="Render audio only?")
     parser.add_argument('-vo', dest="VIDEO_ONLY", default=0, type=int, help="Render video only?")
-
-def isClipVisible(clip, width, height):
-    return clip["x"]+clip["width"] > 0 and clip["y"]+clip["height"] > 0 and clip["x"] < width and clip["y"] < height
+    parser.add_argument('-cache', dest="CACHE_VIDEO", default=0, type=int, help="Cache video clips?")
+    parser.add_argument('-cf', dest="CACHE_FILE", default="../tmp/pixel_cache.npy", help="File for caching data")
 
 def clipsToFrame(p):
     clips = p["clips"]
@@ -68,52 +67,42 @@ def clipsToFrame(p):
         # filter out clips that are not visible
         clips = [clip for clip in clips if isClipVisible(clip, width, height)]
 
-        # load videos
-        filenames = list(set([clip["filename"] for clip in clips]))
-        fileCount = len(filenames)
+        # pixels are cached
+        if len(clips) > 0 and "framePixelData" in clips[0]:
+            for clip in clips:
+                framePixelData = clip["framePixelData"]
+                count = len(framePixelData)
+                if count > 0:
+                    pixels = framePixelData[roundInt(clip["tn"] * (count-1))]
+                    clipImg = Image.fromarray(pixels, mode="RGBA")
+                    alpha = clip["alpha"] if "alpha" in clip and clip["alpha"] < 1.0 else 1.0
+                    clipImg.putalpha(roundInt(alpha*255))
+                    clipImg = fillImage(clipImg, roundInt(clip["width"]), roundInt(clip["height"]))
+                    im = pasteImage(im, clipImg, clip["x"], clip["y"])
 
-        # only open one video at a time
-        for i, fn in enumerate(filenames):
-            video = VideoFileClip(fn, audio=False)
-            videoDur = video.duration
-            vclips = [c for c in clips if fn==c["filename"]]
+        # otherwise, load pixels from the video source
+        else:
+            # load videos
+            filenames = list(set([clip["filename"] for clip in clips]))
+            fileCount = len(filenames)
 
-            # extract frames from videos
-            for clip in vclips:
-                videoT = clip["t"]
-                cw = roundInt(clip["width"])
-                ch = roundInt(clip["height"])
-                # check if we need to loop video clip
-                if videoT > videoDur:
-                    videoT = videoT % videoDur
-                # a numpy array representing the RGB picture of the clip
-                try:
-                    videoPixels = video.get_frame(videoT)
-                except IOError:
-                    print("Could not read pixels for %s at time %s" % (video.filename, videoT))
-                    videoPixels = np.zeros((ch, cw, 3), dtype='uint8')
-                clipImg = Image.fromarray(videoPixels, mode="RGB")
-                clipImg = clipImg.convert("RGBA")
-                alpha = clip["alpha"] if "alpha" in clip and clip["alpha"] < 1.0 else 1.0
-                clipImg.putalpha(roundInt(alpha*255))
-                w, h = clipImg.size
-                if w != cw or h != ch:
-                    # clipImg = clipImg.resize((cw, ch))
-                    clipImg = fillImage(clipImg.copy(), cw, ch)
-                # create a staging image at the same size of the base image, so we can blend properly
-                stagingImg = Image.new(mode="RGBA", size=(width, height), color=(0, 0, 0, 0))
-                stagingImg.paste(clipImg, (roundInt(clip["x"]), roundInt(clip["y"])))
-                # stagingImg.save(filename.replace(".png", "%s.png" % videoT))
-                # im.paste(stagingImg, (0, 0), mask=stagingImg)
-                # im = Image.blend(im, stagingImg, alpha=alpha)
-                im = Image.alpha_composite(im, stagingImg)
-            video.reader.close()
-            del video
+            # only open one video at a time
+            for i, fn in enumerate(filenames):
+                video = VideoFileClip(fn, audio=False)
+                videoDur = video.duration
+                vclips = [c for c in clips if fn==c["filename"]]
 
-            if verbose:
-                sys.stdout.write('\r')
-                sys.stdout.write("%s%%" % round(1.0*(i+1)/fileCount*100,1))
-                sys.stdout.flush()
+                # extract frames from videos
+                for clip in vclips:
+                    clipImg = getVideoClipImage(video, videoDur, clip)
+                    im = pasteImage(im, clipImg, clip["x"], clip["y"])
+                video.reader.close()
+                del video
+
+                if verbose:
+                    sys.stdout.write('\r')
+                    sys.stdout.write("%s%%" % round(1.0*(i+1)/fileCount*100,1))
+                    sys.stdout.flush()
 
         im = im.convert("RGB")
 
@@ -153,8 +142,12 @@ def compileFrames(infile, fps, outfile, padZeros, audioFile=None):
     print("Done.")
 
 def fillImage(img, w, h):
-    ratio = 1.0 * w / h
     vw, vh = img.size
+
+    if vw == w and vh == h:
+        return img
+
+    ratio = 1.0 * w / h
     vratio = 1.0 * vw / vh
 
     # first, resize video
@@ -205,8 +198,11 @@ def fillVideo(video, w, h):
 
     return cropped
 
-def frameToMs(frame, fps):
-    return roundInt((1.0 * frame / fps) * 1000.0)
+def frameToMs(frame, fps, roundResult=True):
+    result = (1.0 * frame / fps) * 1000.0
+    if roundResult:
+        result = roundInt(result)
+    return result
 
 def getDurationFromFile(filename):
     result = 0
@@ -214,6 +210,13 @@ def getDurationFromFile(filename):
         command = ['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', filename]
         result = subprocess.check_output(command).strip()
     return float(result)
+
+def getEmptyVideoClipImage(clip):
+    cw = roundInt(clip["width"])
+    ch = roundInt(clip["height"])
+    videoPixels = np.zeros((ch, cw, 4), dtype='uint8')
+    clipImg = Image.fromarray(videoPixels, mode="RGBA")
+    return clipImg
 
 # e.g. returns ['audio', 'video'] for a/v files
 def getMediaTypes(filename):
@@ -224,8 +227,91 @@ def getMediaTypes(filename):
         result = subprocess.check_output(command).splitlines()
     return result
 
+def getVideoClipImage(video, videoDur, clip):
+    videoT = clip["t"] / 1000.0
+    cw = roundInt(clip["width"])
+    ch = roundInt(clip["height"])
+    # check if we need to loop video clip
+    if videoT > videoDur:
+        videoT = videoT % videoDur
+    # a numpy array representing the RGB picture of the clip
+    try:
+        videoPixels = video.get_frame(videoT)
+    except IOError:
+        print("Could not read pixels for %s at time %s" % (video.filename, videoT))
+        videoPixels = np.zeros((ch, cw, 3), dtype='uint8')
+    clipImg = Image.fromarray(videoPixels, mode="RGB")
+    clipImg = clipImg.convert("RGBA")
+    alpha = clip["alpha"] if "alpha" in clip and clip["alpha"] < 1.0 else 1.0
+    clipImg.putalpha(roundInt(alpha*255))
+    clipImg = fillImage(clipImg, cw, ch)
+    return clipImg
+
 def hasAudio(filename):
     return ("audio" in getMediaTypes(filename))
+
+def isClipVisible(clip, width, height):
+    return clip["x"]+clip["width"] > 0 and clip["y"]+clip["height"] > 0 and clip["x"] < width and clip["y"] < height
+
+def loadVideoPixelData(clips, fps, filename=None, width=None, height=None, checkVisibility=True):
+    # assumes clip has width, height, and index
+    print("Loading video pixel data...")
+    pixelData = [[] for i in range(len(clips))]
+    dataLoaded = False
+
+    if filename and os.path.isfile(filename):
+        pixelData = np.load(filename)
+        if len(pixelData) != len(clips):
+            print("Mismatch of cached data; resetting...")
+            pixelData = [[] for i in range(len(clips))]
+        else:
+            dataLoaded = True
+
+    if not dataLoaded:
+        print("No cached data found... rebuilding...")
+        # load videos
+        filenames = list(set([clip["filename"] for clip in clips]))
+        fileCount = len(filenames)
+        msStep = frameToMs(1, fps, False)
+
+        # only open one video at a time
+        for i, fn in enumerate(filenames):
+            video = VideoFileClip(fn, audio=False)
+            videoDur = video.duration
+            vclips = [c for c in clips if fn==c["filename"]]
+
+            # extract frames from videos
+            for clip in vclips:
+                if checkVisibility and width and height and isClipVisible(clip, width, height):
+                    start = clip["start"]
+                    end = start + clip["dur"]
+                    ms = start
+                    clipData = []
+                    while ms <= end:
+                        fclip = clip.copy()
+                        fclip["t"] = roundInt(ms)
+                        clipImg = getVideoClipImage(video, videoDur, fclip)
+                        clipData.append(np.array(clipImg))
+                        ms += msStep
+                    pixelData[clip["index"]] = np.array(clipData)
+                else:
+                    pixelData[clip["index"]] = np.array([])
+
+            video.reader.close()
+            del video
+
+            sys.stdout.write('\r')
+            sys.stdout.write("%s%%" % round(1.0*(i+1)/fileCount*100,1))
+            sys.stdout.flush()
+
+        if filename:
+            print("Saving cached data...")
+            np.save(filename, pixelData)
+
+    for i, clip in enumerate(clips):
+        clips[i]["framePixelData"] = pixelData[clip["index"]]
+
+    return clips
 
 def parseVideoArgs(args):
     d = vars(args)
@@ -237,7 +323,16 @@ def parseVideoArgs(args):
     d["AUDIO_ONLY"] = args.AUDIO_ONLY > 0
     d["VIDEO_ONLY"] = args.VIDEO_ONLY > 0
     d["AUDIO_OUTPUT_FILE"] = args.OUTPUT_FILE.replace(".mp4", ".mp3")
-    d["MS_PER_FRAME"] = 1.0 / (args.FPS / 1000.0)
+    d["MS_PER_FRAME"] = frameToMs(1, args.FPS, False)
+    d["CACHE_VIDEO"] = args.CACHE_VIDEO > 0
+
+def pasteImage(im, clipImg, x, y):
+    width, height = im.size
+    # create a staging image at the same size of the base image, so we can blend properly
+    stagingImg = Image.new(mode="RGBA", size=(width, height), color=(0, 0, 0, 0))
+    stagingImg.paste(clipImg, (roundInt(x), roundInt(y)))
+    im = Image.alpha_composite(im, stagingImg)
+    return im
 
 def processFrames(params, threads=1, verbose=True):
     count = len(params)
