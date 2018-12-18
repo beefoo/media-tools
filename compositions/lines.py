@@ -33,7 +33,7 @@ from lib.video_utils import *
 parser = argparse.ArgumentParser()
 addVideoArgs(parser)
 parser.add_argument('-pand', dest="PAN_DURATION", default=6.0, type=float, help="Pan duration in seconds")
-parser.add_argument('-paused', dest="PAUSE_DURATION", default=3.0, type=float, help="Pause duration in seconds")
+parser.add_argument('-paused', dest="PAUSE_DURATION", default=2.0, type=float, help="Pause duration in seconds")
 parser.add_argument('-grid', dest="GRID", default="96x54", help="Grid dimensions")
 parser.add_argument('-vgrid', dest="VISIBLE_GRID", default="48x27", help="Grid dimensions")
 parser.add_argument('-fadem', dest="FADE_MULTIPLIER", default=3, type=int, help="e.g. 3 = fade in/out 3x the duration of the clip")
@@ -76,7 +76,7 @@ if sampleCount > COUNT:
 # Add dir to filenames
 samples = prependAll(samples, ("filename", a.VIDEO_DIRECTORY))
 
-# 1. Place clips in a grid, sorting vertically by frequency and horizontally by power
+# 1. Place clips in a grid, sorting vertically by pitch and horizontally by volume
 samples = sortMatrix(samples, sortY=("hz", "asc"), sortX=("power", "asc"), rowCount=GRID_COLS)
 samples = addIndices(samples)
 samples = addGridPositions(samples, GRID_COLS, WIDTH, HEIGHT, offsetX=VOFFSET_X, offsetY=VOFFSET_Y)
@@ -123,22 +123,41 @@ def getVolume(clip, key1, denom1, key2, denom2, offset1=0.0):
     volume2 = easeInOut(1.0 * clip.props[key2] / denom2)
     return volume1 * volume2 * a.VOLUME
 
-# 2. Play clips from left-to-right
-for frame in range(FRAMES_PER_PAN):
-    panProgress = 1.0 * frame / (FRAMES_PER_PAN-1.0)
-    ms = frameToMs(currentFrame+frame, a.FPS)
-    for i, clip in enumerate(clips):
-        if panProgress >= clip.props["colSort"] and not clip.state["played"]:
-            volume = getVolume(clip, "row", GRID_ROWS, "col", GRID_COLS, VOFFSET_NY)
-            pan = getPan(clip)
-            fadeDur = a.FADE_MULTIPLIER * clip.dur
-            clip.setState("played", True)
-            clip.queueTween(ms, dur=fadeDur, tweens=("alpha", 1.0, 0.0, "sin"))
-            clip.queuePlay(ms, {"volume": volume, "pan": pan})
+def doLine(frameStart, propKey, volumeProps, reverse=False):
+    global a
+    global clips
+    for frame in range(FRAMES_PER_PAN):
+        panProgress = 1.0 * frame / (FRAMES_PER_PAN-1.0)
+        if reverse:
+            panProgress = 1.0 - panProgress
+        ms = frameToMs(frameStart+frame, a.FPS)
+        for i, clip in enumerate(clips):
+            value = clip.props[propKey]
+            if (not reverse and panProgress >= value or reverse and panProgress <= value) and not clip.state["played"]:
+                key1, denom1, key2, denom2, offset1 = volumeProps
+                volume = getVolume(clip, key1, denom1, key2, denom2, offset1)
+                pan = getPan(clip)
+                fadeDur = a.FADE_MULTIPLIER * clip.dur
+                clip.setState("played", True)
+                clip.queueTween(ms, dur=fadeDur, tweens=("alpha", 1.0, 0.0, "sin"))
+                clip.queuePlay(ms, {"volume": volume, "pan": pan})
+    clips = updateClipStates(clips, [("played", False)])
 
-currentFrame += FRAMES_PER_PAN
-clips = updateClipStates(clips, [("played", False)])
-currentFrame += FRAMES_PER_PAUSE
+# 2. Play clips from left-to-right
+doLine(currentFrame, "colSort", ("row", GRID_ROWS, "col", GRID_COLS, VOFFSET_NY))
+currentFrame += FRAMES_PER_PAN + FRAMES_PER_PAUSE
+
+# 3. Play clips from right-to-left
+doLine(currentFrame, "colSort", ("row", GRID_ROWS, "col", GRID_COLS, VOFFSET_NY), reverse=True)
+currentFrame += FRAMES_PER_PAN + FRAMES_PER_PAUSE
+
+# 4. Play clips from top-to-bottom
+doLine(currentFrame, "rowSort", ("col", GRID_COLS, "row", GRID_ROWS, VOFFSET_NX))
+currentFrame += FRAMES_PER_PAN + FRAMES_PER_PAUSE
+
+# 5. Play clips from bottom-to-top
+doLine(currentFrame, "rowSort", ("col", GRID_COLS, "row", GRID_ROWS, VOFFSET_NX), reverse=True)
+currentFrame += FRAMES_PER_PAN + FRAMES_PER_PAUSE
 
 # get audio sequence
 audioSequence = []
