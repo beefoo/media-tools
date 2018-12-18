@@ -48,19 +48,19 @@ def addFx(sound, effects, pad=3000, fade_in=100, fade_out=100):
     return newSound
 
 def getAudioFile(fn, samplerate=44100):
-    format = fn.split(".")[-1]
-    # if this is an .mp4, convert to .mp3
-    if format == "mp4":
-        target = fn.replace(".mp4", ".mp3")
-        if not os.path.isfile(target):
-            command = ['ffmpeg',
-                '-i', fn,
-                '-ar', str(samplerate), # for defining sample rate
-                '-q:a', '0', # for variable bitrate
-                '-map', 'a', target]
-            print(" ".join(command))
-            finished = subprocess.check_call(command)
-        fn = target
+    # format = fn.split(".")[-1]
+    # # if this is an .mp4, convert to .mp3
+    # if format == "mp4":
+    #     target = fn.replace(".mp4", ".mp3")
+    #     if not os.path.isfile(target):
+    #         command = ['ffmpeg',
+    #             '-i', fn,
+    #             '-ar', str(samplerate), # for defining sample rate
+    #             '-q:a', '0', # for variable bitrate
+    #             '-map', 'a', target]
+    #         print(" ".join(command))
+    #         finished = subprocess.check_call(command)
+    #     fn = target
     return fn
 
 def getAudioSamples(fn, min_dur=50, max_dur=-1, fft=2048, hop_length=512, backtrack=True, superFlux=True):
