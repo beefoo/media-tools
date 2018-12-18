@@ -159,6 +159,23 @@ currentFrame += FRAMES_PER_PAN + FRAMES_PER_PAUSE
 doLine(currentFrame, "rowSort", ("col", GRID_COLS, "row", GRID_ROWS, VOFFSET_NX), reverse=True)
 currentFrame += FRAMES_PER_PAN + FRAMES_PER_PAUSE
 
+# 6. Do steps 4 and 5 simultaneously
+doLine(currentFrame, "rowSort", ("col", GRID_COLS, "row", GRID_ROWS, VOFFSET_NX))
+doLine(currentFrame, "rowSort", ("col", GRID_COLS, "row", GRID_ROWS, VOFFSET_NX), reverse=True)
+currentFrame += FRAMES_PER_PAN + FRAMES_PER_PAUSE
+
+# 7. Do steps 2 and 3 simultaneously
+doLine(currentFrame, "colSort", ("row", GRID_ROWS, "col", GRID_COLS, VOFFSET_NY))
+doLine(currentFrame, "colSort", ("row", GRID_ROWS, "col", GRID_COLS, VOFFSET_NY), reverse=True)
+currentFrame += FRAMES_PER_PAN + FRAMES_PER_PAUSE
+
+# 8. Do steps 6 and 7 simultaneously
+doLine(currentFrame, "colSort", ("row", GRID_ROWS, "col", GRID_COLS, VOFFSET_NY))
+doLine(currentFrame, "colSort", ("row", GRID_ROWS, "col", GRID_COLS, VOFFSET_NY), reverse=True)
+doLine(currentFrame, "rowSort", ("col", GRID_COLS, "row", GRID_ROWS, VOFFSET_NX))
+doLine(currentFrame, "rowSort", ("col", GRID_COLS, "row", GRID_ROWS, VOFFSET_NX), reverse=True)
+currentFrame += FRAMES_PER_PAN + FRAMES_PER_PAUSE
+
 # get audio sequence
 audioSequence = []
 for clip in clips:

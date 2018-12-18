@@ -129,7 +129,11 @@ class Clip:
                     name, tfrom, tto, easing = tprop
                 if easing == "sin":
                     p = easeIn(p)
-                props[name] = lerp((tfrom, tto), p)
+                value = lerp((tfrom, tto), p)
+                if name in props:
+                    props[name] = max(value, props[name])
+                else:
+                    props[name] = value
         return props
 
     def isTweening(self, ms):
