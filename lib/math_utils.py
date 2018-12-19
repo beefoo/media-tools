@@ -19,6 +19,9 @@ def floorInt(n):
 def formatSeconds(s):
     return time.strftime('%H:%M:%S', time.gmtime(s))
 
+def getValue(d, key, default):
+    return d[key] if key in d else default
+
 def isNumber(n):
     return isinstance(n, (int, float))
 

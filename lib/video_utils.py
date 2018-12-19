@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from gpu_utils import *
 from math_utils import *
 from moviepy.editor import VideoFileClip
 import multiprocessing
@@ -48,6 +49,7 @@ def addVideoArgs(parser):
     parser.add_argument('-vo', dest="VIDEO_ONLY", default=0, type=int, help="Render video only?")
     parser.add_argument('-cache', dest="CACHE_VIDEO", default=0, type=int, help="Cache video clips?")
     parser.add_argument('-cf', dest="CACHE_FILE", default="../tmp/pixel_cache.npy", help="File for caching data")
+    parser.add_argument('-gpu', dest="USE_GPU", default=0, type=int, help="Use GPU? (requires caching to be true)")
 
 def clipsToFrame(p):
     clips = p["clips"]
@@ -57,6 +59,7 @@ def clipsToFrame(p):
     height = p["height"]
     overwrite = p["overwrite"] if "overwrite" in p else False
     verbose = p["verbose"] if "verbose" in p else False
+    useGPU = p["gpu"] if "gpu" in p else False
     im = None
     fileExists = os.path.isfile(filename) and not overwrite
 
@@ -69,16 +72,19 @@ def clipsToFrame(p):
 
         # pixels are cached
         if len(clips) > 0 and "framePixelData" in clips[0]:
-            for clip in clips:
-                framePixelData = clip["framePixelData"]
-                count = len(framePixelData)
-                if count > 0:
-                    pixels = framePixelData[roundInt(clip["tn"] * (count-1))]
-                    clipImg = Image.fromarray(pixels, mode="RGBA")
-                    alpha = clip["alpha"] if "alpha" in clip and clip["alpha"] < 1.0 else 1.0
-                    clipImg.putalpha(roundInt(alpha*255))
-                    clipImg = fillImage(clipImg, roundInt(clip["width"]), roundInt(clip["height"]))
-                    im = pasteImage(im, clipImg, clip["x"], clip["y"])
+            if useGPU:
+                im = clipsToFrameGPU(clips, width, height)
+            else:
+                for clip in clips:
+                    framePixelData = clip["framePixelData"]
+                    count = len(framePixelData)
+                    if count > 0:
+                        pixels = framePixelData[roundInt(clip["tn"] * (count-1))]
+                        clipImg = Image.fromarray(pixels, mode="RGB")
+                        clipImg = clipImg.convert("RGBA")
+                        clipImg.putalpha(getAlpha(clip))
+                        clipImg = fillImage(clipImg, roundInt(clip["width"]), roundInt(clip["height"]))
+                        im = pasteImage(im, clipImg, clip["x"], clip["y"])
 
         # otherwise, load pixels from the video source
         else:
@@ -95,6 +101,8 @@ def clipsToFrame(p):
                 # extract frames from videos
                 for clip in vclips:
                     clipImg = getVideoClipImage(video, videoDur, clip)
+                    clipImg = clipImg.convert("RGBA")
+                    clipImg.putalpha(getAlpha(clip))
                     im = pasteImage(im, clipImg, clip["x"], clip["y"])
                 video.reader.close()
                 del video
@@ -111,6 +119,23 @@ def clipsToFrame(p):
             print("Saved frame %s" % filename)
 
     return True
+
+def clipsToFrameGPU(clips, width, height):
+    pixelData = []
+    properties = []
+    offset = 0
+    for clip in clips:
+        framePixelData = clip["framePixelData"]
+        count = len(framePixelData)
+        if count > 0:
+            pixels = framePixelData[roundInt(clip["tn"] * (count-1))]
+            pixelData.append(pixels)
+            h, w, c = pixels.shape
+            # TODO: pass in width/height to fill to
+            properties.append([offset, clip["x"], clip["y"], w, h, getAlpha(clip)])
+            offset += (h*w*c)
+    pixels = clipsToImageGPU(width, height, pixelData, properties)
+    return Image.fromarray(pixels, mode="RGB")
 
 def compileFrames(infile, fps, outfile, padZeros, audioFile=None):
     print("Compiling frames...")
@@ -241,11 +266,12 @@ def getVideoClipImage(video, videoDur, clip):
         print("Could not read pixels for %s at time %s" % (video.filename, videoT))
         videoPixels = np.zeros((ch, cw, 3), dtype='uint8')
     clipImg = Image.fromarray(videoPixels, mode="RGB")
-    clipImg = clipImg.convert("RGBA")
-    alpha = clip["alpha"] if "alpha" in clip and clip["alpha"] < 1.0 else 1.0
-    clipImg.putalpha(roundInt(alpha*255))
     clipImg = fillImage(clipImg, cw, ch)
     return clipImg
+
+def getAlpha(clip):
+    alpha = clip["alpha"] if "alpha" in clip and clip["alpha"] < 1.0 else 1.0
+    return roundInt(alpha*255)
 
 def hasAudio(filename):
     return ("audio" in getMediaTypes(filename))
@@ -324,7 +350,8 @@ def parseVideoArgs(args):
     d["VIDEO_ONLY"] = args.VIDEO_ONLY > 0
     d["AUDIO_OUTPUT_FILE"] = args.OUTPUT_FILE.replace(".mp4", ".mp3")
     d["MS_PER_FRAME"] = frameToMs(1, args.FPS, False)
-    d["CACHE_VIDEO"] = args.CACHE_VIDEO > 0
+    d["CACHE_VIDEO"] = args.CACHE_VIDEO > 0 or args.USE_GPU > 0
+    d["USE_GPU"] = args.USE_GPU > 0
 
 def pasteImage(im, clipImg, x, y):
     width, height = im.size

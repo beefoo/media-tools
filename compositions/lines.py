@@ -202,7 +202,8 @@ for f in range(currentFrame):
         "clips": frameClips,
         "width": a.WIDTH,
         "height": a.HEIGHT,
-        "overwrite": a.OVERWRITE
+        "overwrite": a.OVERWRITE,
+        "gpu": a.USE_GPU
     })
 
 videoDurationMs = frameToMs(currentFrame, a.FPS)
