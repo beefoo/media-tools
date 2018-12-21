@@ -131,8 +131,7 @@ def clipsToFrameGPU(clips, width, height):
             pixels = framePixelData[roundInt(clip["tn"] * (count-1))]
             pixelData.append(pixels)
             h, w, c = pixels.shape
-            # TODO: pass in width/height to fill to
-            properties.append([offset, clip["x"], clip["y"], w, h, getAlpha(clip)])
+            properties.append([offset, clip["x"], clip["y"], w, h, clip["width"], clip["height"], getAlpha(clip)])
             offset += (h*w*c)
     pixels = clipsToImageGPU(width, height, pixelData, properties)
     return Image.fromarray(pixels, mode="RGB")

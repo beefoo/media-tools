@@ -22,20 +22,31 @@ def clipsToImageGPU(width, height, pixelData, properties):
         int canvasW = %d;
         int canvasH = %d;
         int i = get_global_id(0);
-        int offset = props[i*6];
-        int x = props[i*6+1];
-        int y = props[i*6+2];
-        int w = props[i*6+3];
-        int h = props[i*6+4];
-        int alpha = props[i*6+5];
+        int pcount = 8;
+        int offset = props[i*pcount];
+        int x = props[i*pcount+1];
+        int y = props[i*pcount+2];
+        int w = props[i*pcount+3];
+        int h = props[i*pcount+4];
+        int tw = props[i*pcount+5];
+        int th = props[i*pcount+6];
+        int alpha = props[i*pcount+7];
         float falpha = (float) alpha / (float) 255.0;
 
-        for (int row=0; row<h; row++) {
-            for (int col=0; col<w; col++) {
+        bool isScaled = (w != tw || h != th);
+
+        for (int trow=0; trow<th; trow++) {
+            for (int tcol=0; tcol<tw; tcol++) {
+                int row = trow;
+                int col = tcol;
+                if (isScaled) {
+                    row = (int) round(((float) trow / (float) (th-1)) * (float) (h-1));
+                    col = (int) round(((float) tcol / (float) (tw-1)) * (float) (w-1));
+                }
                 int px = x + col;
                 int py = y + row;
                 if (px >= 0 && px < canvasW && py >= 0 && py < canvasH) {
-                    int srcIndex = row * w * 3 + col * 3 + offset;
+                    int srcIndex = trow * tw * 3 + tcol * 3 + offset;
                     int destIndex = py * canvasW * 3 + px * 3;
                     int r = pdata[srcIndex];
                     int g = pdata[srcIndex+1];
