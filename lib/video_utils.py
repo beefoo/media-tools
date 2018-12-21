@@ -53,8 +53,6 @@ def addVideoArgs(parser):
     parser.add_argument('-gpu', dest="USE_GPU", default=0, type=int, help="Use GPU? (requires caching to be true)")
 
 def clipsToFrame(p):
-    if "ms" in p:
-        clips = clipsToDicts(p["clips"], p["ms"])
     filename = p["filename"]
     saveFrame = p["saveFrame"] if "saveFrame" in p else True
     width = p["width"]
@@ -68,6 +66,10 @@ def clipsToFrame(p):
     # frame already exists, read it directly
     if not fileExists:
         im = Image.new(mode="RGBA", size=(width, height), color=(0, 0, 0, 255))
+
+        clips = p["clips"]
+        if "ms" in p:
+            clips = clipsToDicts(p["clips"], p["ms"])
 
         # filter out clips that are not visible
         clips = [clip for clip in clips if isClipVisible(clip, width, height)]

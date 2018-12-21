@@ -238,8 +238,6 @@ for f in range(totalFrames):
         "gpu": a.USE_GPU
     })
 
-
-
 # sys.exit()
 
 if not a.VIDEO_ONLY and (not os.path.isfile(a.AUDIO_OUTPUT_FILE) or a.OVERWRITE):
