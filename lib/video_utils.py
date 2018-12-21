@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from clip import *
 from gpu_utils import *
 from math_utils import *
 from moviepy.editor import VideoFileClip
@@ -52,7 +53,8 @@ def addVideoArgs(parser):
     parser.add_argument('-gpu', dest="USE_GPU", default=0, type=int, help="Use GPU? (requires caching to be true)")
 
 def clipsToFrame(p):
-    clips = p["clips"]
+    if "ms" in p:
+        clips = clipsToDicts(p["clips"], p["ms"])
     filename = p["filename"]
     saveFrame = p["saveFrame"] if "saveFrame" in p else True
     width = p["width"]
@@ -276,7 +278,9 @@ def hasAudio(filename):
     return ("audio" in getMediaTypes(filename))
 
 def isClipVisible(clip, width, height):
-    return clip["x"]+clip["width"] > 0 and clip["y"]+clip["height"] > 0 and clip["x"] < width and clip["y"] < height
+    isInFrame = clip["x"]+clip["width"] > 0 and clip["y"]+clip["height"] > 0 and clip["x"] < width and clip["y"] < height
+    isOpaque = getAlpha(clip) > 0
+    return isInFrame and isOpaque
 
 def loadVideoPixelData(clips, fps, filename=None, width=None, height=None, checkVisibility=True):
     # assumes clip has width, height, and index
@@ -336,7 +340,12 @@ def loadVideoPixelData(clips, fps, filename=None, width=None, height=None, check
     for i, clip in enumerate(clips):
         clips[i]["framePixelData"] = pixelData[clip["index"]]
 
+    print("Finished loading pixel data.")
+
     return clips
+
+def msToFrame(ms, fps):
+    return roundInt((ms / 1000.0) * fps)
 
 def parseVideoArgs(args):
     d = vars(args)

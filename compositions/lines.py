@@ -55,8 +55,11 @@ VOFFSET_NX = -1.0 * VOFFSET_X / WIDTH
 VOFFSET_NY = -1.0 * VOFFSET_Y / HEIGHT
 FRAMES_PER_PAN = roundInt(a.FPS * a.PAN_DURATION)
 FRAMES_PER_PAUSE = roundInt(a.FPS * a.PAUSE_DURATION)
+FADE_IN_OUT_SECONDS = 6.0
+FRAMES_PER_FADE = roundInt(a.FPS * FADE_IN_OUT_SECONDS)
+MIN_ALPHA = 0.2
 
-totalDuration = (a.PAN_DURATION + a.PAUSE_DURATION) * 11
+totalDuration = (a.PAN_DURATION + a.PAUSE_DURATION) * 7 + FADE_IN_OUT_SECONDS * 2
 totalFrames = roundInt(totalDuration * a.FPS)
 
 # get unique video files
@@ -123,6 +126,13 @@ def getVolume(clip, key1, denom1, key2, denom2, offset1=0.0):
     volume2 = easeInOut(1.0 * clip.props[key2] / denom2)
     return volume1 * volume2 * a.VOLUME
 
+def doFade(frameStart, fromAlpha, toAlpha, fadeDur):
+    global a
+    global clips
+    ms = frameToMs(frameStart, a.FPS)
+    for i, clip in enumerate(clips):
+        clip.queueTween(ms, dur=roundInt(fadeDur*1000), tweens=("alpha", fromAlpha, toAlpha, "sin"))
+
 def doLine(frameStart, propKey, volumeProps, reverse=False):
     global a
     global clips
@@ -138,10 +148,16 @@ def doLine(frameStart, propKey, volumeProps, reverse=False):
                 volume = getVolume(clip, key1, denom1, key2, denom2, offset1)
                 pan = getPan(clip)
                 fadeDur = a.FADE_MULTIPLIER * clip.dur
+                fadeInDur = min(100, fadeDur/10)
                 clip.setState("played", True)
-                clip.queueTween(ms, dur=fadeDur, tweens=("alpha", 1.0, 0.0, "sin"))
+                clip.queueTween(ms, dur=fadeInDur, tweens=("alpha", MIN_ALPHA, 1.0, "sin"))
+                clip.queueTween(ms+fadeInDur, dur=fadeDur-fadeInDur, tweens=("alpha", 1.0, MIN_ALPHA, "sin"))
                 clip.queuePlay(ms, {"volume": volume, "pan": pan})
     clips = updateClipStates(clips, [("played", False)])
+
+# Slowly fade clips in to partial opacity
+doFade(currentFrame, 0.0, MIN_ALPHA, FADE_IN_OUT_SECONDS)
+currentFrame += FRAMES_PER_FADE
 
 # 2. Play clips from left-to-right
 doLine(currentFrame, "colSort", ("row", GRID_ROWS, "col", GRID_COLS, VOFFSET_NY))
@@ -176,6 +192,10 @@ doLine(currentFrame, "rowSort", ("col", GRID_COLS, "row", GRID_ROWS, VOFFSET_NX)
 doLine(currentFrame, "rowSort", ("col", GRID_COLS, "row", GRID_ROWS, VOFFSET_NX), reverse=True)
 currentFrame += FRAMES_PER_PAN + FRAMES_PER_PAUSE
 
+# Slowly fade clips out
+doFade(currentFrame, MIN_ALPHA, 0.0, FADE_IN_OUT_SECONDS)
+currentFrame += FRAMES_PER_FADE
+
 # get audio sequence
 audioSequence = []
 for clip in clips:
@@ -191,33 +211,39 @@ for clip in clips:
         p.update(params)
         audioSequence.append(p)
 
-# get frame sequence
-videoFrames = []
-for f in range(currentFrame):
-    frame = f + 1
-    ms = frameToMs(frame, a.FPS)
-    frameClips = clipsToDicts(clips, ms, tweeningOnly=True)
-    videoFrames.append({
-        "filename": a.OUTPUT_FRAME % zeroPad(frame, totalFrames),
-        "clips": frameClips,
-        "width": a.WIDTH,
-        "height": a.HEIGHT,
-        "overwrite": a.OVERWRITE,
-        "gpu": a.USE_GPU
-    })
-
 videoDurationMs = frameToMs(currentFrame, a.FPS)
 audioDurationMs = getAudioSequenceDuration(audioSequence)
 durationMs = max(videoDurationMs, audioDurationMs)
 print("Video time: %s" % formatSeconds(videoDurationMs/1000.0))
 print("Audio time: %s" % formatSeconds(audioDurationMs/1000.0))
 print("Total time: %s" % formatSeconds(durationMs/1000.0))
-print("Total frames: %s" % currentFrame)
+
+# adjust frames if audio is longer than video
+totalFrames = msToFrame(durationMs, a.FPS) if durationMs > videoDurationMs else currentFrame
+print("Total frames: %s" % totalFrames)
+
+# get frame sequence
+videoFrames = []
+print("Making video frame sequence...")
+for f in range(totalFrames):
+    frame = f + 1
+    ms = frameToMs(frame, a.FPS)
+    videoFrames.append({
+        "filename": a.OUTPUT_FRAME % zeroPad(frame, totalFrames),
+        "clips": clips,
+        "ms": ms,
+        "width": a.WIDTH,
+        "height": a.HEIGHT,
+        "overwrite": a.OVERWRITE,
+        "gpu": a.USE_GPU
+    })
+
+
 
 # sys.exit()
 
 if not a.VIDEO_ONLY and (not os.path.isfile(a.AUDIO_OUTPUT_FILE) or a.OVERWRITE):
-    mixAudio(audioSequence, audioDurationMs, a.AUDIO_OUTPUT_FILE)
+    mixAudio(audioSequence, durationMs, a.AUDIO_OUTPUT_FILE)
 
 if not a.AUDIO_ONLY:
     processFrames(videoFrames, threads=a.THREADS)

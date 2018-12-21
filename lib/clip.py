@@ -86,35 +86,66 @@ class Clip:
     def getClipTime(self, ms):
         plays = [t for t in self.plays if t[0] <= ms <= t[1]]
         time = 0.0
+        start = 0
 
         # check if we are playing this clip at this time
         if len(plays) > 0:
             for p in plays:
                 start, end, params = p
-                n = norm(ms, (start, end))
-                if 0.0 <= n <= 1.0:
-                    time = n * self.dur
 
         # otherwise, find the closest play
         elif len(self.plays) > 0:
             plays = sorted(self.plays, key=lambda p: abs(ms - lerp((p[0], p[1]), 0.5)))
             closestPlay = plays[0]
             start, end, params =  closestPlay
-            msSincePlay = ms - start
-            remainder = msSincePlay % self.dur
-            time = self.start + remainder
 
-        # just loop the clip if there are no plays
-        else:
-            remainder = ms % self.dur
-            time = self.start + remainder
-
-        time = roundInt(time)
+        msSincePlay = ms - start
+        remainder = msSincePlay % self.dur
+        time = roundInt(self.start + remainder)
 
         return time
 
+    def getDefaultVectorProperties(self):
+        return {
+            "x": self.vector.x,
+            "y": self.vector.y,
+            "width": self.vector.width,
+            "height": self.vector.height,
+            "alpha": self.alpha
+        }
+
+    def getFilledTweens(self):
+        ftweens = []
+        defaults = self.getDefaultVectorProperties()
+        for i, t in enumerate(self.tweens):
+            start, end, tprops = t
+            pstart = pend = 0
+            ptprops = []
+
+            # get previous tween
+            if i > 0:
+                pstart, pend, ptprops = self.tweens[i-1]
+
+            if pend < start:
+                # get combined tween names from previous and current tweens
+                tnames = unique([p[0] for p in ptprops] + [p[0] for p in tprops])
+                # get the filler properties
+                ftprops = []
+                for tname in tnames:
+                    # tween from the end of the previous to the begenning of the current
+                    ptpropsMatches = [p for p in ptprops if p[0]==tname]
+                    tfrom = ptpropsMatches[0][2] if len(ptpropsMatches) > 0 else defaults[tname]
+                    tpropsMatches = [p for p in tprops if p[0]==tname]
+                    tto = tpropsMatches[0][1] if len(tpropsMatches) > 0 else defaults[tname]
+                    ftprops.append((tname, tfrom, tto))
+                ftweens.append((pend, start, ftprops))
+            ftweens.append(t)
+
+        return ftweens
+
     def getTweenedProperties(self, ms):
-        tweens = [t for t in self.tweens if t[0] < ms <= t[1]]
+        tweens = self.getFilledTweens()
+        tweens = [t for t in tweens if t[0] < ms <= t[1]]
         # set default properties that can be tweened
         props = {}
         for t in tweens:
@@ -168,12 +199,8 @@ class Clip:
     def toDict(self, ms):
         props = self.props.copy()
         t = self.getClipTime(ms)
+        props.update(self.getDefaultVectorProperties())
         props.update({
-            "x": self.vector.x,
-            "y": self.vector.y,
-            "width": self.vector.width,
-            "height": self.vector.height,
-            "alpha": self.alpha,
             "t": t,
             "tn": norm(t, (self.start, self.start+self.dur), limit=True)
         })
@@ -181,13 +208,19 @@ class Clip:
             props.update(self.getTweenedProperties(ms))
         return props
 
-def clipsToDicts(clips, ms, tweeningOnly=False):
+def clipsToDicts(clips, ms):
     dicts = []
-    if tweeningOnly:
-        clips = [clip for clip in clips if clip.isTweening(ms)]
     for clip in clips:
         dicts.append(clip.toDict(ms))
     return dicts
+
+# def clipsToDicts(clips, ms, tweeningOnly=True):
+#     dicts = []
+#     if tweeningOnly:
+#         clips = [clip for clip in clips if clip.isTweening(ms)]
+#     for clip in clips:
+#         dicts.append(clip.toDict(ms))
+#     return dicts
 
 def samplesToClips(samples):
     clips = []
