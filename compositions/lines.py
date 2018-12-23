@@ -113,17 +113,27 @@ clips = samplesToClips(samples)
 clips = updateClipStates(clips, [("played", False)])
 currentFrame = 1
 
+def getAlphaMultiplier(clip):
+    global a
+    offset = VOFFSET_NY
+    alpha = 0.0
+    n = 1.0 * clip.props["row"] / (GRID_ROWS-1)
+    if n >= offset and n <= (1.0-offset):
+        n = norm(n, (offset, 1.0-offset))
+        alpha = easeInOut(n)
+    return alpha
+
 def getPan(clip):
     global a
     return lerp((-1.0, 1.0), 1.0 * clip.props["col"] / (GRID_COLS-1))
 
 def getVolume(clip, key1, denom1, key2, denom2, offset1=0.0):
     global a
-    n1 = 1.0 * clip.props[key1] / denom1
+    n1 = 1.0 * clip.props[key1] / (denom1-1)
     volume1 = easeInOut(n1)
     if offset1 > 0.0 and (n1 < offset1 or n1 > (1.0-offset1)):
         volume1 = 0.0
-    volume2 = easeInOut(1.0 * clip.props[key2] / denom2)
+    volume2 = easeInOut(1.0 * clip.props[key2] / (denom2-1))
     return volume1 * volume2 * a.VOLUME
 
 def doFade(frameStart, fromAlpha, toAlpha, fadeDur):
@@ -131,7 +141,8 @@ def doFade(frameStart, fromAlpha, toAlpha, fadeDur):
     global clips
     ms = frameToMs(frameStart, a.FPS)
     for i, clip in enumerate(clips):
-        clip.queueTween(ms, dur=roundInt(fadeDur*1000), tweens=("alpha", fromAlpha, toAlpha, "sin"))
+        alphaMultiplier = getAlphaMultiplier(clip)
+        clip.queueTween(ms, dur=roundInt(fadeDur*1000), tweens=("alpha", alphaMultiplier*fromAlpha, alphaMultiplier*toAlpha, "sin"))
 
 def doLine(frameStart, propKey, volumeProps, reverse=False):
     global a
@@ -147,11 +158,12 @@ def doLine(frameStart, propKey, volumeProps, reverse=False):
                 key1, denom1, key2, denom2, offset1 = volumeProps
                 volume = getVolume(clip, key1, denom1, key2, denom2, offset1)
                 pan = getPan(clip)
+                alphaMultiplier = getAlphaMultiplier(clip)
                 fadeDur = a.FADE_MULTIPLIER * clip.dur
                 fadeInDur = min(100, fadeDur/10)
                 clip.setState("played", True)
-                clip.queueTween(ms, dur=fadeInDur, tweens=("alpha", MIN_ALPHA, 1.0, "sin"))
-                clip.queueTween(ms+fadeInDur, dur=fadeDur-fadeInDur, tweens=("alpha", 1.0, MIN_ALPHA, "sin"))
+                clip.queueTween(ms, dur=fadeInDur, tweens=("alpha", alphaMultiplier*MIN_ALPHA, alphaMultiplier, "sin"))
+                clip.queueTween(ms+fadeInDur, dur=fadeDur-fadeInDur, tweens=("alpha", alphaMultiplier, alphaMultiplier*MIN_ALPHA, "sin"))
                 clip.queuePlay(ms, {"volume": volume, "pan": pan})
     clips = updateClipStates(clips, [("played", False)])
 
