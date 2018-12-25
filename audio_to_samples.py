@@ -20,7 +20,8 @@ import sys
 
 # input
 parser = argparse.ArgumentParser()
-parser.add_argument('-in', dest="INPUT_FILES", default="media/sample/bird.wav", help="Input file pattern")
+parser.add_argument('-in', dest="INPUT_FILE", default="media/sample/bird.wav", help="Input file pattern")
+parser.add_argument('-dir', dest="MEDIA_DIRECTORY", default="media/downloads/ia_politicaladarchive/", help="Input dir")
 parser.add_argument('-samples', dest="SAMPLES", default=-1, type=int, help="Max samples to produce per media file, -1 for all")
 parser.add_argument('-min', dest="MIN_DUR", default=80, type=int, help="Minimum sample duration in ms")
 parser.add_argument('-max', dest="MAX_DUR", default=1000, type=int, help="Maximum sample duration in ms, -1 for no max")
@@ -36,7 +37,8 @@ parser.add_argument('-sort', dest="SORT", default="", help="Query string to sort
 args = parser.parse_args()
 
 # Parse arguments
-INPUT_FILES = args.INPUT_FILES
+INPUT_FILE = args.INPUT_FILE
+MEDIA_DIRECTORY = args.MEDIA_DIRECTORY
 SAMPLES = args.SAMPLES if args.SAMPLES > 0 else None
 MIN_DUR = args.MIN_DUR
 MAX_DUR = args.MAX_DUR
@@ -58,8 +60,15 @@ if os.path.isfile(OUTPUT_FILE) and not OVERWRITE:
     sys.exit()
 
 # Read files
-files = getFilenames(INPUT_FILES)
+print("Reading file...")
+fieldNames, files = readCsv(INPUT_FILE)
 fileCount = len(files)
+print("Found %s rows" % fileCount)
+
+# Filter out files with no filename, duration, or audio
+files = filterWhere(files, [("duration", 0, ">"), ("hasAudio", 0, ">")])
+fileCount = len(files)
+print("Found %s rows after filtering" % fileCount)
 
 # Determine the number of samples per file
 samplesPerFile = SAMPLES
@@ -104,7 +113,8 @@ headings = ["filename", "start", "dur"]
 if FEATURES:
     headings += ["power", "hz", "flatness", "note", "octave"]
 totalCount = 0
-for i, fn in enumerate(files):
+for i, file in enumerate(files):
+    fn = file["filename"]
 
     # Check if we already have this data
     if not OVERWRITE and rowCount > 0 and len([row for row in rows if row["filename"]==fn]) > 0:
@@ -112,7 +122,7 @@ for i, fn in enumerate(files):
         print("Already found samples for %s. Skipping.")
 
     else:
-        result = getSamples(fn, samplesPerFile)
+        result = getSamples(MEDIA_DIRECTORY+fn, samplesPerFile)
         # Progressively save samples per audio file
         append = (i > 0)
         writeCsv(OUTPUT_FILE, result, headings=headings, append=append)

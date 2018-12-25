@@ -232,11 +232,21 @@ def frameToMs(frame, fps, roundResult=True):
         result = roundInt(result)
     return result
 
-def getDurationFromFile(filename):
+def getDurationFromFile(filename, accurate=False):
     result = 0
     if os.path.isfile(filename):
-        command = ['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', filename]
-        result = subprocess.check_output(command).strip()
+        if accurate:
+            try:
+                video = VideoFileClip(filename, audio=False)
+                result = video.duration
+                video.reader.close()
+                del video
+            except IOError as e:
+                print("I/O error({0}): {1}".format(e.errno, e.strerror))
+                result = 0
+        else:
+            command = ['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', filename]
+            result = subprocess.check_output(command).strip()
     return float(result)
 
 def getEmptyVideoClipImage(clip):

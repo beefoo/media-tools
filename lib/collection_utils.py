@@ -29,9 +29,9 @@ def filterWhere(arr, filters):
             arr = [a for a in arr if a[key] > value]
         elif mode == "~=":
             arr = [a for a in arr if value in a[key]]
-        if mode == "!=":
+        elif mode == "!=":
             arr = [a for a in arr if a[key] != value]
-        if mode == "!~=":
+        elif mode == "!~=":
             arr = [a for a in arr if value not in a[key]]
         else:
             arr = [a for a in arr if a[key] == value]
