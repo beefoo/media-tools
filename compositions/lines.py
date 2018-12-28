@@ -32,10 +32,10 @@ from lib.video_utils import *
 # input
 parser = argparse.ArgumentParser()
 addVideoArgs(parser)
-parser.add_argument('-pand', dest="PAN_DURATION", default=6.0, type=float, help="Pan duration in seconds")
+parser.add_argument('-pand', dest="PAN_DURATION", default=12.0, type=float, help="Pan duration in seconds")
 parser.add_argument('-paused', dest="PAUSE_DURATION", default=2.0, type=float, help="Pause duration in seconds")
-parser.add_argument('-grid', dest="GRID", default="96x54", help="Grid dimensions")
-parser.add_argument('-vgrid', dest="VISIBLE_GRID", default="48x27", help="Grid dimensions")
+parser.add_argument('-grid', dest="GRID", default="192x108", help="Grid dimensions")
+parser.add_argument('-vgrid', dest="VISIBLE_GRID", default="96x54", help="Grid dimensions")
 parser.add_argument('-fadem', dest="FADE_MULTIPLIER", default=3, type=int, help="e.g. 3 = fade in/out 3x the duration of the clip")
 a = parser.parse_args()
 parseVideoArgs(a)
@@ -175,34 +175,34 @@ currentFrame += FRAMES_PER_FADE
 doLine(currentFrame, "colSort", ("row", GRID_ROWS, "col", GRID_COLS, VOFFSET_NY))
 currentFrame += FRAMES_PER_PAN + FRAMES_PER_PAUSE
 
-# 3. Play clips from right-to-left
-doLine(currentFrame, "colSort", ("row", GRID_ROWS, "col", GRID_COLS, VOFFSET_NY), reverse=True)
-currentFrame += FRAMES_PER_PAN + FRAMES_PER_PAUSE
-
-# 4. Play clips from top-to-bottom
-doLine(currentFrame, "rowSort", ("col", GRID_COLS, "row", GRID_ROWS, VOFFSET_NX))
-currentFrame += FRAMES_PER_PAN + FRAMES_PER_PAUSE
+# # 3. Play clips from right-to-left
+# doLine(currentFrame, "colSort", ("row", GRID_ROWS, "col", GRID_COLS, VOFFSET_NY), reverse=True)
+# currentFrame += FRAMES_PER_PAN + FRAMES_PER_PAUSE
+#
+# # 4. Play clips from top-to-bottom
+# doLine(currentFrame, "rowSort", ("col", GRID_COLS, "row", GRID_ROWS, VOFFSET_NX))
+# currentFrame += FRAMES_PER_PAN + FRAMES_PER_PAUSE
 
 # 5. Play clips from bottom-to-top
 doLine(currentFrame, "rowSort", ("col", GRID_COLS, "row", GRID_ROWS, VOFFSET_NX), reverse=True)
 currentFrame += FRAMES_PER_PAN + FRAMES_PER_PAUSE
 
-# 6. Do steps 4 and 5 simultaneously
-doLine(currentFrame, "rowSort", ("col", GRID_COLS, "row", GRID_ROWS, VOFFSET_NX))
-doLine(currentFrame, "rowSort", ("col", GRID_COLS, "row", GRID_ROWS, VOFFSET_NX), reverse=True)
-currentFrame += FRAMES_PER_PAN + FRAMES_PER_PAUSE
-
-# 7. Do steps 2 and 3 simultaneously
-doLine(currentFrame, "colSort", ("row", GRID_ROWS, "col", GRID_COLS, VOFFSET_NY))
-doLine(currentFrame, "colSort", ("row", GRID_ROWS, "col", GRID_COLS, VOFFSET_NY), reverse=True)
-currentFrame += FRAMES_PER_PAN + FRAMES_PER_PAUSE
-
-# 8. Do steps 6 and 7 simultaneously
-doLine(currentFrame, "colSort", ("row", GRID_ROWS, "col", GRID_COLS, VOFFSET_NY))
-doLine(currentFrame, "colSort", ("row", GRID_ROWS, "col", GRID_COLS, VOFFSET_NY), reverse=True)
-doLine(currentFrame, "rowSort", ("col", GRID_COLS, "row", GRID_ROWS, VOFFSET_NX))
-doLine(currentFrame, "rowSort", ("col", GRID_COLS, "row", GRID_ROWS, VOFFSET_NX), reverse=True)
-currentFrame += FRAMES_PER_PAN + FRAMES_PER_PAUSE
+# # 6. Do steps 4 and 5 simultaneously
+# doLine(currentFrame, "rowSort", ("col", GRID_COLS, "row", GRID_ROWS, VOFFSET_NX))
+# doLine(currentFrame, "rowSort", ("col", GRID_COLS, "row", GRID_ROWS, VOFFSET_NX), reverse=True)
+# currentFrame += FRAMES_PER_PAN + FRAMES_PER_PAUSE
+#
+# # 7. Do steps 2 and 3 simultaneously
+# doLine(currentFrame, "colSort", ("row", GRID_ROWS, "col", GRID_COLS, VOFFSET_NY))
+# doLine(currentFrame, "colSort", ("row", GRID_ROWS, "col", GRID_COLS, VOFFSET_NY), reverse=True)
+# currentFrame += FRAMES_PER_PAN + FRAMES_PER_PAUSE
+#
+# # 8. Do steps 6 and 7 simultaneously
+# doLine(currentFrame, "colSort", ("row", GRID_ROWS, "col", GRID_COLS, VOFFSET_NY))
+# doLine(currentFrame, "colSort", ("row", GRID_ROWS, "col", GRID_COLS, VOFFSET_NY), reverse=True)
+# doLine(currentFrame, "rowSort", ("col", GRID_COLS, "row", GRID_ROWS, VOFFSET_NX))
+# doLine(currentFrame, "rowSort", ("col", GRID_COLS, "row", GRID_ROWS, VOFFSET_NX), reverse=True)
+# currentFrame += FRAMES_PER_PAN + FRAMES_PER_PAUSE
 
 # Slowly fade clips out
 doFade(currentFrame, MIN_ALPHA, 0.0, FADE_IN_OUT_SECONDS)
