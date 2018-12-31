@@ -85,9 +85,9 @@ def clipsToFrame(p):
                     if count > 0:
                         pixels = framePixelData[roundInt(clip["tn"] * (count-1))]
                         clipImg = Image.fromarray(pixels, mode="RGB")
-                        clipImg = clipImg.convert("RGBA")
-                        clipImg.putalpha(getAlpha(clip))
                         clipImg = fillImage(clipImg, roundInt(clip["width"]), roundInt(clip["height"]))
+                        clipImg = updateAlpha(clipImg, getAlpha(clip))
+                        clipImg = rotateImage(clipImg, getRotation(clip))
                         im = pasteImage(im, clipImg, clip["x"], clip["y"])
 
         # otherwise, load pixels from the video source
@@ -105,8 +105,8 @@ def clipsToFrame(p):
                 # extract frames from videos
                 for clip in vclips:
                     clipImg = getVideoClipImage(video, videoDur, clip)
-                    clipImg = clipImg.convert("RGBA")
-                    clipImg.putalpha(getAlpha(clip))
+                    clipImg = updateAlpha(clipImg, getAlpha(clip))
+                    clipImg = rotateImage(clipImg, getRotation(clip))
                     im = pasteImage(im, clipImg, clip["x"], clip["y"])
                 video.reader.close()
                 del video
@@ -128,16 +128,30 @@ def clipsToFrameGPU(clips, width, height):
     pixelData = []
     properties = []
     offset = 0
+    precision = 3
+
     for clip in clips:
         framePixelData = clip["framePixelData"]
         count = len(framePixelData)
         if count > 0:
             pixels = framePixelData[roundInt(clip["tn"] * (count-1))]
-            pixelData.append(pixels)
             h, w, c = pixels.shape
-            properties.append([offset, clip["x"], clip["y"], w, h, clip["width"], clip["height"], getAlpha(clip)])
+            tw = clip["width"]
+            th = clip["height"]
+            # not ideal, but don't feel like implementing rotation in opencl; just use PIL's algorithm
+            if "rotation" in clip:
+                angle = getRotation(clip)
+                pixels = rotatePixels(pixels, angle)
+                w0 = w
+                h0 = h
+                h, w, c = pixels.shape
+                tw = roundInt(1.0 * w / w0 * tw)
+                th = roundInt(1.0 * h / h0 * th)
+            pixelData.append(pixels)
+            # print("%s, %s, %s" % pixels.shape)
+            properties.append([offset, clip["x"], clip["y"], w, h, tw, th, getAlpha(clip)])
             offset += (h*w*c)
-    pixels = clipsToImageGPU(width, height, pixelData, properties)
+    pixels = clipsToImageGPU(width, height, pixelData, properties, c)
     return Image.fromarray(pixels, mode="RGB")
 
 def compileFrames(infile, fps, outfile, padZeros, audioFile=None):
@@ -232,6 +246,10 @@ def frameToMs(frame, fps, roundResult=True):
         result = roundInt(result)
     return result
 
+def getAlpha(clip):
+    alpha = clip["alpha"] if "alpha" in clip and clip["alpha"] < 1.0 else 1.0
+    return roundInt(alpha*255)
+
 def getDurationFromFile(filename, accurate=False):
     result = 0
     if os.path.isfile(filename):
@@ -282,9 +300,10 @@ def getVideoClipImage(video, videoDur, clip):
     clipImg = fillImage(clipImg, cw, ch)
     return clipImg
 
-def getAlpha(clip):
-    alpha = clip["alpha"] if "alpha" in clip and clip["alpha"] < 1.0 else 1.0
-    return roundInt(alpha*255)
+def getRotation(clip):
+    rotation = clip["rotation"] if "rotation" in clip else 0.0
+    angle = rotation % 360.0
+    return angle
 
 def hasAudio(filename):
     return ("audio" in getMediaTypes(filename))
@@ -396,3 +415,19 @@ def processFrames(params, threads=1, verbose=True):
                 sys.stdout.write('\r')
                 sys.stdout.write("%s%%" % round(1.0*i/(count-1)*100,1))
                 sys.stdout.flush()
+
+def rotateImage(im, angle):
+    if angle > 0.0:
+        im = im.rotate(360.0-angle, expand=True, resample=Image.BICUBIC, fillcolor=(0,0,0,0))
+    return im
+
+def rotatePixels(pixels, angle):
+    im = Image.fromarray(pixels, mode="RGB")
+    im = im.convert("RGBA")
+    im = rotateImage(im, angle)
+    return np.array(im)
+
+def updateAlpha(im, alpha):
+    im = im.convert("RGBA")
+    im.putalpha(alpha)
+    return im

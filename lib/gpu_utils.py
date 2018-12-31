@@ -7,12 +7,19 @@ import pyopencl as cl
 
 os.environ['PYOPENCL_COMPILER_OUTPUT'] = '1'
 
-def clipsToImageGPU(width, height, pixelData, properties):
+def clipsToImageGPU(width, height, pixelData, properties, colorDimensions):
     count = len(pixelData)
-    pixelData = np.array(pixelData).reshape(-1)
+    flatPixelData = []
+    isUniform = np.array(pixelData).ndim > 1
+    if isUniform:
+        flatPixelData = np.array(pixelData).reshape(-1)
+    else:
+        for d in pixelData:
+            flatPixelData += list(d.reshape(-1))
+        flatPixelData = np.array(flatPixelData)
+    pcount = len(properties[0])
     properties = np.array(properties).reshape(-1)
-
-    pixelData = pixelData.astype(np.uint8)
+    flatPixelData = flatPixelData.astype(np.uint8)
     properties = properties.astype(np.int32)
     result = np.zeros(width * height * 3, dtype=np.uint8)
 
@@ -22,7 +29,8 @@ def clipsToImageGPU(width, height, pixelData, properties):
         int canvasW = %d;
         int canvasH = %d;
         int i = get_global_id(0);
-        int pcount = 8;
+        int pcount = %d;
+        int colorDimensions = %d;
         int offset = props[i*pcount];
         int x = props[i*pcount+1];
         int y = props[i*pcount+2];
@@ -46,19 +54,27 @@ def clipsToImageGPU(width, height, pixelData, properties):
                 int px = x + col;
                 int py = y + row;
                 if (px >= 0 && px < canvasW && py >= 0 && py < canvasH) {
-                    int srcIndex = trow * tw * 3 + tcol * 3 + offset;
+                    int srcIndex = trow * tw * colorDimensions + tcol * colorDimensions + offset;
                     int destIndex = py * canvasW * 3 + px * 3;
                     int r = pdata[srcIndex];
                     int g = pdata[srcIndex+1];
                     int b = pdata[srcIndex+2];
-                    result[destIndex] = (int) round((float) r * falpha);
-                    result[destIndex+1] = (int) round((float) g * falpha);
-                    result[destIndex+2] = (int) round((float) b * falpha);
+                    int a = 255;
+                    float talpha = falpha;
+                    if (colorDimensions > 3) {
+                        a = pdata[srcIndex+3];
+                        talpha = (float) a / (float) 255.0 * falpha;
+                    }
+                    if (talpha > 0.0) {
+                        result[destIndex] = (int) round((float) r * talpha);
+                        result[destIndex+1] = (int) round((float) g * talpha);
+                        result[destIndex+2] = (int) round((float) b * talpha);
+                    }
                 }
             }
         }
     }
-    """ % (width, height)
+    """ % (width, height, pcount, colorDimensions)
 
     # Get platforms, both CPU and GPU
     plat = cl.get_platforms()
@@ -76,7 +92,7 @@ def clipsToImageGPU(width, height, pixelData, properties):
     # Kernel function instantiation
     prg = cl.Program(ctx, srcCode).build()
 
-    bufIn1 =  cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=pixelData)
+    bufIn1 =  cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=flatPixelData)
     bufIn2 =  cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=properties)
     bufOut = cl.Buffer(ctx, mf.WRITE_ONLY, result.nbytes)
     prg.makeImage(queue, (count, ), None , bufIn1, bufIn2, bufOut)

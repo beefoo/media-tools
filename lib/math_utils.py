@@ -4,8 +4,26 @@ import math
 import numpy as np
 import time
 
+# return the bounding box of a rotated rectangle
+def bboxRotate(cx, cy, w, h, angle):
+    distanceToCorner = distance(cx, cy, cx-w*0.5, cy-h*0.5)
+    tlX, tlY = translatePoint(cx, cy, distanceToCorner, 225+angle) # top left corner
+    trX, trY = translatePoint(cx, cy, distanceToCorner, 315+angle) # top right corner
+    brX, brY = translatePoint(cx, cy, distanceToCorner, 45+angle) # bottom right corner
+    blX, blY = translatePoint(cx, cy, distanceToCorner, 135+angle) # bottom left corner
+    xs = [tlX, trX, brX, blX]
+    ys = [tlY, trY, brY, blY]
+    minX = min(xs)
+    minY = min(ys)
+    maxX = max(xs)
+    maxY = max(ys)
+    return (minX, minY, maxX-minX, maxY-minY)
+
 def ceilInt(n):
     return int(math.ceil(n))
+
+def distance(x1, y1, x2, y2):
+    return math.hypot(x2 - x1, y2 - y1)
 
 def easeIn(n):
     return (math.sin((n+1.5)*math.pi)+1.0) / 2.0
@@ -68,6 +86,13 @@ def timecodeToMs(tc):
     hours, minutes, seconds = tuple([float(v) for v in tc.split(":")])
     seconds = seconds + minutes * 60 + hours * 3600
     return roundInt(seconds*1000)
+
+# East = 0 degrees
+def translatePoint(x, y, distance, angle):
+    rad = math.radians(angle)
+    x2 = x + distance * math.cos(rad)
+    y2 = y + distance * math.sin(rad)
+    return (x2, y2)
 
 def unique(arr):
     return list(set(arr))
