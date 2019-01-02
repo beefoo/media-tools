@@ -59,8 +59,7 @@ def applyEffects(im, clip):
     x = clip["x"]
     y = clip["y"]
     if angle > 0.0 or blur > 0.0:
-        cx = clip["x"] + clip["width"] * 0.5
-        cy = clip["y"] + clip["height"] * 0.5
+        cx, cy = getCenter(clip)
         bx, by, bw, bh = bboxRotate(cx, cy, clip["width"], clip["height"], 45.0) # make the new box size as big as if it was rotated 45 degrees
         im = resizeCanvas(im, roundInt(bw), roundInt(bh)) # resize canvas to account for expansion from rotation or blur
         im = rotateImage(im, angle)
@@ -158,10 +157,13 @@ def clipsToFrameGPU(clips, width, height):
             h, w, c = pixels.shape
             tw = clip["width"]
             th = clip["height"]
-            # not ideal, but don't feel like implementing rotation in opencl; just use PIL's algorithm
-            if "rotation" in clip:
-                angle = getRotation(clip)
-                pixels = rotatePixels(pixels, angle)
+            x = clip["x"]
+            y = clip["y"]
+            # not ideal, but don't feel like implementing blur/rotation in opencl; just use PIL's algorithm
+            if "rotation" in clip or "blur" in clip:
+                im = Image.fromarray(pixels, mode="RGB")
+                im, x, y = applyEffects(im, clip)
+                pixels = np.array(im)
                 w0 = w
                 h0 = h
                 h, w, c = pixels.shape
@@ -169,7 +171,7 @@ def clipsToFrameGPU(clips, width, height):
                 th = roundInt(1.0 * h / h0 * th)
             pixelData.append(pixels)
             # print("%s, %s, %s" % pixels.shape)
-            properties.append([offset, clip["x"], clip["y"], w, h, tw, th, getAlpha(clip)])
+            properties.append([offset, x, y, w, h, tw, th, getAlpha(clip)])
             offset += (h*w*c)
     pixels = clipsToImageGPU(width, height, pixelData, properties, c)
     return Image.fromarray(pixels, mode="RGB")
@@ -269,6 +271,11 @@ def frameToMs(frame, fps, roundResult=True):
 def getAlpha(clip):
     alpha = clip["alpha"] if "alpha" in clip and clip["alpha"] < 1.0 else 1.0
     return roundInt(alpha*255)
+
+def getCenter(clip):
+    cx = clip["x"] + clip["width"] * 0.5
+    cy = clip["y"] + clip["height"] * 0.5
+    return (cx, cy)
 
 def getDurationFromFile(filename, accurate=False):
     result = 0
@@ -449,9 +456,12 @@ def rotateImage(im, angle):
         im = im.rotate(360.0-angle, expand=False, resample=Image.BICUBIC, fillcolor=(0,0,0,0))
     return im
 
-def rotatePixels(pixels, angle):
+def rotatePixels(pixels, angle, resize=None):
     im = Image.fromarray(pixels, mode="RGB")
     im = im.convert("RGBA")
+    if resize is not None:
+        cw, ch = resize
+        im = resizeCanvas(im, cw, ch)
     im = rotateImage(im, angle)
     return np.array(im)
 

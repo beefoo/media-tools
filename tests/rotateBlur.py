@@ -22,7 +22,7 @@ CY = HEIGHT/2
 VIDEO = "../media/sample/LivingSt1958.mp4"
 OUTPUT_FILE = "../output/rotate_test.png"
 COUNT = 24
-GPU = False
+GPU = True
 clipW = 100
 clipH = 50
 
