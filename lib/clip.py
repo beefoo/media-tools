@@ -10,7 +10,7 @@ class Vector:
             "vx": 0.0, "vy": 0.0, "vz": 0.0, # velocity
             "ax": 0.0, "ay": 0.0, "az": 0.0, # acceleration
             "origin": (0.0, 0.0),
-            "rotate": 0.0, "scale": 0.0, "translate": (0.0, 0.0)
+            "rotation": 0.0, "scale": 0.0, "translate": (0.0, 0.0)
         }
         defaults.update(props)
         self.props = defaults
@@ -20,8 +20,20 @@ class Vector:
         self.setVeloc(defaults["vx"], defaults["vy"], defaults["vz"])
         self.setAccel(defaults["ax"], defaults["ay"], defaults["az"])
 
-        self.setTransform(defaults["translate"], defaults["scale"], defaults["rotate"])
+        self.setTransform(defaults["translate"], defaults["scale"], defaults["rotation"])
         self.setOrigin(defaults["origin"])
+
+    def getX(self):
+        x = self.x
+        if self.origin[0] > 0.0:
+            x -= self.width * self.origin[0]
+        return x
+
+    def getY(self):
+        y = self.y
+        if self.origin[1] > 0.0:
+            y -= self.height * self.origin[1]
+        return y
 
     def setAccel(self, x, y, z=None):
         self.ax = x
@@ -42,13 +54,13 @@ class Vector:
         self.width = width
         self.height = height
 
-    def setTransform(self, translate=None, scale=None, rotate=None):
+    def setTransform(self, translate=None, scale=None, rotation=None):
         if translate is not None:
             self.translate = translate
         if scale is not None:
             self.scale = scale
-        if rotate is not None:
-            self.rotate = rotate
+        if rotation is not None:
+            self.rotation = rotation
 
     def setVeloc(self, x, y, z=None):
         self.vx = x
@@ -64,7 +76,8 @@ class Clip:
             "filename": None,
             "start": 0,
             "dur": 0,
-            "alpha": 0.0,
+            "alpha": 1.0,
+            "blur": 0.0,
             "state": {},
             "tweens": [],
             "plays": []
@@ -80,6 +93,7 @@ class Clip:
         self.plays = defaults["plays"]
 
         self.setAlpha(defaults["alpha"])
+        self.setBlur(defaults["blur"])
         self.setVector(Vector(defaults))
         self.setStates(defaults["state"])
 
@@ -107,11 +121,13 @@ class Clip:
 
     def getDefaultVectorProperties(self):
         return {
-            "x": self.vector.x,
-            "y": self.vector.y,
+            "x": self.vector.getX(),
+            "y": self.vector.getY(),
             "width": self.vector.width,
             "height": self.vector.height,
-            "alpha": self.alpha
+            "alpha": self.alpha,
+            "blur": self.blur,
+            "rotation": self.vector.rotation
         }
 
     def getFilledTweens(self):
@@ -186,6 +202,9 @@ class Clip:
 
     def setAlpha(self, alpha):
         self.alpha = alpha
+
+    def setBlur(self, blur):
+        self.blur = blur
 
     def setState(self, key, value):
         self.state[key] = value

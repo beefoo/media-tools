@@ -9,7 +9,7 @@ from multiprocessing import Pool
 from multiprocessing.dummy import Pool as ThreadPool
 import numpy as np
 import os
-from PIL import Image
+from PIL import Image, ImageFilter
 import subprocess
 import sys
 
@@ -52,6 +52,28 @@ def addVideoArgs(parser):
     parser.add_argument('-cf', dest="CACHE_FILE", default="../tmp/pixel_cache.npy", help="File for caching data")
     parser.add_argument('-gpu', dest="USE_GPU", default=0, type=int, help="Use GPU? (requires caching to be true)")
 
+def applyEffects(im, clip):
+    im = updateAlpha(im, getAlpha(clip))
+    angle = getRotation(clip)
+    blur = getValue(clip, "blur", 0)
+    x = clip["x"]
+    y = clip["y"]
+    if angle > 0.0 or blur > 0.0:
+        cx = clip["x"] + clip["width"] * 0.5
+        cy = clip["y"] + clip["height"] * 0.5
+        bx, by, bw, bh = bboxRotate(cx, cy, clip["width"], clip["height"], 45.0) # make the new box size as big as if it was rotated 45 degrees
+        im = resizeCanvas(im, roundInt(bw), roundInt(bh)) # resize canvas to account for expansion from rotation or blur
+        im = rotateImage(im, angle)
+        im = blurImage(im, blur)
+        x = bx
+        y = by
+    return (im, x, y)
+
+def blurImage(im, radius):
+    if radius > 0.0:
+        im = im.filter(ImageFilter.GaussianBlur(radius=radius))
+    return im
+
 def clipsToFrame(p):
     filename = p["filename"]
     saveFrame = p["saveFrame"] if "saveFrame" in p else True
@@ -86,9 +108,8 @@ def clipsToFrame(p):
                         pixels = framePixelData[roundInt(clip["tn"] * (count-1))]
                         clipImg = Image.fromarray(pixels, mode="RGB")
                         clipImg = fillImage(clipImg, roundInt(clip["width"]), roundInt(clip["height"]))
-                        clipImg = updateAlpha(clipImg, getAlpha(clip))
-                        clipImg = rotateImage(clipImg, getRotation(clip))
-                        im = pasteImage(im, clipImg, clip["x"], clip["y"])
+                        clipImg, x, y = applyEffects(clipImg, clip)
+                        im = pasteImage(im, clipImg, x, y)
 
         # otherwise, load pixels from the video source
         else:
@@ -105,9 +126,8 @@ def clipsToFrame(p):
                 # extract frames from videos
                 for clip in vclips:
                     clipImg = getVideoClipImage(video, videoDur, clip)
-                    clipImg = updateAlpha(clipImg, getAlpha(clip))
-                    clipImg = rotateImage(clipImg, getRotation(clip))
-                    im = pasteImage(im, clipImg, clip["x"], clip["y"])
+                    clipImg, x, y = applyEffects(clipImg, clip)
+                    im = pasteImage(im, clipImg, x, y)
                 video.reader.close()
                 del video
 
@@ -416,9 +436,17 @@ def processFrames(params, threads=1, verbose=True):
                 sys.stdout.write("%s%%" % round(1.0*i/(count-1)*100,1))
                 sys.stdout.flush()
 
+def resizeCanvas(im, cw, ch):
+    canvasImg = Image.new(mode="RGBA", size=(cw, ch), color=(0, 0, 0, 0))
+    w, h = im.size
+    x = roundInt((cw - w) * 0.5)
+    y = roundInt((ch - h) * 0.5)
+    newImg = pasteImage(canvasImg, im, x, y)
+    return newImg
+
 def rotateImage(im, angle):
     if angle > 0.0:
-        im = im.rotate(360.0-angle, expand=True, resample=Image.BICUBIC, fillcolor=(0,0,0,0))
+        im = im.rotate(360.0-angle, expand=False, resample=Image.BICUBIC, fillcolor=(0,0,0,0))
     return im
 
 def rotatePixels(pixels, angle):
