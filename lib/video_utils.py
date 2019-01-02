@@ -159,19 +159,22 @@ def clipsToFrameGPU(clips, width, height):
             th = clip["height"]
             x = clip["x"]
             y = clip["y"]
-            # not ideal, but don't feel like implementing blur/rotation in opencl; just use PIL's algorithm
-            if "rotation" in clip or "blur" in clip:
-                im = Image.fromarray(pixels, mode="RGB")
-                im, x, y = applyEffects(im, clip)
-                pixels = np.array(im)
-                w0 = w
-                h0 = h
-                h, w, c = pixels.shape
-                tw = roundInt(1.0 * w / w0 * tw)
-                th = roundInt(1.0 * h / h0 * th)
+            # # not ideal, but don't feel like implementing blur/rotation in opencl; just use PIL's algorithm
+            # if "rotation" in clip or "blur" in clip:
+            #     im = Image.fromarray(pixels, mode="RGB")
+            #     im, x, y = applyEffects(im, clip)
+            #     pixels = np.array(im)
+            #     w0 = w
+            #     h0 = h
+            #     h, w, c = pixels.shape
+            #     tw = roundInt(1.0 * w / w0 * tw)
+            #     th = roundInt(1.0 * h / h0 * th)
             pixelData.append(pixels)
             # print("%s, %s, %s" % pixels.shape)
-            properties.append([offset, x, y, w, h, tw, th, getAlpha(clip)])
+            alpha = getAlpha(clip)
+            rotation = roundInt(getRotation(clip) * 1000)
+            blur = roundInt(getValue(clip, "blur", 0) * 1000)
+            properties.append([offset, x, y, w, h, tw, th, alpha, rotation, blur])
             offset += (h*w*c)
     pixels = clipsToImageGPU(width, height, pixelData, properties, c)
     return Image.fromarray(pixels, mode="RGB")
