@@ -24,8 +24,33 @@ def clipsToImageGPU(width, height, pixelData, properties, colorDimensions):
     result = np.zeros(width * height * 3, dtype=np.uint8)
 
     # the kernel function
-    # rotation with bilinear interpolation = http://polymathprogrammer.com/2008/10/06/image-rotation-with-bilinear-interpolation/
+    # rotation with bilinear interpolation: http://polymathprogrammer.com/2008/10/06/image-rotation-with-bilinear-interpolation/
+    # gaussian blur: http://blog.ivank.net/fastest-gaussian-blur.html
     srcCode = """
+    static int3 boxesForGauss(float sigma) {
+        float n = 3.0;
+        float wIdeal = sqrt(((float)12.0*sigma*sigma/n)+(float)1.0);  // Ideal averaging filter width
+        int wl = (int) floor(wIdeal);
+        if (wl %% 2==0) {
+            wl--;
+        }
+        int wu = wl+2;
+        float mIdeal = (12.0*sigma*sigma - n*(float)wl*(float)wl - 4.0*n*(float)wl - 3.0*n)/(-4.0*(float)wl - 4.0);
+        int m = (int) round(mIdeal);
+        int x = wu;
+        int y = wu;
+        int z = wu;
+        if (m>0) {
+            x = wl;
+        }
+        if (m>1) {
+            y = wl;
+        }
+        if (m>2) {
+            z = wl;
+        }
+        return (int3)(0, 0, 0);
+    }
 
     static float2 rotatePixel(int x, int y, int cx, int cy, float angle) {
         float rad = radians(angle);
@@ -44,8 +69,31 @@ def clipsToImageGPU(width, height, pixelData, properties, colorDimensions):
         return (float2)(xNew, yNew);
     }
 
+    int4 blurPixel(__global uchar *pdata, float2 pos, int h, int w, int dim, int offset);
     int4 getPixel(__global uchar *pdata, int x, int y, int w, int dim, int offset);
     int4 interpolateColor(__global uchar *pdata, float2 pos, int h, int w, int dim, int offset);
+
+    int4 gaussianBlur(__global uchar *pdata, float2 pos, int h, int w, int dim, int offset, int3 boxes) {
+        int x = (int) round(pos.x);
+        int y = (int) round(pos.y);
+
+        // check bounds
+        if (x < 0 || x >= w || y < 0 || y > h) {
+            return (int4)(0, 0, 0, 0);
+        }
+
+        int rx = (boxes.x-1)/2;
+        int i = y;
+        int j = x;
+        int4 val = (int4)(0, 0, 0, 0);
+        for(int ix=j-rx; ix<j+rx+1; ix++) {
+            int tx = min(w-1, max(0, ix));
+            val = val + getPixel(pdata, tx, y, w, dim, offset);
+        }
+        val = val / (rx+rx+1);
+
+        return val;
+    }
 
     int4 getPixel(__global uchar *pdata, int x, int y, int w, int dim, int offset) {
         int index = y * w * dim + x * dim + offset;
@@ -145,6 +193,11 @@ def clipsToImageGPU(width, height, pixelData, properties, colorDimensions):
         int dx = (int) round((float)(diagonal - tw) * (float) 0.5);
         int dy = (int) round((float)(diagonal - th) * (float) 0.5);
 
+        int3 blurBoxes = (int3)(0, 0, 0);
+        if (blur > 0.0) {
+            blurBoxes = boxesForGauss(blur);
+        }
+
         for (int i=0; i<diagonal; i++) {
             for (int j=0; j<diagonal; j++) {
                 int srcX = j - dx;
@@ -162,7 +215,12 @@ def clipsToImageGPU(width, height, pixelData, properties, colorDimensions):
                     fSrc = rotatePixel(srcX, srcY, cx, cy, -rotation);
                 }
                 if (dstX >= 0 && dstX < canvasW && dstY >= 0 && dstY < canvasH && fSrc.x >= 0.0 && fSrc.x < (float)w && fSrc.y >= 0.0 && fSrc.y < (float)h) {
-                    int4 srcColor = interpolateColor(pdata, fSrc, h, w, colorDimensions, offset);
+                    int4 srcColor = (int4)(0, 0, 0, 0);
+                    if (blur > 0.0) {
+                        srcColor = gaussianBlur(pdata, fSrc, h, w, colorDimensions, offset, blurBoxes);
+                    } else {
+                        srcColor = interpolateColor(pdata, fSrc, h, w, colorDimensions, offset);
+                    }
                     int destIndex = dstY * canvasW * 3 + dstX * 3;
                     if (srcColor.a > 0) {
                         float talpha = (float) srcColor.a / (float) 255.0 * falpha;
