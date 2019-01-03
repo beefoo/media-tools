@@ -24,78 +24,13 @@ def clipsToImageGPU(width, height, pixelData, properties, colorDimensions):
     result = np.zeros(width * height * 3, dtype=np.uint8)
 
     # the kernel function
-    # rotation with bilinear interpolation: http://polymathprogrammer.com/2008/10/06/image-rotation-with-bilinear-interpolation/
-    # gaussian blur: http://blog.ivank.net/fastest-gaussian-blur.html
     srcCode = """
-    static int3 boxesForGauss(float sigma) {
-        float n = 3.0;
-        float wIdeal = sqrt(((float)12.0*sigma*sigma/n)+(float)1.0);  // Ideal averaging filter width
-        int wl = (int) floor(wIdeal);
-        if (wl %% 2==0) {
-            wl--;
-        }
-        int wu = wl+2;
-        float mIdeal = (12.0*sigma*sigma - n*(float)wl*(float)wl - 4.0*n*(float)wl - 3.0*n)/(-4.0*(float)wl - 4.0);
-        int m = (int) round(mIdeal);
-        int x = wu;
-        int y = wu;
-        int z = wu;
-        if (m>0) {
-            x = wl;
-        }
-        if (m>1) {
-            y = wl;
-        }
-        if (m>2) {
-            z = wl;
-        }
-        return (int3)(0, 0, 0);
-    }
+    int4 getPixel(__global uchar *pdata, int x, int y, int h, int w, int dim, int offset);
 
-    static float2 rotatePixel(int x, int y, int cx, int cy, float angle) {
-        float rad = radians(angle);
-        float s = sin(rad);
-        float c = cos(rad);
-
-        x = x - cx;
-        y = y - cy;
-
-        float xNew = (float) x * c - (float) y * s;
-        float yNew = (float) x * s + (float) y * c;
-
-        xNew = xNew + (float) cx;
-        yNew = yNew + (float) cy;
-
-        return (float2)(xNew, yNew);
-    }
-
-    int4 blurPixel(__global uchar *pdata, float2 pos, int h, int w, int dim, int offset);
-    int4 getPixel(__global uchar *pdata, int x, int y, int w, int dim, int offset);
-    int4 interpolateColor(__global uchar *pdata, float2 pos, int h, int w, int dim, int offset);
-
-    int4 gaussianBlur(__global uchar *pdata, float2 pos, int h, int w, int dim, int offset, int3 boxes) {
-        int x = (int) round(pos.x);
-        int y = (int) round(pos.y);
-
-        // check bounds
-        if (x < 0 || x >= w || y < 0 || y > h) {
+    int4 getPixel(__global uchar *pdata, int x, int y, int h, int w, int dim, int offset) {
+        if (x < 0 || y < 0 || x >= w || y >= h) {
             return (int4)(0, 0, 0, 0);
         }
-
-        int rx = (boxes.x-1)/2;
-        int i = y;
-        int j = x;
-        int4 val = (int4)(0, 0, 0, 0);
-        for(int ix=j-rx; ix<j+rx+1; ix++) {
-            int tx = min(w-1, max(0, ix));
-            val = val + getPixel(pdata, tx, y, w, dim, offset);
-        }
-        val = val / (rx+rx+1);
-
-        return val;
-    }
-
-    int4 getPixel(__global uchar *pdata, int x, int y, int w, int dim, int offset) {
         int index = y * w * dim + x * dim + offset;
         int r = pdata[index];
         int g = pdata[index+1];
@@ -104,67 +39,6 @@ def clipsToImageGPU(width, height, pixelData, properties, colorDimensions):
         if (dim > 3) {
             a = pdata[index+3];
         }
-        return (int4)(r, g, b, a);
-    }
-
-    int4 interpolateColor(__global uchar *pdata, float2 pos, int h, int w, int dim, int offset) {
-        float trueX = pos.x;
-        float trueY = pos.y;
-
-        int floorX = (int) floor(trueX);
-        int floorY = (int) floor(trueY);
-        int ceilX = (int) ceil(trueX);
-        int ceilY = (int) ceil(trueY);
-
-        // check bounds
-        if (ceilX < 0 || floorX >= w || ceilY < 0 || floorY >= h) {
-            return (int4)(0, 0, 0, 0);
-        }
-
-        float deltaX = trueX - (float)floorX;
-        float deltaY = trueY - (float)floorY;
-
-        // no interpolation necessary
-        if (deltaX == 0.0 && deltaY == 0.0) {
-            return getPixel(pdata, floorX, floorY, w, dim, offset);
-        }
-
-        int4 clrTopLeft = (int4)(0, 0, 0, 0);
-        int4 clrTopRight = (int4)(0, 0, 0, 0);
-        int4 clrBottomLeft = (int4)(0, 0, 0, 0);
-        int4 clrBottomRight = (int4)(0, 0, 0, 0);
-
-        if (floorX >= 0 && floorX < w && floorY >= 0 && floorY < h) {
-            clrTopLeft = getPixel(pdata, floorX, floorY, w, dim, offset);
-        }
-        if (ceilX >= 0 && ceilX < w && floorY >= 0 && floorY < h) {
-            clrTopRight = getPixel(pdata, ceilX, floorY, w, dim, offset);
-        }
-        if (floorX >= 0 && floorX < w && ceilY >= 0 && ceilY < h) {
-            clrBottomLeft = getPixel(pdata, floorX, ceilY, w, dim, offset);
-        }
-        if (ceilX >= 0 && ceilX < w && ceilY >= 0 && ceilY < h) {
-            clrBottomRight = getPixel(pdata, ceilX, ceilY, w, dim, offset);
-        }
-
-        // linearly interpolate horizontally between top neighbours
-        float fTopR = (1.0 - deltaX) * (float)clrTopLeft.r + deltaX * (float)clrTopRight.r;
-        float fTopG = (1.0 - deltaX) * (float)clrTopLeft.g + deltaX * (float)clrTopRight.g;
-        float fTopB = (1.0 - deltaX) * (float)clrTopLeft.b + deltaX * (float)clrTopRight.b;
-        float fTopA = (1.0 - deltaX) * (float)clrTopLeft.a + deltaX * (float)clrTopRight.a;
-
-        // linearly interpolate horizontally between bottom neighbours
-        float fBottomR = (1.0 - deltaX) * (float)clrBottomLeft.r + deltaX * (float)clrBottomRight.r;
-        float fBottomG = (1.0 - deltaX) * (float)clrBottomLeft.g + deltaX * (float)clrBottomRight.g;
-        float fBottomB = (1.0 - deltaX) * (float)clrBottomLeft.b + deltaX * (float)clrBottomRight.b;
-        float fBottomA = (1.0 - deltaX) * (float)clrBottomLeft.a + deltaX * (float)clrBottomRight.a;
-
-        // linearly interpolate vertically between top and bottom interpolated results
-        int r = (int)round((float)(1.0 - deltaY) * fTopR + deltaY * fBottomR);
-        int g = (int)round((float)(1.0 - deltaY) * fTopG + deltaY * fBottomG);
-        int b = (int)round((float)(1.0 - deltaY) * fTopB + deltaY * fBottomB);
-        int a = (int)round((float)(1.0 - deltaY) * fTopA + deltaY * fBottomA);
-
         return (int4)(r, g, b, a);
     }
 
@@ -183,44 +57,22 @@ def clipsToImageGPU(width, height, pixelData, properties, colorDimensions):
         int th = props[i*pcount+6];
         int alpha = props[i*pcount+7];
         float falpha = (float) alpha / (float) 255.0;
-        float rotation = (float) props[i*pcount+8] / (float) 1000.0;
-        float blur = (float) props[i*pcount+9] / (float) 1000.0;
         bool isScaled = (w != tw || h != th);
 
-        int cx = (int) round((float) w * (float) 0.5);
-        int cy = (int) round((float) h * (float) 0.5);
-        int diagonal = (int) ceil((float) sqrt((float)tw * (float)tw + (float)th * (float)th)); // iterate over diagonal to account for rotation
-        int dx = (int) round((float)(diagonal - tw) * (float) 0.5);
-        int dy = (int) round((float)(diagonal - th) * (float) 0.5);
-
-        int3 blurBoxes = (int3)(0, 0, 0);
-        if (blur > 0.0) {
-            blurBoxes = boxesForGauss(blur);
-        }
-
-        for (int i=0; i<diagonal; i++) {
-            for (int j=0; j<diagonal; j++) {
-                int srcX = j - dx;
-                int srcY = i - dy;
-                int dstX = j - dx;
-                int dstY = i - dy;
+        for (int row=0; row<th; row++) {
+            for (int col=0; col<tw; col++) {
+                int srcX = col;
+                int srcY = row;
+                int dstX = col;
+                int dstY = row;
                 if (isScaled) {
                     srcX = (int) round(((float) dstX / (float) (tw-1)) * (float) (w-1));
                     srcY = (int) round(((float) dstY / (float) (th-1)) * (float) (h-1));
                 }
                 dstX = dstX + x;
                 dstY = dstY + y;
-                float2 fSrc = (float2)((float) srcX, (float) srcY);
-                if (rotation > 0.0) {
-                    fSrc = rotatePixel(srcX, srcY, cx, cy, -rotation);
-                }
-                if (dstX >= 0 && dstX < canvasW && dstY >= 0 && dstY < canvasH && fSrc.x >= 0.0 && fSrc.x < (float)w && fSrc.y >= 0.0 && fSrc.y < (float)h) {
-                    int4 srcColor = (int4)(0, 0, 0, 0);
-                    if (blur > 0.0) {
-                        srcColor = gaussianBlur(pdata, fSrc, h, w, colorDimensions, offset, blurBoxes);
-                    } else {
-                        srcColor = interpolateColor(pdata, fSrc, h, w, colorDimensions, offset);
-                    }
+                if (dstX >= 0 && dstX < canvasW && dstY >= 0 && dstY < canvasH) {
+                    int4 srcColor = getPixel(pdata, srcX, srcY, h, w, colorDimensions, offset);
                     int destIndex = dstY * canvasW * 3 + dstX * 3;
                     if (srcColor.a > 0) {
                         float talpha = (float) srcColor.a / (float) 255.0 * falpha;
