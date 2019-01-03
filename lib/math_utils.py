@@ -51,6 +51,18 @@ def lim(value, ab=(0, 1)):
     a, b = ab
     return max(a, min(b, value))
 
+def logTime(startTime=None, reset=False):
+    now = time.time()
+    if startTime is None:
+        startTime = now
+    else:
+        secondsElapsed = now - startTime
+        timeStr = formatSeconds(secondsElapsed)
+        print("Elapsed time: %s" % timeStr)
+    if reset:
+        startTime = now
+    return startTime
+
 def norm(value, ab, limit=False):
     a, b = ab
     n = 1.0 * (value - a) / (b - a)
