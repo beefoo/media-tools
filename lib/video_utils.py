@@ -55,6 +55,9 @@ def addVideoArgs(parser):
 def alphaMask(im, mask):
     w, h = im.size
     transparentImg = Image.new(mode="RGBA", size=(w, h), color=(0, 0, 0, 0))
+    mw, mh = mask.size
+    if mw != w or mh != h:
+        mask = mask.resize((w, h), PIL.Image.BICUBIC)
     return Image.composite(im, transparentImg, mask)
 
 def applyEffects(im, clip):
