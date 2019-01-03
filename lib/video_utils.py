@@ -52,10 +52,18 @@ def addVideoArgs(parser):
     parser.add_argument('-cf', dest="CACHE_FILE", default="../tmp/pixel_cache.npy", help="File for caching data")
     parser.add_argument('-gpu', dest="USE_GPU", default=0, type=int, help="Use GPU? (requires caching to be true)")
 
+def alphaMask(im, mask):
+    w, h = im.size
+    transparentImg = Image.new(mode="RGBA", size=(w, h), color=(0, 0, 0, 0))
+    return Image.composite(im, transparentImg, mask)
+
 def applyEffects(im, clip):
     im = updateAlpha(im, getAlpha(clip))
     angle = getRotation(clip)
     blur = getValue(clip, "blur", 0)
+    mask = getValue(clip, "mask", None)
+    if mask:
+        im = alphaMask(im, mask)
     x = clip["x"]
     y = clip["y"]
     if angle > 0.0 or blur > 0.0:
