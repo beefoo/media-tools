@@ -84,8 +84,12 @@ def parseNumber(string, alwaysFloat=False):
 
 def parseNumbers(arr):
     for i, item in enumerate(arr):
-        for key in item:
-            arr[i][key] = parseNumber(item[key])
+        if type(item) is dict:
+            for key in item:
+                arr[i][key] = parseNumber(item[key])
+        else:
+            for j, v in enumerate(item):
+                arr[i][j] = parseNumber(v)
     return arr
 
 def roundToNearest(n, nearest):

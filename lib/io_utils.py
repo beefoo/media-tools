@@ -61,12 +61,19 @@ def parseHeadings(arr, headings):
     return newArr
 
 def parseUnicode(arr):
-    for i, value in enumerate(arr):
-        if isinstance(value, basestring) and not isinstance(value, unicode):
-            arr[i] = unicode(value, "utf-8")
+    for i, item in enumerate(arr):
+        if type(item) is dict:
+            for key in item:
+                value = item[key]
+                if isinstance(value, basestring) and not isinstance(value, unicode):
+                    arr[i][key] = unicode(value, "utf-8")
+        else:
+            for j, value in enumerate(item):
+                if isinstance(value, basestring) and not isinstance(value, unicode):
+                    arr[i][j] = unicode(value, "utf-8")
     return arr
 
-def readCsv(filename, headings=False, doParseNumbers=True, skipLines=0, encoding="utf-8"):
+def readCsv(filename, headings=False, doParseNumbers=True, skipLines=0, encoding="utf-8", readDict=True):
     rows = []
     fieldnames = []
     if os.path.isfile(filename):
@@ -74,7 +81,11 @@ def readCsv(filename, headings=False, doParseNumbers=True, skipLines=0, encoding
             lines = [line for line in f if not line.startswith("#")]
             if skipLines > 0:
                 lines = lines[skipLines:]
-            reader = csv.DictReader(lines, skipinitialspace=True)
+            if readDict:
+                reader = csv.DictReader(lines, skipinitialspace=True)
+                fieldnames = list(reader.fieldnames)
+            else:
+                reader = csv.reader(lines, skipinitialspace=True)
             rows = list(reader)
             if headings:
                 rows = parseHeadings(rows, headings)
@@ -82,7 +93,7 @@ def readCsv(filename, headings=False, doParseNumbers=True, skipLines=0, encoding
                 rows = parseNumbers(rows)
             if encoding=="utf-8":
                 rows = parseUnicode(rows)
-            fieldnames = list(reader.fieldnames)
+        print("Read %s rows from %s" % (len(rows), filename))
     return (fieldnames, rows)
 
 def readJSON(filename):
