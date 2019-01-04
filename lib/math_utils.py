@@ -2,6 +2,8 @@
 
 import math
 import numpy as np
+import scipy
+from scipy import signal
 import time
 
 # return the bounding box of a rotated rectangle
@@ -31,6 +33,28 @@ def easeIn(n):
 def easeInOut(n):
     return (math.sin((2.0*n+1.5)*math.pi)+1.0) / 2.0
 
+def findNextValue(arr, value, isSorted=True):
+    nvalue = None
+    if not isSorted:
+        arr.sort()
+    for v in arr:
+        if v > value:
+            nvalue = v
+            break
+    return nvalue
+
+def findPeaks(data, distance=None, height=None):
+    values = np.array(data)
+    ivaluses = np.negative(values) # invert values to get minima
+    maxima, _ = signal.find_peaks(values, distance=distance, height=height)
+    minima, _ = signal.find_peaks(ivaluses, distance=distance, height=height)
+    # import matplotlib.pyplot as plt
+    # plt.plot(values, color="blue")
+    # plt.plot(maxima, values[maxima], "x", color="green")
+    # plt.plot(minima, values[minima], "x", color="red")
+    # plt.show()
+    return (list(minima), list(maxima))
+
 def floorInt(n):
     return int(math.floor(n))
 
@@ -51,17 +75,13 @@ def lim(value, ab=(0, 1)):
     a, b = ab
     return max(a, min(b, value))
 
-def logTime(startTime=None, reset=False):
+def logTime(startTime=None, label="Elapsed time"):
     now = time.time()
-    if startTime is None:
-        startTime = now
-    else:
+    if startTime is not None:
         secondsElapsed = now - startTime
         timeStr = formatSeconds(secondsElapsed)
-        print("Elapsed time: %s" % timeStr)
-    if reset:
-        startTime = now
-    return startTime
+        print("%s: %s" % (label, timeStr))
+    return now
 
 def norm(value, ab, limit=False):
     a, b = ab
