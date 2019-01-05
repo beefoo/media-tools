@@ -51,6 +51,9 @@ def addVideoArgs(parser):
     parser.add_argument('-cache', dest="CACHE_VIDEO", default=0, type=int, help="Cache video clips?")
     parser.add_argument('-cf', dest="CACHE_FILE", default="../tmp/pixel_cache.npy", help="File for caching data")
     parser.add_argument('-gpu', dest="USE_GPU", default=0, type=int, help="Use GPU? (requires caching to be true)")
+    parser.add_argument('-rand', dest="RANDOM_SEED", default=1, type=int, help="Random seed to use for pseudo-randomness")
+    parser.add_argument('-pad0', dest="PAD_START", default=0, type=int, help="Pad the beginning")
+    parser.add_argument('-pad1', dest="PAD_END", default=3000, type=int, help="Pad the end")
 
 def alphaMask(im, mask):
     w, h = im.size

@@ -2,6 +2,7 @@
 
 import math
 import numpy as np
+import random
 import scipy
 from scipy import signal
 import time
@@ -111,6 +112,14 @@ def parseNumbers(arr):
             for j, v in enumerate(item):
                 arr[i][j] = parseNumber(v)
     return arr
+
+def pseudoRandom(seed, range=(0, 1), isInt=False):
+    random.seed(seed)
+    value = random.random()
+    value = lerp(range, value)
+    if isInt:
+        value = roundInt(value)
+    return value
 
 def roundToNearest(n, nearest):
     return 1.0 * round(1.0*n/nearest) * nearest

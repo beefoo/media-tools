@@ -159,6 +159,20 @@ class Clip:
 
         return ftweens
 
+    def getNeighbors(self, clips, count, dim1="x", dim2="y", idKey="index", newKey="distance"):
+        myId = self.props[idKey]
+        myDim1 = self.props[dim1]
+        myDim2 = self.props[dim2]
+
+        clips = [c for c in clips if c.props[idKey] !=myId]
+        for i, c in enumerate(clips):
+            clips[i].setProp(newKey, distance(myDim1, myDim2, c.props[dim1], c.props[dim2]))
+        sortedByDistance = sorted(clips, key=lambda c: c.props[newKey])
+        neighbors = sortedByDistance[:count]
+
+        return neighbors
+
+
     def getTweenedProperties(self, ms):
         tweens = self.getFilledTweens()
         tweens = [t for t in tweens if t[0] < ms <= t[1]]
@@ -206,6 +220,9 @@ class Clip:
     def setBlur(self, blur):
         self.blur = blur
 
+    def setProp(self, key, value):
+        self.props[key] = value
+
     def setState(self, key, value):
         self.state[key] = value
 
@@ -233,13 +250,20 @@ def clipsToDicts(clips, ms):
         dicts.append(clip.toDict(ms))
     return dicts
 
-# def clipsToDicts(clips, ms, tweeningOnly=True):
-#     dicts = []
-#     if tweeningOnly:
-#         clips = [clip for clip in clips if clip.isTweening(ms)]
-#     for clip in clips:
-#         dicts.append(clip.toDict(ms))
-#     return dicts
+def clipsToSequence(clips):
+    audioSequence = []
+    for clip in clips:
+        for play in clip.plays:
+            start, end, params = play
+            p = {
+                "filename": clip.filename,
+                "ms": start,
+                "start": clip.start,
+                "dur": clip.dur
+            }
+            p.update(params)
+            audioSequence.append(p)
+    return audioSequence
 
 def samplesToClips(samples):
     clips = []

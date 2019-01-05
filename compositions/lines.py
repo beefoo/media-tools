@@ -164,7 +164,7 @@ def doLine(frameStart, propKey, volumeProps, reverse=False):
                 clip.setState("played", True)
                 clip.queueTween(ms, dur=fadeInDur, tweens=("alpha", alphaMultiplier*MIN_ALPHA, alphaMultiplier, "sin"))
                 clip.queueTween(ms+fadeInDur, dur=fadeDur-fadeInDur, tweens=("alpha", alphaMultiplier, alphaMultiplier*MIN_ALPHA, "sin"))
-                clip.queuePlay(ms, {"volume": volume, "pan": pan})
+                clip.queuePlay(ms, {"volume": volume, "pan": pan, "fadeOut": clip.dur})
     clips = updateClipStates(clips, [("played", False)])
 
 # Slowly fade clips in to partial opacity
@@ -209,19 +209,7 @@ doFade(currentFrame, MIN_ALPHA, 0.0, FADE_IN_OUT_SECONDS)
 currentFrame += FRAMES_PER_FADE
 
 # get audio sequence
-audioSequence = []
-for clip in clips:
-    for play in clip.plays:
-        start, end, params = play
-        p = {
-            "filename": clip.filename,
-            "ms": start,
-            "start": clip.start,
-            "dur": clip.dur,
-            "fadeOut": clip.dur
-        }
-        p.update(params)
-        audioSequence.append(p)
+audioSequence = clipsToSequence(clips)
 
 videoDurationMs = frameToMs(currentFrame, a.FPS)
 audioDurationMs = getAudioSequenceDuration(audioSequence)
