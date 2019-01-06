@@ -3,14 +3,14 @@
 import csv
 import glob
 import json
-from math_utils import *
+from lib.math_utils import *
 import os
 from pprint import pprint
 import requests
 import sys
 
-reload(sys)
-sys.setdefaultencoding('utf8')
+# reload(sys)
+# sys.setdefaultencoding('utf8')
 
 def framesExist(filePattern, frameCount):
     padZeros = getZeroPadding(frameCount)
@@ -62,22 +62,22 @@ def parseHeadings(arr, headings):
 
 def parseUnicode(arr):
     for i, item in enumerate(arr):
-        if type(item) is dict:
+        if type(item) is list:
+            for j, value in enumerate(item):
+                if isinstance(value, basestring) and not isinstance(value, unicode):
+                    arr[i][j] = unicode(value, "utf-8")
+        else:
             for key in item:
                 value = item[key]
                 if isinstance(value, basestring) and not isinstance(value, unicode):
                     arr[i][key] = unicode(value, "utf-8")
-        else:
-            for j, value in enumerate(item):
-                if isinstance(value, basestring) and not isinstance(value, unicode):
-                    arr[i][j] = unicode(value, "utf-8")
     return arr
 
 def readCsv(filename, headings=False, doParseNumbers=True, skipLines=0, encoding="utf-8", readDict=True):
     rows = []
     fieldnames = []
     if os.path.isfile(filename):
-        with open(filename, 'rb') as f:
+        with open(filename, 'r') as f:
             lines = [line for line in f if not line.startswith("#")]
             if skipLines > 0:
                 lines = lines[skipLines:]
@@ -119,7 +119,7 @@ def writeCsv(filename, arr, headings="auto", append=False, encoding="utf-8"):
                     value = d[h]
                 if isinstance(value, list):
                     value = ",".join(value)
-                if encoding and isinstance(value, basestring):
+                if encoding and isinstance(value, str):
                     value = value.encode(encoding)
                 row.append(value)
             writer.writerow(row)

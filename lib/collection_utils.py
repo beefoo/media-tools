@@ -1,5 +1,5 @@
 from pprint import pprint
-from math_utils import *
+from lib.math_utils import *
 
 def addIndices(arr, keyName="index"):
     for i, item in enumerate(arr):

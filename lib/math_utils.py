@@ -6,6 +6,7 @@ import random
 import scipy
 from scipy import signal
 import time
+import sys
 
 # return the bounding box of a rotated rectangle
 def bboxRotate(cx, cy, w, h, angle):
@@ -105,13 +106,18 @@ def parseNumber(string, alwaysFloat=False):
 
 def parseNumbers(arr):
     for i, item in enumerate(arr):
-        if type(item) is dict:
-            for key in item:
-                arr[i][key] = parseNumber(item[key])
-        else:
+        if type(item) is list:
             for j, v in enumerate(item):
                 arr[i][j] = parseNumber(v)
+        else:
+            for key in item:
+                arr[i][key] = parseNumber(item[key])
     return arr
+
+def printProgress(step, total):
+    sys.stdout.write('\r')
+    sys.stdout.write("%s%%" % round(1.0*step/total*100,2))
+    sys.stdout.flush()
 
 def pseudoRandom(seed, range=(0, 1), isInt=False):
     random.seed(seed)
