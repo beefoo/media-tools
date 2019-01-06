@@ -26,6 +26,9 @@ def bboxRotate(cx, cy, w, h, angle):
 def ceilInt(n):
     return int(math.ceil(n))
 
+def containsList(bucketList, needleList):
+    return set(needleList).issubset(set(bucketList))
+
 def distance(x1, y1, x2, y2):
     return math.hypot(x2 - x1, y2 - y1)
 
