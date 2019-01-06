@@ -331,9 +331,13 @@ def getVideoClipImage(video, videoDur, clip):
     videoT = clip["t"] / 1000.0
     cw = roundInt(clip["width"])
     ch = roundInt(clip["height"])
+    delta = videoDur - videoT
     # check if we need to loop video clip
-    if videoT > videoDur:
+    if delta < 0:
         videoT = videoT % videoDur
+    # hack: ffmpeg sometimes has trouble reading the very end of the video; choose 500ms from end
+    elif delta < 0.5:
+        videoT = videoDur - 0.5
     # a numpy array representing the RGB picture of the clip
     try:
         videoPixels = video.get_frame(videoT)

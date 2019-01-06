@@ -91,7 +91,7 @@ def getAudioSamples(fn, min_dur=50, max_dur=-1, fft=2048, hop_length=512, backtr
 
     times = [int(round(1.0 * hop_length * onset / sr * 1000)) for onset in onsets]
     # add the end of the audio
-    times.append(duration-1)
+    # times.append(duration-1)
 
     samples = []
     for i, t in enumerate(times):
