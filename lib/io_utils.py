@@ -9,8 +9,12 @@ from pprint import pprint
 import requests
 import sys
 
-# reload(sys)
-# sys.setdefaultencoding('utf8')
+try:
+    reload(sys)
+    sys.setdefaultencoding('utf8')
+except:
+    print("reload operation not supported, skipping...")
+
 
 def framesExist(filePattern, frameCount):
     padZeros = getZeroPadding(frameCount)
@@ -32,6 +36,9 @@ def getFilenames(fileString):
     files = sorted(files)
     print("Found %s files" % fileCount)
     return files
+
+def getFilesInDir(dirname):
+    return [os.path.join(dirname, f) for f in os.listdir(dirname) if os.path.isfile(os.path.join(dirname, f))]
 
 def getJSONFromURL(url):
     print("Downloading %s" % url)
@@ -62,7 +69,7 @@ def parseHeadings(arr, headings):
 
 def parseUnicode(arr):
     for i, item in enumerate(arr):
-        if type(item) is list:
+        if isinstance(item, (list,)):
             for j, value in enumerate(item):
                 if isinstance(value, basestring) and not isinstance(value, unicode):
                     arr[i][j] = unicode(value, "utf-8")

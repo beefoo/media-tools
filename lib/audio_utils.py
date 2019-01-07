@@ -47,6 +47,25 @@ def addFx(sound, effects, pad=3000, fade_in=100, fade_out=100):
     newSound = newSound.fade_in(min(fade_in, dur)).fade_out(min(fade_out, dur))
     return newSound
 
+def analyzeAudio(fn, start=0, dur=250, findSamples=False):
+    y, sr = librosa.load(fn)
+    if findSamples:
+        samples = getAudioSamples(fn, y=y, sr=sr)
+        if len(samples) > 0:
+            print("Found %s samples for %s" % (len(samples), fn))
+            start = samples[0]["start"]
+        else:
+            print("No samples for %s" % fn)
+    start = start / 1000.0
+    dur = dur / 1000.0
+    i0 = max(0, roundInt(start * sr))
+    i1 = min(i0 + roundInt(dur * sr), len(y)-1)
+    y = y[i0:i1]
+
+    centroid = scaleAudioData(librosa.feature.spectral_centroid(y=y, sr=sr))
+    bandwidth = scaleAudioData(librosa.feature.spectral_bandwidth(y=y, sr=sr))
+    return np.asarray([centroid, bandwidth])
+
 def getAudioFile(fn, samplerate=44100):
     # format = fn.split(".")[-1]
     # # if this is an .mp4, convert to .mp3
@@ -63,12 +82,13 @@ def getAudioFile(fn, samplerate=44100):
     #     fn = target
     return fn
 
-def getAudioSamples(fn, min_dur=50, max_dur=-1, fft=2048, hop_length=512, backtrack=True, superFlux=True):
+def getAudioSamples(fn, min_dur=50, max_dur=-1, fft=2048, hop_length=512, backtrack=True, superFlux=True, y=None, sr=None):
     basename = os.path.basename(fn)
     fn = getAudioFile(fn)
 
     # load audio
-    y, sr = librosa.load(fn)
+    if y is None or sr is None:
+        y, sr = librosa.load(fn)
     y /= y.max()
     duration = roundInt(getDuration(y, sr) * 1000)
 
@@ -107,6 +127,17 @@ def getAudioSamples(fn, min_dur=50, max_dur=-1, fft=2048, hop_length=512, backtr
             })
 
     return samples
+
+def getAudioSimilarity(test, references):
+    refCount = len(references)
+    if refCount <= 0:
+        print("Warning: no references found.")
+        return 0
+    sumValue = 0
+    for ref in references:
+        refDistance = np.linalg.norm(test - ref)
+        sumValue += refDistance
+    return 1.0 * sumValue / refCount
 
 def getDuration(y, sr):
     ylen = len(y)
@@ -404,6 +435,12 @@ def paulStretch(samplerate, smp, stretch, windowsize_seconds=0.25, onset_level=1
     sdata = sdata * 32767.0
     sdata = sdata.astype(np.int16)
     return sdata
+
+def scaleAudioData(arr):
+    # get the average
+    avg = np.average(arr)
+    # scale from 20,20000 to 0,1
+    return (avg - 20) / (20000 - 20)
 
 def stretchSound(sound, amount=2.0, fade_out=0.8):
     channels = sound.channels

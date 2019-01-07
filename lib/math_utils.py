@@ -109,7 +109,7 @@ def parseNumber(string, alwaysFloat=False):
 
 def parseNumbers(arr):
     for i, item in enumerate(arr):
-        if type(item) is list:
+        if isinstance(item, (list,)): 
             for j, v in enumerate(item):
                 arr[i][j] = parseNumber(v)
         else:
