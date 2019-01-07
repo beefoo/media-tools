@@ -114,13 +114,13 @@ clips = []
 if TYPE == "grid":
     import rasterfairy
 
-    xy = [[row[PROP1], row[PROP2]] for row in rows]
+    xy = [[row[PROP1]*1000, row[PROP2]*1000] for row in rows]
     xy = np.array(xy)
     nx = IMAGE_W / CELL_W
     ny = IMAGE_H / CELL_H
     print("Determining grid assignment...")
-    gridAssignment = rasterfairy.transformPointCloud2D(xy, target=(nx, ny))
 
+    gridAssignment = rasterfairy.transformPointCloud2D(xy, target=(nx, ny))
     grid, gridShape = gridAssignment
     i = 0
     for row, pos in zip(rows, grid):
@@ -132,7 +132,7 @@ if TYPE == "grid":
             "width": CELL_W,
             "height": CELL_H,
             "filename": AUDIO_DIRECTORY + row["filename"],
-            "t": row["start"] / 1000.0
+            "t": row["start"] + roundInt(row["dur"]*0.5)
         })
         sprites[i] += [round(1.0*x/IMAGE_W, 3), round(1.0*y/IMAGE_H, 3)]
         i += 1
@@ -154,7 +154,7 @@ else:
             "width": CELL_W,
             "height": CELL_H,
             "filename": AUDIO_DIRECTORY + row["filename"],
-            "t": row["start"] / 1000.0
+            "t": row["start"] + roundInt(row["dur"]*0.5)
         })
         sprites[i] += [round(1.0*x/IMAGE_W, 3), round(1.0*y/IMAGE_H, 3)]
 
