@@ -54,6 +54,7 @@ def addVideoArgs(parser):
     parser.add_argument('-rand', dest="RANDOM_SEED", default=1, type=int, help="Random seed to use for pseudo-randomness")
     parser.add_argument('-pad0', dest="PAD_START", default=0, type=int, help="Pad the beginning")
     parser.add_argument('-pad1', dest="PAD_END", default=3000, type=int, help="Pad the end")
+    parser.add_argument('-rvb', dest="REVERB", default=80, type=int, help="Reverberence (0-100)")
 
 def alphaMask(im, mask):
     w, h = im.size
