@@ -65,6 +65,6 @@ for i, s in enumerate(samples):
         similarity = getAudioSimilarity(sampleAnalysis, groupAnalysis)
         samples[i][group] = similarity
 
+    # progressively save
+    writeCsv(a.OUTPUT_FILE, samples, headings=fieldNames)
     printProgress(i+1, sampleCount)
-
-writeCsv(a.OUTPUT_FILE, samples, headings=fieldNames)
