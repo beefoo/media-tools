@@ -281,6 +281,10 @@ def getFeatureVector(y, sr, start, dur):
 def getStft(y, n_fft=2048, hop_length=512):
     return librosa.feature.rmse(S=librosa.stft(y, n_fft=n_fft, hop_length=hop_length))[0]
 
+def matchDb(audio, targetDb):
+    deltaDb = targetDb - audio.dBFS
+    return audio.apply_gain(deltaDb)
+
 # Adapted from: https://github.com/paulnasca/paulstretch_python/blob/master/paulstretch_newmethod.py
 def paulStretch(samplerate, smp, stretch, windowsize_seconds=0.25, onset_level=10.0):
     nchannels=smp.shape[0]
