@@ -50,7 +50,7 @@ if a.COUNT > 0:
         print("Warning: %s samples requested, but only %s found" % (a.COUNT, sampleCount))
 samples = prependAll(samples, ("filename", a.VIDEO_DIRECTORY))
 samples = addIndices(samples)
-samples = sortBy(samples, ("hz", "asc"))
+samples = sortBy(samples, [("power", "desc", 0.5), ("flatness", "asc")])
 
 # create clips
 clips = samplesToClips(samples)
