@@ -60,15 +60,23 @@ if os.path.isfile(OUTPUT_FILE) and not OVERWRITE:
     sys.exit()
 
 # Read files
+files = []
+fromManifest = INPUT_FILE.endswith(".csv")
 print("Reading file...")
-fieldNames, files = readCsv(INPUT_FILE)
+if fromManifest:
+    fieldNames, files = readCsv(INPUT_FILE)
+else:
+    files = getFilenames(INPUT_FILE)
 fileCount = len(files)
-print("Found %s rows" % fileCount)
 
 # Filter out files with no filename, duration, or audio
-files = filterWhere(files, [("duration", 0, ">"), ("hasAudio", 0, ">")])
-fileCount = len(files)
-print("Found %s rows after filtering" % fileCount)
+if fromManifest:
+    files = filterWhere(files, [("duration", 0, ">"), ("hasAudio", 0, ">")])
+    fileCount = len(files)
+    print("Found %s rows after filtering" % fileCount)
+    files = prependAll(files, ("filename", MEDIA_DIRECTORY))
+else:
+    files = [{"filename": f} for f in files]
 
 # Determine the number of samples per file
 samplesPerFile = SAMPLES
@@ -113,8 +121,8 @@ headings = ["filename", "start", "dur"]
 if FEATURES:
     headings += ["power", "hz", "flatness", "note", "octave"]
 totalCount = 0
-for i, file in enumerate(files):
-    fn = file["filename"]
+for i, f in enumerate(files):
+    fn = f["filename"]
 
     # Check if we already have this data
     if not OVERWRITE and rowCount > 0 and len([row for row in rows if row["filename"]==fn]) > 0:
@@ -122,7 +130,7 @@ for i, file in enumerate(files):
         print("Already found samples for %s. Skipping.")
 
     else:
-        result = getSamples(MEDIA_DIRECTORY+fn, samplesPerFile)
+        result = getSamples(fn, samplesPerFile)
         # Progressively save samples per audio file
         append = (i > 0)
         writeCsv(OUTPUT_FILE, result, headings=headings, append=append)
