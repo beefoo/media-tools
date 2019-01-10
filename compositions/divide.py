@@ -77,9 +77,15 @@ for i in range(a.DIVIDE_COUNT):
 
         fadeDur = max(100, roundInt(clip.dur * 0.5))
         fadeDur = min(clip.dur, fadeDur)
+        pan = lerp((-1, 1), lerpAmt)
 
         while ms < totalTime:
-            clip.queuePlay(ms, {"volume": 1.0, "fadeOut": fadeDur, "reverb": a.REVERB})
+            clip.queuePlay(ms, {
+                "volume": 1.0,
+                # "fadeOut": fadeDur, 
+                "pan": pan,
+                "reverb": a.REVERB}
+            )
             ms += a.INTERVAL
 
 # get audio sequence
