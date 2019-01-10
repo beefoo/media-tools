@@ -28,7 +28,7 @@ from lib.video_utils import *
 # input
 parser = argparse.ArgumentParser()
 addVideoArgs(parser)
-parser.add_argument('-mcount', dest="DIVIDE_COUNT", default=5, type=int, help="Amount of times to divide")
+parser.add_argument('-mcount', dest="DIVIDE_COUNT", default=6, type=int, help="Amount of times to divide")
 parser.add_argument('-interval', dest="INTERVAL", default=4096, type=int, help="Starting interval duration in ms")
 parser.add_argument('-counts', dest="COUNTS", default=2, type=int, help="Amount of times to play each interval before multiplying")
 a = parser.parse_args()
@@ -73,6 +73,7 @@ for i in range(a.DIVIDE_COUNT):
         lerpAmt = 1.0 * intervalMs / a.INTERVAL
         clipIndex = roundInt((sampleCount-1) * lerpAmt)
         clip = clips[clipIndex]
+        # print("%s: power(%s) hz(%s) flatness(%s)" % (lerpAmt, clip.props["power"], clip.props["hz"], clip.props["flatness"]))
 
         fadeDur = max(100, roundInt(clip.dur * 0.5))
         fadeDur = min(clip.dur, fadeDur)
