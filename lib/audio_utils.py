@@ -89,7 +89,9 @@ def getAudioSamples(fn, min_dur=50, max_dur=-1, fft=2048, hop_length=512, backtr
     # load audio
     if y is None or sr is None:
         y, sr = librosa.load(fn)
-    y /= y.max()
+    maxVal = y.max()
+    if maxVal != 0:
+        y /= maxVal
     duration = roundInt(getDuration(y, sr) * 1000)
 
     # retrieve onsets using superflux method

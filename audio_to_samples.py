@@ -55,9 +55,9 @@ FFT = 2048
 HOP_LEN = FFT/4
 
 # Check if file exists already
-if os.path.isfile(OUTPUT_FILE) and not OVERWRITE:
-    print("%s already exists. Skipping." % OUTPUT_FILE)
-    sys.exit()
+# if os.path.isfile(OUTPUT_FILE) and not OVERWRITE:
+#     print("%s already exists. Skipping." % OUTPUT_FILE)
+#     sys.exit()
 
 # Read files
 files = []
@@ -123,9 +123,10 @@ if FEATURES:
 totalCount = 0
 for i, f in enumerate(files):
     fn = f["filename"]
+    basename = os.path.basename(fn)
 
     # Check if we already have this data
-    if not OVERWRITE and rowCount > 0 and len([row for row in rows if row["filename"]==fn]) > 0:
+    if not OVERWRITE and rowCount > 0 and len([row for row in rows if row["filename"]==basename]) > 0:
         totalCount += len([row for row in rows if row["filename"]==fn])
         print("Already found samples for %s. Skipping.")
 
