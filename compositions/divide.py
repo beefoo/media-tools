@@ -28,9 +28,9 @@ from lib.video_utils import *
 # input
 parser = argparse.ArgumentParser()
 addVideoArgs(parser)
-parser.add_argument('-mcount', dest="MULTIPLY_COUNT", default=5, type=int, help="Amount of times to multiply")
+parser.add_argument('-mcount', dest="DIVIDE_COUNT", default=5, type=int, help="Amount of times to divide")
 parser.add_argument('-interval', dest="INTERVAL", default=4096, type=int, help="Starting interval duration in ms")
-parser.add_argument('-counts', dest="COUNTS", default=4, type=int, help="Amount of times to play each interval before multiplying")
+parser.add_argument('-counts', dest="COUNTS", default=2, type=int, help="Amount of times to play each interval before multiplying")
 a = parser.parse_args()
 parseVideoArgs(a)
 makeDirectories([a.OUTPUT_FRAME, a.OUTPUT_FILE, a.CACHE_FILE])
@@ -41,26 +41,21 @@ startTime = logTime()
 fieldNames, samples = readCsv(a.INPUT_FILE)
 sampleCount = len(samples)
 stepTime = logTime(startTime, "Read samples")
-if a.COUNT > 0:
-    if a.COUNT <= sampleCount:
-        samples = sortBy(samples, ("flatness", "asc")) # get samples with least flatness
-        samples = samples[:a.COUNT]
-        sampleCount = a.COUNT
-    else:
-        print("Warning: %s samples requested, but only %s found" % (a.COUNT, sampleCount))
+
+samples = sortBy(samples, [("power", "desc", 0.5), ("flatness", "asc", 0.5), ("start", "asc")])
+sampleCount = len(samples)
+
 samples = prependAll(samples, ("filename", a.VIDEO_DIRECTORY))
 samples = addIndices(samples)
-samples = sortBy(samples, [("power", "desc", 0.5), ("flatness", "asc")])
 
 # create clips
 clips = samplesToClips(samples)
 currentFrame = 1
-totalTime = a.INTERVAL * a.COUNTS * a.MULTIPLY_COUNT
-clipIndex = 0
+totalTime = a.INTERVAL * a.COUNTS * a.DIVIDE_COUNT
 
 print("Target time: %s" % formatSeconds(totalTime/1000.0))
 
-for i in range(a.MULTIPLY_COUNT):
+for i in range(a.DIVIDE_COUNT):
     clipsToAdd = 1
     offset = 0
     if i > 0:
@@ -69,13 +64,19 @@ for i in range(a.MULTIPLY_COUNT):
     offsetMs = offset * a.INTERVAL
     stepMs = offsetMs * 2
     startMs = a.INTERVAL * a.COUNTS * i
+    print("Divide step %s: %sms" % (i, offsetMs))
 
     for j in range(clipsToAdd):
+        intervalMs = offsetMs + j * stepMs
+        ms = startMs + intervalMs
+
+        lerpAmt = 1.0 * intervalMs / a.INTERVAL
+        clipIndex = roundInt((sampleCount-1) * lerpAmt)
         clip = clips[clipIndex]
-        clipIndex += 1
+
         fadeDur = max(100, roundInt(clip.dur * 0.5))
         fadeDur = min(clip.dur, fadeDur)
-        ms = startMs + offsetMs + j * stepMs
+
         while ms < totalTime:
             clip.queuePlay(ms, {"volume": 1.0, "fadeOut": fadeDur, "reverb": a.REVERB})
             ms += a.INTERVAL
