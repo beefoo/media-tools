@@ -29,7 +29,7 @@ from lib.video_utils import *
 parser = argparse.ArgumentParser()
 addVideoArgs(parser)
 parser.add_argument('-mcount', dest="DIVIDE_COUNT", default=6, type=int, help="Amount of times to divide")
-parser.add_argument('-interval', dest="INTERVAL", default=4096, type=int, help="Starting interval duration in ms")
+parser.add_argument('-interval', dest="INTERVAL", default=8192, type=int, help="Starting interval duration in ms")
 parser.add_argument('-counts', dest="COUNTS", default=2, type=int, help="Amount of times to play each interval before multiplying")
 a = parser.parse_args()
 parseVideoArgs(a)
@@ -82,15 +82,17 @@ for i in range(a.DIVIDE_COUNT):
         while ms < totalTime:
             clip.queuePlay(ms, {
                 "volume": 1.0,
-                # "fadeOut": fadeDur, 
+                # "fadeOut": fadeDur,
                 "pan": pan,
-                "reverb": a.REVERB}
-            )
+                "reverb": a.REVERB,
+                "matchDb": a.MATCH_DB
+            })
             ms += a.INTERVAL
 
 # get audio sequence
 audioSequence = clipsToSequence(clips)
 stepTime = logTime(stepTime, "Processed clip sequence")
+print("%s clips in sequence" % len(unique([(c["filename"], c["start"]) for c in audioSequence])))
 
 videoDurationMs = frameToMs(currentFrame, a.FPS)
 audioDurationMs = getAudioSequenceDuration(audioSequence)

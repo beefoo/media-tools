@@ -18,7 +18,7 @@ def makeTrack(duration, instructions, segments, sfx=True, sampleWidth=2, sampleR
     for index, i in enumerate(instructions):
         segment = [s for s in segments if s["id"]==(i["start"], i["dur"])].pop()
         audio = segment["audio"]
-        if "matchDb" in i:
+        if "matchDb" in i and i["matchDb"] is not False:
             audio = matchDb(audio, i["matchDb"])
         if "reverse" in i and i["reverse"]:
             audio = audio.reverse()

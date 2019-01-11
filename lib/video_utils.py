@@ -56,6 +56,7 @@ def addVideoArgs(parser):
     parser.add_argument('-pad1', dest="PAD_END", default=3000, type=int, help="Pad the end")
     parser.add_argument('-rvb', dest="REVERB", default=80, type=int, help="Reverberence (0-100)")
     parser.add_argument('-debug', dest="DEBUG", default=0, type=int, help="Debug mode?")
+    parser.add_argument('-mdb', dest="MATCH_DB", default=-16, type=int, help="Match decibels, -9999 for none")
 
 def alphaMask(im, mask):
     w, h = im.size
@@ -455,6 +456,7 @@ def parseVideoArgs(args):
     d["CACHE_VIDEO"] = args.CACHE_VIDEO > 0 or args.USE_GPU > 0
     d["USE_GPU"] = args.USE_GPU > 0
     d["DEBUG"] = args.DEBUG > 0
+    d["MATCH_DB"] = args.MATCH_DB if args.MATCH_DB > -9999 else False
 
 def pasteImage(im, clipImg, x, y):
     width, height = im.size
