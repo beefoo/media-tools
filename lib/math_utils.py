@@ -66,6 +66,14 @@ def floorInt(n):
 def formatSeconds(s):
     return time.strftime('%H:%M:%S', time.gmtime(s))
 
+def getRandomColor(seed=None):
+    c = []
+    for i in range(3):
+        if seed is not None:
+            random.seed(seed+i)
+        c.append(random.randint(0, 255))
+    return tuple(c)
+
 def getValue(d, key, default):
     return d[key] if key in d else default
 
@@ -109,7 +117,7 @@ def parseNumber(string, alwaysFloat=False):
 
 def parseNumbers(arr):
     for i, item in enumerate(arr):
-        if isinstance(item, (list,)): 
+        if isinstance(item, (list,)):
             for j, v in enumerate(item):
                 arr[i][j] = parseNumber(v)
         else:

@@ -55,6 +55,7 @@ def addVideoArgs(parser):
     parser.add_argument('-pad0', dest="PAD_START", default=0, type=int, help="Pad the beginning")
     parser.add_argument('-pad1', dest="PAD_END", default=3000, type=int, help="Pad the end")
     parser.add_argument('-rvb', dest="REVERB", default=80, type=int, help="Reverberence (0-100)")
+    parser.add_argument('-debug', dest="DEBUG", default=0, type=int, help="Debug mode?")
 
 def alphaMask(im, mask):
     w, h = im.size
@@ -96,6 +97,7 @@ def clipsToFrame(p):
     overwrite = p["overwrite"] if "overwrite" in p else False
     verbose = p["verbose"] if "verbose" in p else False
     useGPU = p["gpu"] if "gpu" in p else False
+    debug = p["debug"] if "debug" in p else False
     im = None
     fileExists = os.path.isfile(filename) and not overwrite
 
@@ -110,8 +112,12 @@ def clipsToFrame(p):
         # filter out clips that are not visible
         clips = [clip for clip in clips if isClipVisible(clip, width, height)]
 
+        # check for debug mode
+        if debug:
+            im = clipsToFrameDebug(im, clips)
+
         # pixels are cached
-        if len(clips) > 0 and "framePixelData" in clips[0]:
+        elif len(clips) > 0 and "framePixelData" in clips[0]:
             if useGPU:
                 im = clipsToFrameGPU(clips, width, height)
             else:
@@ -157,6 +163,14 @@ def clipsToFrame(p):
             print("Saved frame %s" % filename)
 
     return True
+
+def clipsToFrameDebug(im, clips):
+    for i, clip in enumerate(clips):
+        rindex = getValue(clip, "index", i)
+        clipImg = Image.new(mode="RGB", size=(clip["width"], clip["height"]), color=getRandomColor(rindex))
+        clipImg, x, y = applyEffects(clipImg, clip)
+        im = pasteImage(im, clipImg, x, y)
+    return im
 
 def clipsToFrameGPU(clips, width, height):
     pixelData = []
@@ -440,6 +454,7 @@ def parseVideoArgs(args):
     d["MS_PER_FRAME"] = frameToMs(1, args.FPS, False)
     d["CACHE_VIDEO"] = args.CACHE_VIDEO > 0 or args.USE_GPU > 0
     d["USE_GPU"] = args.USE_GPU > 0
+    d["DEBUG"] = args.DEBUG > 0
 
 def pasteImage(im, clipImg, x, y):
     width, height = im.size
