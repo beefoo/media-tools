@@ -98,6 +98,7 @@ progress = 0
 # files = files[:1]
 
 def getSamples(fn, sampleCount=-1):
+    print("Retrieving samples for %s..." % fn)
     sampleData = getAudioSamples(fn, min_dur=MIN_DUR, max_dur=MAX_DUR, fft=FFT, hop_length=HOP_LEN)
     print("Found %s samples in %s." % (len(sampleData), fn))
 

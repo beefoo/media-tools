@@ -18,7 +18,7 @@ def makeTrack(duration, instructions, segments, sfx=True, sampleWidth=2, sampleR
     for index, i in enumerate(instructions):
         segment = [s for s in segments if s["id"]==(i["start"], i["dur"])].pop()
         audio = segment["audio"]
-        if "matchDb" in i:
+        if "matchDb" in i and i["matchDb"] is not False:
             audio = matchDb(audio, i["matchDb"])
         if "reverse" in i and i["reverse"]:
             audio = audio.reverse()
@@ -45,7 +45,7 @@ def makeTrack(duration, instructions, segments, sfx=True, sampleWidth=2, sampleR
         sys.stdout.flush()
     return baseAudio
 
-def mixAudio(instructions, duration, outfilename, sfx=True, sampleWidth=2, sampleRate=44100, channels=2, clipFadeIn=100, clipFadeOut=100, fxPad=3000):
+def mixAudio(instructions, duration, outfilename, sfx=True, sampleWidth=2, sampleRate=44100, channels=2, clipFadeIn=10, clipFadeOut=10, fxPad=3000):
     # remove instructions with no volume
     instructions = [i for i in instructions if "volume" not in i or i["volume"] > 0]
     audioFiles = list(set([i["filename"] for i in instructions]))
