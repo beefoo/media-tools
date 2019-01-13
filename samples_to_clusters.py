@@ -5,12 +5,12 @@ import inspect
 import math
 import os
 from pprint import pprint
-from sklearn.cluster import KMeans
 import sys
 
 from lib.collection_utils import *
 from lib.io_utils import *
 from lib.math_utils import *
+from lib.statistics_utils import *
 
 # input
 parser = argparse.ArgumentParser()
@@ -43,18 +43,15 @@ if LIMIT > 0 and len(samples) > LIMIT:
     samples = samples[:LIMIT]
 
 print("Performing k-means clustering...")
-xy = np.array([(s[PROP1], s[PROP2]) for s in samples])
-kmeans = KMeans(n_clusters=CLUSTERS)
-kmeans.fit(xy)
-y_kmeans = kmeans.predict(xy)
+xy = [(s[PROP1], s[PROP2]) for s in samples]
+y_kmeans, centers = getKMeansClusters(xy, nClusters=CLUSTERS)
 print("Done.")
-
-# Add cluster back to samples
-for i, s in enumerate(samples):
-    samples[i]["cluster"] = y_kmeans[i]
 
 # Write to file
 if WRITE_TO_FILE:
+    # Add cluster back to samples
+    for i, s in enumerate(samples):
+        samples[i]["cluster"] = y_kmeans[i]
     if "cluster" not in set(fieldNames):
         fieldNames.append("cluster")
     writeCsv(INPUT_FILE, samples, headings=fieldNames)
@@ -64,6 +61,5 @@ if PLOT:
     from matplotlib import pyplot as plt
     plt.figure(figsize = (10,10))
     plt.scatter(xy[:, 0], xy[:, 1], c=y_kmeans, s=10, cmap='viridis')
-    centers = kmeans.cluster_centers_
     plt.scatter(centers[:, 0], centers[:, 1], c='black', s=40, alpha=0.5)
     plt.show()
