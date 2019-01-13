@@ -192,6 +192,8 @@ def getFeatures(y, sr, start, dur=100, fft=2048, hop_length=512):
 def getFeaturesFromSamples(filename, samples):
     # load audio
     sampleCount = len(samples)
+    if sampleCount < 1:
+        return samples
     print("Getting features from %s samples in %s..." % (sampleCount, filename))
     fn = getAudioFile(filename)
     y, sr = librosa.load(fn)

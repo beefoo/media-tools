@@ -101,19 +101,19 @@ def getSamples(fn, sampleCount=-1):
     sampleData = getAudioSamples(fn, min_dur=MIN_DUR, max_dur=MAX_DUR, fft=FFT, hop_length=HOP_LEN)
     print("Found %s samples in %s." % (len(sampleData), fn))
 
-    # optionally retrieve features
-    if FEATURES:
-        sampleData = getFeaturesFromSamples(fn, sampleData)
-    # optionally, filter results
-    if len(FILTER) > 0:
-        sampleData = filterByQueryString(sampleData, FILTER)
-    # optionally sort results
-    if len(SORT) > 0:
-        sampleData = sortByQueryString(sampleData, SORT)
-
-    # if too many samples
-    if sampleCount > 0 and len(sampleData) > sampleCount:
-        sampleData = sampleData[:sampleCount]
+    if len(sampleData) > 0:
+        # optionally retrieve features
+        if FEATURES:
+            sampleData = getFeaturesFromSamples(fn, sampleData)
+        # optionally, filter results
+        if len(FILTER) > 0:
+            sampleData = filterByQueryString(sampleData, FILTER)
+        # optionally sort results
+        if len(SORT) > 0:
+            sampleData = sortByQueryString(sampleData, SORT)
+        # if too many samples
+        if len(sampleData) > sampleCount:
+            sampleData = sampleData[:sampleCount]
 
     return sampleData
 
