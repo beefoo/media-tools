@@ -92,6 +92,9 @@ class Clip:
         self.tweens = defaults["tweens"]
         self.plays = defaults["plays"]
 
+        self.setFadeIn(getClipFadeDur(self.dur))
+        self.setFadeOut(getClipFadeDur(self.dur, 0.25))
+
         self.setAlpha(defaults["alpha"])
         self.setBlur(defaults["blur"])
         self.setVector(Vector(defaults))
@@ -220,6 +223,12 @@ class Clip:
     def setBlur(self, blur):
         self.blur = blur
 
+    def setFadeIn(self, fadeDur):
+        self.fadeIn = fadeDur
+
+    def setFadeOut(self, fadeDur):
+        self.fadeOut = fadeDur
+
     def setProp(self, key, value):
         self.props[key] = value
 
@@ -264,6 +273,11 @@ def clipsToSequence(clips):
             p.update(params)
             audioSequence.append(p)
     return audioSequence
+
+def getClipFadeDur(clipDur, percentage=0.1, maxDur=100):
+    dur = roundInt(clipDur * percentage)
+    dur = min(dur, maxDur)
+    return dur
 
 def samplesToClips(samples):
     clips = []

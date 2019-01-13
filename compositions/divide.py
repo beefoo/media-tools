@@ -1,10 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # Instructions
-# 1. Breathe in, the clips expand and play backwards
-# 2. Breathe out, the clips release and play forwards
-# 3. Play similar-sounding clips on each breadth
-# 4. Use real breathing data if possible
+# TODO
 
 import argparse
 import inspect
@@ -75,14 +72,15 @@ for i in range(a.DIVIDE_COUNT):
         clip = clips[clipIndex]
         # print("%s: power(%s) hz(%s) flatness(%s)" % (lerpAmt, clip.props["power"], clip.props["hz"], clip.props["flatness"]))
 
-        fadeDur = max(100, roundInt(clip.dur * 0.5))
-        fadeDur = min(clip.dur, fadeDur)
+        fadeInDur = getClipFadeDur(clip.dur)
+        fadeOutDur = getClipFadeDur(clip.dur, 0.25)
         pan = lerp((-1, 1), lerpAmt)
 
         while ms < totalTime:
             clip.queuePlay(ms, {
                 "volume": 1.0,
-                # "fadeOut": fadeDur,
+                "fadeOut": fadeOutDur,
+                "fadeIn": fadeInDur,
                 "pan": pan,
                 "reverb": a.REVERB,
                 "matchDb": a.MATCH_DB
