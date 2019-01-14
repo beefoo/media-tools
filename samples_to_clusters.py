@@ -59,7 +59,8 @@ if WRITE_TO_FILE:
 # Plot result
 if PLOT:
     from matplotlib import pyplot as plt
+    xy = np.array(xy)
     plt.figure(figsize = (10,10))
     plt.scatter(xy[:, 0], xy[:, 1], c=y_kmeans, s=10, cmap='viridis')
-    plt.scatter(centers[:, 0], centers[:, 1], c='black', s=40, alpha=0.5)
+    plt.scatter(centers[:, 0], centers[:, 1], c='red', s=60)
     plt.show()
