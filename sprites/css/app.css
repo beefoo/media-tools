@@ -3,7 +3,12 @@ body {
   color: white;
 }
 
-.app,
+.image {
+  position: relative;
+  width: 99vw;
+  height: 99vw;
+}
+
 .image img,
 .overlay,
 .touch {
@@ -13,14 +18,6 @@ body {
   width: 100%;
   height: 100%;
   overflow: hidden;
-}
-
-.image {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: auto;
-  height: auto;
 }
 .image .overlay {
   z-index: 2;
