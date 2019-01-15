@@ -18,8 +18,11 @@ var App = (function() {
   }
 
   function queryParams(){
-    var search = location.search.substring(1);
-    return JSON.parse('{"' + search.replace(/&/g, '","').replace(/=/g,'":"') + '"}', function(key, value) { return key===""?value:decodeURIComponent(value) });
+    if (location.search.length) {
+      var search = location.search.substring(1);
+      return JSON.parse('{"' + search.replace(/&/g, '","').replace(/=/g,'":"') + '"}', function(key, value) { return key===""?value:decodeURIComponent(value) });
+    }
+    return {};
   }
 
   App.prototype.init = function(){
@@ -134,39 +137,10 @@ var App = (function() {
   App.prototype.onResize = function(){
     var _this = this;
 
-    this.width = $(window).width();
-    this.height = $(window).height();
-
-    var screenRatio = this.width / this.height;
-    var imgRatio = this.imageW / this.imageH;
-
-    // image is wider than screen
-    if (imgRatio > screenRatio) {
-      var imageH = this.width / imgRatio;
-      var top = (this.height - imageH) * 0.5;
-      this.$imageWrapper.css({
-        "width": "100%",
-        "height": imageH + "px",
-        "left": 0,
-        "top": top + "px"
-      });
-      this.imageRW = this.width;
-      this.imageRH = imageH;
-
-    // image is taller than screen
-    } else {
-      var imageW = this.height * imgRatio;
-      var left = (this.width - imageW) * 0.5;
-      this.$imageWrapper.css({
-        "height": "100%",
-        "width": imageW + "px",
-        "left": left + "px",
-        "top": 0
-      });
-      this.imageRH = this.height;
-      this.imageRW = imageW;
-    }
-
+    this.width = this.$imageWrapper.width();
+    this.height = this.$imageWrapper.height();
+    this.imageRW = this.width;
+    this.imageRH = this.height;
     this.imageOffset = this.$imageWrapper.offset();
 
     var cellNW = this.cellNW;

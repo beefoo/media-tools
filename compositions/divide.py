@@ -20,17 +20,21 @@ from lib.clip import *
 from lib.collection_utils import *
 from lib.io_utils import *
 from lib.math_utils import *
+from lib.statistics_utils import *
 from lib.video_utils import *
 
 # input
 parser = argparse.ArgumentParser()
 addVideoArgs(parser)
-parser.add_argument('-mcount', dest="DIVIDE_COUNT", default=6, type=int, help="Amount of times to divide")
+parser.add_argument('-mcount', dest="DIVIDE_COUNT", default=7, type=int, help="Amount of times to divide")
 parser.add_argument('-interval', dest="INTERVAL", default=8192, type=int, help="Starting interval duration in ms")
 parser.add_argument('-counts', dest="COUNTS", default=2, type=int, help="Amount of times to play each interval before multiplying")
 a = parser.parse_args()
 parseVideoArgs(a)
 makeDirectories([a.OUTPUT_FRAME, a.OUTPUT_FILE, a.CACHE_FILE])
+
+VOLUME_RANGE = (1.0, 0.333)
+CLUSTERS = a.DIVIDE_COUNT
 
 startTime = logTime()
 
@@ -39,11 +43,12 @@ fieldNames, samples = readCsv(a.INPUT_FILE)
 sampleCount = len(samples)
 stepTime = logTime(startTime, "Read samples")
 
-samples = sortBy(samples, [("power", "desc", 0.5), ("flatness", "asc", 0.5), ("start", "asc")])
+samples = sortBy(samples, [("power", "desc", 0.5), ("flatness", "asc", 0.5)])
 sampleCount = len(samples)
 
 samples = prependAll(samples, ("filename", a.VIDEO_DIRECTORY))
 samples = addIndices(samples)
+samples, centers = addClustersToList(samples, "tsne", "tsne2", CLUSTERS)
 
 # create clips
 clips = samplesToClips(samples)
@@ -61,15 +66,23 @@ for i in range(a.DIVIDE_COUNT):
     offsetMs = offset * a.INTERVAL
     stepMs = offsetMs * 2
     startMs = a.INTERVAL * a.COUNTS * i
+    dlerp = (1.0 * (i+1) / a.DIVIDE_COUNT)
+    volume = lerp(VOLUME_RANGE, dlerp)
     print("Divide step %s: %sms" % (i, offsetMs))
+
+    clusterIndex = i % CLUSTERS
+    clusterClips = [c for c in clips if c.props["cluster"]==clusterIndex]
+    center = centers[clusterIndex]
+    clusterClipCount = len(clusterClips)
+    clusterClips = sorted(clusterClips, key=lambda c: distance(c.props['tsne'], c.props['tsne2'], center[0], center[1]))
 
     for j in range(clipsToAdd):
         intervalMs = offsetMs + j * stepMs
         ms = startMs + intervalMs
 
         lerpAmt = 1.0 * intervalMs / a.INTERVAL
-        clipIndex = roundInt((sampleCount-1) * lerpAmt)
-        clip = clips[clipIndex]
+        clipIndex = j % clusterClipCount
+        clip = clusterClips[clipIndex]
         # print("%s: power(%s) hz(%s) flatness(%s)" % (lerpAmt, clip.props["power"], clip.props["hz"], clip.props["flatness"]))
 
         fadeInDur = getClipFadeDur(clip.dur)
@@ -78,7 +91,7 @@ for i in range(a.DIVIDE_COUNT):
 
         while ms < totalTime:
             clip.queuePlay(ms, {
-                "volume": 1.0,
+                "volume": volume,
                 "fadeOut": fadeOutDur,
                 "fadeIn": fadeInDur,
                 "pan": pan,
