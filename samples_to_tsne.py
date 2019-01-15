@@ -110,6 +110,8 @@ def doTSNE(p):
 
 if CACHE_FILE and os.path.isfile(CACHE_FILE):
     featureVectors = pickle.load(open(CACHE_FILE, 'rb'))
+    print("Read %s vectors from file" % len(featureVectors))
+    featureVectors = np.array(featureVectors)
 
 else:
     # files = files[:1]
