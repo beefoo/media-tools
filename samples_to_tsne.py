@@ -13,8 +13,10 @@ from multiprocessing import Pool
 from multiprocessing.dummy import Pool as ThreadPool
 import os
 import numpy as np
+import pickle
 from pprint import pprint
-from sklearn.manifold import TSNE
+# from sklearn.manifold import TSNE
+from MulticoreTSNE import MulticoreTSNE as TSNE
 import sys
 
 # input
@@ -28,6 +30,7 @@ parser.add_argument('-components', dest="COMPONENTS", default=1, type=int, help=
 parser.add_argument('-rate', dest="LEARNING_RATE", default=150, type=int, help="Learning rate: increase if too dense, decrease if too uniform")
 parser.add_argument('-angle', dest="ANGLE", default=0.1, type=float, help="Angle: increase to make faster, decrease to make more accurate")
 parser.add_argument('-plot', dest="PLOT", default=0, type=int, help="Show plot?")
+parser.add_argument('-cache', dest="CACHE_FILE", default="", help="Cache file")
 args = parser.parse_args()
 
 # Parse arguments
@@ -41,6 +44,8 @@ LEARNING_RATE = args.LEARNING_RATE
 ANGLE = args.ANGLE
 PLOT = args.PLOT > 0
 PRECISION = 5
+CACHE_FILE = args.CACHE_FILE if args.CACHE_FILE.length > 0 else False
+JOBS = 4
 
 # TSNE config
 VERBOSITY = 2
@@ -103,21 +108,28 @@ def doTSNE(p):
 
     return featureVectors
 
-# files = files[:1]
-# for fn in files:
-#     doTSNE(fn)
-pool = ThreadPool()
-data = pool.map(doTSNE, params)
-pool.close()
-pool.join()
-# sys.exit(1)
+if CACHE_FILE and os.path.isfile(CACHE_FILE):
+    featureVectors = pickle.load(open(CACHE_FILE, 'rb'))
 
-# flatten data
-data = [item for sublist in data for item in sublist]
-# remove invalid vectors
-data = [d for d in data if True not in np.isnan(d["featureVector"])]
-featureVectors = [d["featureVector"] for d in data]
-model = TSNE(n_components=COMPONENTS, learning_rate=LEARNING_RATE, verbose=VERBOSITY, angle=ANGLE).fit_transform(featureVectors)
+else:
+    # files = files[:1]
+    # for fn in files:
+    #     doTSNE(fn)
+    pool = ThreadPool()
+    data = pool.map(doTSNE, params)
+    pool.close()
+    pool.join()
+    # sys.exit(1)
+
+    # flatten data
+    data = [item for sublist in data for item in sublist]
+    # remove invalid vectors
+    data = [d for d in data if True not in np.isnan(d["featureVector"])]
+    featureVectors = [d["featureVector"] for d in data]
+    pickle.dump(featureVectors, open(CACHE_FILE, 'wb'))
+
+tsne = TSNE(n_components=COMPONENTS, learning_rate=LEARNING_RATE, verbose=VERBOSITY, angle=ANGLE, n_jobs=JOBS)
+model = tsne.fit_transform(featureVectors)
 
 print("Writing data to file...")
 headings = fieldNames[:]
@@ -151,6 +163,9 @@ with open(OUTPUT_FILE, 'wb') as f:
                 row.append("")
         writer.writerow(row)
 print("Wrote %s rows to %s" % (len(data), OUTPUT_FILE))
+
+if CACHE_FILE and os.path.isfile(CACHE_FILE):
+    os.remove(CACHE_FILE)
 
 if PLOT and 1 <= COMPONENTS <= 2:
     plt.figure(figsize = (10,10))
