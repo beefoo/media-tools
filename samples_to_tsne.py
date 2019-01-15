@@ -44,7 +44,7 @@ LEARNING_RATE = args.LEARNING_RATE
 ANGLE = args.ANGLE
 PLOT = args.PLOT > 0
 PRECISION = 5
-CACHE_FILE = args.CACHE_FILE if args.CACHE_FILE.length > 0 else False
+CACHE_FILE = args.CACHE_FILE if len(args.CACHE_FILE) > 0 else False
 JOBS = 4
 
 # TSNE config
