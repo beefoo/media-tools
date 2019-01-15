@@ -145,8 +145,10 @@ with open(OUTPUT_FILE, 'wb') as f:
             if h in DIMS:
                 j = DIMS.index(h)
                 row.append(round(modelNorm[j][i], PRECISION))
-            else:
+            elif h in d:
                 row.append(d[h])
+            else:
+                row.append("")
         writer.writerow(row)
 print("Wrote %s rows to %s" % (len(data), OUTPUT_FILE))
 
