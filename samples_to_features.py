@@ -32,7 +32,7 @@ APPEND = args.APPEND > 0
 OVERWRITE = args.OVERWRITE > 0
 PLOT = args.PLOT > 0
 
-FEATURES_TO_ADD = ["power", "hz", "flatness", "note", "octave"]
+FEATURES_TO_ADD = ["power", "hz", "flatness", "note", "octave", "harmonics"]
 
 # Read files
 rows = []

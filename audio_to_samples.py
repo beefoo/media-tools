@@ -120,7 +120,7 @@ def getSamples(fn, sampleCount=-1):
 
 headings = ["filename", "start", "dur"]
 if FEATURES:
-    headings += ["power", "hz", "flatness", "note", "octave"]
+    headings += ["power", "hz", "flatness", "note", "octave", "harmonics"]
 totalCount = 0
 for i, f in enumerate(files):
     fn = f["filename"]
