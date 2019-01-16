@@ -163,9 +163,10 @@ def translatePoint(x, y, distance, angle):
 def unique(arr):
     return list(set(arr))
 
-def weighted_mean(values):
+def weighted_mean(values, weights=None):
     count = len(values)
     if count <= 0:
         return 0
-    weights = [w**2 for w in range(count, 0, -1)]
+    if weights is None:
+        weights = [w**2 for w in range(count, 0, -1)]
     return np.average(values, weights=weights)

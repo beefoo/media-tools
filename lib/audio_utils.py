@@ -155,7 +155,7 @@ def getFeatures(y, sr, start, dur=100, fft=2048, hop_length=512):
     flatness = librosa.feature.spectral_flatness(y=y)[0]
 
     power = round(weighted_mean(stft), 2)
-    flatness = round(weighted_mean(flatness), 5)
+    flatness = round(weighted_mean(flatness, weights=stft), 5)
     note = pitchToNote(hz)
 
     if math.isinf(power):
