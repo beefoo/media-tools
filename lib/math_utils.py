@@ -48,17 +48,21 @@ def findNextValue(arr, value, isSorted=True):
             break
     return nvalue
 
-def findPeaks(data, distance=None, height=None):
+def findPeaks(data, distance=None, height=None, findMinima=True):
     values = np.array(data)
-    ivaluses = np.negative(values) # invert values to get minima
     maxima, _ = signal.find_peaks(values, distance=distance, height=height)
-    minima, _ = signal.find_peaks(ivaluses, distance=distance, height=height)
+    if findMinima:
+        ivaluses = np.negative(values) # invert values to get minima
+        minima, _ = signal.find_peaks(ivaluses, distance=distance, height=height)
     # import matplotlib.pyplot as plt
     # plt.plot(values, color="blue")
     # plt.plot(maxima, values[maxima], "x", color="green")
     # plt.plot(minima, values[minima], "x", color="red")
     # plt.show()
-    return (list(minima), list(maxima))
+    if findMinima:
+        return (list(minima), list(maxima))
+    else:
+        return list(maxima)
 
 def floorInt(n):
     return int(math.floor(n))

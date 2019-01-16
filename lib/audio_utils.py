@@ -113,20 +113,21 @@ def getAudioSamples(fn, min_dur=50, max_dur=-1, fft=2048, hop_length=512, backtr
 
     times = [int(round(1.0 * hop_length * onset / sr * 1000)) for onset in onsets]
     # add the end of the audio
-    # times.append(duration-1)
+    times.append(duration-1)
 
     samples = []
     for i, t in enumerate(times):
-        prev = times[i-1] if i > 0 else 0
-        dur = t - prev
-        if max_dur > 0 and dur > max_dur:
-            dur = max_dur
-        if dur >= min_dur:
-            samples.append({
-                "filename": basename,
-                "start": prev,
-                "dur": dur
-            })
+        if i > 0:
+            prev = times[i-1]
+            dur = t - prev
+            if max_dur > 0 and dur > max_dur:
+                dur = max_dur
+            if dur >= min_dur:
+                samples.append({
+                    "filename": basename,
+                    "start": prev,
+                    "dur": dur
+                })
 
     return samples
 
@@ -147,32 +148,18 @@ def getDuration(y, sr):
 
 def getFeatures(y, sr, start, dur=100, fft=2048, hop_length=512):
     # analyze just the sample
-    i0 = int(round(start / 1000.0 * sr))
-    i1 = int(round((start+dur) / 1000.0 * sr))
-    if i1 >= len(y):
-        delta = i1 - len(y) + 1
-        i1 -= delta
-        i0 -= delta
-    i0 = max(i0, 0)
-    i1 = max(i1, 0)
-    y = y[i0:i1]
+    y = getFrameRange(y, start, start+dur, sr)
 
     stft = getStft(y, n_fft=fft, hop_length=hop_length)
-    rolloff = librosa.feature.spectral_rolloff(y=y, sr=sr)[0]
+    hz, harmonics = getPitch(y, sr, fft=fft)
     flatness = librosa.feature.spectral_flatness(y=y)[0]
 
     power = round(weighted_mean(stft), 2)
-    hz = round(weighted_mean(rolloff), 2)
     flatness = round(weighted_mean(flatness), 5)
-    note = "-"
+    note = pitchToNote(hz)
 
     if math.isinf(power):
         power = -1
-
-    try:
-        note = librosa.hz_to_note(hz)
-    except OverflowError:
-        hz = -1
 
     # parse note
     octave = -1
@@ -186,7 +173,8 @@ def getFeatures(y, sr, start, dur=100, fft=2048, hop_length=512):
         "hz": hz,
         "flatness": flatness,
         "note": note,
-        "octave": octave
+        "octave": octave,
+        "harmonics": len(harmonics)
     }
 
 def getFeaturesFromSamples(filename, samples):
@@ -282,12 +270,55 @@ def getFeatureVector(y, sr, start, dur):
     feature_vector = (feature_vector-np.mean(feature_vector))/np.std(feature_vector)
     return feature_vector
 
+def getFrameRange(y, ms0, ms1, sr):
+    i0 = msToFrame(ms0, sr)
+    i1 = msToFrame(ms1, sr)
+    if i1 >= len(y):
+        delta = i1 - len(y) + 1
+        i1 -= delta
+        i0 -= delta
+    i0 = max(i0, 0)
+    i1 = max(i1, 0)
+    # print("%s%% to %s%%" % (round(1.0*i0/len(y)*100, 5), round(1.0*i1/len(y)*100, 5)))
+    return y[i0:i1]
+
+def getPitch(y, sr, fft=2048):
+    y = librosa.effects.harmonic(y)
+    pitches, magnitudes = librosa.core.piptrack(y=y, sr=sr, n_fft=fft)
+
+    # get sum of mags at each time
+    magFrames = magnitudes.sum(axis=0) # get the sum of bins at each time frame
+    t = magFrames.argmax()
+
+    # get peaks at time t
+    magBins = magnitudes[:, t]
+    peaks = findPeaks(magBins, findMinima=False, height=np.median(magBins), distance=18)
+
+    # for i, p in enumerate(peaks):
+    #     if i > 0:
+    #         prev = peaks[i-1]
+    #         print(p - prev)
+
+    bindIndex = 0
+    # assign the first peak (the lowest pitch) in the harmonic
+    if len(peaks) > 0:
+        binIndex = peaks[0]
+    else:
+        binIndex = magnitudes[:, t].argmax()
+    pitch = pitches[binIndex, t]
+
+    harmonics = pitches[peaks]
+    return pitch, harmonics
+
 def getStft(y, n_fft=2048, hop_length=512):
     return librosa.feature.rmse(S=librosa.stft(y, n_fft=n_fft, hop_length=hop_length))[0]
 
 def matchDb(audio, targetDb):
     deltaDb = targetDb - audio.dBFS
     return audio.apply_gain(deltaDb)
+
+def msToFrame(ms, sr):
+    return int(round(ms / 1000.0 * sr))
 
 # Adapted from: https://github.com/paulnasca/paulstretch_python/blob/master/paulstretch_newmethod.py
 def paulStretch(samplerate, smp, stretch, windowsize_seconds=0.25, onset_level=10.0):
@@ -443,6 +474,14 @@ def paulStretch(samplerate, smp, stretch, windowsize_seconds=0.25, onset_level=1
     sdata = sdata * 32767.0
     sdata = sdata.astype(np.int16)
     return sdata
+
+def pitchToNote(hz):
+    note = "-"
+    try:
+        note = librosa.hz_to_note(hz)
+    except OverflowError:
+        pass
+    return note
 
 def scaleAudioData(arr):
     # get the average
