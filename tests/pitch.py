@@ -48,7 +48,7 @@ for i, f in enumerate(files):
 
     print("Duration: %s" % formatSeconds(getDuration(y, sr)))
 
-    samples = getAudioSamples(fn, y=y, sr=sr)
+    samples, y, sr = getAudioSamples(fn, y=y, sr=sr)
     print("Found %s samples, expected %s" % (len(samples), len(scale)))
 
     for j, s in enumerate(samples):

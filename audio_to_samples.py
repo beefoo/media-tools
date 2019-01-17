@@ -99,13 +99,13 @@ progress = 0
 
 def getSamples(fn, sampleCount=-1):
     print("Retrieving samples for %s..." % fn)
-    sampleData = getAudioSamples(fn, min_dur=MIN_DUR, max_dur=MAX_DUR, fft=FFT, hop_length=HOP_LEN)
+    sampleData, y, sr = getAudioSamples(fn, min_dur=MIN_DUR, max_dur=MAX_DUR, fft=FFT, hop_length=HOP_LEN)
     print("Found %s samples in %s." % (len(sampleData), fn))
 
     if len(sampleData) > 0:
         # optionally retrieve features
         if FEATURES:
-            sampleData = getFeaturesFromSamples(fn, sampleData)
+            sampleData = getFeaturesFromSamples(fn, sampleData, y=y, sr=sr)
         # optionally, filter results
         if len(FILTER) > 0:
             sampleData = filterByQueryString(sampleData, FILTER)

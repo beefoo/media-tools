@@ -28,7 +28,7 @@ files = [
 
 def getSamples(fn):
     y, sr = librosa.load(fn)
-    samples = getAudioSamples(fn, y=y, sr=sr)
+    samples, y, sr = getAudioSamples(fn, y=y, sr=sr)
     for j, s in enumerate(samples):
         features = getFeatures(y, sr, s["start"], dur=s["dur"])
         samples[j].update(features)

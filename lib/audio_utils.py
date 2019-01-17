@@ -50,7 +50,7 @@ def addFx(sound, effects, pad=3000, fade_in=100, fade_out=100):
 def analyzeAudio(fn, start=0, dur=250, findSamples=False):
     y, sr = librosa.load(fn)
     if findSamples:
-        samples = getAudioSamples(fn, y=y, sr=sr)
+        samples, y, sr = getAudioSamples(fn, y=y, sr=sr)
         if len(samples) > 0:
             print("Found %s samples for %s" % (len(samples), fn))
             start = samples[0]["start"]
@@ -89,9 +89,9 @@ def getAudioSamples(fn, min_dur=50, max_dur=-1, fft=2048, hop_length=512, backtr
     # load audio
     if y is None or sr is None:
         y, sr = librosa.load(fn)
-    maxVal = y.max()
-    if maxVal != 0:
-        y /= maxVal
+    # maxVal = y.max()
+    # if maxVal != 0:
+    #     y /= maxVal
     duration = roundInt(getDuration(y, sr) * 1000)
 
     # retrieve onsets using superflux method
@@ -129,7 +129,7 @@ def getAudioSamples(fn, min_dur=50, max_dur=-1, fft=2048, hop_length=512, backtr
                     "dur": dur
                 })
 
-    return samples
+    return (samples, y, sr)
 
 def getAudioSimilarity(test, references):
     refCount = len(references)
@@ -158,6 +158,8 @@ def getFeatures(y, sr, start, dur=100, fft=2048, hop_length=512):
     power = round(weighted_mean(stft), 2)
     # flatness = round(weighted_mean(flatness, weights=stft), 5)
     # hz = round(weighted_mean(rolloff, weights=stft), 2)
+    hz = round(hz, 2)
+    clarity = round(clarity, 2)
     note = pitchToNote(hz)
 
     if math.isinf(power):
@@ -180,14 +182,17 @@ def getFeatures(y, sr, start, dur=100, fft=2048, hop_length=512):
         "harmonics": len(harmonics)
     }
 
-def getFeaturesFromSamples(filename, samples):
+def getFeaturesFromSamples(filename, samples, y=None, sr=None):
     # load audio
     sampleCount = len(samples)
     if sampleCount < 1:
         return samples
     print("Getting features from %s samples in %s..." % (sampleCount, filename))
-    fn = getAudioFile(filename)
-    y, sr = librosa.load(fn)
+
+    # load audio
+    if y is None or sr is None:
+        fn = getAudioFile(filename)
+        y, sr = librosa.load(fn)
 
     features = []
     for i, sample in enumerate(samples):
