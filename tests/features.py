@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import argparse
 import inspect
 import librosa
 from librosa import display
@@ -15,6 +16,11 @@ sys.path.insert(0,parentdir)
 
 from lib.audio_utils import *
 from lib.math_utils import *
+
+# input
+parser = argparse.ArgumentParser()
+parser.add_argument('-feat', dest="FEATURE", default="clarity", help="Feature to graph")
+a = parser.parse_args()
 
 files = [
     "../media/sample/chromatic_scale_piano_c4-b4.wav",
@@ -38,7 +44,7 @@ plt.figure(figsize=(20, 8))
 
 for i, fn in enumerate(files):
     samples = getSamples(fn)
-    plt.plot([s["clarity"] for s in samples], label=os.path.basename(fn))
+    plt.plot([s[a.FEATURE] for s in samples], label=os.path.basename(fn))
 
 plt.legend()
 plt.show()
