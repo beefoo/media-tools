@@ -32,7 +32,7 @@ APPEND = args.APPEND > 0
 OVERWRITE = args.OVERWRITE > 0
 PLOT = args.PLOT > 0
 
-FEATURES_TO_ADD = ["power", "hz", "flatness", "note", "octave", "harmonics"]
+FEATURES_TO_ADD = ["power", "hz", "clarity", "note", "octave", "harmonics"]
 
 # Read files
 rows = []
@@ -91,7 +91,7 @@ if PLOT:
     plt.figure(figsize = (10,6))
     pows = [d["power"] for d in data]
     hzs = [d["hz"] for d in data]
-    flts = [d["flatness"] for d in data]
+    flts = [d["clarity"] for d in data]
 
     ax = plt.subplot(1, 3, 1)
     ax.set_title("Power distribution")
@@ -102,7 +102,7 @@ if PLOT:
     plt.hist(hzs, bins=50)
 
     ax = plt.subplot(1, 3, 3)
-    ax.set_title("Flatness distribution")
+    ax.set_title("Clarity distribution")
     plt.hist(flts, bins=50)
 
     plt.tight_layout()

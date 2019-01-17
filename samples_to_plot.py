@@ -18,7 +18,7 @@ from lib.math_utils import *
 parser = argparse.ArgumentParser()
 parser.add_argument('-in', dest="INPUT_FILE", default="tmp/samples_tsne.csv", help="Input file")
 parser.add_argument('-props', dest="PROPS", default="tsne,tsne2", help="X and Y properties")
-parser.add_argument('-sort', dest="SORT", default="flatness=desc=0.5&power=desc", help="Query string to sort by")
+parser.add_argument('-sort', dest="SORT", default="clarity=desc=0.5&power=desc", help="Query string to sort by")
 parser.add_argument('-lim', dest="LIMIT", default=1296, type=int, help="Target total sample count, -1 for everything")
 parser.add_argument('-log', dest="LOG", default=0, type=int, help="Display using log?")
 parser.add_argument('-highlight', dest="HIGHLIGHT", default="", help="Property to highlight")

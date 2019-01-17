@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# python -W ignore sort_audio.py -in "media/downloads/vivaldi/*.mp3" -steps 2 -sort flatness -plot 1
+# python -W ignore sort_audio.py -in "media/downloads/vivaldi/*.mp3" -steps 2 -sort clarity -plot 1
 
 import argparse
 import os

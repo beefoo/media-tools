@@ -16,7 +16,7 @@ from lib.statistics_utils import *
 parser = argparse.ArgumentParser()
 parser.add_argument('-in', dest="INPUT_FILE", default="tmp/samples_tsne.csv", help="Input file")
 parser.add_argument('-props', dest="PROPS", default="tsne,tsne2", help="X and Y properties")
-parser.add_argument('-sort', dest="SORT", default="flatness=desc=0.5&power=desc", help="Query string to sort by")
+parser.add_argument('-sort', dest="SORT", default="clarity=desc=0.5&power=desc", help="Query string to sort by")
 parser.add_argument('-lim', dest="LIMIT", default=-1, type=int, help="Target total sample count, -1 for everything")
 parser.add_argument('-clusters', dest="CLUSTERS", default=8, type=int, help="Number of clusters?")
 parser.add_argument('-plot', dest="PLOT", default=0, type=int, help="Plot the result?")

@@ -73,7 +73,7 @@ if sampleCount < COUNT:
 
 # remove flat samples
 if sampleCount > COUNT:
-    samples = sortBy(samples, ("flatness", "asc"))
+    samples = sortBy(samples, ("clarity", "desc"))
     samples = samples[:COUNT]
 
 # Add dir to filenames

@@ -16,8 +16,8 @@ sys.path.insert(0,parentdir)
 from lib.audio_utils import *
 from lib.math_utils import *
 
-FILE_A = "../media/sample/tone_scale.wav"
-FILE_B = "../media/sample/telephone_noise.wav"
+FILE_A = "../media/sample/chromatic_scale_piano_c4-b4.wav"
+FILE_B = "../media/sample/drums.wav"
 
 def getSamples(fn):
     y, sr = librosa.load(fn)
@@ -30,10 +30,8 @@ def getSamples(fn):
 SAMPLES_A = getSamples(FILE_A)
 SAMPLES_B = getSamples(FILE_B)
 
-print(SAMPLES_A[0]["flatness"])
-print(SAMPLES_B[0]["flatness"])
-
 plt.figure(figsize=(20, 8))
-plt.plot([s["flatness"] for s in SAMPLES_A], c="r", label="Tone-like (low value)")
-plt.plot([s["flatness"] for s in SAMPLES_B], c="b", label="Noise-like (high value)")
+plt.plot([s["clarity"] for s in SAMPLES_A], c="r", label=os.path.basename(FILE_A))
+plt.plot([s["clarity"] for s in SAMPLES_B], c="b", label=os.path.basename(FILE_B))
+plt.legend()
 plt.show()

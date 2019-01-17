@@ -43,7 +43,7 @@ fieldNames, samples = readCsv(a.INPUT_FILE)
 sampleCount = len(samples)
 stepTime = logTime(startTime, "Read samples")
 
-samples = sortBy(samples, [("power", "desc", 0.5), ("flatness", "asc", 0.5)])
+samples = sortBy(samples, [("power", "desc", 0.5), ("clarity", "desc", 0.5)])
 sampleCount = len(samples)
 
 samples = prependAll(samples, ("filename", a.VIDEO_DIRECTORY))
@@ -83,7 +83,7 @@ for i in range(a.DIVIDE_COUNT):
         lerpAmt = 1.0 * intervalMs / a.INTERVAL
         clipIndex = j % clusterClipCount
         clip = clusterClips[clipIndex]
-        # print("%s: power(%s) hz(%s) flatness(%s)" % (lerpAmt, clip.props["power"], clip.props["hz"], clip.props["flatness"]))
+        # print("%s: power(%s) hz(%s) clarity(%s)" % (lerpAmt, clip.props["power"], clip.props["hz"], clip.props["clarity"]))
 
         fadeInDur = getClipFadeDur(clip.dur)
         fadeOutDur = getClipFadeDur(clip.dur, 0.25)

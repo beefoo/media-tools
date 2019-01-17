@@ -32,7 +32,7 @@ print("Found %s rows" % rowCount)
 plotConfig = [
     {"key": "power", "title": "Power distribution"},
     {"key": "dur", "title": "Duration distribution"},
-    {"key": "flatness", "title": "Flatness distribution"},
+    {"key": "clarity", "title": "Clarity distribution"},
     {"key": "hz", "title": "Frequency distribution"},
     {"key": "note", "title": "Note distribution"},
     {"key": "octave", "title": "Octave distribution"}

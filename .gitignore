@@ -4,3 +4,4 @@ output/*
 tmp/*
 media/downloads/*
 node_modules/
+*.pkf

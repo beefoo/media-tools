@@ -54,7 +54,7 @@ sampleCount = len(samples)
 stepTime = logTime(stepTime, "Read samples")
 if a.COUNT > 0:
     if a.COUNT <= sampleCount:
-        samples = sortBy(samples, ("flatness", "asc")) # get samples with least flatness
+        samples = sortBy(samples, ("clarity", "desc")) # get samples with most clarity
         samples = samples[:a.COUNT]
         sampleCount = a.COUNT
     else:

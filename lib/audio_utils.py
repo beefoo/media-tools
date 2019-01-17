@@ -151,12 +151,12 @@ def getFeatures(y, sr, start, dur=100, fft=2048, hop_length=512):
     y = getFrameRange(y, start, start+dur, sr)
 
     stft = getStft(y, n_fft=fft, hop_length=hop_length)
-    hz, harmonics = getPitch(y, sr, fft=fft)
+    hz, clarity, harmonics = getPitch(y, sr, fft=fft)
     # rolloff = librosa.feature.spectral_rolloff(y=y, sr=sr)[0]
-    flatness = librosa.feature.spectral_flatness(y=y)[0]
+    # flatness = librosa.feature.spectral_flatness(y=y)[0]
 
     power = round(weighted_mean(stft), 2)
-    flatness = round(weighted_mean(flatness, weights=stft), 5)
+    # flatness = round(weighted_mean(flatness, weights=stft), 5)
     # hz = round(weighted_mean(rolloff, weights=stft), 2)
     note = pitchToNote(hz)
 
@@ -173,7 +173,8 @@ def getFeatures(y, sr, start, dur=100, fft=2048, hop_length=512):
     return {
         "power": power,
         "hz": hz,
-        "flatness": flatness,
+        "clarity": clarity,
+        # "flatness": flatness,
         "note": note,
         "octave": octave,
         "harmonics": len(harmonics)
@@ -224,35 +225,6 @@ def getFingerPrint(y, start, dur, n_fft=2048, hop_length=512, window=None, use_l
     amp = np.flipud(amp) # for visualization, put low frequencies on bottom
     return amp
 
-def gePowerFromTimecodes(timecodes, method="max"):
-    # add indices
-    for i, t in enumerate(timecodes):
-        if "index" not in t:
-            timecodes[i]["index"] = i
-    # get unique filenames
-    filenames = list(set([t["filename"] for t in timecodes]))
-    powerData = {}
-    # get features for each timecode in file
-    for filename in filenames:
-        y, sr = librosa.load(getAudioFile(filename))
-        duration = roundInt(getDuration(y, sr) * 1000)
-        stft = getStft(y)
-        maxStft = 1
-        if method=="mean":
-            maxStft = np.mean(stft)
-        else:
-            maxStft = max(stft)
-        stftLen = len(stft)
-        fileTimecodes = [t for t in timecodes if t["filename"]==filename]
-        # len(y) = hop_length * len(stft)
-        for t in fileTimecodes:
-            p = 1.0 * t["t"] / duration
-            p = lim(p)
-            j = roundInt(p * (stftLen-1))
-            power = lim(1.0 * stft[j] / maxStft)
-            powerData[t["index"]] = power
-    return powerData
-
 # Taken from: https://github.com/ml4a/ml4a-guides/blob/master/notebooks/audio-tsne.ipynb
 def getFeatureVector(y, sr, start, dur):
     # take at most one second
@@ -285,7 +257,7 @@ def getFrameRange(y, ms0, ms1, sr):
     return y[i0:i1]
 
 def getPitch(y, sr, fft=2048):
-    y = librosa.effects.harmonic(y)
+    y = librosa.effects.harmonic(y, margin=4) # increase margin for higher filtering of noise (probably between 1 and 8)
     pitches, magnitudes = librosa.core.piptrack(y=y, sr=sr, n_fft=fft)
 
     # get sum of mags at each time
@@ -309,8 +281,40 @@ def getPitch(y, sr, fft=2048):
         binIndex = magnitudes[:, t].argmax()
     pitch = pitches[binIndex, t]
 
-    harmonics = pitches[peaks]
-    return pitch, harmonics
+    contrast = librosa.feature.spectral_contrast(y=y, sr=sr)
+    clarity = np.mean(contrast[:, t])
+    harmonics = pitches[peaks, t]
+
+    return pitch, clarity, harmonics
+
+def gePowerFromTimecodes(timecodes, method="max"):
+    # add indices
+    for i, t in enumerate(timecodes):
+        if "index" not in t:
+            timecodes[i]["index"] = i
+    # get unique filenames
+    filenames = list(set([t["filename"] for t in timecodes]))
+    powerData = {}
+    # get features for each timecode in file
+    for filename in filenames:
+        y, sr = librosa.load(getAudioFile(filename))
+        duration = roundInt(getDuration(y, sr) * 1000)
+        stft = getStft(y)
+        maxStft = 1
+        if method=="mean":
+            maxStft = np.mean(stft)
+        else:
+            maxStft = max(stft)
+        stftLen = len(stft)
+        fileTimecodes = [t for t in timecodes if t["filename"]==filename]
+        # len(y) = hop_length * len(stft)
+        for t in fileTimecodes:
+            p = 1.0 * t["t"] / duration
+            p = lim(p)
+            j = roundInt(p * (stftLen-1))
+            power = lim(1.0 * stft[j] / maxStft)
+            powerData[t["index"]] = power
+    return powerData
 
 def getStft(y, n_fft=2048, hop_length=512):
     return librosa.feature.rmse(S=librosa.stft(y, n_fft=n_fft, hop_length=hop_length))[0]

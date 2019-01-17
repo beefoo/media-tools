@@ -2,8 +2,8 @@
 
 # Looks for samples (clips) in arbitrary media based on audio
 
-# python -W ignore audio_to_samples.py -in "media/downloads/vivaldi/*.mp3" -out "tmp/vivaldi.csv" -count 1296 -features 1 -sort "flatness=asc"
-# python -W ignore audio_to_samples.py -in "E:/landscapes/downloads/ia_politicaladarchive/*.mp4" -out "tmp/ia_politicaladarchive_samples.csv" -count 5000 -features 1 -sort "flatness=asc=0.75&power=desc=0.75&dur=desc=0.75"
+# python -W ignore audio_to_samples.py -in "media/downloads/vivaldi/*.mp3" -out "tmp/vivaldi.csv" -count 1296 -features 1 -sort "clarity=desc"
+# python -W ignore audio_to_samples.py -in "E:/landscapes/downloads/ia_politicaladarchive/*.mp4" -out "tmp/ia_politicaladarchive_samples.csv" -count 5000 -features 1 -sort "clarity=desc=0.75&power=desc=0.75&dur=desc=0.75"
 
 import argparse
 import csv
@@ -120,7 +120,7 @@ def getSamples(fn, sampleCount=-1):
 
 headings = ["filename", "start", "dur"]
 if FEATURES:
-    headings += ["power", "hz", "flatness", "note", "octave", "harmonics"]
+    headings += ["power", "hz", "clarity", "note", "octave", "harmonics"]
 totalCount = 0
 for i, f in enumerate(files):
     fn = f["filename"]
