@@ -258,6 +258,7 @@ def getFrameRange(y, ms0, ms1, sr):
 
 def getPitch(y, sr, fft=2048):
     y = librosa.effects.harmonic(y, margin=4) # increase margin for higher filtering of noise (probably between 1 and 8)
+    y = np.nan_to_num(y)
     pitches, magnitudes = librosa.core.piptrack(y=y, sr=sr, n_fft=fft)
 
     # get sum of mags at each time

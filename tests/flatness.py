@@ -16,8 +16,15 @@ sys.path.insert(0,parentdir)
 from lib.audio_utils import *
 from lib.math_utils import *
 
-FILE_A = "../media/sample/chromatic_scale_piano_c4-b4.wav"
-FILE_B = "../media/sample/drums.wav"
+files = [
+    "../media/sample/chromatic_scale_piano_c4-b4.wav",
+    "../media/sample/drums.wav",
+    "../media/sample/bird.wav",
+    "../media/sample/telephone_noise.wav",
+    "../media/sample/tone_scale.wav",
+    "../media/classifications/orchestra/gov.archives.arc.24348.mp3",
+    "../media/classifications/speech/gov.archives.arc.45021_male.mp3"
+]
 
 def getSamples(fn):
     y, sr = librosa.load(fn)
@@ -27,11 +34,11 @@ def getSamples(fn):
         samples[j].update(features)
     return samples
 
-SAMPLES_A = getSamples(FILE_A)
-SAMPLES_B = getSamples(FILE_B)
-
 plt.figure(figsize=(20, 8))
-plt.plot([s["clarity"] for s in SAMPLES_A], c="r", label=os.path.basename(FILE_A))
-plt.plot([s["clarity"] for s in SAMPLES_B], c="b", label=os.path.basename(FILE_B))
+
+for i, fn in enumerate(files):
+    samples = getSamples(fn)
+    plt.plot([s["clarity"] for s in samples], label=os.path.basename(fn))
+
 plt.legend()
 plt.show()
