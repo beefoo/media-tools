@@ -28,6 +28,8 @@ files = [
     "../media/sample/bird.wav",
     "../media/sample/telephone_noise.wav",
     "../media/sample/tone_scale.wav",
+    "../media/sample/speech.mp3",
+    "../media/sample/white_noise.wav",
     "../media/classifications/orchestra/gov.archives.arc.24348.mp3",
     "../media/classifications/speech/gov.archives.arc.45021_male.mp3"
 ]
