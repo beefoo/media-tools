@@ -111,7 +111,6 @@ def doTSNE(p):
 if CACHE_FILE and os.path.isfile(CACHE_FILE):
     featureVectors = pickle.load(open(CACHE_FILE, 'rb'))
     print("Read %s vectors from file" % len(featureVectors))
-    featureVectors = np.array(featureVectors)
 
 else:
     # files = files[:1]
@@ -128,8 +127,10 @@ else:
     # remove invalid vectors
     data = [d for d in data if True not in np.isnan(d["featureVector"])]
     featureVectors = [d["featureVector"] for d in data]
-    pickle.dump(featureVectors, open(CACHE_FILE, 'wb'))
+    if CACHE_FILE:
+        pickle.dump(featureVectors, open(CACHE_FILE, 'wb'))
 
+featureVectors = np.array(featureVectors)
 tsne = TSNE(n_components=COMPONENTS, learning_rate=LEARNING_RATE, verbose=VERBOSITY, angle=ANGLE, n_jobs=JOBS)
 model = tsne.fit_transform(featureVectors)
 
