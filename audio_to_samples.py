@@ -39,11 +39,12 @@ args = parser.parse_args()
 # Parse arguments
 INPUT_FILE = args.INPUT_FILE
 MEDIA_DIRECTORY = args.MEDIA_DIRECTORY
-SAMPLES = args.SAMPLES if args.SAMPLES > 0 else None
+SAMPLES = args.SAMPLES
 MIN_DUR = args.MIN_DUR
 MAX_DUR = args.MAX_DUR
 OUTPUT_FILE = args.OUTPUT_FILE
 OVERWRITE = args.OVERWRITE > 0
+MULTIFILE_OUTPUT = ("%s" in OUTPUT_FILE)
 
 FEATURES = args.FEATURES > 0
 COUNT = args.COUNT
@@ -90,7 +91,7 @@ makeDirectories(OUTPUT_FILE)
 
 # Get existing data
 rows = []
-if os.path.isfile(OUTPUT_FILE) and not OVERWRITE:
+if os.path.isfile(OUTPUT_FILE) and not OVERWRITE and not MULTIFILE_OUTPUT:
     fieldNames, rows = readCsv(OUTPUT_FILE)
 rowCount = len(rows)
 
@@ -113,29 +114,33 @@ def getSamples(fn, sampleCount=-1):
         if len(SORT) > 0:
             sampleData = sortByQueryString(sampleData, SORT)
         # if too many samples
-        if len(sampleData) > sampleCount:
+        if sampleCount > 0 and len(sampleData) > sampleCount:
             sampleData = sampleData[:sampleCount]
 
     return sampleData
 
 headings = ["filename", "start", "dur"]
 if FEATURES:
-    headings += ["power", "hz", "clarity", "note", "octave", "harmonics"]
+    headings += ["power", "hz", "clarity", "note", "octave"]
 totalCount = 0
 for i, f in enumerate(files):
     fn = f["filename"]
     basename = os.path.basename(fn)
+    outputFilename = OUTPUT_FILE if not MULTIFILE_OUTPUT else OUTPUT_FILE % basename
+
+    if MULTIFILE_OUTPUT and not OVERWRITE and os.path.isfile(outputFilename):
+        print("Already found samples for %s. Skipping." % outputFilename)
 
     # Check if we already have this data
-    if not OVERWRITE and rowCount > 0 and len([row for row in rows if row["filename"]==basename]) > 0:
+    elif not MULTIFILE_OUTPUT and not OVERWRITE and rowCount > 0 and len([row for row in rows if row["filename"]==basename]) > 0:
         totalCount += len([row for row in rows if row["filename"]==fn])
-        print("Already found samples for %s. Skipping.")
+        print("Already found samples for %s. Skipping." % basename)
 
     else:
         result = getSamples(fn, samplesPerFile)
         # Progressively save samples per audio file
-        append = (i > 0)
-        writeCsv(OUTPUT_FILE, result, headings=headings, append=append)
+        append = (i > 0 and not MULTIFILE_OUTPUT)
+        writeCsv(outputFilename, result, headings=headings, append=append)
         totalCount += len(result)
 
     sys.stdout.write('\r')
