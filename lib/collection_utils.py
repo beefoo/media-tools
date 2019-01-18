@@ -6,6 +6,9 @@ def addIndices(arr, keyName="index"):
         arr[i][keyName] = i
     return arr
 
+def containsList(bucketList, needleList):
+    return set(needleList).issubset(set(bucketList))
+
 def filterByQueryString(arr, queryString):
     return filterWhere(arr, parseQueryString(queryString))
 
@@ -126,3 +129,17 @@ def updateAll(arr, updates):
             arr[i][key] = value
 
     return arr
+
+def unionLists(arr1, arr2):
+    if containsList(arr1, arr2):
+        return arr1
+
+    elif containsList(arr2, arr1):
+        return arr2
+
+    else:
+        set1 = set(arr1)
+        for v in arr2:
+            if v not in set1:
+                arr1.append(v)
+        return arr1
