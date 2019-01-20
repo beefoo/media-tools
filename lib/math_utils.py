@@ -126,11 +126,6 @@ def parseNumbers(arr):
                 arr[i][key] = parseNumber(item[key])
     return arr
 
-def printProgress(step, total):
-    sys.stdout.write('\r')
-    sys.stdout.write("%s%%" % round(1.0*step/total*100,2))
-    sys.stdout.flush()
-
 def pseudoRandom(seed, range=(0, 1), isInt=False):
     random.seed(seed)
     value = random.random()
