@@ -15,7 +15,8 @@ from lib.processing_utils import *
 parser = argparse.ArgumentParser()
 parser.add_argument('-in', dest="INPUT_FILE", default="tmp/*.csv", help="Input file pattern")
 parser.add_argument('-dir', dest="INPUT_DIR", default="tmp/", help="Directory of input files (if reading from a manifest .csv file)")
-parser.add_argument('-sort', dest="SORT", default="start=asc", help="Query string to sort by")
+parser.add_argument('-sort', dest="SORT", default="", help="Query string to sort by")
+parser.add_argument('-filter', dest="FILTER", default="samples>0", help="Query string to filter by")
 parser.add_argument('-lim', dest="LIMIT", default=-1, type=int, help="Target total sample count, -1 for everything")
 parser.add_argument('-per', dest="LIMIT_PER_FILE", default=-1, type=int, help="Target sample count per file, -1 for everything")
 parser.add_argument('-out', dest="OUTPUT_FILE", default="tmp/combined_samples.csv", help="Write the result to file?")
@@ -34,15 +35,15 @@ else:
 fileCount = len(files)
 print("Found %s files" % fileCount)
 
+if len(a.FILTER) > 0:
+    files = filterByQueryString(files, a.FILTER)
+    fileCount = len(files)
+    print("Found %s files after filtering" % fileCount)
+
 # check to see how many samples we should retrieve per file (if applicable)
 limitPerFile = a.LIMIT_PER_FILE
-if a.LIMIT > 0:
+if a.LIMIT > 0 and limitPerFile < 1:
     limitPerFile = roundInt(1.0 * a.LIMIT / fileCount)
-    firstFile = files[0]
-    if "samples" in firstFile:
-        totalCount = sum([f["samples"] for f in files])
-        if totalCount <= a.LIMIT:
-            limitPerFile = -1
 
 allSamples = []
 allFieldNames = []

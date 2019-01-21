@@ -23,21 +23,21 @@ def filterWhere(arr, filters):
     for f in filters:
         key, value, mode = f
         if mode == "<=":
-            arr = [a for a in arr if a[key] <= value]
+            arr = [a for a in arr if key not in a or a[key] <= value]
         elif mode == ">=":
-            arr = [a for a in arr if a[key] >= value]
+            arr = [a for a in arr if key not in a or a[key] >= value]
         elif mode == "<":
-            arr = [a for a in arr if a[key] < value]
+            arr = [a for a in arr if key not in a or a[key] < value]
         elif mode == ">":
-            arr = [a for a in arr if a[key] > value]
+            arr = [a for a in arr if key not in a or a[key] > value]
         elif mode == "~=":
-            arr = [a for a in arr if value in a[key]]
+            arr = [a for a in arr if key not in a or value in a[key]]
         elif mode == "!=":
-            arr = [a for a in arr if a[key] != value]
+            arr = [a for a in arr if key not in a or a[key] != value]
         elif mode == "!~=":
-            arr = [a for a in arr if value not in a[key]]
+            arr = [a for a in arr if key not in a or value not in a[key]]
         else:
-            arr = [a for a in arr if a[key] == value]
+            arr = [a for a in arr if key not in a or a[key] == value]
 
     return arr
 
