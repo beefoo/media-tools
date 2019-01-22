@@ -22,6 +22,7 @@ def filterWhere(arr, filters):
     # Filter array
     for f in filters:
         key, value, mode = f
+        value = parseNumber(value)
         if mode == "<=":
             arr = [a for a in arr if key not in a or a[key] <= value]
         elif mode == ">=":

@@ -50,7 +50,7 @@ allFieldNames = []
 for i, f in enumerate(files):
     fn = f["sampleFilename"]
     if os.path.isfile(fn):
-        fieldNames, samples = readCsv(fn)
+        fieldNames, samples = readCsv(fn, verbose=False)
         allFieldNames = unionLists(allFieldNames, fieldNames)
         sampleCount = len(samples)
         if limitPerFile > 0 and sampleCount > limitPerFile:
