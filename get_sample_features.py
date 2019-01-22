@@ -4,6 +4,8 @@ import argparse
 from lib.io_utils import *
 from lib.math_utils import *
 from lib.processing_utils import *
+from multiprocessing import Pool
+from multiprocessing.dummy import Pool as ThreadPool
 import numpy as np
 import os
 import sys
@@ -28,7 +30,7 @@ for f in FEATURES_TO_ADD:
     if f not in set(fieldNames):
         fieldNames.append(f)
 
-filenames = [a.SAMPLE_FILE_DIRECTORY + r["filename"]+".csv" for r in rows]
+filenames = [(i, a.SAMPLE_FILE_DIRECTORY + r["filename"]+".csv") for i, r in enumerate(rows)]
 
 progress = 0
 def getSampleFeatures(p):
@@ -40,13 +42,14 @@ def getSampleFeatures(p):
     i, fn = p
 
     if os.path.isfile(fn):
-        _, samples = readCsv(fn)
+        _, samples = readCsv(fn, verbose=False)
 
         result["samples"] = len(samples)
-        result["medianPower"] = np.median([s["power"] for s in samples])
-        result["medianHz"] = np.median([s["hz"] for s in samples])
-        result["medianClarity"] = np.median([s["clarity"] for s in samples])
-        result["medianDur"] = np.median([s["dur"] for s in samples])
+        if len(samples) > 0:
+            result["medianPower"] = round(np.median([s["power"] for s in samples]), 2)
+            result["medianHz"] = round(np.median([s["hz"] for s in samples]), 2)
+            result["medianClarity"] = round(np.median([s["clarity"] for s in samples]), 2)
+            result["medianDur"] = round(np.median([s["dur"] for s in samples]), 2)
 
     progress += 1
     printProgress(progress, rowCount)

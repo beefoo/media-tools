@@ -80,7 +80,7 @@ def parseUnicode(arr):
                     arr[i][key] = unicode(value, "utf-8")
     return arr
 
-def readCsv(filename, headings=False, doParseNumbers=True, skipLines=0, encoding="utf-8", readDict=True):
+def readCsv(filename, headings=False, doParseNumbers=True, skipLines=0, encoding="utf-8", readDict=True, verbose=True):
     rows = []
     fieldnames = []
     if os.path.isfile(filename):
@@ -100,7 +100,8 @@ def readCsv(filename, headings=False, doParseNumbers=True, skipLines=0, encoding
                 rows = parseNumbers(rows)
             if encoding=="utf-8":
                 rows = parseUnicode(rows)
-        print("Read %s rows from %s" % (len(rows), filename))
+        if verbose:
+            print("Read %s rows from %s" % (len(rows), filename))
     return (fieldnames, rows)
 
 def readJSON(filename):
