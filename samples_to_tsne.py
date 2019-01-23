@@ -55,7 +55,6 @@ FEATURES_TO_ADD = DIMS[:COMPONENTS]
 # Read files
 fieldNames, rows = readCsv(INPUT_FILE)
 rowCount = len(rows)
-print("Found %s rows" % rowCount)
 
 # Check if file exists already
 if os.path.isfile(OUTPUT_FILE) and not OVERWRITE and not APPEND:

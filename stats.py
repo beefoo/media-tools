@@ -38,7 +38,7 @@ nrows = ceilInt(1.0 * propertyCount / ncols)
 plt.figure(figsize=FIG_SIZE)
 
 for i, key in enumerate(PLOT_KEYS):
-    data = [parseFloat(r[key]) for r in rows if p[key] in r]
+    data = [parseFloat(r[key]) for r in rows if key in r]
     if len(data) > 0:
         first = data[0]
         ax = plt.subplot(nrows, ncols, i+1)
