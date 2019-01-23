@@ -79,19 +79,19 @@ python get_sample_features.py -in "tmp/ia_fedflixnara.csv" -dir "tmp/sampledata/
 Optionally, you can view the stats of the samples you created:
 
 ```
-python stats.py -in "tmp/ia_fedflixnara.csv" -plot "duration,samples,medianPower,medianHz,medianClarity,medianDur"
+python stats_histogram.py -in "tmp/ia_fedflixnara.csv" -plot "duration,samples,medianPower,medianHz,medianClarity,medianDur"
 ```
 
 Or view more detailed stats of an individual file's samples:
 
 ```
-python stats.py -in "tmp/sampledata/ia_fedflixnara/gov.archives.111-tv-221.mp4.csv"
+python stats_histogram.py -in "tmp/sampledata/ia_fedflixnara/gov.archives.111-tv-221.mp4.csv"
 ```
 
 Or view two properties as a scatter plot:
 
 ```
-python plot.py -in "tmp/sampledata/ia_fedflixnara/gov.archives.111-tv-221.mp4.csv" -props "power,hz"
+python stats_plot.py -in "tmp/sampledata/ia_fedflixnara/gov.archives.111-tv-221.mp4.csv" -props "power,hz"
 ```
 
 ### 7. Visualizing audio
