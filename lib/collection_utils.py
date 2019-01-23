@@ -43,6 +43,8 @@ def filterWhere(arr, filters):
     return arr
 
 def parseQueryString(str):
+    if len(str) <= 0:
+        return []
     conditionStrings = str.split("&")
     conditions = []
     modes = ["<=", ">=", "~=", ">", "<", "="]

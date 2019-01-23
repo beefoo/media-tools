@@ -64,6 +64,9 @@ def findPeaks(data, distance=None, height=None, findMinima=True):
 def floorInt(n):
     return int(math.floor(n))
 
+def formatNumber(n):
+    return "{:,}".format(n)
+
 def formatSeconds(s):
     return time.strftime('%H:%M:%S', time.gmtime(s))
 

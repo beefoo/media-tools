@@ -46,9 +46,9 @@ for prop in PROPS:
     if "dur" in prop:
         print("Total: %s" % formatTime(total))
     else:
-        print("Total: %s" % "{:,}".format(total))
+        print("Total: %s" % formatNumber(total))
     median = roundInt(np.median(d))
     if "dur" in prop:
         print("Median: %s" % formatSeconds(median))
     else:
-        print("Median: %s" % "{:,}".format(median))
+        print("Median: %s" % formatNumber(median))
