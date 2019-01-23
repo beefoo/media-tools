@@ -31,11 +31,13 @@ addVideoArgs(parser)
 parser.add_argument('-mcount', dest="DIVIDE_COUNT", default=7, type=int, help="Amount of times to divide")
 parser.add_argument('-interval', dest="INTERVAL", default=8192, type=int, help="Starting interval duration in ms")
 parser.add_argument('-counts', dest="COUNTS", default=2, type=int, help="Amount of times to play each interval before multiplying")
+parser.add_argument('-props', dest="CLUSTER_PROPS", default="power,hz", help="Properties to cluster on")
 a = parser.parse_args()
 parseVideoArgs(a)
 makeDirectories([a.OUTPUT_FRAME, a.OUTPUT_FILE, a.CACHE_FILE])
 
 VOLUME_RANGE = (1.0, 0.333)
+PROP1, PROP2 = tuple(a.CLUSTER_PROPS.strip().split(","))
 
 # Get sample data
 startTime = logTime()
@@ -50,7 +52,7 @@ beats = [None for i in range(beatsPerMeasure)]
 
 samples = prependAll(samples, ("filename", a.VIDEO_DIRECTORY))
 samples = addIndices(samples)
-samples, centers = addClustersToList(samples, "tsne", "tsne2", clusterCount)
+samples, centers = addClustersToList(samples, PROP1, PROP2, clusterCount)
 
 # sort clusters by median clarity
 clusters = []
@@ -84,7 +86,7 @@ for i in range(a.DIVIDE_COUNT):
     clusterClips = [c for c in clips if c.props["cluster"]==clusterIndex]
     center = centers[clusterIndex]
     clusterClipCount = len(clusterClips)
-    clusterClips = sorted(clusterClips, key=lambda c: distance(c.props['tsne'], c.props['tsne2'], center[0], center[1]))
+    clusterClips = sorted(clusterClips, key=lambda c: distance(c.props[PROP1], c.props[PROP2], center[0], center[1]))
 
     for j in range(clipsToAdd):
         intervalMs = offsetMs + j * stepMs
