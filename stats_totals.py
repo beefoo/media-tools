@@ -16,15 +16,20 @@ from lib.math_utils import *
 parser = argparse.ArgumentParser()
 parser.add_argument('-in', dest="INPUT_FILE", default="tmp/movies.csv", help="Input file")
 parser.add_argument('-props', dest="PROPS", default="duration,samples", help="Comma-separated list of properties")
-args = parser.parse_args()
+parser.add_argument('-filter', dest="FILTER", default="samples>0&medianPower>0", help="Filter string")
+a = parser.parse_args()
 
 # Parse arguments
-INPUT_FILE = args.INPUT_FILE
-PROPS = [p for p in args.PROPS.strip().split(",")]
+PROPS = [p for p in a.PROPS.strip().split(",")]
 
 # Read files
-fieldNames, rows = readCsv(INPUT_FILE)
+fieldNames, rows = readCsv(a.INPUT_FILE)
 rowCount = len(rows)
+
+if len(a.FILTER) > 0:
+    rows = filterByQueryString(rows, a.FILTER)
+    rowCount = len(rows)
+    print("%s rows after filtering" % rowCount)
 
 def formatTime(s):
     h = int(s / 3600)
