@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
 
-# python download_metadata.py -query " collection:(HillaryClinton) AND mediatype:(movies)" -out "../../tmp/ia_HillaryClinton.csv"
-# python download_metadata.py -query " collection:(DonaldTrump) AND mediatype:(movies)" -out "../../tmp/ia_DonaldTrump.csv"
-
 import argparse
 import csv
 import inspect
@@ -28,7 +25,7 @@ parser.add_argument('-sort', dest="SORT_BY", default="downloads desc", help="Sor
 parser.add_argument('-format', dest="FORMAT", default=".mp4", help="Derivative to retrieve")
 parser.add_argument('-multi', dest="MULTI_FORMAT", default=0, type=int, help="Download multiple istances of the same format?")
 parser.add_argument('-rows', dest="ROWS", default=100, type=int, help="Rows per page")
-parser.add_argument('-out', dest="OUTPUT_FILE", default="../../tmp/internet_archive_metadata.csv", help="CSV output file")
+parser.add_argument('-out', dest="OUTPUT_FILE", default="tmp/internet_archive_metadata.csv", help="CSV output file")
 parser.add_argument('-overwrite', dest="OVERWRITE", default=0, type=int, help="Overwrite existing data?")
 args = parser.parse_args()
 

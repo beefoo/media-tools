@@ -3,9 +3,14 @@
 import numpy as np
 import os
 from pprint import pprint
-import pyopencl as cl
 
-os.environ['PYOPENCL_COMPILER_OUTPUT'] = '1'
+# Don't require pyopencl to be installed, but it will throw error if we try to use it and it doesn't exist
+try:
+    import pyopencl as cl
+    os.environ['PYOPENCL_COMPILER_OUTPUT'] = '1'
+    
+except ImportError:
+    print("Warning: no PyOpenCL detected, so no GPU-accellerated processing available")
 
 def clipsToImageGPU(width, height, pixelData, properties, colorDimensions):
     count = len(pixelData)

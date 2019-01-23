@@ -62,6 +62,8 @@ def parseSortString(str):
         if "=" in cs:
             parts = cs.split("=")
             conditions.append(tuple(parts))
+        else:
+            conditions.append((cs, "asc"))
     return conditions
 
 def prependAll(arr, prepends):

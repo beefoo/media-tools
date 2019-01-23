@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 
-# python -W ignore sort_audio.py -in "media/downloads/vivaldi/*.mp3" -steps 2 -sort clarity -plot 1
-
 import argparse
 import os
 import subprocess
@@ -50,7 +48,7 @@ if STEPS <= 1:
 # Extract features out of samples
 dir = os.path.dirname(INPUT_FILES) + "/"
 featurePath = samplePath # simply append features to sample path
-featureScript = "samples_to_tsne.py" if SORT_BY == "tsne" else "samples_to_features.py"
+featureScript = "samples_to_tsne.py" if "tsne" in SORT_BY else "samples_to_features.py"
 command = ['python', '-W', 'ignore', featureScript, '-in', samplePath, '-dir', dir, '-out', featurePath, '-plot', PLOT, '-overwrite', OVERWRITE]
 print("------")
 print(" ".join(command))

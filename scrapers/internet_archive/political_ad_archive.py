@@ -20,8 +20,8 @@ from lib.collection_utils import *
 
 # input
 parser = argparse.ArgumentParser()
-parser.add_argument('-in', dest="INPUT_FILE", default="data/politicaladarchive_2016.csv", help="Path to csv file")
-parser.add_argument('-out', dest="OUTPUT_FILE", default="../../tmp/ia_politicaladarchive.csv", help="CSV output file")
+parser.add_argument('-in', dest="INPUT_FILE", default="scrapers/internet_archive/data/politicaladarchive_2016.csv", help="Path to csv file")
+parser.add_argument('-out', dest="OUTPUT_FILE", default="tmp/ia_politicaladarchive.csv", help="CSV output file")
 args = parser.parse_args()
 
 # Parse arguments
