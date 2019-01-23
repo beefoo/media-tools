@@ -42,14 +42,16 @@ rows = sortByQueryString(rows, SORT)
 if LIMIT > 0 and len(rows) > LIMIT:
     rows = rows[:LIMIT]
 
+def log(value, base=1):
+    if base==1:
+        base = math.e
+    return math.log(value, base) if value > 0 else value
+
 x = [row[PROP1] for row in rows]
 y = [row[PROP2] for row in rows]
-if LOG > 1:
-    x = [math.log(row[PROP1], LOG) for row in rows]
-    y = [math.log(row[PROP2], LOG) for row in rows]
-elif LOG > 0:
-    x = [math.log(row[PROP1]) for row in rows]
-    y = [math.log(row[PROP2]) for row in rows]
+if LOG > 0:
+    x = [log(row[PROP1], LOG) for row in rows]
+    y = [log(row[PROP2], LOG) for row in rows]
 
 plt.figure(figsize = (10,10))
 if len(HIGHLIGHT) > 0:

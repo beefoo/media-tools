@@ -56,6 +56,8 @@ def parseQueryString(str):
     return conditions
 
 def parseSortString(str):
+    if len(str) <= 0:
+        return []
     conditionStrings = str.split("&")
     conditions = []
     for cs in conditionStrings:
