@@ -80,6 +80,7 @@ Optionally, you can view the stats of the samples you created:
 
 ```
 python stats_histogram.py -in "tmp/ia_fedflixnara.csv" -plot "duration,samples,medianPower,medianHz,medianClarity,medianDur"
+python stats_totals.py -in "tmp/ia_fedflixnara.csv"
 ```
 
 Or view more detailed stats of an individual file's samples:
