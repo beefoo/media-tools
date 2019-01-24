@@ -1,3 +1,5 @@
+
+import itertools
 from pprint import pprint
 from lib.math_utils import *
 
@@ -8,6 +10,13 @@ def addIndices(arr, keyName="index"):
 
 def containsList(bucketList, needleList):
     return set(needleList).issubset(set(bucketList))
+
+def dequeue(arr, count):
+    if count >= len(arr):
+        return (arr, [])
+    returnArr = arr[:count]
+    remainder = arr[count:]
+    return (returnArr, remainder)
 
 def filterByQueryString(arr, queryString):
     return filterWhere(arr, parseQueryString(queryString))
@@ -41,6 +50,16 @@ def filterWhere(arr, filters):
             arr = [a for a in arr if key not in a or a[key] == value]
 
     return arr
+
+def groupList(arr, groupBy):
+    groups = []
+    for key, items in itertools.groupby(arr, lambda item: item[groupBy])
+        group = {}
+        group[groupBy] = key
+        group["items"] = items
+        group["count"] = len(items)
+        groups.append(group)
+    return groups
 
 def parseQueryString(str):
     if len(str) <= 0:
