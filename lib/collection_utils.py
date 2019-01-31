@@ -53,11 +53,12 @@ def filterWhere(arr, filters):
 
 def groupList(arr, groupBy):
     groups = []
-    for key, items in itertools.groupby(arr, lambda item: item[groupBy])
+    arr = sorted(arr, key=lambda item: item[groupBy])
+    for key, items in itertools.groupby(arr, lambda item: item[groupBy]):
         group = {}
         group[groupBy] = key
-        group["items"] = items
-        group["count"] = len(items)
+        group["items"] = list(items)
+        group["count"] = len(list(items))
         groups.append(group)
     return groups
 
@@ -100,7 +101,7 @@ def prependAll(arr, prepends):
 
     return arr
 
-def sortBy(arr, sorters):
+def sortBy(arr, sorters, targetLen=None):
     if isinstance(sorters, tuple):
         sorters = [sorters]
 
@@ -121,7 +122,12 @@ def sortBy(arr, sorters):
 
         if 0.0 < trim < 1.0:
             count = int(round(len(arr) * trim))
+            if targetLen is not None:
+                count = max(count, targetLen)
             arr = arr[:count]
+
+    if targetLen is not None and len(arr) > targetLen:
+        arr = arr[:targetLen]
 
     return arr
 
