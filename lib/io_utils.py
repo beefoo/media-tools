@@ -6,8 +6,12 @@ import json
 from lib.math_utils import *
 import os
 from pprint import pprint
-import requests
 import sys
+
+try:
+    import requests
+except ImportError:
+    print("Warning: requests module not found, so can't make remote json requests")
 
 try:
     reload(sys)

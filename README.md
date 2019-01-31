@@ -16,12 +16,13 @@ These are the requirements for the full workflow below, but each individual scri
 
 - [Python](https://www.python.org/) (I developed using 2.7, but should be compatible with 3.6+ too)
 - [SciPy](https://www.scipy.org/) for math functions (probably already installed)
-- [FFmpeg](https://www.ffmpeg.org/) for working with media files
+- [FFmpeg and FFprobe](https://www.ffmpeg.org/) for working with media files
 - [LibROSA](https://librosa.github.io/librosa/) for audio analysis
 - [Pydub](http://pydub.com/) for audio manipulation
 - [SoX](http://sox.sourceforge.net/) and [pysndfx](https://pypi.org/project/pysndfx/) for audio effects like reverb
 - [MoviePy](https://zulko.github.io/moviepy/) for programmatic video editing
 - [scikit-learn](https://scikit-learn.org/stable/) for statistics and machine learning features (e.g. TSNE, clustering, classification)
+- _(optional)_ [Requests](http://docs.python-requests.org/en/master/) for making json requests
 - _(optional)_ [PyOpenCL](https://mathema.tician.de/software/pyopencl/) for GPU-accelerated video processing
 
 ## Large collection workflow
