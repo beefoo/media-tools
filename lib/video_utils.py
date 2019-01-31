@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-from clip import *
-from gpu_utils import *
-from math_utils import *
+from lib.clip import *
+from lib.gpu_utils import *
+from lib.math_utils import *
 from moviepy.editor import VideoFileClip
 import multiprocessing
 from multiprocessing import Pool

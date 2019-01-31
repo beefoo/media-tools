@@ -1,5 +1,5 @@
-from audio_utils import *
-from math_utils import *
+from lib.audio_utils import *
+from lib.math_utils import *
 import os
 from pydub import AudioSegment
 import sys
@@ -131,3 +131,11 @@ def mixAudio(instructions, duration, outfilename, sfx=True, sampleWidth=2, sampl
     format = outfilename.split(".")[-1]
     f = baseAudio.export(outfilename, format=format)
     print("Wrote to %s" % outfilename)
+
+def plotAudioSequence(seq):
+    import matplotlib.pyplot as plt
+    filenames = unique([(s["filename"], s["start"]) for s in seq])
+    xs = [s["ms"]/1000.0 for s in seq]
+    ys = [filenames.index((s["filename"], s["start"]))+1 for s in seq]
+    plt.scatter(xs, ys, s=4)
+    plt.show()

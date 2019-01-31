@@ -71,13 +71,19 @@ def parseUnicode(arr):
     for i, item in enumerate(arr):
         if isinstance(item, (list,)):
             for j, value in enumerate(item):
-                if isinstance(value, basestring) and not isinstance(value, unicode):
-                    arr[i][j] = unicode(value, "utf-8")
+                try:
+                    if isinstance(value, basestring) and not isinstance(value, unicode):
+                        arr[i][j] = unicode(value, "utf-8")
+                except NameError:
+                    pass
         else:
             for key in item:
-                value = item[key]
-                if isinstance(value, basestring) and not isinstance(value, unicode):
-                    arr[i][key] = unicode(value, "utf-8")
+                try:
+                    value = item[key]
+                    if isinstance(value, basestring) and not isinstance(value, unicode):
+                        arr[i][key] = unicode(value, "utf-8")
+                except NameError:
+                    pass
     return arr
 
 def readCsv(filename, headings=False, doParseNumbers=True, skipLines=0, encoding="utf-8", readDict=True, verbose=True):

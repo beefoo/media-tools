@@ -1,7 +1,7 @@
 import array
 import librosa
 import math
-from math_utils import *
+from lib.math_utils import *
 import numpy as np
 import os
 from pprint import pprint

@@ -1,5 +1,5 @@
-from collection_utils import *
-from math_utils import *
+from lib.collection_utils import *
+from lib.math_utils import *
 
 class Vector:
 

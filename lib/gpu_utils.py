@@ -8,7 +8,7 @@ from pprint import pprint
 try:
     import pyopencl as cl
     os.environ['PYOPENCL_COMPILER_OUTPUT'] = '1'
-    
+
 except ImportError:
     print("Warning: no PyOpenCL detected, so no GPU-accellerated processing available")
 
@@ -99,7 +99,7 @@ def clipsToImageGPU(width, height, pixelData, properties, colorDimensions):
     if GPUs and len(GPUs) > 0:
         ctx = cl.Context(devices=GPUs)
     else:
-        print "Warning: using CPU instead of GPU"
+        print("Warning: using CPU instead of GPU")
         ctx = cl.Context(CPU)
     # Create queue for each kernel execution
     queue = cl.CommandQueue(ctx)
