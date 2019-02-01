@@ -90,26 +90,29 @@ def parseUnicode(arr):
                     pass
     return arr
 
-def readCsv(filename, headings=False, doParseNumbers=True, skipLines=0, encoding="utf-8", readDict=True, verbose=True):
+def readCsv(filename, headings=False, doParseNumbers=True, skipLines=0, encoding="utf8", readDict=True, verbose=True):
     rows = []
     fieldnames = []
+    canEncode = supportsEncoding()
     if os.path.isfile(filename):
-        with open(filename, 'r') as f:
-            lines = [line for line in f if not line.startswith("#")]
-            if skipLines > 0:
-                lines = lines[skipLines:]
-            if readDict:
-                reader = csv.DictReader(lines, skipinitialspace=True)
-                fieldnames = list(reader.fieldnames)
-            else:
-                reader = csv.reader(lines, skipinitialspace=True)
-            rows = list(reader)
-            if headings:
-                rows = parseHeadings(rows, headings)
-            if doParseNumbers:
-                rows = parseNumbers(rows)
-            if encoding=="utf-8":
-                rows = parseUnicode(rows)
+        lines = []
+        f = open(filename, 'r', encoding=encoding) if canEncode else open(filename, 'r')
+        lines = list(f)
+        f.close()
+        if skipLines > 0:
+            lines = lines[skipLines:]
+        if readDict:
+            reader = csv.DictReader(lines, skipinitialspace=True)
+            fieldnames = list(reader.fieldnames)
+        else:
+            reader = csv.reader(lines, skipinitialspace=True)
+        rows = list(reader)
+        if headings:
+            rows = parseHeadings(rows, headings)
+        if doParseNumbers:
+            rows = parseNumbers(rows)
+        if not canEncode and encoding=="utf8":
+            rows = parseUnicode(rows)
         if verbose:
             print("Read %s rows from %s" % (len(rows), filename))
     return (fieldnames, rows)
@@ -121,26 +124,31 @@ def readJSON(filename):
             data = json.load(f)
     return data
 
-def writeCsv(filename, arr, headings="auto", append=False, encoding="utf-8"):
+def supportsEncoding():
+    return sys.version_info >= (3, 0)
+
+def writeCsv(filename, arr, headings="auto", append=False, encoding="utf8"):
     if headings == "auto":
         headings = arr[0].keys()
     mode = 'wb' if not append else 'ab'
-    with open(filename, mode) as f:
-        writer = csv.writer(f)
-        if not append:
-            writer.writerow(headings)
-        for i, d in enumerate(arr):
-            row = []
-            for h in headings:
-                value = ""
-                if h in d:
-                    value = d[h]
-                if isinstance(value, list):
-                    value = ",".join(value)
-                if encoding and isinstance(value, str):
-                    value = value.encode(encoding)
-                row.append(value)
-            writer.writerow(row)
+    canEncode = supportsEncoding()
+    f = open(filename, mode, encoding=encoding) if canEncode else open(filename, mode)
+    writer = csv.writer(f)
+    if not append:
+        writer.writerow(headings)
+    for i, d in enumerate(arr):
+        row = []
+        for h in headings:
+            value = ""
+            if h in d:
+                value = d[h]
+            if isinstance(value, list):
+                value = ",".join(value)
+            if not canEncode and encoding=="utf8" and isinstance(value, str):
+                value = value.encode("utf-8")
+            row.append(value)
+        writer.writerow(row)
+    f.close()
     print("Wrote %s rows to %s" % (len(arr), filename))
 
 def writeJSON(filename, data):
