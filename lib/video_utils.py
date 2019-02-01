@@ -56,7 +56,7 @@ def addVideoArgs(parser):
     parser.add_argument('-pad1', dest="PAD_END", default=3000, type=int, help="Pad the end")
     parser.add_argument('-rvb', dest="REVERB", default=80, type=int, help="Reverberence (0-100)")
     parser.add_argument('-debug', dest="DEBUG", default=0, type=int, help="Debug mode?")
-    parser.add_argument('-mdb', dest="MATCH_DB", default=-12, type=int, help="Match decibels, -9999 for none")
+    parser.add_argument('-mdb', dest="MATCH_DB", default=-16, type=int, help="Match decibels, -9999 for none")
 
 def alphaMask(im, mask):
     w, h = im.size

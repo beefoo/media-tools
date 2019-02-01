@@ -26,14 +26,14 @@ from lib.video_utils import *
 parser = argparse.ArgumentParser()
 addVideoArgs(parser)
 parser.add_argument('-sdir', dest="SAMPLE_DATA_DIR", default="tmp/", help="Directory of sample data")
-parser.add_argument('-buf', dest="BUFFER_SIZE", default=256, type=int, help="Max number of samples in buffer at any given time")
-parser.add_argument('-unit', dest="SAMPLE_UNIT", default=16, type=int, help="Rate at which to add/remove samples to/from buffer")
+parser.add_argument('-buf', dest="BUFFER_SIZE", default=512, type=int, help="Max number of samples in buffer at any given time")
+parser.add_argument('-unit', dest="SAMPLE_UNIT", default=64, type=int, help="Rate at which to add/remove samples to/from buffer")
 parser.add_argument('-vfilter', dest="FILTER_VIDEOS", default="samples>500&medianPower>0.5", help="Query string to filter videos by")
 parser.add_argument('-filter', dest="FILTER", default="power>0&octave>=0", help="Query string to filter samples by")
 parser.add_argument('-sort', dest="SORT", default="power=desc=0.5&clarity=desc", help="Query string to sort samples by")
 parser.add_argument('-ptl', dest="PERCENTILE", default=0.2, type=float, help="Top percentile of samples to select from each film")
 parser.add_argument('-lim', dest="LIMIT", default=100, type=int, help="Limit number of samples per film")
-parser.add_argument('-beatms', dest="BEAT_MS", default=512, type=int, help="Milliseconds per beat")
+parser.add_argument('-beatms', dest="BEAT_MS", default=256, type=int, help="Milliseconds per beat")
 parser.add_argument('-beats', dest="BEATS_PER_MEASURE", default=8, type=int, help="Number of beats per measure")
 parser.add_argument('-seq', dest="NUMBER_SEQUENCE", default="3,5,7", help="Three-number sequence for determining pulse duration")
 a = parser.parse_args()
@@ -199,20 +199,20 @@ def playUnit(msI, msII, msIII, buf, step):
     # determine duration
     measureMs = a.BEATS_PER_MEASURE * a.BEAT_MS
     groupIIIMeasures, groupIIMeasures, groupIMeasures = tuple(PLAY_DUR_SEQUENCE)
-    groupIIRest = REST_DUR_SEQUENCE[msII % REST_SEQ_LEN]
-    groupIIIRest = REST_DUR_SEQUENCE[(msIII+1) % REST_SEQ_LEN]
+    groupIIMeasuresRest = REST_DUR_SEQUENCE[msII % REST_SEQ_LEN]
+    groupIIIMeasuresRest = REST_DUR_SEQUENCE[(msIII+1) % REST_SEQ_LEN]
     groupIDur = getMeasureMs(groupIMeasures)
     groupIIMeasureDelta = (msII - msI) / measureMs
-    groupIICount = roundInt((groupIMeasures-groupIIMeasureDelta) / (groupIIMeasures + groupIIRest))
-    groupIIDur = getMeasureMs(groupIICount)
+    groupIICount = roundInt((groupIMeasures-groupIIMeasureDelta) / (groupIIMeasures + groupIIMeasuresRest))
+    groupIIDur = getMeasureMs((groupIIMeasures + groupIIMeasuresRest) * groupIICount)
     groupIIIMeasureDelta = (msIII - msI) / measureMs
-    groupIIICount = roundInt((groupIMeasures-groupIIIMeasureDelta) / (groupIIIMeasures + groupIIIRest))
-    groupIIIDur = getMeasureMs(groupIIICount)
+    groupIIICount = roundInt((groupIMeasures-groupIIIMeasureDelta) / (groupIIIMeasures + groupIIIMeasuresRest))
+    groupIIIDur = getMeasureMs((groupIIIMeasures + groupIIIMeasuresRest) * groupIIICount)
 
     seq = []
     seq += getPulse(msI, 1, groupIMeasures, 0, a.BEATS_PER_MEASURE, a.BEAT_MS, groupI, step)
-    seq += getPulse(msII, groupIICount, groupIIMeasures, groupIIRest, a.BEATS_PER_MEASURE, a.BEAT_MS, groupII, step+1)
-    seq += getPulse(msIII, groupIIICount, groupIIIMeasures, groupIIIRest, a.BEATS_PER_MEASURE * 2, a.BEAT_MS/2, groupIII)
+    seq += getPulse(msII, groupIICount, groupIIMeasures, groupIIMeasuresRest, a.BEATS_PER_MEASURE, a.BEAT_MS, groupII, step+1)
+    seq += getPulse(msIII, groupIIICount, groupIIIMeasures, groupIIIMeasuresRest, a.BEATS_PER_MEASURE * 2, a.BEAT_MS/2, groupIII)
 
     return (msI + groupIDur, msII + groupIIDur, msIII + groupIIIDur, seq)
 
