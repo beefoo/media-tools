@@ -88,6 +88,7 @@ def fillQueue(q, size):
         _, samples = readCsv(sampleDataFilename)
         # filter, sort, and limit
         samples = filterByQueryString(samples, a.FILTER)
+        samples = prependAll(samples, ("filename", a.VIDEO_DIRECTORY))
         # add a log of hz
         for i, s in enumerate(samples):
             samples[i]["hzLog"] = math.log(s["hz"])
