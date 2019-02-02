@@ -8,6 +8,13 @@ from scipy import signal
 import time
 import sys
 
+def addNormalizedValues(arr, key, nkey):
+    values = [v[key] for v in arr]
+    range = (min(values), max(values))
+    for i, entry in enumerate(arr):
+        arr[i][nkey] = norm(entry[key], range)
+    return arr
+
 # return the bounding box of a rotated rectangle
 def bboxRotate(cx, cy, w, h, angle):
     distanceToCorner = distance(cx, cy, cx-w*0.5, cy-h*0.5)
@@ -25,6 +32,9 @@ def bboxRotate(cx, cy, w, h, angle):
 
 def ceilInt(n):
     return int(math.ceil(n))
+
+def ceilToNearest(n, nearest):
+    return 1.0 * math.ceil(1.0*n/nearest) * nearest
 
 def distance(x1, y1, x2, y2):
     return math.hypot(x2 - x1, y2 - y1)

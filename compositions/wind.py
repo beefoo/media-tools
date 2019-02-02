@@ -35,16 +35,21 @@ parser.add_argument('-lim', dest="LIMIT", default=400, type=int, help="Limit num
 parser.add_argument('-beatms', dest="BEAT_MS", default=1024, type=int, help="Milliseconds per beat")
 parser.add_argument('-stepb', dest="STEP_BEATS", default=4, type=int, help="Beats per step")
 parser.add_argument('-beats', dest="BEAT_DIVISIONS", default=4, type=int, help="Number of times to divide beat, e.g. 1 = 1/2 notes, 2 = 1/4 notes, 3 = 1/8th notes, 4 = 1/16 notes")
+parser.add_argument('-loops', dest="CLIP_LOOPS", default=8, type=int, help="Number of times a clip should loop")
 parser.add_argument('-clusters', dest="CLUSTERS", default=16, type=int, help="Number of clusters to divide the window of samples into")
 parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.2,1.0", help="Volume range")
 a = parser.parse_args()
 parseVideoArgs(a)
 makeDirectories([a.OUTPUT_FRAME, a.OUTPUT_FILE, a.CACHE_FILE])
 
+VECTOR_FILE = "media/downloads/wnd10m.gdas.1986-01-29-18.6.json"
+
 # parse number sequences
 VOLUME_RANGE = [float(v) for v in a.VOLUME_RANGE.strip().split(",")]
 UNIT_MS = roundInt(2 ** (-a.BEAT_DIVISIONS) * a.BEAT_MS)
+STEP_MS = a.BEAT_MS * a.STEP_BEATS
 print("Smallest unit: %ss" % UNIT_MS)
+print("%ss per step" % roundInt(STEP_MS/1000.0))
 
 # Get video data
 startTime = logTime()
@@ -98,16 +103,78 @@ def fillQueue(q, size):
 
     return q
 
-def getVectorMap(step):
-    return np.zeros((500,1000,2), dtype=float)
+def getClipsFromGroups(startMs, groups, dur, vectorMap):
+    global a
+    clips = []
 
-def getClipsStep(window, groupCount):
+    groupCount = len(groups)
+    groupDur = roundInt(dur / (groupCount-1)) if groupCount > 1 else dur
+
+    # Each group is a sample cluster
+    for i, group in enumerate(groups):
+        groupStartMs = startMs + i * groupDur
+        # TODO: Drop cluster samples at respective pitch-power location
+
+        # When a cluster is dropped, play each sample in order of position (top to bottom, left to right)
+        for j, s in enumerate(group):
+            group[j]["playOrder"] = math.hypot(s["nx"], s["ny"])
+        group = addNormalizedValues(group, "playOrder", "nplay")
+
+        group = addNormalizedValues(group, "clarity", "nclarity")
+        for s in group:
+            # round ms to nearest beat unit
+            sampleStart = roundInt(roundToNearest(groupStartMs + s["nplay"] * groupDur, UNIT_MS))
+
+            # clip duration is twice the sample duration, 1 second minimum
+            sampleDur = min(s["dur"] * 2, 1000)
+            fadeInDur = getClipFadeDur(s["dur"])
+            fadeOutDur = getClipFadeDur(sampleDur, 0.5) # fade out half the clip
+
+            # start volume is based on clarity
+            startVolume = lerp(VOLUME_RANGE, s["nclarity"])
+
+            # loop duration is ceiling of nearest beat unit
+            loopDur = roundInt(ceilToNearest(sampleDur, UNIT_MS))
+
+            # create clip
+            copy = s.copy()
+            copy["dur"] = sampleDur
+            clip = Clip(copy)
+
+            for k in range(a.CLIP_LOOPS):
+                loopStart = sampleStart + k * loopDur
+                loopVolume = 2 ** (-k) * startVolume # halve each time
+
+                # TODO: change pan based on movement of clip
+                pan = lerp((-1, 1), s["nx"])
+
+                # play clip
+                clip.queuePlay(loopStart, {
+                    "volume": loopVolume,
+                    "fadeOut": fadeOutDur,
+                    "fadeIn": fadeInDur,
+                    "pan": pan,
+                    "reverb": a.REVERB
+                })
+
+            clips.append(clip)
+
+    return clips
+
+def getSampleGroups(window, groupCount):
     global a
 
     # If the sample count in window, just return the remainder as a single group
     minSize = a.WINDOW_SIZE / groupCount
     if len(window) < minSize:
-        return ([], [samplesToClips(window)])
+        return ([], [window[:]])
+
+    # add normalized values
+    window = addNormalizedValues(window, "power", "nx")
+    window = addNormalizedValues(window, "hzLog", "ny")
+    for i, s in enumerate(window):
+        # invert ny
+        window[i]["ny"] = 1.0 - s["ny"]
 
     # Cluster the samples by power and pitch
     window, centers = addClustersToList(window, "power", "hzLog", groupCount)
@@ -120,7 +187,7 @@ def getClipsStep(window, groupCount):
     clusterIndices = [centers[0][0], centers[-1][0], centers[int(count/2)][0]]
     sampleGroups = []
     for i in clusterIndices:
-        sampleGroups.append(samplesToClips([s for s in window if s["cluster"] == i]))
+        sampleGroups.append([s for s in window if s["cluster"] == i])
 
     # Remove samples from window
     clusterIndices = set(clusterIndices)
@@ -128,10 +195,27 @@ def getClipsStep(window, groupCount):
 
     return (newWindow, sampleGroups)
 
+vData = nx = ny = None
+def getVectorMap(step):
+    global vData
+    global nx
+    global ny
+
+    if vData is None:
+        print("Reading vector data %s" % VECTOR_FILE)
+        with open(VECTOR_FILE) as f:
+            d = json.load(f)
+            nx = d["nx"]
+            ny = d["ny"]
+            vData = np.array(d["data"])
+            vData = vData.reshape((ny, nx, 2))
+            print("Loaded data: %s x %s x %s" % (ny, nx, 2))
+
+    return vData
+
 window = []
 queue = []
 queue = fillQueue(queue, a.WINDOW_SIZE)
-ms = 0
 step = 0
 clips = []
 
@@ -139,6 +223,7 @@ activeFields = []
 
 # Each step in this loop is considered a "unit" which consists of some number of measures
 while True:
+    ms = step * STEP_MS
     vm = getVectorMap(step)
     # Retrieve samples from queue
     sampleCountNeeded = a.WINDOW_SIZE - len(window)
@@ -146,22 +231,26 @@ while True:
     window += samplesToAdd
     # plotList(window, "power", "hzLog")
 
-    window, clipsGroups = getClipsStep(window, a.CLUSTERS)
-    # plotList([item.props for sublist in clipsGroups for item in sublist], "power", "hzLog", highlight="cluster")
+    window, sampleGroups = getSampleGroups(window, a.CLUSTERS)
+    # plotList([item for sublist in clipsGroups for item in sublist], "power", "hzLog", highlight="cluster")
 
-    clips = addClips(clipGroups)
+    clips += getClipsFromGroups(ms, sampleGroups, STEP_MS, vm)
 
     # Attempt to fill queue with more samples
     queue = fillQueue(queue, a.WINDOW_SIZE)
 
     step += 1
 
+    if len(queue) < 1:
+        break
     break
 
-# plotAudioSequence(audioSequence)
-sys.exit()
-
+# get audio sequence
+audioSequence = clipsToSequence(clips)
 stepTime = logTime(startTime, "Processed audio clip sequence")
+
+# plotAudioSequence(audioSequence)
+# sys.exit()
 
 currentFrame = 1
 
