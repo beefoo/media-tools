@@ -34,10 +34,11 @@ parser.add_argument('-ptl', dest="PERCENTILE", default=0.25, type=float, help="T
 parser.add_argument('-lim', dest="LIMIT", default=400, type=int, help="Limit number of samples per film")
 parser.add_argument('-beatms', dest="BEAT_MS", default=1024, type=int, help="Milliseconds per beat")
 parser.add_argument('-stepb', dest="STEP_BEATS", default=4, type=int, help="Beats per step")
-parser.add_argument('-beats', dest="BEAT_DIVISIONS", default=4, type=int, help="Number of times to divide beat, e.g. 1 = 1/2 notes, 2 = 1/4 notes, 3 = 1/8th notes, 4 = 1/16 notes")
+parser.add_argument('-beats', dest="BEAT_DIVISIONS", default=3, type=int, help="Number of times to divide beat, e.g. 1 = 1/2 notes, 2 = 1/4 notes, 3 = 1/8th notes, 4 = 1/16 notes")
 parser.add_argument('-loops', dest="CLIP_LOOPS", default=8, type=int, help="Number of times a clip should loop")
 parser.add_argument('-clusters', dest="CLUSTERS", default=16, type=int, help="Number of clusters to divide the window of samples into")
 parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.2,1.0", help="Volume range")
+parser.add_argument('-steps', dest="STEPS", default=-1, type=int, help="Number of steps to render, -1 for all")
 a = parser.parse_args()
 parseVideoArgs(a)
 makeDirectories([a.OUTPUT_FRAME, a.OUTPUT_FILE, a.CACHE_FILE])
@@ -109,16 +110,20 @@ def getClipsFromGroups(startMs, groups, dur, vectorMap):
     clips = []
 
     groupCount = len(groups)
-    groupDur = roundInt(dur / (groupCount-1)) if groupCount > 1 else dur
+    groupDur = roundInt(1.0 * dur / (groupCount-1)) if groupCount > 1 else dur
+    intervalDur = roundInt(1.0 * dur / groupCount)
 
     # Each group is a sample cluster
     for i, group in enumerate(groups):
-        groupStartMs = startMs + i * groupDur
+        groupStartMs = startMs + i * intervalDur
         # TODO: Drop cluster samples at respective pitch-power location
 
         # When a cluster is dropped, play each sample in order of position (top to bottom, left to right)
         for j, s in enumerate(group):
-            group[j]["playOrder"] = math.hypot(s["nx"], s["ny"])
+            if s["nx"] > 0 or s["ny"] > 0:
+                group[j]["playOrder"] = math.hypot(s["nx"], s["ny"])
+            else:
+                group[j]["playOrder"] = 0
         group = addNormalizedValues(group, "playOrder", "nplay")
 
         group = addNormalizedValues(group, "clarity", "nclarity")
@@ -144,7 +149,8 @@ def getClipsFromGroups(startMs, groups, dur, vectorMap):
 
             for k in range(a.CLIP_LOOPS):
                 loopStart = sampleStart + k * loopDur
-                loopVolume = 2 ** (-k) * startVolume # halve each time
+                progress = 1.0 * k / a.CLIP_LOOPS
+                loopVolume = (1.0 - progress) * startVolume
 
                 # TODO: change pan based on movement of clip
                 pan = lerp((-1, 1), s["nx"])
@@ -244,7 +250,9 @@ while True:
 
     if len(queue) < 1:
         break
-    break
+
+    if a.STEPS > 0 and step >= a.STEPS:
+        break
 
 # get audio sequence
 audioSequence = clipsToSequence(clips)
