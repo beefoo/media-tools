@@ -140,31 +140,23 @@ modelNorm = []
 for i in range(COMPONENTS):
     if DIMS[i] not in headings:
         headings.append(DIMS[i])
-    # normalize model between 0 and 1
-    if COMPONENTS > 1:
-        values = model[:,i]
-    else:
-        values = model[:]
-    minValue = np.min(values)
-    maxValue = np.max(values)
-    valuesNorm = (values - minValue) / (maxValue - minValue)
-    modelNorm.append(valuesNorm)
+    # # normalize model between 0 and 1
+    # if COMPONENTS > 1:
+    #     values = model[:,i]
+    # else:
+    #     values = model[:]
+    # minValue = np.min(values)
+    # maxValue = np.max(values)
+    # valuesNorm = (values - minValue) / (maxValue - minValue)
+    # modelNorm.append(valuesNorm)
 
-with open(OUTPUT_FILE, 'wb') as f:
-    writer = csv.writer(f)
-    writer.writerow(headings)
-    for i, d in enumerate(rows):
-        row = []
-        for h in headings:
-            if h in DIMS:
-                j = DIMS.index(h)
-                row.append(round(modelNorm[j][i], PRECISION))
-            elif h in d:
-                row.append(d[h])
-            else:
-                row.append("")
-        writer.writerow(row)
-print("Wrote %s rows to %s" % (len(data), OUTPUT_FILE))
+# Add results to data
+for i, d in enumerate(rows):
+    for j in range(COMPONENTS):
+        keyname = DIMS[j]
+        rows[i][keyname] = round(model[i, j], PRECISION)
+
+writeCsv(OUTPUT_FILE, rows, headings=headings)
 
 if CACHE_FILE and os.path.isfile(CACHE_FILE):
     os.remove(CACHE_FILE)
