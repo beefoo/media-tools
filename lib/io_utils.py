@@ -130,8 +130,10 @@ def supportsEncoding():
 def writeCsv(filename, arr, headings="auto", append=False, encoding="utf8"):
     if headings == "auto":
         headings = arr[0].keys()
-    mode = 'wb' if not append else 'ab'
+    mode = 'w' if not append else 'a'
     canEncode = supportsEncoding()
+    if not canEncode:
+        mode += 'b'
     f = open(filename, mode, encoding=encoding) if canEncode else open(filename, mode)
     writer = csv.writer(f)
     if not append:

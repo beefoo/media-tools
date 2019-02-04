@@ -131,13 +131,13 @@ def sortBy(arr, sorters, targetLen=None):
 
     return arr
 
-def sortByQueryString(arr, sortString):
+def sortByQueryString(arr, sortString, targetLen=None):
     sorters = parseSortString(sortString)
 
     if len(sorters) <= 0:
         return arr
 
-    return sortBy(arr, sorters)
+    return sortBy(arr, sorters, targetLen)
 
 def sortMatrix(arr, sortY, sortX, rowCount):
     count = len(arr)

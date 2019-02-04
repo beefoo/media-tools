@@ -33,7 +33,7 @@ parser.add_argument('-sort', dest="SORT", default="power=desc=0.5&clarity=desc",
 parser.add_argument('-ptl', dest="PERCENTILE", default=0.25, type=float, help="Top percentile of samples to select from each film")
 parser.add_argument('-lim', dest="LIMIT", default=400, type=int, help="Limit number of samples per film")
 parser.add_argument('-beatms', dest="BEAT_MS", default=1024, type=int, help="Milliseconds per beat")
-parser.add_argument('-stepb', dest="STEP_BEATS", default=4, type=int, help="Beats per step")
+parser.add_argument('-stepb', dest="STEP_BEATS", default=16, type=int, help="Beats per step")
 parser.add_argument('-beats', dest="BEAT_DIVISIONS", default=3, type=int, help="Number of times to divide beat, e.g. 1 = 1/2 notes, 2 = 1/4 notes, 3 = 1/8th notes, 4 = 1/16 notes")
 parser.add_argument('-loops', dest="CLIP_LOOPS", default=8, type=int, help="Number of times a clip should loop")
 parser.add_argument('-clusters', dest="CLUSTERS", default=16, type=int, help="Number of clusters to divide the window of samples into")

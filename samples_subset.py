@@ -63,8 +63,7 @@ for i, f in enumerate(files):
         samples = filterByQueryString(samples, a.FILTER_PER_FILE)
         sampleCount = len(samples)
         if limitPerFile > 0 and sampleCount > limitPerFile:
-            samples = sortByQueryString(samples, a.SORT_PER_FILE)
-            samples = samples[:limitPerFile]
+            samples = sortByQueryString(samples, a.SORT_PER_FILE, limitPerFile)
         allSamples += samples
     printProgress(i+1, fileCount)
 
@@ -72,8 +71,7 @@ sampleCount = len(allSamples)
 print("Found %s samples" % formatNumber(sampleCount))
 
 if a.LIMIT > 0 and sampleCount > a.LIMIT:
-    allSamples = sortByQueryString(allSamples, a.SORT_PER_FILE)
-    allSamples = allSamples[:a.LIMIT]
+    allSamples = sortByQueryString(allSamples, a.SORT_PER_FILE, a.LIMIT)
     sampleCount = len(allSamples)
 
 if a.JUST_STATS < 1:
