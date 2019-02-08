@@ -29,17 +29,28 @@ parser.add_argument('-beatms', dest="BEAT_MS", default=1024, type=int, help="Mil
 parser.add_argument('-beats', dest="BEAT_DIVISIONS", default=3, type=int, help="Number of times to divide beat, e.g. 1 = 1/2 notes, 2 = 1/4 notes, 3 = 1/8th notes, 4 = 1/16 notes")
 parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.2,1.0", help="Volume range")
 parser.add_argument('-grid', dest="GRID", default="256x256", help="Size of grid")
+parser.add_argument('-zoom0', dest="ZOOM_START", default=1.0, type=float, help="Zoom start level; 1.0 = completely zoomed in, 0.0 = completely zoomed out")
+parser.add_argument('-zoom1', dest="ZOOM_END", default=0.0, type=float, help="Zoom start level; 1.0 = completely zoomed in, 0.0 = completely zoomed out")
+parser.add_argument('-zd', dest="ZOOM_DUR", default=500, type=int, help="Zoom duration in milliseconds")
+parser.add_argument('-wd', dest="WAVE_DUR", default=2000, type=int, help="Wave duration in milliseconds")
+parser.add_argument('-center', dest="CENTER", default="0.5,0.5", help="Center position")
 a = parser.parse_args()
 parseVideoArgs(a)
 makeDirectories([a.OUTPUT_FRAME, a.OUTPUT_FILE, a.CACHE_FILE])
 
-# parse number sequences
+# parse arguments
 VOLUME_RANGE = [float(v) for v in a.VOLUME_RANGE.strip().split(",")]
 GRID_W, GRID_H = tuple([int(v) for v in a.GRID.strip().split("x")])
 UNIT_MS = roundInt(2 ** (-a.BEAT_DIVISIONS) * a.BEAT_MS)
-STEP_MS = a.BEAT_MS * a.STEP_BEATS
 print("Smallest unit: %ss" % UNIT_MS)
-print("%ss per step" % roundInt(STEP_MS/1000.0))
+ZOOM_STEPS = min(GRID_W, GRID_H) / 2
+ZOOM_START = int(1.0 * a.ZOOM_START * (ZOOM_STEPS-1))
+ZOOM_END = int(1.0 * a.ZOOM_END * (ZOOM_STEPS-1))
+CENTER_NX, CENTER_NY = tuple([float(v) for v in a.CENTER.strip().split(",")])
+CENTER_IX, CENTER_IY = (int(CENTER_NX * (GRID_W-1)), int(CENTER_NY * (GRID_H-1)))
+CENTER_X, CENTER_Y = (int(CENTER_NX * (a.WIDTH-1)), int(CENTER_NY * (a.HEIGHT-1)))
+FRAMES_PER_ZOOM = int(a.ZOOM_DUR / 1000.0 * FPS)
+FRAMES_PER_WAVE = int(a.WAVE_DUR / 1000.0 * FPS)
 
 # Get video data
 startTime = logTime()
@@ -54,7 +65,18 @@ elif gridCount < sampleCount:
     print("Too many samples (%s), limiting to %s" % (sampleCount, gridCount))
     samples = samples[:gridCount]
 
+# Sort by grid
+samples = sorted(samples, key=lambda s: (s["gridY"], s["gridX"]))
 clips = samplesToClips(samples)
+clips = np.array(clips)
+clips = np.reshape(clips, (GRID_H, GRID_W))
+
+ms = 0
+for z in range(ZOOM_STEPS):
+    ms += ZOOM_DUR
+    ms += WAVE_DUR
+
+sys.exit()
 
 # get audio sequence
 audioSequence = clipsToSequence(clips)
