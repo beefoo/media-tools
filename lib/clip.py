@@ -5,54 +5,97 @@ class Vector:
 
     def __init__(self, props={}):
         defaults = {
-            "width": 1.0, "height": 1.0,
+            "width": 100.0, "height": 100.0,
             "x": 0.0, "y": 0.0, "z": 0.0, # position
-            "vx": 0.0, "vy": 0.0, "vz": 0.0, # velocity
-            "ax": 0.0, "ay": 0.0, "az": 0.0, # acceleration
-            "origin": (0.0, 0.0),
-            "rotation": 0.0, "scale": 0.0, "translate": (0.0, 0.0)
+            "origin": [0.0, 0.0], "transformOrigin": [0.5, 0.5],
+            "rotation": 0.0, "scale": [1.0, 1.0], "translate": [0.0, 0.0, 0.0],
+            "parent": None
         }
         defaults.update(props)
         self.props = defaults
 
+        self.pos = [0.0, 0.0, 0.0]
+        self.size = [100.0, 100.0]
+
         self.setSize(defaults["width"], defaults["height"])
         self.setPos(defaults["x"], defaults["y"], defaults["z"])
-        self.setVeloc(defaults["vx"], defaults["vy"], defaults["vz"])
-        self.setAccel(defaults["ax"], defaults["ay"], defaults["az"])
-
         self.setTransform(defaults["translate"], defaults["scale"], defaults["rotation"])
         self.setOrigin(defaults["origin"])
+        self.setTransformorigin(defaults["transformOrigin"])
+
+    def getHeight(self):
+        return self.getSizeDimension(1)
+
+    def getPos(self):
+        return (self.getX(), self.getY())
+
+    def getPosDimension(self, i):
+        d = self.pos[i]
+        # account for origin
+        length = self.size[i]
+        origin = self.origin[i]
+        d -= length * origin
+        # account for scale
+        dto = self.transformOrigin[i]
+        tlength = length * self.scale[i]
+        d -= (tlength - length) * dto
+        # account for translate
+        d += self.translate[i]
+
+        # account for parent
+        if self.parent is not None:
+            p = self.parent
+            pD = p.getPosDimension(i)
+            pLength = p.size[i]
+            pTLength = p.getSizeDimension(i)
+            nd = 1.0 * d / pLength
+            d = pTLength * nd + pD
+
+        return d
+
+    def getRotation(self):
+        r = self.rotation
+        return r
+
+    def getSize(self):
+        return (self.getWidth(), self.getHeight())
+
+    def getSizeDimension(self, i):
+        d = self.size[i] * self.scale[i]
+        if self.parent is not None:
+            d *= self.parent.scale[i]
+        return d
+
+    def getWidth(self):
+        return self.getSizeDimension(0)
 
     def getX(self):
-        x = self.x
-        if self.origin[0] > 0.0:
-            x -= self.width * self.origin[0]
-        return x
+        return self.getPosDimension(0)
 
     def getY(self):
-        y = self.y
-        if self.origin[1] > 0.0:
-            y -= self.height * self.origin[1]
-        return y
+        return self.getPosDimension(1)
 
-    def setAccel(self, x, y, z=None):
-        self.ax = x
-        self.ay = y
-        if z is not None:
-            self.az = z
+    def isVisible(self, containerW, containerH):
+        x, y = self.getPos()
+        w, h = self.getSize()
+        return (x+w) > 0 and (y+h) > 0 and x < containerW and y < containerH
 
     def setOrigin(self, origin):
         self.origin = origin
 
-    def setPos(self, x, y, z=None):
-        self.x = x
-        self.y = y
+    def setPos(self, x=None, y=None, z=None):
+        if x is not None:
+            self.pos[0] = x
+        if y is not None:
+            self.pos[1] = y
         if z is not None:
-            self.z = z
+            self.pos[2] = z
 
-    def setSize(self, width, height):
-        self.width = width
-        self.height = height
+    def setSize(self, width=None, height=None):
+        if width is not None:
+            self.size[0] = width
+        if height is not None:
+            self.size[1] = height
 
     def setTransform(self, translate=None, scale=None, rotation=None):
         if translate is not None:
@@ -62,11 +105,8 @@ class Vector:
         if rotation is not None:
             self.rotation = rotation
 
-    def setVeloc(self, x, y, z=None):
-        self.vx = x
-        self.vy = y
-        if z is not None:
-            self.vz = z
+    def setTransformorigin(self, origin):
+        self.transformOrigin = origin
 
 class Clip:
 
@@ -126,11 +166,11 @@ class Clip:
         return {
             "x": self.vector.getX(),
             "y": self.vector.getY(),
-            "width": self.vector.width,
-            "height": self.vector.height,
+            "width": self.vector.getWidth(),
+            "height": self.vector.getHeight(),
             "alpha": self.alpha,
             "blur": self.blur,
-            "rotation": self.vector.rotation
+            "rotation": self.vector.getRotation()
         }
 
     def getFilledTweens(self):
