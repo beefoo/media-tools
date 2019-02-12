@@ -125,7 +125,8 @@ for f in range(totalFrames):
         "width": a.WIDTH,
         "height": a.HEIGHT,
         "overwrite": a.OVERWRITE,
-        "gpu": a.USE_GPU
+        "gpu": a.USE_GPU,
+        "debug": a.DEBUG
     })
 
 if not a.VIDEO_ONLY and (not os.path.isfile(a.AUDIO_OUTPUT_FILE) or a.OVERWRITE):

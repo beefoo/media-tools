@@ -41,21 +41,21 @@ def addVideoArgs(parser):
     parser.add_argument('-width', dest="WIDTH", default=1920, type=int, help="Output video width")
     parser.add_argument('-height', dest="HEIGHT", default=1080, type=int, help="Output video height")
     parser.add_argument('-fps', dest="FPS", default=30, type=int, help="Output video frames per second")
-    parser.add_argument('-frames', dest="SAVE_FRAMES", default=0, type=int, help="Save frames?")
+    parser.add_argument('-frames', dest="SAVE_FRAMES", action="store_true", type=int, help="Save frames?")
     parser.add_argument('-outframe', dest="OUTPUT_FRAME", default="tmp/sample/frame.%s.png", help="Output frames pattern")
     parser.add_argument('-out', dest="OUTPUT_FILE", default="output/sample.mp4", help="Output media file")
     parser.add_argument('-threads', dest="THREADS", default=3, type=int, help="Amount of parallel frames to process (too many may result in too many open files)")
-    parser.add_argument('-overwrite', dest="OVERWRITE", default=0, type=int, help="Overwrite existing frames?")
-    parser.add_argument('-ao', dest="AUDIO_ONLY", default=0, type=int, help="Render audio only?")
-    parser.add_argument('-vo', dest="VIDEO_ONLY", default=0, type=int, help="Render video only?")
-    parser.add_argument('-cache', dest="CACHE_VIDEO", default=0, type=int, help="Cache video clips?")
+    parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", type=int, help="Overwrite existing frames?")
+    parser.add_argument('-ao', dest="AUDIO_ONLY", action="store_true", type=int, help="Render audio only?")
+    parser.add_argument('-vo', dest="VIDEO_ONLY", action="store_true", type=int, help="Render video only?")
+    parser.add_argument('-cache', dest="CACHE_VIDEO", action="store_true", type=int, help="Cache video clips?")
     parser.add_argument('-cf', dest="CACHE_FILE", default="tmp/pixel_cache.npy", help="File for caching data")
-    parser.add_argument('-gpu', dest="USE_GPU", default=0, type=int, help="Use GPU? (requires caching to be true)")
+    parser.add_argument('-gpu', dest="USE_GPU", action="store_true", type=int, help="Use GPU? (requires caching to be true)")
     parser.add_argument('-rand', dest="RANDOM_SEED", default=1, type=int, help="Random seed to use for pseudo-randomness")
     parser.add_argument('-pad0', dest="PAD_START", default=0, type=int, help="Pad the beginning")
     parser.add_argument('-pad1', dest="PAD_END", default=3000, type=int, help="Pad the end")
     parser.add_argument('-rvb', dest="REVERB", default=80, type=int, help="Reverberence (0-100)")
-    parser.add_argument('-debug', dest="DEBUG", default=0, type=int, help="Debug mode?")
+    parser.add_argument('-debug', dest="DEBUG", action="store_true", help="Debug mode?")
     parser.add_argument('-mdb', dest="MATCH_DB", default=-16, type=int, help="Match decibels, -9999 for none")
 
 def alphaMask(im, mask):
@@ -446,16 +446,10 @@ def parseVideoArgs(args):
     d = vars(args)
     aspectW, aspectH = tuple([int(p) for p in args.ASPECT_RATIO.split(":")])
     d["ASPECT_RATIO"] = 1.0 * aspectW / aspectH
-    d["SAVE_FRAMES"] = args.SAVE_FRAMES > 0
     d["THREADS"] = min(args.THREADS, multiprocessing.cpu_count()) if args.THREADS > 0 else multiprocessing.cpu_count()
-    d["OVERWRITE"] = args.OVERWRITE > 0
-    d["AUDIO_ONLY"] = args.AUDIO_ONLY > 0
-    d["VIDEO_ONLY"] = args.VIDEO_ONLY > 0
     d["AUDIO_OUTPUT_FILE"] = args.OUTPUT_FILE.replace(".mp4", ".mp3")
     d["MS_PER_FRAME"] = frameToMs(1, args.FPS, False)
-    d["CACHE_VIDEO"] = args.CACHE_VIDEO > 0 or args.USE_GPU > 0
-    d["USE_GPU"] = args.USE_GPU > 0
-    d["DEBUG"] = args.DEBUG > 0
+    d["CACHE_VIDEO"] = args.CACHE_VIDEO or args.USE_GPU
     d["MATCH_DB"] = args.MATCH_DB if args.MATCH_DB > -9999 else False
 
 def pasteImage(im, clipImg, x, y):
