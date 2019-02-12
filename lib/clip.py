@@ -9,6 +9,7 @@ class Vector:
             "x": 0.0, "y": 0.0, "z": 0.0, # position
             "origin": [0.0, 0.0], "transformOrigin": [0.5, 0.5],
             "rotation": 0.0, "scale": [1.0, 1.0], "translate": [0.0, 0.0, 0.0],
+            "alpha": 1.0, "blur": 0.0,
             "parent": None
         }
         defaults.update(props)
@@ -16,6 +17,7 @@ class Vector:
 
         self.pos = [0.0, 0.0, 0.0]
         self.size = [100.0, 100.0]
+        self.keyframes = []
 
         self.setSize(defaults["width"], defaults["height"])
         self.setPos(defaults["x"], defaults["y"], defaults["z"])
@@ -23,66 +25,141 @@ class Vector:
         self.setOrigin(defaults["origin"])
         self.setTransformorigin(defaults["transformOrigin"])
         self.setParent(defaults["parent"])
+        self.setAlpha(defaults["alpha"])
+        self.setBlur(defaults["blur"])
 
-    def getHeight(self):
-        return self.getSizeDimension(1)
+    def addKeyFrame(self, name, ms, value, easing="linear"):
+        keyframe = {"name": name, "ms": ms, "value": value, "dimension": None, "easing": easing}
+        # scale and translate instead of changing width/height/x/y
+        if name == "width":
+            scaleValue = self.getScaleFromWidth(value)
+            keyframe.update({"name": "scale", "dimension": 0, "value": scaleValue})
+        elif name == "height":
+            scaleValue = self.getScaleFromHeight(value)
+            keyframe.update({"name": "scale", "dimension": 1, "value": scaleValue})
+        elif name == "x":
+            keyframe.update({"name": "translate", "dimension": 0})
+        elif name == "y":
+            keyframe.update({"name": "translate", "dimension": 1})
+        self.keyframes.append(keyframe)
+        self.keyframes = sorted(self.keyframes, key=lambda k: k["ms"])
 
-    def getPos(self):
-        return (self.getX(), self.getY())
+    def getAlpha(self, ms=None):
+        return self.getPropValue("alpha", ms=ms)
 
-    def getPosDimension(self, i):
-        d = self.pos[i]
+    def getHeight(self, ms=None):
+        return self.getSizeDimension(1, ms)
+
+    def getPos(self, ms=None):
+        return (self.getX(ms), self.getY(ms))
+
+    def getPosDimension(self, i, ms=None):
+        d = self.getPropValue("pos", i, ms)
         # account for origin
-        length = self.size[i]
+        length = self.getPropValue("size", i, ms)
         origin = self.origin[i]
         d -= length * origin
         # account for scale
         dto = self.transformOrigin[i]
-        tlength = length * self.scale[i]
+        tlength = length * self.getPropValue("scale", i, ms)
         d -= (tlength - length) * dto
         # account for translate
-        d += self.translate[i]
+        d += self.getPropValue("translate", i, ms)
 
         # account for parent
         if self.parent is not None:
             p = self.parent
-            pD = p.getPosDimension(i)
+            pD = p.getPosDimension(i, ms)
             pLength = p.size[i]
-            pTLength = p.getSizeDimension(i)
+            pTLength = p.getSizeDimension(i, ms)
             nd = 1.0 * d / pLength
             d = pTLength * nd + pD
 
         return d
 
-    def getRotation(self):
-        r = self.rotation
-        return r
+    def getPropValue(self, name, dimension=None, ms=None):
+        value = getattr(object, name)
+        if dimension is not None:
+            value = value[dimension]
+        if ms is None:
+            return value
+
+        # retrieve keyframes for this property
+        keyframes = [k for k in self.keyframes if k["name"]==name and (k["dimension"]==dimension or k["dimension"] is None or dimension is None)]
+        kcount = len(keyframes)
+        if kcount <= 0:
+            return value
+
+        # assuming keyframes are sorted
+        for i, kf in enumerate(keyframes):
+            # we're before the first frame
+            if ms < kf["ms"] and i <= 0:
+                fromValue = value
+                toValue = kf["value"]
+                value = lerpEase((fromValue, toValue), 1.0*ms/kf["ms"], kf["easing"])
+                break
+            elif ms >= kf["ms"]:
+                fromValue = kf["value"]
+                # we've passed the last keyframe, just take it's value
+                if i >= kcount-1:
+                    value = fromValue
+                # otherwise, we're between two keyframes
+                else:
+                    kf1 = keyframes[i+1]
+                    toValue = kf1["value"]
+                    value = lerpEase((fromValue, toValue), norm(ms, (kf["ms"], kf1["ms"])), kf1["easing"])
+                break
+
+        return value
+
+    def getPropsAtTime(self, ms):
+        return {
+            "x": self.getX(ms),
+            "y": self.getY(ms),
+            "width": self.getWidth(ms),
+            "height": self.getHeight(ms),
+            "rotation": self.getRotation(ms),
+            "alpha": self.getAlpha(ms),
+            "blur": self.getBlur(ms)
+        }
+
+    def getRotation(self, ms=None):
+        return self.getPropValue("rotation", ms=ms)
+
+    def getScaleFromHeight(self, h):
+        return 1.0 * h / self.size[1]
 
     def getScaleFromWidth(self, w):
         return 1.0 * w / self.size[0]
 
-    def getSize(self):
-        return (self.getWidth(), self.getHeight())
+    def getSize(self, ms=None):
+        return (self.getWidth(ms), self.getHeight(ms))
 
-    def getSizeDimension(self, i):
-        d = self.size[i] * self.scale[i]
+    def getSizeDimension(self, i, ms=None):
+        d = self.getPropValue("size", i, ms) * self.getPropValue("scale", i, ms)
         if self.parent is not None:
-            d *= self.parent.scale[i]
+            d *= self.parent.getPropValue("scale", i, ms)
         return d
 
-    def getWidth(self):
-        return self.getSizeDimension(0)
+    def getWidth(self, ms=None):
+        return self.getSizeDimension(0, ms)
 
-    def getX(self):
-        return self.getPosDimension(0)
+    def getX(self, ms=None):
+        return self.getPosDimension(0, ms)
 
-    def getY(self):
-        return self.getPosDimension(1)
+    def getY(self, ms=None):
+        return self.getPosDimension(1, ms)
 
-    def isVisible(self, containerW, containerH):
-        x, y = self.getPos()
-        w, h = self.getSize()
+    def isVisible(self, containerW, containerH, ms=None):
+        x, y = self.getPos(ms)
+        w, h = self.getSize(ms)
         return (x+w) > 0 and (y+h) > 0 and x < containerW and y < containerH
+
+    def setAlpha(self, alpha):
+        self.alpha = alpha
+
+    def setBlur(self, blur):
+        self.blur = blur
 
     def setOrigin(self, origin):
         self.origin = origin
@@ -123,10 +200,7 @@ class Clip:
             "filename": None,
             "start": 0,
             "dur": 0,
-            "alpha": 1.0,
-            "blur": 0.0,
             "state": {},
-            "tweens": [],
             "plays": []
         }
 
@@ -136,14 +210,11 @@ class Clip:
         self.filename = defaults["filename"]
         self.start = defaults["start"]
         self.dur = defaults["dur"]
-        self.tweens = defaults["tweens"]
         self.plays = defaults["plays"]
 
         self.setFadeIn(getClipFadeDur(self.dur))
         self.setFadeOut(getClipFadeDur(self.dur, 0.25))
 
-        self.setAlpha(defaults["alpha"])
-        self.setBlur(defaults["blur"])
         self.setVector(Vector(defaults))
         self.setStates(defaults["state"])
 
@@ -169,46 +240,6 @@ class Clip:
 
         return time
 
-    def getDefaultVectorProperties(self):
-        return {
-            "x": self.vector.getX(),
-            "y": self.vector.getY(),
-            "width": self.vector.getWidth(),
-            "height": self.vector.getHeight(),
-            "alpha": self.alpha,
-            "blur": self.blur,
-            "rotation": self.vector.getRotation()
-        }
-
-    def getFilledTweens(self):
-        ftweens = []
-        defaults = self.getDefaultVectorProperties()
-        for i, t in enumerate(self.tweens):
-            start, end, tprops = t
-            pstart = pend = 0
-            ptprops = []
-
-            # get previous tween
-            if i > 0:
-                pstart, pend, ptprops = self.tweens[i-1]
-
-            if pend < start:
-                # get combined tween names from previous and current tweens
-                tnames = unique([p[0] for p in ptprops] + [p[0] for p in tprops])
-                # get the filler properties
-                ftprops = []
-                for tname in tnames:
-                    # tween from the end of the previous to the begenning of the current
-                    ptpropsMatches = [p for p in ptprops if p[0]==tname]
-                    tfrom = ptpropsMatches[0][2] if len(ptpropsMatches) > 0 else defaults[tname]
-                    tpropsMatches = [p for p in tprops if p[0]==tname]
-                    tto = tpropsMatches[0][1] if len(tpropsMatches) > 0 else defaults[tname]
-                    ftprops.append((tname, tfrom, tto))
-                ftweens.append((pend, start, ftprops))
-            ftweens.append(t)
-
-        return ftweens
-
     def getNeighbors(self, clips, count, dim1="x", dim2="y", idKey="index", newKey="distance"):
         myId = self.props[idKey]
         myDim1 = self.props[dim1]
@@ -222,34 +253,6 @@ class Clip:
 
         return neighbors
 
-    def getTweenedProperties(self, ms):
-        tweens = self.getFilledTweens()
-        tweens = [t for t in tweens if t[0] < ms <= t[1]]
-        # set default properties that can be tweened
-        props = {}
-        for t in tweens:
-            start, end, tprops = t
-            p = norm(ms, (start, end))
-            for tprop in tprops:
-                name = tfrom = tto = None
-                easing = "linear"
-                if len(tprop) == 3:
-                    name, tfrom, tto = tprop
-                elif len(tprop) == 4:
-                    name, tfrom, tto, easing = tprop
-                if easing == "sin":
-                    p = easeIn(p)
-                value = lerp((tfrom, tto), p)
-                if name in props:
-                    props[name] = max(value, props[name])
-                else:
-                    props[name] = value
-        return props
-
-    def isTweening(self, ms):
-        tweens = [t for t in self.tweens if t[0] < ms <= t[1]]
-        return len(tweens) > 0
-
     def queuePlay(self, ms, params={}):
         dur = self.dur
         self.plays.append((ms, ms+dur, params))
@@ -261,13 +264,15 @@ class Clip:
         if dur == "auto":
             dur = self.dur
 
-        self.tweens.append((ms, ms+dur, tweens))
-
-    def setAlpha(self, alpha):
-        self.alpha = alpha
-
-    def setBlur(self, blur):
-        self.blur = blur
+        for tween in tweens:
+            easing = "linear"
+            if len(tween) == 4:
+                name, from, to, easing = tween
+            else:
+                name, from, to = tween
+            self.vector.addKeyFrame(name, ms, from, easing)
+            if dur > 0:
+                self.vector.addKeyFrame(name, ms+dur, to, easing)
 
     def setFadeIn(self, fadeDur):
         self.fadeIn = fadeDur
@@ -290,13 +295,11 @@ class Clip:
     def toDict(self, ms):
         props = self.props.copy()
         t = self.getClipTime(ms)
-        props.update(self.getDefaultVectorProperties())
         props.update({
             "t": t,
             "tn": norm(t, (self.start, self.start+self.dur), limit=True)
         })
-        if len(self.tweens) > 0:
-            props.update(self.getTweenedProperties(ms))
+        props.update(self.vector.getPropsAtTime(ms))
         return props
 
 def clipsToDicts(clips, ms):

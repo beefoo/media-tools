@@ -39,10 +39,18 @@ def ceilToNearest(n, nearest):
 def distance(x1, y1, x2, y2):
     return math.hypot(x2 - x1, y2 - y1)
 
-def easeIn(n):
+def ease(n, easingFunction="sinIn"):
+    if easingFunction == "sinIn":
+        return easeIn(n, "sin")
+    elif easingFunction == "sinInOut":
+        return easeInOut(n, "sin")
+    else
+        return n
+
+def easeIn(n, easingFunction="sin"):
     return (math.sin((n+1.5)*math.pi)+1.0) / 2.0
 
-def easeInOut(n):
+def easeInOut(n, easingFunction="sin"):
     return (math.sin((2.0*n+1.5)*math.pi)+1.0) / 2.0
 
 def findNextValue(arr, value, isSorted=True):
@@ -97,6 +105,11 @@ def isNumber(n):
 def lerp(ab, amount):
     a, b = ab
     return (b-a) * amount + a
+
+def lerpEase(ab, amount, easingFunction="sinIn"):
+    if easingFunction != "linear":
+        amount = ease(amount, easingFunction)
+    return lerp(ab, amount)
 
 def lim(value, ab=(0, 1)):
     a, b = ab
