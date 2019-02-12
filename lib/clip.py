@@ -47,6 +47,9 @@ class Vector:
     def getAlpha(self, ms=None):
         return self.getPropValue("alpha", ms=ms)
 
+    def getBlur(self, ms=None):
+        return self.getPropValue("blur", ms=ms)
+
     def getHeight(self, ms=None):
         return self.getSizeDimension(1, ms)
 
@@ -78,7 +81,7 @@ class Vector:
         return d
 
     def getPropValue(self, name, dimension=None, ms=None):
-        value = getattr(object, name)
+        value = getattr(self, name)
         if dimension is not None:
             value = value[dimension]
         if ms is None:
@@ -114,10 +117,10 @@ class Vector:
 
     def getPropsAtTime(self, ms):
         return {
-            "x": self.getX(ms),
-            "y": self.getY(ms),
-            "width": self.getWidth(ms),
-            "height": self.getHeight(ms),
+            "x": roundInt(self.getX(ms)),
+            "y": roundInt(self.getY(ms)),
+            "width": roundInt(self.getWidth(ms)),
+            "height": roundInt(self.getHeight(ms)),
             "rotation": self.getRotation(ms),
             "alpha": self.getAlpha(ms),
             "blur": self.getBlur(ms)
@@ -267,12 +270,12 @@ class Clip:
         for tween in tweens:
             easing = "linear"
             if len(tween) == 4:
-                name, from, to, easing = tween
+                name, fromValue, toValue, easing = tween
             else:
-                name, from, to = tween
-            self.vector.addKeyFrame(name, ms, from, easing)
+                name, fromValue, toValue = tween
+            self.vector.addKeyFrame(name, ms, fromValue, easing)
             if dur > 0:
-                self.vector.addKeyFrame(name, ms+dur, to, easing)
+                self.vector.addKeyFrame(name, ms+dur, toValue, easing)
 
     def setFadeIn(self, fadeDur):
         self.fadeIn = fadeDur

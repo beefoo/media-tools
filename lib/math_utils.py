@@ -44,7 +44,7 @@ def ease(n, easingFunction="sinIn"):
         return easeIn(n, "sin")
     elif easingFunction == "sinInOut":
         return easeInOut(n, "sin")
-    else
+    else:
         return n
 
 def easeIn(n, easingFunction="sin"):

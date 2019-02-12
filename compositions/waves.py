@@ -44,14 +44,14 @@ VOLUME_RANGE = [float(v) for v in a.VOLUME_RANGE.strip().split(",")]
 GRID_W, GRID_H = tuple([int(v) for v in a.GRID.strip().split("x")])
 UNIT_MS = roundInt(2 ** (-a.BEAT_DIVISIONS) * a.BEAT_MS)
 print("Smallest unit: %ss" % UNIT_MS)
-ZOOM_STEPS = min(GRID_W, GRID_H) / 2 - 1
+ZOOM_STEPS = int(min(GRID_W, GRID_H) / 2) - 1
 ZOOM_START = int(1.0 * a.ZOOM_START * (ZOOM_STEPS-1))
 ZOOM_END = int(1.0 * a.ZOOM_END * (ZOOM_STEPS-1))
 CENTER_NX, CENTER_NY = tuple([float(v) for v in a.CENTER.strip().split(",")])
 CENTER_IX, CENTER_IY = (int(CENTER_NX * (GRID_W-1)), int(CENTER_NY * (GRID_H-1)))
 CENTER_X, CENTER_Y = (int(CENTER_NX * (a.WIDTH-1)), int(CENTER_NY * (a.HEIGHT-1)))
-FRAMES_PER_ZOOM = int(a.ZOOM_DUR / 1000.0 * FPS)
-FRAMES_PER_WAVE = int(a.WAVE_DUR / 1000.0 * FPS)
+FRAMES_PER_ZOOM = int(a.ZOOM_DUR / 1000.0 * a.FPS)
+FRAMES_PER_WAVE = int(a.WAVE_DUR / 1000.0 * a.FPS)
 
 # Get video data
 startTime = logTime()
@@ -68,31 +68,32 @@ elif gridCount < sampleCount:
 
 # Sort by grid
 samples = sorted(samples, key=lambda s: (s["gridY"], s["gridX"]))
+samples = addIndices(samples)
 samples = addGridPositions(samples, GRID_W, a.WIDTH, a.HEIGHT, marginX=a.CLIP_MARGIN, marginY=a.CLIP_MARGIN)
 
 clips = samplesToClips(samples)
-clips = np.array(clips)
-clips = np.reshape(clips, (GRID_H, GRID_W))
+# clips = np.array(clips)
+# clips = np.reshape(clips, (GRID_H, GRID_W))
 
 container = Clip({
     "width": a.WIDTH,
     "height": a.HEIGHT
 })
 for i, clip in enumerate(clips):
-    clip.setParent(container)
+    clip.vector.setParent(container.vector)
 
 ms = 0
 cols = GRID_W
 fromWidth = 1.0 * a.WIDTH / cols * GRID_W
 for z in range(ZOOM_STEPS):
-    ms += WAVE_DUR
+    ms += a.WAVE_DUR
 
     cols -= 2
     toWidth = 1.0 * a.WIDTH / cols * GRID_W
-    container.queueTween(ms, ZOOM_DUR, ("scale", container.vector.getScaleFromWidth(fromWidth), container.vector.getScaleFromWidth(toWidth), "sinInOut"))
+    container.queueTween(ms, a.ZOOM_DUR, ("scale", container.vector.getScaleFromWidth(fromWidth), container.vector.getScaleFromWidth(toWidth), "sinInOut"))
     fromWidth = toWidth
 
-    ms += ZOOM_DUR
+    ms += a.ZOOM_DUR
 
 # get audio sequence
 audioSequence = clipsToSequence(clips)

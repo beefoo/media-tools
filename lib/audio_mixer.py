@@ -5,6 +5,8 @@ from pydub import AudioSegment
 import sys
 
 def getAudioSequenceDuration(sequence):
+    if len(sequence) <= 0:
+        return 0
     sequence = sorted(sequence, key=lambda s: s["ms"]+s["dur"])
     lastAudioClip = sequence[-1]
     return lastAudioClip["ms"] + lastAudioClip["dur"]
