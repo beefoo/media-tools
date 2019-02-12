@@ -22,6 +22,7 @@ class Vector:
         self.setTransform(defaults["translate"], defaults["scale"], defaults["rotation"])
         self.setOrigin(defaults["origin"])
         self.setTransformorigin(defaults["transformOrigin"])
+        self.setParent(defaults["parent"])
 
     def getHeight(self):
         return self.getSizeDimension(1)
@@ -57,6 +58,9 @@ class Vector:
         r = self.rotation
         return r
 
+    def getScaleFromWidth(self, w):
+        return 1.0 * w / self.size[0]
+
     def getSize(self):
         return (self.getWidth(), self.getHeight())
 
@@ -82,6 +86,9 @@ class Vector:
 
     def setOrigin(self, origin):
         self.origin = origin
+
+    def setParent(self, parent):
+        self.parent = parent
 
     def setPos(self, x=None, y=None, z=None):
         if x is not None:
@@ -214,7 +221,6 @@ class Clip:
         neighbors = sortedByDistance[:count]
 
         return neighbors
-
 
     def getTweenedProperties(self, ms):
         tweens = self.getFilledTweens()

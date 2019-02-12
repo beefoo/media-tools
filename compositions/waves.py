@@ -26,6 +26,7 @@ from lib.video_utils import *
 parser = argparse.ArgumentParser()
 addVideoArgs(parser)
 parser.add_argument('-beatms', dest="BEAT_MS", default=1024, type=int, help="Milliseconds per beat")
+parser.add_argument('-margin', dest="CLIP_MARGIN", default=1, type=int, help="Margin between clips in pixels")
 parser.add_argument('-beats', dest="BEAT_DIVISIONS", default=3, type=int, help="Number of times to divide beat, e.g. 1 = 1/2 notes, 2 = 1/4 notes, 3 = 1/8th notes, 4 = 1/16 notes")
 parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.2,1.0", help="Volume range")
 parser.add_argument('-grid', dest="GRID", default="256x256", help="Size of grid")
@@ -43,7 +44,7 @@ VOLUME_RANGE = [float(v) for v in a.VOLUME_RANGE.strip().split(",")]
 GRID_W, GRID_H = tuple([int(v) for v in a.GRID.strip().split("x")])
 UNIT_MS = roundInt(2 ** (-a.BEAT_DIVISIONS) * a.BEAT_MS)
 print("Smallest unit: %ss" % UNIT_MS)
-ZOOM_STEPS = min(GRID_W, GRID_H) / 2
+ZOOM_STEPS = min(GRID_W, GRID_H) / 2 - 1
 ZOOM_START = int(1.0 * a.ZOOM_START * (ZOOM_STEPS-1))
 ZOOM_END = int(1.0 * a.ZOOM_END * (ZOOM_STEPS-1))
 CENTER_NX, CENTER_NY = tuple([float(v) for v in a.CENTER.strip().split(",")])
@@ -67,16 +68,31 @@ elif gridCount < sampleCount:
 
 # Sort by grid
 samples = sorted(samples, key=lambda s: (s["gridY"], s["gridX"]))
+samples = addGridPositions(samples, GRID_W, a.WIDTH, a.HEIGHT, marginX=a.CLIP_MARGIN, marginY=a.CLIP_MARGIN)
+
 clips = samplesToClips(samples)
 clips = np.array(clips)
 clips = np.reshape(clips, (GRID_H, GRID_W))
 
+container = Clip({
+    "width": a.WIDTH,
+    "height": a.HEIGHT
+})
+for i, clip in enumerate(clips):
+    clip.setParent(container)
+
 ms = 0
+cols = GRID_W
+fromWidth = 1.0 * a.WIDTH / cols * GRID_W
 for z in range(ZOOM_STEPS):
-    ms += ZOOM_DUR
     ms += WAVE_DUR
 
-sys.exit()
+    cols -= 2
+    toWidth = 1.0 * a.WIDTH / cols * GRID_W
+    container.queueTween(ms, ZOOM_DUR, ("scale", container.vector.getScaleFromWidth(fromWidth), container.vector.getScaleFromWidth(toWidth), "sin"))
+    fromWidth = toWidth
+
+    ms += ZOOM_DUR
 
 # get audio sequence
 audioSequence = clipsToSequence(clips)
@@ -85,17 +101,43 @@ stepTime = logTime(startTime, "Processed audio clip sequence")
 # plotAudioSequence(audioSequence)
 # sys.exit()
 
-currentFrame = 1
-
-videoDurationMs = frameToMs(currentFrame, a.FPS)
+videoDurationMs = ms
 audioDurationMs = getAudioSequenceDuration(audioSequence)
 durationMs = max(videoDurationMs, audioDurationMs) + a.PAD_END
 print("Video time: %s" % formatSeconds(videoDurationMs/1000.0))
 print("Audio time: %s" % formatSeconds(audioDurationMs/1000.0))
 print("Total time: %s" % formatSeconds(durationMs/1000.0))
 
+# adjust frames if audio is longer than video
+totalFrames = msToFrame(durationMs, a.FPS) if durationMs > videoDurationMs else msToFrame(videoDurationMs, a.FPS)
+print("Total frames: %s" % totalFrames)
+
+# get frame sequence
+videoFrames = []
+print("Making video frame sequence...")
+for f in range(totalFrames):
+    frame = f + 1
+    ms = frameToMs(frame, a.FPS)
+    videoFrames.append({
+        "filename": a.OUTPUT_FRAME % zeroPad(frame, totalFrames),
+        "clips": clips,
+        "ms": ms,
+        "width": a.WIDTH,
+        "height": a.HEIGHT,
+        "overwrite": a.OVERWRITE,
+        "gpu": a.USE_GPU
+    })
+
 if not a.VIDEO_ONLY and (not os.path.isfile(a.AUDIO_OUTPUT_FILE) or a.OVERWRITE):
     mixAudio(audioSequence, durationMs, a.AUDIO_OUTPUT_FILE)
     stepTime = logTime(stepTime, "Mix audio")
+
+if not a.AUDIO_ONLY:
+    processFrames(videoFrames, threads=a.THREADS)
+    stepTime = logTime(stepTime, "Process video")
+
+if not a.AUDIO_ONLY:
+    audioFile = a.AUDIO_OUTPUT_FILE if not a.VIDEO_ONLY else False
+    compileFrames(a.OUTPUT_FRAME, a.FPS, a.OUTPUT_FILE, getZeroPadding(totalFrames), audioFile=audioFile)
 
 logTime(startTime, "Total execution time")
