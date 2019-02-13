@@ -3,6 +3,7 @@
 from lib.clip import *
 from lib.gpu_utils import *
 from lib.math_utils import *
+from lib.processing_utils import *
 from moviepy.editor import VideoFileClip
 import multiprocessing
 from multiprocessing import Pool
@@ -476,9 +477,7 @@ def processFrames(params, threads=1, verbose=True):
         for i, p in enumerate(params):
             clipsToFrame(p)
             if verbose:
-                sys.stdout.write('\r')
-                sys.stdout.write("%s%%" % round(1.0*i/(count-1)*100,1))
-                sys.stdout.flush()
+                printProgress(i+1, count)
 
 def resizeCanvas(im, cw, ch):
     canvasImg = Image.new(mode="RGBA", size=(cw, ch), color=(0, 0, 0, 0))

@@ -224,7 +224,7 @@ class Clip:
         defaults = {
             "filename": None,
             "start": 0,
-            "dur": 0,
+            "dur": 1,
             "state": {},
             "plays": []
         }
