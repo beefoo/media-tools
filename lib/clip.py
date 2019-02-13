@@ -139,6 +139,9 @@ class Vector:
 
         return value
 
+    def getProps(self):
+        return self.getPropsAtTime(None)
+
     def getPropsAtTime(self, ms):
         props = {
             "x": roundInt(self.getX(ms)),
@@ -247,6 +250,9 @@ class Clip:
         self.setStates(defaults["state"])
 
     def getClipTime(self, ms):
+        if ms is None:
+            return 0.0
+
         plays = [t for t in self.plays if t[0] <= ms <= t[1]]
         time = 0.0
         start = 0
@@ -320,7 +326,7 @@ class Clip:
     def setVector(self, vector):
         self.vector = Vector() if vector is None else vector
 
-    def toDict(self, ms):
+    def toDict(self, ms=None):
         props = self.props.copy()
         t = self.getClipTime(ms)
         props.update({
@@ -330,7 +336,7 @@ class Clip:
         props.update(self.vector.getPropsAtTime(ms))
         return props
 
-def clipsToDicts(clips, ms):
+def clipsToDicts(clips, ms=None):
     dicts = []
     count = len(clips)
     # startTime = logTime()

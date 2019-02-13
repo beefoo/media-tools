@@ -444,6 +444,25 @@ def loadVideoPixelData(clips, fps, filename=None, width=None, height=None, check
 
     return clips
 
+def loadVideoPixelDataFromFrames(frames, clips):
+    print("Reading frames for caching...")
+    frameCount = len(frames)
+    clipCount = len(clips)
+    clipData = np.zeros((frameCount, clipCount, 2)) # will store each clip's width/height for each frame
+    for i, frame in enumerate(frames):
+        frameClips = clipsToDicts(clips, frame["ms"])
+        # filter out clips that are not visible
+        frameClips = [clip for clip in frameClips if isClipVisible(clip, frame["width"], frame["height"])]
+        for clip in frameClips:
+            clipData[i, clip["index"], 0] = clip["width"]
+            clipData[i, clip["index"], 1] = clip["height"]
+        printProgress(i+1, frameCount)
+    # TODO: get max dimension of each clip
+    clipDicts = clipsToDicts(clips)
+    # TODO: update clip dicts with max width/height
+    loadVideoPixelData(clipDicts, fps, filename=None, width=None, height=None, checkVisibility=False)
+
+
 def msToFrame(ms, fps):
     return roundInt((ms / 1000.0) * fps)
 
