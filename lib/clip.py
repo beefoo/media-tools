@@ -113,22 +113,25 @@ class Vector:
 
         # assuming keyframes are sorted
         for i, kf in enumerate(keyframes):
-            # we're before the first frame
-            if ms < kf["ms"] and i <= 0:
-                fromValue = value
-                toValue = kf["value"]
-                value = lerpEase((fromValue, toValue), 1.0*ms/kf["ms"], kf["easing"])
+            # we're after the last frame, just take the last frame's value
+            if i >= kcount-1 and ms >= kf["ms"]:
+                value = kf["value"]
                 break
-            elif ms >= kf["ms"]:
-                fromValue = kf["value"]
-                # we've passed the last keyframe, just take it's value
-                if i >= kcount-1:
-                    value = fromValue
-                # otherwise, we're between two keyframes
-                else:
-                    kf1 = keyframes[i+1]
-                    toValue = kf1["value"]
-                    value = lerpEase((fromValue, toValue), norm(ms, (kf["ms"], kf1["ms"])), kf1["easing"])
+            # we just passed the current ms
+            elif kf["ms"] > ms:
+
+                # we're before the first keyframe, lerp from the original value
+                if i <= 0:
+                    fromValue = value
+                    toValue = kf["value"]
+                    value = lerpEase((fromValue, toValue), 1.0*ms/kf["ms"], kf["easing"])
+                    break
+
+                # lerp between the current and previous keyframe
+                kf0 = keyframes[i-1]
+                fromValue = kf0["value"]
+                toValue = kf["value"]
+                value = lerpEase((fromValue, toValue), norm(ms, (kf0["ms"], kf["ms"])), kf["easing"])
                 break
 
         if self.cache:
