@@ -10,14 +10,19 @@ class Vector:
             "origin": [0.0, 0.0], "transformOrigin": [0.5, 0.5],
             "rotation": 0.0, "scale": [1.0, 1.0], "translate": [0.0, 0.0, 0.0],
             "alpha": 1.0, "blur": 0.0,
-            "parent": None
+            "parent": None, "cache": False
         }
         defaults.update(props)
         self.props = defaults
 
         self.pos = [0.0, 0.0, 0.0]
         self.size = [100.0, 100.0]
-        self.keyframes = []
+        self.keyframes = {}
+
+        # for caching
+        self.cache = defaults["cache"]
+        self.lastMs = -1
+        self.cacheProps = {}
 
         self.setSize(defaults["width"], defaults["height"])
         self.setPos(defaults["x"], defaults["y"], defaults["z"])
@@ -41,8 +46,12 @@ class Vector:
             keyframe.update({"name": "translate", "dimension": 0})
         elif name == "y":
             keyframe.update({"name": "translate", "dimension": 1})
-        self.keyframes.append(keyframe)
-        self.keyframes = sorted(self.keyframes, key=lambda k: k["ms"])
+
+        if name in self.keyframes:
+            self.keyframes[name].append(keyframe)
+            self.keyframes[name] = sorted(self.keyframes[name], key=lambda k: k["ms"])
+        else:
+            self.keyframes[name] = [keyframe]
 
     def getAlpha(self, ms=None):
         return self.getPropValue("alpha", ms=ms)
@@ -81,6 +90,16 @@ class Vector:
         return d
 
     def getPropValue(self, name, dimension=None, ms=None):
+        # avoid doing the same calculation over and over again
+        nameKey = name if dimension is None else (name, dimension)
+        if self.cache and ms is not None and self.lastMs == ms and nameKey in self.cacheProps:
+            return self.cacheProps[nameKey]
+
+        # reset cache if changed time
+        if self.cache and ms is not None and self.lastMs != ms:
+            self.cacheProps = {}
+            self.lastMs = ms
+
         value = getattr(self, name)
         if dimension is not None:
             value = value[dimension]
@@ -88,10 +107,9 @@ class Vector:
             return value
 
         # retrieve keyframes for this property
-        keyframes = [k for k in self.keyframes if k["name"]==name and (k["dimension"]==dimension or k["dimension"] is None or dimension is None)]
+        keyframes = self.keyframes[name] if name in self.keyframes else []
+        keyframes = [k for k in keyframes if k["dimension"]==dimension or k["dimension"] is None or dimension is None]
         kcount = len(keyframes)
-        if kcount <= 0:
-            return value
 
         # assuming keyframes are sorted
         for i, kf in enumerate(keyframes):
@@ -113,10 +131,13 @@ class Vector:
                     value = lerpEase((fromValue, toValue), norm(ms, (kf["ms"], kf1["ms"])), kf1["easing"])
                 break
 
+        if self.cache:
+            self.cacheProps[nameKey] = value
+
         return value
 
     def getPropsAtTime(self, ms):
-        return {
+        props = {
             "x": roundInt(self.getX(ms)),
             "y": roundInt(self.getY(ms)),
             "width": roundInt(self.getWidth(ms)),
@@ -125,6 +146,7 @@ class Vector:
             "alpha": self.getAlpha(ms),
             "blur": self.getBlur(ms)
         }
+        return props
 
     def getRotation(self, ms=None):
         return self.getPropValue("rotation", ms=ms)
@@ -307,8 +329,15 @@ class Clip:
 
 def clipsToDicts(clips, ms):
     dicts = []
-    for clip in clips:
+    count = len(clips)
+    # startTime = logTime()
+    for i, clip in enumerate(clips):
+        # Get video data
         dicts.append(clip.toDict(ms))
+        # sys.stdout.write('\r')
+        # sys.stdout.write("%s%%" % round(1.0*(i+1)/count*100,1))
+        # sys.stdout.flush()
+    # stepTime = logTime(startTime, "Step %s" % ms)
     return dicts
 
 def clipsToSequence(clips):

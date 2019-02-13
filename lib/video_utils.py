@@ -115,7 +115,7 @@ def clipsToFrame(p):
 
         # check for debug mode
         if debug:
-            im = clipsToFrameDebug(im, clips)
+            im = clipsToFrameDebug(im, clips, width, height)
 
         # pixels are cached
         elif len(clips) > 0 and "framePixelData" in clips[0]:
@@ -165,16 +165,17 @@ def clipsToFrame(p):
 
     return True
 
-def clipsToFrameDebug(im, clips):
+def clipsToFrameDebug(im, clips, width, height):
     for i, clip in enumerate(clips):
+        if "framePixelData" in clip:
+            break
         rindex = getValue(clip, "index", i)
-        clipImg = Image.new(mode="RGB", size=(clip["width"], clip["height"]), color=getRandomColor(rindex))
-        clipImg, x, y = applyEffects(clipImg, clip)
-        im = pasteImage(im, clipImg, x, y)
+        pixels = np.array([[getRandomColor(rindex)]])
+        clips[i]["framePixelData"] = [pixels]
         # sys.stdout.write('\r')
         # sys.stdout.write("%s%%" % round(1.0*(i+1)/len(clips)*100,1))
         # sys.stdout.flush()
-    return im
+    return clipsToFrameGPU(clips, width, height)
 
 def clipsToFrameGPU(clips, width, height):
     pixelData = []
@@ -193,7 +194,7 @@ def clipsToFrameGPU(clips, width, height):
             x = clip["x"]
             y = clip["y"]
             # not ideal, but don't feel like implementing blur/rotation in opencl; just use PIL's algorithm
-            if "rotation" in clip or "blur" in clip:
+            if "rotation" in clip and clip["rotation"] % 360 > 0 or "blur" in clip and clip["blur"] > 0.0:
                 im = Image.fromarray(pixels, mode="RGB")
                 im, x, y = applyEffects(im, clip)
                 pixels = np.array(im)

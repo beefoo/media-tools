@@ -71,13 +71,20 @@ samples = sorted(samples, key=lambda s: (s["gridY"], s["gridX"]))
 samples = addIndices(samples)
 samples = addGridPositions(samples, GRID_W, a.WIDTH, a.HEIGHT, marginX=a.CLIP_MARGIN, marginY=a.CLIP_MARGIN)
 
+if a.DEBUG:
+    for i, s in enumerate(samples):
+        pixels = np.array([[getRandomColor(i)]])
+        samples[i]["framePixelData"] = [pixels]
+
 clips = samplesToClips(samples)
+stepTime = logTime(startTime, "Samples to clips")
 # clips = np.array(clips)
 # clips = np.reshape(clips, (GRID_H, GRID_W))
 
 container = Clip({
     "width": a.WIDTH,
-    "height": a.HEIGHT
+    "height": a.HEIGHT,
+    "cache": True
 })
 for i, clip in enumerate(clips):
     clip.vector.setParent(container.vector)
@@ -94,10 +101,11 @@ for z in range(ZOOM_STEPS):
     fromWidth = toWidth
 
     ms += a.ZOOM_DUR
+stepTime = logTime(stepTime, "Created video clip sequence")
 
 # get audio sequence
 audioSequence = clipsToSequence(clips)
-stepTime = logTime(startTime, "Processed audio clip sequence")
+stepTime = logTime(stepTime, "Processed audio clip sequence")
 
 # plotAudioSequence(audioSequence)
 # sys.exit()
@@ -129,6 +137,7 @@ for f in range(totalFrames):
         "gpu": a.USE_GPU,
         "debug": a.DEBUG
     })
+stepTime = logTime(stepTime, "Processed video frame sequence")
 
 if not a.VIDEO_ONLY and (not os.path.isfile(a.AUDIO_OUTPUT_FILE) or a.OVERWRITE):
     mixAudio(audioSequence, durationMs, a.AUDIO_OUTPUT_FILE)

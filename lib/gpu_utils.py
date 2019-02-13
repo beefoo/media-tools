@@ -79,11 +79,12 @@ def clipsToImageGPU(width, height, pixelData, properties, colorDimensions):
                 if (dstX >= 0 && dstX < canvasW && dstY >= 0 && dstY < canvasH) {
                     int4 srcColor = getPixel(pdata, srcX, srcY, h, w, colorDimensions, offset);
                     int destIndex = dstY * canvasW * 3 + dstX * 3;
-                    if (srcColor.a > 0) {
-                        float talpha = (float) srcColor.a / (float) 255.0 * falpha;
-                        result[destIndex] = (int) round((float) srcColor.r * talpha);
-                        result[destIndex+1] = (int) round((float) srcColor.g * talpha);
-                        result[destIndex+2] = (int) round((float) srcColor.b * talpha);
+                    // r, g, b, a = x, y, z, w
+                    if (srcColor.w > 0) {
+                        float talpha = (float) srcColor.w / (float) 255.0 * falpha;
+                        result[destIndex] = (int) round((float) srcColor.x * talpha);
+                        result[destIndex+1] = (int) round((float) srcColor.y * talpha);
+                        result[destIndex+2] = (int) round((float) srcColor.z * talpha);
                     }
                 }
             }
