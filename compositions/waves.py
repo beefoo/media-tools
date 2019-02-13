@@ -97,7 +97,7 @@ for z in range(ZOOM_STEPS):
 
     cols -= 2
     toWidth = 1.0 * a.WIDTH / cols * GRID_W
-    container.queueTween(ms, a.ZOOM_DUR, ("scale", container.vector.getScaleFromWidth(fromWidth), container.vector.getScaleFromWidth(toWidth), "sinInOut"))
+    container.queueTween(ms, a.ZOOM_DUR, ("scale", container.vector.getScaleFromWidth(fromWidth), container.vector.getScaleFromWidth(toWidth), "sinIn"))
     fromWidth = toWidth
 
     ms += a.ZOOM_DUR
