@@ -1,5 +1,9 @@
+from multiprocessing import Pool
+from multiprocessing.dummy import Pool as ThreadPool
+
 from lib.collection_utils import *
 from lib.math_utils import *
+from lib.processing_utils import *
 
 class Vector:
 
@@ -336,17 +340,26 @@ class Clip:
         props.update(self.vector.getPropsAtTime(ms))
         return props
 
-def clipsToDicts(clips, ms=None):
+def clipToDict(p):
+    ms, clip = p
+    return clip.toDict(ms)
+
+def clipsToDicts(clips, ms=None, threads=-1):
+    startTime = logTime()
+    threads = getThreadCount(threads)
+    print(threads)
+
     dicts = []
-    count = len(clips)
-    # startTime = logTime()
-    for i, clip in enumerate(clips):
-        # Get video data
-        dicts.append(clip.toDict(ms))
-        # sys.stdout.write('\r')
-        # sys.stdout.write("%s%%" % round(1.0*(i+1)/count*100,1))
-        # sys.stdout.flush()
-    # stepTime = logTime(startTime, "Step %s" % ms)
+    if threads <= 1:
+        for i, clip in enumerate(clips):
+            dicts.append(clip.toDict(ms))
+    else:
+        pool = ThreadPool(threads)
+        dicts = pool.map(clipToDict, zip([ms for i in range(len(clips))], clips))
+        pool.close()
+        pool.join()
+
+    stepTime = logTime(startTime, "Step %s" % ms)
     return dicts
 
 def clipsToSequence(clips):
