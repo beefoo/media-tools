@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from lib.cache_utils import *
 from lib.clip import *
 from lib.gpu_utils import *
 from lib.math_utils import *
@@ -51,7 +52,7 @@ def addVideoArgs(parser):
     parser.add_argument('-ao', dest="AUDIO_ONLY", action="store_true", help="Render audio only?")
     parser.add_argument('-vo', dest="VIDEO_ONLY", action="store_true", help="Render video only?")
     parser.add_argument('-cache', dest="CACHE_VIDEO", action="store_true", help="Cache video clips?")
-    parser.add_argument('-cf', dest="CACHE_FILE", default="tmp/pixel_cache.npy", help="File for caching data")
+    parser.add_argument('-cf', dest="CACHE_FILE", default="tmp/pixel_cache.p", help="File for caching data")
     parser.add_argument('-gpu', dest="USE_GPU", action="store_true", help="Use GPU? (requires caching to be true)")
     parser.add_argument('-rand', dest="RANDOM_SEED", default=1, type=int, help="Random seed to use for pseudo-randomness")
     parser.add_argument('-pad0', dest="PAD_START", default=0, type=int, help="Pad the beginning")
@@ -384,25 +385,21 @@ def isClipVisible(clip, width, height):
     return isInFrame and isOpaque
 
 def loadVideoPixelDataFromFile(filename, clipLength):
-    pixelData = [[] for i in range(clipLength)]
-    loaded = False
-    if filename and os.path.isfile(filename):
-        pixelData = np.load(filename)
-        if len(pixelData) != clipLength:
-            print("Mismatch of cached data; resetting...")
-            pixelData = [[] for i in range(clipLength)]
-        else:
-            loaded = True
-
+    loaded, pixelData = loadCacheFile(filename)
+    if loaded and len(pixelData) != clipLength:
+        print("Cache pixel mismatch, ignoring")
+        loaded = False
     return (loaded, pixelData)
 
 def loadVideoPixelData(clips, fps, filename=None, width=None, height=None, checkVisibility=True):
     # assumes clip has width, height, and index
     print("Loading video pixel data...")
-    dataLoaded, pixelData = loadVideoPixelDataFromFile(filename, len(clips))
+    clipCount = len(clips)
+    dataLoaded, pixelData = loadVideoPixelDataFromFile(filename, clipCount)
 
     if not dataLoaded:
         print("No cached data found... rebuilding...")
+        pixelData = [None for i in range(clipCount)]
         # load videos
         filenames = list(set([clip["filename"] for clip in clips]))
         fileCount = len(filenames)
@@ -436,8 +433,8 @@ def loadVideoPixelData(clips, fps, filename=None, width=None, height=None, check
             printProgress(i+1, fileCount)
 
         if filename:
-            print("Saving cached data...")
-            np.save(filename, pixelData)
+            pixelData = np.array(pixelData)
+            saveCacheFile(filename, pixelData)
 
     for i, clip in enumerate(clips):
         clips[i]["framePixelData"] = pixelData[clip["index"]]
