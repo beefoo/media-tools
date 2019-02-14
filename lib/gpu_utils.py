@@ -110,7 +110,7 @@ def clipsToImageGPU(width, height, pixelData, properties, colorDimensions):
 
     bufIn1 =  cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=flatPixelData)
     bufIn2 =  cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=properties)
-    bufOut = cl.Buffer(ctx, mf.WRITE_ONLY, result.nbytes)
+    bufOut = cl.Buffer(ctx, mf.WRITE_ONLY | mf.COPY_HOST_PTR, hostbuf=result)
     prg.makeImage(queue, (count, ), None , bufIn1, bufIn2, bufOut)
 
     # Copy result
