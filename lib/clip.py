@@ -188,7 +188,8 @@ class Vector:
     def isVisible(self, containerW, containerH, ms=None):
         x, y = self.getPos(ms)
         w, h = self.getSize(ms)
-        return (x+w) > 0 and (y+h) > 0 and x < containerW and y < containerH
+        alpha = self.getAlpha(ms)
+        return (x+w) > 0 and (y+h) > 0 and x < containerW and y < containerH and alpha > 0
 
     def setAlpha(self, alpha):
         self.alpha = alpha

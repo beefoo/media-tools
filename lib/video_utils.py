@@ -11,6 +11,7 @@ from multiprocessing.dummy import Pool as ThreadPool
 import numpy as np
 import os
 from PIL import Image, ImageFilter
+from pprint import pprint
 import subprocess
 import sys
 
@@ -415,7 +416,7 @@ def loadVideoPixelData(clips, fps, filename=None, width=None, height=None, check
 
             # extract frames from videos
             for clip in vclips:
-                if checkVisibility and width and height and isClipVisible(clip, width, height):
+                if not checkVisibility or width and height and isClipVisible(clip, width, height):
                     start = clip["start"]
                     end = start + clip["dur"]
                     ms = start
@@ -467,8 +468,8 @@ def loadVideoPixelDataFromFrames(frames, clips, fps, filename=None):
         print("Assigning widths and heights")
         clipDicts = clipsToDicts(clips)
         for i, clip in enumerate(clipDicts):
-            clipDicts["width"] = clipMaxes[i, 0]
-            clipDicts["height"] = clipMaxes[i, 1]
+            clipDicts[i]["width"] = clipMaxes[i, 0]
+            clipDicts[i]["height"] = clipMaxes[i, 1]
         clipDicts = loadVideoPixelData(clipDicts, fps, filename=filename, checkVisibility=False)
         print("Assigning clip pixel data")
         for i, clip in enumerate(clipDicts):
