@@ -139,7 +139,7 @@ for f in range(totalFrames):
     })
 stepTime = logTime(stepTime, "Processed video frame sequence")
 
-if a.CACHE:
+if a.CACHE_VIDEO:
     loadVideoPixelDataFromFrames(videoFrames, clips, a.FPS, a.CACHE_FILE)
 
 if not a.VIDEO_ONLY and (not os.path.isfile(a.AUDIO_OUTPUT_FILE) or a.OVERWRITE):

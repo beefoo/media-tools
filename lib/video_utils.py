@@ -476,7 +476,7 @@ def loadVideoPixelDataFromFrames(frames, clips, fps, filename=None):
 
     else:
         for clip in clips:
-            clip.setProp("framePixelData", pixelData[clip.props["index"])
+            clip.setProp("framePixelData", pixelData[clip.props["index"]])
 
 def msToFrame(ms, fps):
     return roundInt((ms / 1000.0) * fps)
