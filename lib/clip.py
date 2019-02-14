@@ -345,9 +345,8 @@ def clipToDict(p):
     return clip.toDict(ms)
 
 def clipsToDicts(clips, ms=None, threads=-1):
-    startTime = logTime()
+    # startTime = logTime()
     threads = getThreadCount(threads)
-    print(threads)
 
     dicts = []
     if threads <= 1:
@@ -359,7 +358,7 @@ def clipsToDicts(clips, ms=None, threads=-1):
         pool.close()
         pool.join()
 
-    stepTime = logTime(startTime, "Step %s" % ms)
+    # stepTime = logTime(startTime, "Step %s" % ms)
     return dicts
 
 def clipsToSequence(clips):
