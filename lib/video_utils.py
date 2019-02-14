@@ -382,19 +382,23 @@ def isClipVisible(clip, width, height):
     isOpaque = getAlpha(clip) > 0
     return isInFrame and isOpaque
 
+def loadVideoPixelDataFromFile(filename, clipLength):
+    pixelData = [[] for i in range(clipLength)]
+    loaded = False
+    if filename and os.path.isfile(filename):
+        pixelData = np.load(filename)
+        if len(pixelData) != clipLength:
+            print("Mismatch of cached data; resetting...")
+            pixelData = [[] for i in range(clipLength)]
+        else:
+            loaded = True
+
+    return (loaded, pixelData)
+
 def loadVideoPixelData(clips, fps, filename=None, width=None, height=None, checkVisibility=True):
     # assumes clip has width, height, and index
     print("Loading video pixel data...")
-    pixelData = [[] for i in range(len(clips))]
-    dataLoaded = False
-
-    if filename and os.path.isfile(filename):
-        pixelData = np.load(filename)
-        if len(pixelData) != len(clips):
-            print("Mismatch of cached data; resetting...")
-            pixelData = [[] for i in range(len(clips))]
-        else:
-            dataLoaded = True
+    dataLoaded, pixelData = loadVideoPixelDataFromFile(filename, len(clips))
 
     if not dataLoaded:
         print("No cached data found... rebuilding...")
@@ -428,10 +432,7 @@ def loadVideoPixelData(clips, fps, filename=None, width=None, height=None, check
 
             video.reader.close()
             del video
-
-            sys.stdout.write('\r')
-            sys.stdout.write("%s%%" % round(1.0*(i+1)/fileCount*100,1))
-            sys.stdout.flush()
+            printProgress(i+1, fileCount)
 
         if filename:
             print("Saving cached data...")
@@ -444,24 +445,38 @@ def loadVideoPixelData(clips, fps, filename=None, width=None, height=None, check
 
     return clips
 
-def loadVideoPixelDataFromFrames(frames, clips):
+def loadVideoPixelDataFromFrames(frames, clips, fps, filename=None):
     print("Reading frames for caching...")
-    frameCount = len(frames)
-    clipCount = len(clips)
-    clipData = np.zeros((frameCount, clipCount, 2)) # will store each clip's width/height for each frame
-    for i, frame in enumerate(frames):
-        frameClips = clipsToDicts(clips, frame["ms"])
-        # filter out clips that are not visible
-        frameClips = [clip for clip in frameClips if isClipVisible(clip, frame["width"], frame["height"])]
-        for clip in frameClips:
-            clipData[i, clip["index"], 0] = clip["width"]
-            clipData[i, clip["index"], 1] = clip["height"]
-        printProgress(i+1, frameCount)
-    # TODO: get max dimension of each clip
-    clipDicts = clipsToDicts(clips)
-    # TODO: update clip dicts with max width/height
-    loadVideoPixelData(clipDicts, fps, filename=None, width=None, height=None, checkVisibility=False)
+    dataLoaded, pixelData = loadVideoPixelDataFromFile(filename, len(clips))
 
+    if not dataLoaded:
+        frameCount = len(frames)
+        clipCount = len(clips)
+        clipData = np.zeros((frameCount, clipCount, 2)) # will store each clip's width/height for each frame
+        for i, frame in enumerate(frames):
+            frameClips = clipsToDicts(clips, frame["ms"])
+            # filter out clips that are not visible
+            frameClips = [clip for clip in frameClips if isClipVisible(clip, frame["width"], frame["height"])]
+            for clip in frameClips:
+                clipData[i, clip["index"], 0] = clip["width"]
+                clipData[i, clip["index"], 1] = clip["height"]
+            printProgress(i+1, frameCount)
+        # get max dimension of each clip
+        clipMaxes = np.amax(clipData, axis=0)
+        # update clip dicts with max width/height
+        print("Assigning widths and heights")
+        clipDicts = clipsToDicts(clips)
+        for i, clip in enumerate(clipDicts):
+            clipDicts["width"] = clipMaxes[i, 0]
+            clipDicts["height"] = clipMaxes[i, 1]
+        clipDicts = loadVideoPixelData(clipDicts, fps, filename=filename, checkVisibility=False)
+        print("Assigning clip pixel data")
+        for i, clip in enumerate(clipDicts):
+            clips[i].setProp("framePixelData", clip["framePixelData"])
+
+    else:
+        for clip in clips:
+            clip.setProp("framePixelData", pixelData[clip.props["index"])
 
 def msToFrame(ms, fps):
     return roundInt((ms / 1000.0) * fps)
