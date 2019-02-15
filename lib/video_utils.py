@@ -18,17 +18,17 @@ import sys
 
 def addGridPositions(clips, cols, width, height, offsetX=0, offsetY=0, marginX=0, marginY=0):
     rows = ceilInt(1.0 * len(clips) / cols)
-    cellW = 1.0 * (width - marginX * (cols+1)) / cols
-    cellH = 1.0 * (height - marginY * (rows+1)) / rows
+    cellW = 1.0 * width / cols
+    cellH = 1.0 * height / rows
     for i, c in enumerate(clips):
-        row = i / cols
+        row = int(i / cols)
         col = i % cols
         clips[i]["col"] = col
         clips[i]["row"] = row
-        clips[i]["x"] = col * cellW + col * marginX + offsetX
-        clips[i]["y"] = row * cellH + row * marginY + offsetY
-        clips[i]["width"] = cellW
-        clips[i]["height"] = cellH
+        clips[i]["x"] = col * cellW + marginX*0.5 + offsetX
+        clips[i]["y"] = row * cellH + marginY*0.5 + offsetY
+        clips[i]["width"] = cellW - marginX
+        clips[i]["height"] = cellH - marginY
     return clips
 
 def addVideoArgs(parser):
