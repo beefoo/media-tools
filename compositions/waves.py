@@ -71,6 +71,11 @@ samples = sorted(samples, key=lambda s: (s["gridY"], s["gridX"]))
 samples = addIndices(samples)
 samples = addGridPositions(samples, GRID_W, a.WIDTH, a.HEIGHT, marginX=a.CLIP_MARGIN, marginY=a.CLIP_MARGIN)
 
+# play in order: center first, clockwise
+cCol, cRow = (GRID_W * 0.5, GRID_H * 0.5)
+samples = sorted(samples, key=lambda s: (distance(cCol, cRow, s["col"], s["row"]), angleBetween(cCol, cRow, s["col"], s["row"])))
+samples = addIndices(samples, "playOrder")
+
 if a.DEBUG:
     for i, s in enumerate(samples):
         pixels = np.array([[getRandomColor(i)]])

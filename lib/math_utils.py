@@ -15,6 +15,11 @@ def addNormalizedValues(arr, key, nkey):
         arr[i][nkey] = norm(entry[key], range)
     return arr
 
+def angleBetween(x1, y1, x2, y2):
+    deltaX = x2 - x1
+    deltaY = y2 - y1
+    return math.degrees(math.atan2(deltaY, deltaX))
+
 # return the bounding box of a rotated rectangle
 def bboxRotate(cx, cy, w, h, angle):
     distanceToCorner = distance(cx, cy, cx-w*0.5, cy-h*0.5)
