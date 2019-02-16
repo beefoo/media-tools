@@ -17,6 +17,7 @@ from lib.audio_mixer import *
 from lib.audio_utils import *
 from lib.clip import *
 from lib.collection_utils import *
+from lib.composition_utils import *
 from lib.io_utils import *
 from lib.math_utils import *
 from lib.statistics_utils import *
@@ -73,8 +74,14 @@ samples = addGridPositions(samples, GRID_W, a.WIDTH, a.HEIGHT, marginX=a.CLIP_MA
 
 # play in order: center first, clockwise
 cCol, cRow = (GRID_W * 0.5, GRID_H * 0.5)
-samples = sorted(samples, key=lambda s: (distance(cCol, cRow, s["col"], s["row"]), angleBetween(cCol, cRow, s["col"], s["row"])))
+for i, s in enumerate(samples):
+    samples[i]["distanceFromCenter"] = distance(cCol, cRow, s["col"], s["row"])
+    samples[i]["angleFromCenter"] = angleBetween(cCol, cRow, s["col"], s["row"])
+samples = sorted(samples, key=lambda s: (s["distanceFromCenter"], s["angleFromCenter"]))
 samples = addIndices(samples, "playOrder")
+samples = addNormalizedValues(samples, "playOrder", "nPlayOrder")
+samples = addNormalizedValues(samples, "power", "nPower")
+samples = addNormalizedValues(samples, "distanceFromCenter", "nDistanceFromCenter")
 
 if a.DEBUG:
     for i, s in enumerate(samples):
@@ -97,15 +104,36 @@ for i, clip in enumerate(clips):
 ms = 0
 cols = GRID_W
 fromWidth = 1.0 * a.WIDTH / cols * GRID_W
-for z in range(ZOOM_STEPS):
-    ms += a.WAVE_DUR
+halfWaveDur = roundInt(a.WAVE_DUR * 0.5)
+while cols >= 2:
 
-    cols -= 2
-    toWidth = 1.0 * a.WIDTH / cols * GRID_W
-    container.queueTween(ms, a.ZOOM_DUR, ("scale", container.vector.getScaleFromWidth(fromWidth), container.vector.getScaleFromWidth(toWidth), "sinIn"))
-    fromWidth = toWidth
+    # play bass
 
-    ms += a.ZOOM_DUR
+    # play and render waves
+
+    ms += halfWaveDur
+
+    zoomSteps = max(1, roundInt(1.0 * cols ** 0.25)) # play more zoom steps when we're zoomed
+    zoomDivisionIncrement = getDivisionIncrement(zoomSteps)
+    zoomDivisionMs = roundInt(1.0 * halfWaveDur * zoomDivisionIncrement)
+    zoomDur = min(a.ZOOM_DUR, zoomDivisionMs)
+    for z in range(zoomSteps):
+        cols -= 2
+        if cols < 2:
+            break
+
+        # play snare
+
+        # zoom container
+        offset = getOffset(zoomSteps, z)
+        offsetMs = roundInt(offset * halfWaveDur)
+        zoomStartMs = ms + offsetMs
+        toWidth = 1.0 * a.WIDTH / cols * GRID_W
+        container.queueTween(zoomStartMs, zoomDur, ("scale", container.vector.getScaleFromWidth(fromWidth), container.vector.getScaleFromWidth(toWidth), "sinIn"))
+        fromWidth = toWidth
+
+    ms += halfWaveDur
+
 stepTime = logTime(stepTime, "Created video clip sequence")
 
 # get audio sequence
