@@ -37,7 +37,7 @@ class Vector:
         self.setAlpha(defaults["alpha"])
         self.setBlur(defaults["blur"])
 
-    def addKeyFrame(self, name, ms, value, easing="linear"):
+    def addKeyFrame(self, name, ms, value, easing="linear", sortFrames=True):
         keyframe = {"name": name, "ms": ms, "value": value, "dimension": None, "easing": easing}
         # scale and translate instead of changing width/height/x/y
         if name == "width":
@@ -53,7 +53,8 @@ class Vector:
 
         if name in self.keyframes:
             self.keyframes[name].append(keyframe)
-            self.keyframes[name] = sorted(self.keyframes[name], key=lambda k: k["ms"])
+            if sortFrames:
+                self.keyframes[name] = sorted(self.keyframes[name], key=lambda k: k["ms"])
         else:
             self.keyframes[name] = [keyframe]
 
@@ -228,6 +229,10 @@ class Vector:
     def setTransformorigin(self, origin):
         self.transformOrigin = origin
 
+    def sortFrames(self):
+        for name in self.keyframes:
+            self.keyframes[name] = sorted(self.keyframes[name], key=lambda k: k["ms"])
+
 class Clip:
 
     def __init__(self, props={}):
@@ -296,7 +301,7 @@ class Clip:
         dur = params["dur"] if "dur" in params else self.dur
         self.plays.append((ms, ms+dur, params))
 
-    def queueTween(self, ms, dur="auto", tweens=[]):
+    def queueTween(self, ms, dur="auto", tweens=[], sortFrames=True):
         if isinstance(tweens, tuple):
             tweens = [tweens]
 
@@ -309,9 +314,9 @@ class Clip:
                 name, fromValue, toValue, easing = tween
             else:
                 name, fromValue, toValue = tween
-            self.vector.addKeyFrame(name, ms, fromValue, easing)
+            self.vector.addKeyFrame(name, ms, fromValue, easing, sortFrames)
             if dur > 0:
-                self.vector.addKeyFrame(name, ms+dur, toValue, easing)
+                self.vector.addKeyFrame(name, ms+dur, toValue, easing, sortFrames)
 
     def setFadeIn(self, fadeDur):
         self.fadeIn = fadeDur

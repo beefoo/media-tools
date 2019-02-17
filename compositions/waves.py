@@ -154,10 +154,10 @@ while cols >= 2:
 
         # onset the alpha
         onsetMs = 100
-        clip.queueTween(clipStartMs-onsetMs, onsetMs, ("alpha", ALPHA_RANGE[0], ALPHA_RANGE[1], "sin"))
+        clip.queueTween(clipStartMs-onsetMs, onsetMs, ("alpha", ALPHA_RANGE[0], ALPHA_RANGE[1], "sin"), sortFrames=False)
         # fade out the alpha
         renderDur = clip.props["dur"]
-        clip.queueTween(clipStartMs, renderDur, ("alpha", ALPHA_RANGE[1], ALPHA_RANGE[0], "sin"))
+        clip.queueTween(clipStartMs, renderDur, ("alpha", ALPHA_RANGE[1], ALPHA_RANGE[0], "sin"), sortFrames=False)
         # move the clip outward then back inward
 
     ms += halfWaveDur
@@ -180,11 +180,16 @@ while cols >= 2:
         toWidth = 1.0 * a.WIDTH / cols * GRID_W
         fromScale = container.vector.getScaleFromWidth(fromWidth)
         toScale = container.vector.getScaleFromWidth(toWidth)
-        container.queueTween(zoomStartMs, zoomDur, ("scale", fromScale, toScale, "sin"))
+        container.queueTween(zoomStartMs, zoomDur, ("scale", fromScale, toScale, "sin"), sortFrames=False)
         container.vector.setTransform(scale=(toScale, toScale)) # temporarily set scale so we can calculate clip visibility for playing audio
         fromWidth = toWidth
 
     ms += halfWaveDur
+
+# sort frames
+container.vector.sortFrames()
+for clip in clips:
+    clip.vector.sortFrames()
 
 container.vector.setTransform(scale=(1.0, 1.0)) # reset scale
 stepTime = logTime(stepTime, "Created video clip sequence")
