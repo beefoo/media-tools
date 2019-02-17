@@ -37,7 +37,7 @@ class Vector:
         self.setAlpha(defaults["alpha"])
         self.setBlur(defaults["blur"])
 
-    def addKeyFrame(self, name, ms, value, easing="linear", sortFrames=True):
+    def addKeyFrame(self, name, ms, value, easing="linear", sortFrames=False):
         keyframe = {"name": name, "ms": ms, "value": value, "dimension": None, "easing": easing}
         # scale and translate instead of changing width/height/x/y
         if name == "width":
@@ -46,10 +46,14 @@ class Vector:
         elif name == "height":
             scaleValue = self.getScaleFromHeight(value)
             keyframe.update({"name": "scale", "dimension": 1, "value": scaleValue})
-        elif name == "x":
+        elif name == "translateX":
             keyframe.update({"name": "translate", "dimension": 0})
-        elif name == "y":
+        elif name == "translateY":
             keyframe.update({"name": "translate", "dimension": 1})
+        elif name == "x":
+            keyframe.update({"name": "pos", "dimension": 0})
+        elif name == "y":
+            keyframe.update({"name": "pos", "dimension": 1})
 
         if name in self.keyframes:
             self.keyframes[name].append(keyframe)
@@ -301,7 +305,7 @@ class Clip:
         dur = params["dur"] if "dur" in params else self.dur
         self.plays.append((ms, ms+dur, params))
 
-    def queueTween(self, ms, dur="auto", tweens=[], sortFrames=True):
+    def queueTween(self, ms, dur="auto", tweens=[], sortFrames=False):
         if isinstance(tweens, tuple):
             tweens = [tweens]
 

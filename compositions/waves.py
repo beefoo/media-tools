@@ -32,6 +32,7 @@ parser.add_argument('-margin', dest="CLIP_MARGIN", default=1, type=int, help="Ma
 parser.add_argument('-beats', dest="BEAT_DIVISIONS", default=3, type=int, help="Number of times to divide beat, e.g. 1 = 1/2 notes, 2 = 1/4 notes, 3 = 1/8th notes, 4 = 1/16 notes")
 parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.1,0.8", help="Volume range")
 parser.add_argument('-alphar', dest="ALPHA_RANGE", default="0.2,1.0", help="Alpha range")
+parser.add_argument('-translate', dest="TRANSLATE_AMOUNT", default=0.33, type=float, help="Amount to translate clip correlated to minimum dimension")
 parser.add_argument('-grid', dest="GRID", default="256x256", help="Size of grid")
 parser.add_argument('-zoom0', dest="ZOOM_START", default=1.0, type=float, help="Zoom start level; 1.0 = completely zoomed in, 0.0 = completely zoomed out")
 parser.add_argument('-zoom1', dest="ZOOM_END", default=0.0, type=float, help="Zoom start level; 1.0 = completely zoomed in, 0.0 = completely zoomed out")
@@ -89,12 +90,17 @@ for i, s in enumerate(samples):
     # make clip longer if necessary
     samples[i]["audioDur"] = s["dur"]
     samples[i]["dur"] = max(s["dur"], a.MIN_CLIP_DUR)
+    # calculate translate distance
+    translateDistance = min(s["width"], s["height"]) * a.TRANSLATE_AMOUNT
+    samples[i]["translateAmount"] = translatePoint(0, 0, translateDistance, samples[i]["angleFromCenter"])
+
 samples = sorted(samples, key=lambda s: (s["distanceFromCenter"], s["angleFromCenter"]))
 samples = addIndices(samples, "playOrder")
 samples = addNormalizedValues(samples, "playOrder", "nPlayOrder")
 samples = addNormalizedValues(samples, "power", "nPower")
 samples = addNormalizedValues(samples, "distanceFromCenter", "nDistanceFromCenter")
 stepTime = logTime(stepTime, "Calculate clip properties")
+
 
 # limit the number of clips playing
 if sampleCount > a.MAX_AUDIO_CLIPS:
@@ -154,11 +160,16 @@ while cols >= 2:
 
         # onset the alpha
         onsetMs = 100
-        clip.queueTween(clipStartMs-onsetMs, onsetMs, ("alpha", ALPHA_RANGE[0], ALPHA_RANGE[1], "sin"), sortFrames=False)
+        clip.queueTween(clipStartMs-onsetMs, onsetMs, ("alpha", ALPHA_RANGE[0], ALPHA_RANGE[1], "sin"))
         # fade out the alpha
         renderDur = clip.props["dur"]
-        clip.queueTween(clipStartMs, renderDur, ("alpha", ALPHA_RANGE[1], ALPHA_RANGE[0], "sin"), sortFrames=False)
+        clip.queueTween(clipStartMs, renderDur, ("alpha", ALPHA_RANGE[1], ALPHA_RANGE[0], "sin"))
         # move the clip outward then back inward
+        halfLeft = int(renderDur / 2)
+        halfRight = renderDur - halfLeft
+        tx, ty = clip.props["translateAmount"]
+        clip.queueTween(clipStartMs, halfLeft, [("translateX", 0, tx, "sin"), ("translateY", 0, ty, "sin")])
+        clip.queueTween(clipStartMs+halfLeft, halfRight, [("translateX", tx, 0, "sin"), ("translateY", ty, 0, "sin")])
 
     ms += halfWaveDur
 
