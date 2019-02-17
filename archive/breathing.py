@@ -59,7 +59,7 @@ if a.COUNT > 0:
         sampleCount = a.COUNT
     else:
         print("Warning: %s samples requested, but only %s found" % (a.COUNT, sampleCount))
-samples = prependAll(samples, ("filename", a.VIDEO_DIRECTORY))
+samples = prependAll(samples, ("filename", a.MEDIA_DIRECTORY))
 samples = addIndices(samples)
 
 if REDUCE_DATA > 0:

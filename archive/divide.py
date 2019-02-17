@@ -46,7 +46,7 @@ stepTime = logTime(startTime, "Read samples")
 samples = sortBy(samples, [("power", "desc", 0.5), ("clarity", "desc", 0.5)])
 sampleCount = len(samples)
 
-samples = prependAll(samples, ("filename", a.VIDEO_DIRECTORY))
+samples = prependAll(samples, ("filename", a.MEDIA_DIRECTORY))
 samples = addIndices(samples)
 samples, centers = addClustersToList(samples, "tsne", "tsne2", CLUSTERS)
 

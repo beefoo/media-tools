@@ -163,7 +163,7 @@ def getPulse(startMs, count, playMeasures, restMeasures, beatsPerMeasure, beatMs
                         pan = lerp((-1, 1), 1.0-progress)
                 seq.append({
                     "ms": ms,
-                    "filename": a.VIDEO_DIRECTORY + beat["filename"],
+                    "filename": a.MEDIA_DIRECTORY + beat["filename"],
                     "start": beat["start"],
                     "dur": beat["dur"],
                     "volume": volume,

@@ -77,7 +77,7 @@ if sampleCount > COUNT:
     samples = samples[:COUNT]
 
 # Add dir to filenames
-samples = prependAll(samples, ("filename", a.VIDEO_DIRECTORY))
+samples = prependAll(samples, ("filename", a.MEDIA_DIRECTORY))
 
 # 1. Place clips in a grid, sorting vertically by pitch and horizontally by volume
 samples = sortMatrix(samples, sortY=("hz", "asc"), sortX=("power", "asc"), rowCount=GRID_COLS)

@@ -12,7 +12,7 @@ import sys
 # input
 parser = argparse.ArgumentParser()
 parser.add_argument('-in', dest="INPUT_FILE", default="tmp/scenes.csv", help="Input file")
-parser.add_argument('-dir', dest="VIDEO_DIRECTORY", default="media/sample/", help="Input file")
+parser.add_argument('-dir', dest="MEDIA_DIRECTORY", default="media/sample/", help="Input file")
 parser.add_argument('-sep', dest="SCENE_SEPARATOR", default="media/sample/SMPTE_bars_and_tone.mp4", help="Video file for padding")
 parser.add_argument('-pad', dest="SCENE_PAD", default=500, type=int, help="Padding between scenes in milliseconds")
 parser.add_argument('-width', dest="WIDTH", default=320, type=int, help="Output video width")
@@ -22,7 +22,7 @@ args = parser.parse_args()
 
 # Parse arguments
 INPUT_FILE = args.INPUT_FILE
-VIDEO_DIRECTORY = args.VIDEO_DIRECTORY
+MEDIA_DIRECTORY = args.MEDIA_DIRECTORY
 SCENE_SEPARATOR = args.SCENE_SEPARATOR
 SCENE_PAD = args.SCENE_PAD
 WIDTH = args.WIDTH
@@ -35,7 +35,7 @@ fieldNames, rows = readCsv(INPUT_FILE)
 filenames = list(set([f["filename"] for f in rows]))
 videos = [{
         "filename": fn,
-        "video": fillVideo(VideoFileClip(VIDEO_DIRECTORY + fn), WIDTH, HEIGHT)
+        "video": fillVideo(VideoFileClip(MEDIA_DIRECTORY + fn), WIDTH, HEIGHT)
 } for fn in filenames]
 
 separator = False

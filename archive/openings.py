@@ -50,7 +50,7 @@ beatsPerMeasure = 2 ** a.DIVIDE_COUNT
 clusterCount = a.DIVIDE_COUNT
 beats = [None for i in range(beatsPerMeasure)]
 
-samples = prependAll(samples, ("filename", a.VIDEO_DIRECTORY))
+samples = prependAll(samples, ("filename", a.MEDIA_DIRECTORY))
 samples = addIndices(samples)
 samples, centers = addClustersToList(samples, PROP1, PROP2, clusterCount)
 

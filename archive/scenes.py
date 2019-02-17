@@ -35,7 +35,7 @@ from lib.video_utils import *
 # input
 parser = argparse.ArgumentParser()
 parser.add_argument('-in', dest="INPUT_FILE", default="../tmp/scenes.csv", help="Input file")
-parser.add_argument('-dir', dest="VIDEO_DIRECTORY", default="../media/sample/", help="Input file")
+parser.add_argument('-dir', dest="MEDIA_DIRECTORY", default="../media/sample/", help="Input file")
 parser.add_argument('-cols', dest="COLUMNS", default=8, type=int, help="Number of columns in the matrix")
 parser.add_argument('-aspect', dest="ASPECT_RATIO", default="16:9", help="Aspect ratio of each cell")
 parser.add_argument('-width', dest="WIDTH", default=1920, type=int, help="Output video width")
@@ -52,7 +52,7 @@ args = parser.parse_args()
 
 # Parse arguments
 INPUT_FILE = args.INPUT_FILE
-VIDEO_DIRECTORY = args.VIDEO_DIRECTORY
+MEDIA_DIRECTORY = args.MEDIA_DIRECTORY
 COLUMNS = args.COLUMNS
 ASPECT_W, ASPECT_H = tuple([int(p) for p in args.ASPECT_RATIO.split(":")])
 ASPECT_RATIO = 1.0 * ASPECT_W / ASPECT_H
@@ -166,7 +166,7 @@ if not framesExist(OUTPUT_FRAME, targetFrames) or OVERWRITE:
             t = roundInt(sceneStart + remainder)
             volume = baseVolume(scene, progress)
             clips.append({
-                "filename": VIDEO_DIRECTORY + scene["filename"],
+                "filename": MEDIA_DIRECTORY + scene["filename"],
                 "t": t,
                 "x": scene["x"],
                 "y": y,
@@ -233,7 +233,7 @@ if not os.path.isfile(AUDIO_OUTPUT_FILE) or OVERWRITE:
             if volume > 0:
                 instructions.append({
                     "ms": elapsed,
-                    "filename": VIDEO_DIRECTORY + scene["filename"],
+                    "filename": MEDIA_DIRECTORY + scene["filename"],
                     "start": scene["start"],
                     "dur": scene["dur"],
                     "pan": pan,

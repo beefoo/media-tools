@@ -29,6 +29,8 @@ def addGridPositions(clips, cols, width, height, offsetX=0, offsetY=0, marginX=0
         clips[i]["y"] = row * cellH + marginY*0.5 + offsetY
         clips[i]["width"] = cellW - marginX
         clips[i]["height"] = cellH - marginY
+        clips[i]["nx"] = 1.0 * col / (cols-1)
+        clips[i]["ny"] = 1.0 * row / (rows-1)
     return clips
 
 def addVideoArgs(parser):
@@ -39,7 +41,7 @@ def addVideoArgs(parser):
     # parser.add_argument('-sort', dest="SORT", default="", help="Query string to sort by")
     parser.add_argument('-count', dest="COUNT", default=-1, type=int, help="Target total sample count, -1 for everything")
     # parser.add_argument('-filter', dest="FILTER", default="", help="Query string to filter by")
-    parser.add_argument('-dir', dest="VIDEO_DIRECTORY", default="media/sample/", help="Input file")
+    parser.add_argument('-dir', dest="MEDIA_DIRECTORY", default="media/sample/", help="Input file")
     parser.add_argument('-aspect', dest="ASPECT_RATIO", default="16:9", help="Aspect ratio of each cell")
     parser.add_argument('-width', dest="WIDTH", default=1920, type=int, help="Output video width")
     parser.add_argument('-height', dest="HEIGHT", default=1080, type=int, help="Output video height")
@@ -55,7 +57,7 @@ def addVideoArgs(parser):
     parser.add_argument('-cf', dest="CACHE_FILE", default="tmp/pixel_cache.p", help="File for caching data")
     parser.add_argument('-gpu', dest="USE_GPU", action="store_true", help="Use GPU? (requires caching to be true)")
     parser.add_argument('-rand', dest="RANDOM_SEED", default=1, type=int, help="Random seed to use for pseudo-randomness")
-    parser.add_argument('-pad0', dest="PAD_START", default=0, type=int, help="Pad the beginning")
+    parser.add_argument('-pad0', dest="PAD_START", default=1000, type=int, help="Pad the beginning")
     parser.add_argument('-pad1', dest="PAD_END", default=3000, type=int, help="Pad the end")
     parser.add_argument('-rvb', dest="REVERB", default=80, type=int, help="Reverberence (0-100)")
     parser.add_argument('-debug', dest="DEBUG", action="store_true", help="Debug mode?")
