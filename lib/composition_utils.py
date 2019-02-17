@@ -1,3 +1,5 @@
+
+from lib.math_utils import *
 import math
 
 def getDivisionIncrement(count):
@@ -27,3 +29,18 @@ def getOffset(count, index):
         if foundOffset > 0:
             break
     return foundOffset
+
+def limitAudioClips(samples, maxAudioClips, keyName, invert=False, keepFirst=64, multiplier=10000, easing="quartOut", seed=3):
+    indicesToKeep = []
+    shuffleSamples = samples[:]
+    shuffleSampleCount = maxAudioClips
+    if maxAudioClips > keepFirst:
+        shuffleSampleCount -= keepFirst
+        keepSamples = samples[:keepFirst]
+        indicesToKeep = [s["index"] for s in keepSamples]
+        shuffleSamples = shuffleSamples[keepFirst:]
+    samplesToPlay = weightedShuffle(shuffleSamples, [ease((1.0 - s[keyName] if invert else s[keyName]) * multiplier, easing) for s in shuffleSamples], count=shuffleSampleCount, seed=seed)
+    indicesToKeep = set(indicesToKeep + [s["index"] for s in samplesToPlay])
+    for i, s in enumerate(samples):
+        samples[i]["playAudio"] = (s["index"] in indicesToKeep)
+    return samples

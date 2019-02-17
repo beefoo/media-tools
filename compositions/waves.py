@@ -92,20 +92,7 @@ samples = addNormalizedValues(samples, "distanceFromCenter", "nDistanceFromCente
 
 # limit the number of clips playing
 if sampleCount > a.MAX_AUDIO_CLIPS:
-    indicesToKeep = []
-    shuffleSamples = samples[:]
-    shuffleSampleCount = a.MAX_AUDIO_CLIPS
-    # keep the middle 8 x 8
-    keepSampleCount = 64
-    if a.MAX_AUDIO_CLIPS > keepSampleCount:
-        shuffleSampleCount -= keepSampleCount
-        keepSamples = samples[:keepSampleCount]
-        indicesToKeep = [s["index"] for s in keepSamples]
-        shuffleSamples = shuffleSamples[keepSampleCount:]
-    samplesToPlay = weightedShuffle(shuffleSamples, [ease((1.0 - s["nDistanceFromCenter"]) * 10000, "quartOut") for s in shuffleSamples], count=shuffleSampleCount, seed=(a.RANDOM_SEED+2))
-    indicesToKeep = set(indicesToKeep + [s["index"] for s in samplesToPlay])
-    for i, s in enumerate(samples):
-        samples[i]["playAudio"] = (s["index"] in indicesToKeep)
+    samples = limitAudioClips(samples, a.MAX_AUDIO_CLIPS, "nDistanceFromCenter", keepFirst=64, invert=True, seed=(a.RANDOM_SEED+2))
 
 if a.DEBUG:
     for i, s in enumerate(samples):
