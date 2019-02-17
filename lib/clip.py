@@ -293,7 +293,7 @@ class Clip:
         return neighbors
 
     def queuePlay(self, ms, params={}):
-        dur = self.dur
+        dur = params["dur"] if "dur" in params else self.dur
         self.plays.append((ms, ms+dur, params))
 
     def queueTween(self, ms, dur="auto", tweens=[]):
@@ -379,7 +379,8 @@ def clipsToSequence(clips):
 
 def getClipFadeDur(clipDur, percentage=0.1, maxDur=100):
     dur = roundInt(clipDur * percentage)
-    dur = min(dur, maxDur)
+    if maxDur > 0:
+        dur = min(dur, maxDur)
     return dur
 
 def samplesToClips(samples):

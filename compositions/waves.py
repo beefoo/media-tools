@@ -30,7 +30,8 @@ addVideoArgs(parser)
 parser.add_argument('-beatms', dest="BEAT_MS", default=1024, type=int, help="Milliseconds per beat")
 parser.add_argument('-margin', dest="CLIP_MARGIN", default=1, type=int, help="Margin between clips in pixels")
 parser.add_argument('-beats', dest="BEAT_DIVISIONS", default=3, type=int, help="Number of times to divide beat, e.g. 1 = 1/2 notes, 2 = 1/4 notes, 3 = 1/8th notes, 4 = 1/16 notes")
-parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.2,1.0", help="Volume range")
+parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.1,0.8", help="Volume range")
+parser.add_argument('-alphar', dest="ALPHA_RANGE", default="0.2,1.0", help="Alpha range")
 parser.add_argument('-grid', dest="GRID", default="256x256", help="Size of grid")
 parser.add_argument('-zoom0', dest="ZOOM_START", default=1.0, type=float, help="Zoom start level; 1.0 = completely zoomed in, 0.0 = completely zoomed out")
 parser.add_argument('-zoom1', dest="ZOOM_END", default=0.0, type=float, help="Zoom start level; 1.0 = completely zoomed in, 0.0 = completely zoomed out")
@@ -44,7 +45,8 @@ parseVideoArgs(a)
 makeDirectories([a.OUTPUT_FRAME, a.OUTPUT_FILE, a.CACHE_FILE])
 
 # parse arguments
-VOLUME_RANGE = [float(v) for v in a.VOLUME_RANGE.strip().split(",")]
+VOLUME_RANGE = tuple([float(v) for v in a.VOLUME_RANGE.strip().split(",")])
+ALPHA_RANGE =  tuple([float(v) for v in a.ALPHA_RANGE.strip().split(",")])
 GRID_W, GRID_H = tuple([int(v) for v in a.GRID.strip().split("x")])
 UNIT_MS = roundInt(2 ** (-a.BEAT_DIVISIONS) * a.BEAT_MS)
 print("Smallest unit: %ss" % UNIT_MS)
@@ -59,7 +61,9 @@ FRAMES_PER_WAVE = int(a.WAVE_DUR / 1000.0 * a.FPS)
 
 # Get video data
 startTime = logTime()
+stepTime = startTime
 _, samples = readCsv(a.INPUT_FILE)
+stepTime = logTime(stepTime, "Read CSV")
 sampleCount = len(samples)
 
 gridCount = GRID_W * GRID_H
@@ -74,6 +78,7 @@ elif gridCount < sampleCount:
 # Sort by grid
 samples = sorted(samples, key=lambda s: (s["gridY"], s["gridX"]))
 samples = addIndices(samples)
+samples = prependAll(samples, ("filename", a.MEDIA_DIRECTORY))
 samples = addGridPositions(samples, GRID_W, a.WIDTH, a.HEIGHT, marginX=a.CLIP_MARGIN, marginY=a.CLIP_MARGIN)
 
 cCol, cRow = (GRID_W * 0.5, GRID_H * 0.5)
@@ -82,17 +87,19 @@ for i, s in enumerate(samples):
     samples[i]["distanceFromCenter"] = distance(cCol, cRow, s["col"], s["row"])
     samples[i]["angleFromCenter"] = angleBetween(cCol, cRow, s["col"], s["row"])
     # make clip longer if necessary
-    samples[i]["fadeOut"] = a.MIN_CLIP_DUR if s["dur"] < a.MIN_CLIP_DUR else getClipFadeDur(s["dur"], percentage=0.5)
+    samples[i]["audioDur"] = s["dur"]
     samples[i]["dur"] = max(s["dur"], a.MIN_CLIP_DUR)
 samples = sorted(samples, key=lambda s: (s["distanceFromCenter"], s["angleFromCenter"]))
 samples = addIndices(samples, "playOrder")
 samples = addNormalizedValues(samples, "playOrder", "nPlayOrder")
 samples = addNormalizedValues(samples, "power", "nPower")
 samples = addNormalizedValues(samples, "distanceFromCenter", "nDistanceFromCenter")
+stepTime = logTime(stepTime, "Calculate clip properties")
 
 # limit the number of clips playing
 if sampleCount > a.MAX_AUDIO_CLIPS:
     samples = limitAudioClips(samples, a.MAX_AUDIO_CLIPS, "nDistanceFromCenter", keepFirst=64, invert=True, seed=(a.RANDOM_SEED+2))
+    stepTime = logTime(stepTime, "Calculate which audio clips are playing")
 
 if a.DEBUG:
     for i, s in enumerate(samples):
@@ -105,10 +112,12 @@ if a.DEBUG:
         samples[i]["alpha"] = 1.0 if s["playAudio"] else 0.2
     clipsToFrame({ "filename": a.OUTPUT_FRAME % "playTest", "clips": samples, "width": a.WIDTH, "height": a.HEIGHT, "overwrite": True, "debug": True })
 
+# start with everything with minimum alpha
+for i, s in enumerate(samples):
+    samples[i]["alpha"] = ALPHA_RANGE[0]
+
 clips = samplesToClips(samples)
-stepTime = logTime(startTime, "Samples to clips")
-# clips = np.array(clips)
-# clips = np.reshape(clips, (GRID_H, GRID_W))
+stepTime = logTime(stepTime, "Samples to clips")
 
 container = Clip({
     "width": a.WIDTH,
@@ -118,7 +127,7 @@ container = Clip({
 for i, clip in enumerate(clips):
     clip.vector.setParent(container.vector)
 
-ms = 0
+ms = a.PAD_START
 cols = GRID_W
 fromWidth = 1.0 * a.WIDTH / cols * GRID_W
 halfWaveDur = roundInt(a.WAVE_DUR * 0.5)
@@ -129,6 +138,27 @@ while cols >= 2:
     # play and render waves
     for i, clip in enumerate(clips):
         clipStartMs = ms + roundInt(a.WAVE_DUR * clip.props["nPlayOrder"])
+
+        # play clip
+        audioDur = clip.props["audioDur"]
+        playAudio = clip.props["playAudio"] and clip.vector.isVisible(a.WIDTH, a.HEIGHT)
+        if playAudio:
+            clip.queuePlay(clipStartMs, {
+                "dur": audioDur,
+                "volume": lerp(VOLUME_RANGE, 1.0 - clip.props["nDistanceFromCenter"]),
+                "fadeOut": getClipFadeDur(audioDur, percentage=0.5, maxDur=-1),
+                "fadeIn": getClipFadeDur(audioDur),
+                "pan": lerp((-1.0, 1.0), clip.props["nx"]),
+                "reverb": a.REVERB
+            })
+
+        # onset the alpha
+        onsetMs = 100
+        clip.queueTween(clipStartMs-onsetMs, onsetMs, ("alpha", ALPHA_RANGE[0], ALPHA_RANGE[1], "sin"))
+        # fade out the alpha
+        renderDur = clip.props["dur"]
+        clip.queueTween(clipStartMs, renderDur, ("alpha", ALPHA_RANGE[1], ALPHA_RANGE[0], "sin"))
+        # move the clip outward then back inward
 
     ms += halfWaveDur
 
@@ -148,11 +178,15 @@ while cols >= 2:
         offsetMs = roundInt(offset * halfWaveDur)
         zoomStartMs = ms + offsetMs
         toWidth = 1.0 * a.WIDTH / cols * GRID_W
-        container.queueTween(zoomStartMs, zoomDur, ("scale", container.vector.getScaleFromWidth(fromWidth), container.vector.getScaleFromWidth(toWidth), "sin"))
+        fromScale = container.vector.getScaleFromWidth(fromWidth)
+        toScale = container.vector.getScaleFromWidth(toWidth)
+        container.queueTween(zoomStartMs, zoomDur, ("scale", fromScale, toScale, "sin"))
+        container.vector.setTransform(scale=(toScale, toScale)) # temporarily set scale so we can calculate clip visibility for playing audio
         fromWidth = toWidth
 
     ms += halfWaveDur
 
+container.vector.setTransform(scale=(1.0, 1.0)) # reset scale
 stepTime = logTime(stepTime, "Created video clip sequence")
 
 # get audio sequence

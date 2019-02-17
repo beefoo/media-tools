@@ -3,6 +3,8 @@ from lib.math_utils import *
 import math
 
 def getDivisionIncrement(count):
+    if count < 2:
+        return 1.0
     divisions = math.ceil(math.log(count, 2))
     increment = 1.0 / divisions / 2.0
     return increment
