@@ -92,15 +92,18 @@ samples = addNormalizedValues(samples, "distanceFromCenter", "nDistanceFromCente
 
 # limit the number of clips playing
 if sampleCount > a.MAX_AUDIO_CLIPS:
-    halfLeft = int(a.MAX_AUDIO_CLIPS / 2)
-    halfRight = a.MAX_AUDIO_CLIPS - halfLeft
-    # keep the first half of samples
-    keepSamples = samples[:halfLeft]
-    remainingSamples = samples[halfLeft:]
-    random.seed(a.RANDOM_SEED+2)
-    random.shuffle(remainingSamples)
-    remainingSamples = [:halfRight]
-    indicesToKeep = set([s["index"] for s in keepSamples] + [s["index"] for s in remainingSamples])
+    indicesToKeep = []
+    shuffleSamples = samples[:]
+    shuffleSampleCount = a.MAX_AUDIO_CLIPS
+    # keep the middle 8 x 8
+    keepSampleCount = 64
+    if a.MAX_AUDIO_CLIPS > keepSampleCount:
+        shuffleSampleCount -= keepSampleCount
+        keepSamples = samples[:keepSampleCount]
+        indicesToKeep = [s["index"] for s in keepSamples]
+        shuffleSamples = shuffleSamples[keepSampleCount:]
+    samplesToPlay = weightedShuffle(shuffleSamples, [ease((1.0 - s["nDistanceFromCenter"]) * 10000, "quartOut") for s in shuffleSamples], count=shuffleSampleCount, seed=(a.RANDOM_SEED+2))
+    indicesToKeep = set(indicesToKeep + [s["index"] for s in samplesToPlay])
     for i, s in enumerate(samples):
         samples[i]["playAudio"] = (s["index"] in indicesToKeep)
 
@@ -108,6 +111,12 @@ if a.DEBUG:
     for i, s in enumerate(samples):
         pixels = np.array([[getRandomColor(i)]])
         samples[i]["framePixelData"] = [pixels]
+
+# show a viz of which frames are playing
+if a.DEBUG:
+    for i, s in enumerate(samples):
+        samples[i]["alpha"] = 1.0 if s["playAudio"] else 0.2
+    clipsToFrame({ "filename": a.OUTPUT_FRAME % "playTest", "clips": samples, "width": a.WIDTH, "height": a.HEIGHT, "overwrite": True, "debug": True })
 
 clips = samplesToClips(samples)
 stepTime = logTime(startTime, "Samples to clips")
@@ -152,7 +161,7 @@ while cols >= 2:
         offsetMs = roundInt(offset * halfWaveDur)
         zoomStartMs = ms + offsetMs
         toWidth = 1.0 * a.WIDTH / cols * GRID_W
-        container.queueTween(zoomStartMs, zoomDur, ("scale", container.vector.getScaleFromWidth(fromWidth), container.vector.getScaleFromWidth(toWidth), "sinIn"))
+        container.queueTween(zoomStartMs, zoomDur, ("scale", container.vector.getScaleFromWidth(fromWidth), container.vector.getScaleFromWidth(toWidth), "sin"))
         fromWidth = toWidth
 
     ms += halfWaveDur

@@ -21,7 +21,7 @@ def getOffset(count, index):
         for j in range(add):
             offset += offset * 2 * j
             currentIndex += 1
-            if index == currentIndex
+            if index == currentIndex:
                 foundOffset = offset
                 break
         if foundOffset > 0:

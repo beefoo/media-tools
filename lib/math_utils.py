@@ -44,18 +44,34 @@ def ceilToNearest(n, nearest):
 def distance(x1, y1, x2, y2):
     return math.hypot(x2 - x1, y2 - y1)
 
-def ease(n, easingFunction="sinIn"):
-    if easingFunction == "sinIn":
-        return easeIn(n, "sin")
-    elif easingFunction == "sinInOut":
-        return easeInOut(n, "sin")
+def ease(n, easingFunction="sin"):
+    if easingFunction == "sin":
+        return easeSinInOut(n)
+    elif easingFunction == "quadIn":
+        return n ** 2
+    elif easingFunction == "quadOut":
+        return n * (2.0 - n)
+    elif easingFunction == "quadInOut":
+        return 2.0 * n * n if n < 0.5 else -1.0 + (4 - 2.0*n)*n
+    elif easingFunction == "cubicIn":
+        return n ** 3
+    elif easingFunction == "cubicOut":
+        return (n - 1.0)**3 + 1.0
+    elif easingFunction == "cubicInOut":
+        return 4.0 * (n ** 3) if n < 0.5 else (n-1.0)*(2*n-2)*(2*n-2)+1
+    elif easingFunction == "quartIn":
+        return n ** 4
+    elif easingFunction == "quartOut":
+        return 1.0 - (n - 1.0)**4
+    elif easingFunction == "quartInOut":
+        return 8.0 * (n ** 4) if n < 0.5 else 1.0 - 8.0 * ((n-1.0) ** 4)
     else:
         return n
 
-def easeIn(n, easingFunction="sin"):
+def easeSinInOut(n):
     return (math.sin((n+1.5)*math.pi)+1.0) / 2.0
 
-def easeInOut(n, easingFunction="sin"):
+def easeSinInOutBell(n):
     return (math.sin((2.0*n+1.5)*math.pi)+1.0) / 2.0
 
 def findNextValue(arr, value, isSorted=True):
@@ -203,10 +219,16 @@ def translatePoint(x, y, distance, angle):
 def unique(arr):
     return list(set(arr))
 
-def weighted_mean(values, weights=None):
+def weightedMean(values, weights=None):
     count = len(values)
     if count <= 0:
         return 0
     if weights is None:
         weights = [w**2 for w in range(count, 0, -1)]
     return np.average(values, weights=weights)
+
+def weightedShuffle(arr, weights, count=None, seed=3):
+    np.random.seed(seed)
+    weightsSum = sum(weights)
+    weights = [1.0*w/weightsSum for w in weights]
+    return np.random.choice(arr, count, p=weights)

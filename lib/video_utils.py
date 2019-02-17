@@ -190,7 +190,8 @@ def clipsToFrameGPU(clips, width, height):
         framePixelData = clip["framePixelData"]
         count = len(framePixelData)
         if count > 0:
-            pixels = framePixelData[roundInt(clip["tn"] * (count-1))]
+            tn = clip["tn"] if "tn" in clip else 0
+            pixels = framePixelData[roundInt(tn * (count-1))]
             h, w, c = pixels.shape
             tw = clip["width"]
             th = clip["height"]

@@ -155,9 +155,9 @@ def getFeatures(y, sr, start, dur=100, fft=2048, hop_length=512):
     # rolloff = librosa.feature.spectral_rolloff(y=y, sr=sr)[0]
     # flatness = librosa.feature.spectral_flatness(y=y)[0]
 
-    power = round(weighted_mean(stft), 2)
-    # flatness = round(weighted_mean(flatness, weights=stft), 5)
-    # hz = round(weighted_mean(rolloff, weights=stft), 2)
+    power = round(weightedMean(stft), 2)
+    # flatness = round(weightedMean(flatness, weights=stft), 5)
+    # hz = round(weightedMean(rolloff, weights=stft), 2)
     hz = round(hz, 2)
     clarity = round(clarity, 2)
     note = pitchToNote(hz)
