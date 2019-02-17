@@ -6,6 +6,7 @@ import math
 import numpy as np
 import os
 from pprint import pprint
+import random
 import sys
 
 # add parent directory to sys path to import relative modules
@@ -35,6 +36,8 @@ parser.add_argument('-zoom0', dest="ZOOM_START", default=1.0, type=float, help="
 parser.add_argument('-zoom1', dest="ZOOM_END", default=0.0, type=float, help="Zoom start level; 1.0 = completely zoomed in, 0.0 = completely zoomed out")
 parser.add_argument('-zd', dest="ZOOM_DUR", default=500, type=int, help="Zoom duration in milliseconds")
 parser.add_argument('-wd', dest="WAVE_DUR", default=2000, type=int, help="Wave duration in milliseconds")
+parser.add_argument('-mcd', dest="MIN_CLIP_DUR", default=2000, type=int, help="Minumum clip duration")
+parser.add_argument('-maxa', dest="MAX_AUDIO_CLIPS", default=4096, type=int, help="Maximum number of audio clips to play")
 parser.add_argument('-center', dest="CENTER", default="0.5,0.5", help="Center position")
 a = parser.parse_args()
 parseVideoArgs(a)
@@ -66,22 +69,40 @@ if gridCount > sampleCount:
 elif gridCount < sampleCount:
     print("Too many samples (%s), limiting to %s" % (sampleCount, gridCount))
     samples = samples[:gridCount]
+    sampleCount = gridCount
 
 # Sort by grid
 samples = sorted(samples, key=lambda s: (s["gridY"], s["gridX"]))
 samples = addIndices(samples)
 samples = addGridPositions(samples, GRID_W, a.WIDTH, a.HEIGHT, marginX=a.CLIP_MARGIN, marginY=a.CLIP_MARGIN)
 
-# play in order: center first, clockwise
 cCol, cRow = (GRID_W * 0.5, GRID_H * 0.5)
 for i, s in enumerate(samples):
+    # play in order: center first, clockwise
     samples[i]["distanceFromCenter"] = distance(cCol, cRow, s["col"], s["row"])
     samples[i]["angleFromCenter"] = angleBetween(cCol, cRow, s["col"], s["row"])
+    # make clip longer if necessary
+    samples[i]["fadeOut"] = a.MIN_CLIP_DUR if s["dur"] < a.MIN_CLIP_DUR else getClipFadeDur(s["dur"], percentage=0.5)
+    samples[i]["dur"] = max(s["dur"], a.MIN_CLIP_DUR)
 samples = sorted(samples, key=lambda s: (s["distanceFromCenter"], s["angleFromCenter"]))
 samples = addIndices(samples, "playOrder")
 samples = addNormalizedValues(samples, "playOrder", "nPlayOrder")
 samples = addNormalizedValues(samples, "power", "nPower")
 samples = addNormalizedValues(samples, "distanceFromCenter", "nDistanceFromCenter")
+
+# limit the number of clips playing
+if sampleCount > a.MAX_AUDIO_CLIPS:
+    halfLeft = int(a.MAX_AUDIO_CLIPS / 2)
+    halfRight = a.MAX_AUDIO_CLIPS - halfLeft
+    # keep the first half of samples
+    keepSamples = samples[:halfLeft]
+    remainingSamples = samples[halfLeft:]
+    random.seed(a.RANDOM_SEED+2)
+    random.shuffle(remainingSamples)
+    remainingSamples = [:halfRight]
+    indicesToKeep = set([s["index"] for s in keepSamples] + [s["index"] for s in remainingSamples])
+    for i, s in enumerate(samples):
+        samples[i]["playAudio"] = (s["index"] in indicesToKeep)
 
 if a.DEBUG:
     for i, s in enumerate(samples):
@@ -110,6 +131,8 @@ while cols >= 2:
     # play bass
 
     # play and render waves
+    for i, clip in enumerate(clips):
+        clipStartMs = ms + roundInt(a.WAVE_DUR * clip.props["nPlayOrder"])
 
     ms += halfWaveDur
 
