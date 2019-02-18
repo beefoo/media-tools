@@ -30,6 +30,10 @@ def framesExist(filePattern, frameCount):
             break
     return exist
 
+def getFileExt(fn):
+    basename = os.path.basename(fn)
+    return "." + basename.split(".")[-1]
+
 def getFilenames(fileString):
     files = []
     if "*" in fileString:

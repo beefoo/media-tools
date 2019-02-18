@@ -24,32 +24,46 @@ addVideoArgs(parser)
 a = parser.parse_args()
 parseVideoArgs(a)
 
+va = vars(a)
+va["OUTPUT_FRAME"] = "tmp/test/frame.%s.png"
+va["OUTPUT_FILE"] = "output/test.mp4"
+va["CACHE_FILE"] = "tmp/pixel_cache_test.p"
+makeDirectories([a.OUTPUT_FRAME, a.OUTPUT_FILE, a.CACHE_FILE])
+
+FILENAME = "media/sample/LivingSt1958.mp4"
+CLIPS = 256
+CLIPS_PER_FILE = 50
+COLS = int(math.sqrt(CLIPS))
+ROWS = ceilInt(1.0 * CLIPS / COLS)
+DURATION_MS = int(getDurationFromFile(FILENAME, accurate=True) * 1000)
+OUT_DUR_MS = 2000
+MAX_CLIP_DUR_MS = 1000
+
 container = Clip({
     "width": a.WIDTH,
     "height": a.HEIGHT,
     "cache": True
 })
-xc = int(a.WIDTH / 2)
-yc = int(a.HEIGHT / 2)
-clips = [
-    Clip({"index": 0, "x": xc-100, "y": yc-100, "width": 100, "height": 100, "filename": "media/sample/LivingSt1958.mp4", "start": 2000, "dur": 1000}),
-    Clip({"index": 1, "x": xc, "y": yc-100, "width": 100, "height": 100, "filename": "media/sample/LivingSt1958.mp4", "start": 4000, "dur": 1000}),
-    Clip({"index": 2, "x": xc-100, "y": yc, "width": 50, "height": 50, "filename": "media/sample/LivingSt1958.mp4", "start": 20000, "dur": 1000}),
-    Clip({"index": 3, "x": xc, "y": yc, "width": 100, "height": 100, "filename": "media/sample/dolbycanyon.mp4", "start": 2000, "dur": 1000})
-]
+
+samples = []
+clipDur = min(MAX_CLIP_DUR_MS, int(1.0 * DURATION_MS / CLIPS))
+for i in range(CLIPS):
+    samples.append({
+        "filename": FILENAME,
+        "start": int(i * clipDur),
+        "dur": clipDur
+    })
+
+samples = addGridPositions(samples, COLS, a.WIDTH, a.HEIGHT)
+samples = addIndices(samples)
+clips = samplesToClips(samples)
+
 for i, clip in enumerate(clips):
     clip.vector.setParent(container.vector)
 
-ms = 0
-scale = 1.0
-dur = 1000
-for z in range(3):
-    container.queueTween(ms, dur, ("scale", scale, scale+1.0, "sinIn"))
-    scale += 1.0
-    ms += dur
-clips[0].queueTween(0, dur, ("scale", 1.0, 0.5, "sinIn"))
+container.queueTween(0, OUT_DUR_MS, ("scale", 1.0, 4.0, "sin"))
 
-durationMs = ms
+durationMs = OUT_DUR_MS
 print("Total time: %s" % formatSeconds(durationMs/1000.0))
 
 # adjust frames if audio is longer than video
@@ -71,7 +85,8 @@ for f in range(totalFrames):
         "gpu": True
     })
 
-loadVideoPixelDataFromFrames(videoFrames, clips, a.FPS, a.CACHE_FILE)
+loadVideoPixelDataFromFrames(videoFrames, clips, a.FPS, a.CACHE_FILE, clipsPerCacheFile=CLIPS_PER_FILE)
 
-processFrames([videoFrames[0]], threads=1)
+processFrames(videoFrames, threads=1)
+compileFrames(a.OUTPUT_FRAME, a.FPS, a.OUTPUT_FILE, getZeroPadding(totalFrames))
 print("Done.")

@@ -131,7 +131,7 @@ def clipsToFrame(p):
                     framePixelData = clip["framePixelData"]
                     count = len(framePixelData)
                     if count > 0:
-                        pixels = framePixelData[roundInt(clip["tn"] * (count-1))]
+                        pixels = np.array(framePixelData[roundInt(clip["tn"] * (count-1))])
                         clipImg = Image.fromarray(pixels, mode="RGB")
                         clipImg = fillImage(clipImg, roundInt(clip["width"]), roundInt(clip["height"]))
                         clipImg, x, y = applyEffects(clipImg, clip)
@@ -175,7 +175,7 @@ def clipsToFrameDebug(im, clips, width, height):
         if "framePixelData" in clip:
             break
         rindex = getValue(clip, "index", i)
-        pixels = np.array([[getRandomColor(rindex)]])
+        pixels = [[getRandomColor(rindex)]]
         clips[i]["framePixelData"] = [pixels]
         # sys.stdout.write('\r')
         # sys.stdout.write("%s%%" % round(1.0*(i+1)/len(clips)*100,1))
@@ -193,7 +193,7 @@ def clipsToFrameGPU(clips, width, height):
         count = len(framePixelData)
         if count > 0:
             tn = clip["tn"] if "tn" in clip else 0
-            pixels = framePixelData[roundInt(tn * (count-1))]
+            pixels = np.array(framePixelData[roundInt(tn * (count-1))])
             h, w, c = pixels.shape
             tw = clip["width"]
             th = clip["height"]
@@ -387,22 +387,23 @@ def isClipVisible(clip, width, height):
     isOpaque = getAlpha(clip) > 0
     return isInFrame and isOpaque
 
-def loadVideoPixelDataFromFile(filename, clipLength):
-    loaded, pixelData = loadCacheFile(filename)
-    if loaded and len(pixelData) != clipLength:
-        print("Cache pixel mismatch, ignoring")
+def loadVideoPixelDataFromFile(filename, clipCount, clipsPerCacheFile=1000):
+    loaded, pixelData = loadCacheFiles(filename, clipCount, clipsPerCacheFile)
+    if loaded and len(pixelData) != clipCount:
+        print("Cache pixel mismatch (%s != expected %s), ignoring" % (len(pixelData), clipCount))
         loaded = False
     return (loaded, pixelData)
 
-def loadVideoPixelData(clips, fps, filename=None, width=None, height=None, checkVisibility=True):
+def loadVideoPixelData(clips, fps, filename=None, width=None, height=None, checkVisibility=True, clipsPerCacheFile=1000):
     # assumes clip has width, height, and index
     print("Loading video pixel data...")
     clipCount = len(clips)
-    dataLoaded, pixelData = loadVideoPixelDataFromFile(filename, clipCount)
+    dataLoaded, pixelData = loadVideoPixelDataFromFile(filename, clipCount, clipsPerCacheFile)
 
     if not dataLoaded:
         print("No cached data found... rebuilding...")
-        pixelData = [None for i in range(clipCount)]
+        # pixelData = [None for i in range(clipCount)]
+        cacheData = getEmptyCacheDataArr(clipCount, clipsPerCacheFile)
         # load videos
         filenames = list(set([clip["filename"] for clip in clips]))
         fileCount = len(filenames)
@@ -427,17 +428,16 @@ def loadVideoPixelData(clips, fps, filename=None, width=None, height=None, check
                         clipImg = getVideoClipImage(video, videoDur, fclip)
                         clipData.append(np.array(clipImg))
                         ms += msStep
-                    pixelData[clip["index"]] = np.array(clipData)
+                    cacheData = addEntryToCacheArr(filename, cacheData, clipCount, clipsPerCacheFile, clip["index"], clipData)
                 else:
-                    pixelData[clip["index"]] = np.array([])
+                    cacheData = addEntryToCacheArr(filename, cacheData, clipCount, clipsPerCacheFile, clip["index"], [])
 
             video.reader.close()
             del video
             printProgress(i+1, fileCount)
 
-        if filename:
-            pixelData = np.array(pixelData)
-            saveCacheFile(filename, pixelData)
+        # flatten the list
+        pixelData = [item for sublist in cacheData for item in sublist]
 
     for i, clip in enumerate(clips):
         clips[i]["framePixelData"] = pixelData[clip["index"]]
@@ -446,9 +446,9 @@ def loadVideoPixelData(clips, fps, filename=None, width=None, height=None, check
 
     return clips
 
-def loadVideoPixelDataFromFrames(frames, clips, fps, filename=None):
+def loadVideoPixelDataFromFrames(frames, clips, fps, filename, clipsPerCacheFile=1000):
     print("Reading frames for caching...")
-    dataLoaded, pixelData = loadVideoPixelDataFromFile(filename, len(clips))
+    dataLoaded, pixelData = loadVideoPixelDataFromFile(filename, len(clips), clipsPerCacheFile)
 
     if not dataLoaded:
         frameCount = len(frames)
@@ -470,7 +470,7 @@ def loadVideoPixelDataFromFrames(frames, clips, fps, filename=None):
         for i, clip in enumerate(clipDicts):
             clipDicts[i]["width"] = clipMaxes[i, 0]
             clipDicts[i]["height"] = clipMaxes[i, 1]
-        clipDicts = loadVideoPixelData(clipDicts, fps, filename=filename, checkVisibility=False)
+        clipDicts = loadVideoPixelData(clipDicts, fps, filename=filename, checkVisibility=False, clipsPerCacheFile=clipsPerCacheFile)
         print("Assigning clip pixel data")
         for i, clip in enumerate(clipDicts):
             clips[i].setProp("framePixelData", clip["framePixelData"])
