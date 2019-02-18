@@ -30,14 +30,12 @@ addVideoArgs(parser)
 parser.add_argument('-beatms', dest="BEAT_MS", default=1024, type=int, help="Milliseconds per beat")
 parser.add_argument('-margin', dest="CLIP_MARGIN", default=1, type=int, help="Margin between clips in pixels")
 parser.add_argument('-beats', dest="BEAT_DIVISIONS", default=3, type=int, help="Number of times to divide beat, e.g. 1 = 1/2 notes, 2 = 1/4 notes, 3 = 1/8th notes, 4 = 1/16 notes")
-parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.1,0.5", help="Volume range")
+parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.3,0.6", help="Volume range")
 parser.add_argument('-alphar', dest="ALPHA_RANGE", default="0.2,1.0", help="Alpha range")
 parser.add_argument('-translate', dest="TRANSLATE_AMOUNT", default=0.33, type=float, help="Amount to translate clip correlated to minimum dimension")
 parser.add_argument('-grid', dest="GRID", default="256x256", help="Size of grid")
-parser.add_argument('-zoom0', dest="ZOOM_START", default=1.0, type=float, help="Zoom start level; 1.0 = completely zoomed in, 0.0 = completely zoomed out")
-parser.add_argument('-zoom1', dest="ZOOM_END", default=0.0, type=float, help="Zoom start level; 1.0 = completely zoomed in, 0.0 = completely zoomed out")
 parser.add_argument('-zd', dest="ZOOM_DUR", default=1000, type=int, help="Zoom duration in milliseconds")
-parser.add_argument('-wd', dest="WAVE_DUR", default=12000, type=int, help="Wave duration in milliseconds")
+parser.add_argument('-wd', dest="WAVE_UNIT_DUR", default=1000, type=int, help="Wave duration in milliseconds per zoom level")
 parser.add_argument('-mcd', dest="MIN_CLIP_DUR", default=2000, type=int, help="Minumum clip duration")
 parser.add_argument('-maxa', dest="MAX_AUDIO_CLIPS", default=1024, type=int, help="Maximum number of audio clips to play")
 parser.add_argument('-center', dest="CENTER", default="0.5,0.5", help="Center position")
@@ -51,14 +49,6 @@ ALPHA_RANGE =  tuple([float(v) for v in a.ALPHA_RANGE.strip().split(",")])
 GRID_W, GRID_H = tuple([int(v) for v in a.GRID.strip().split("x")])
 UNIT_MS = roundInt(2 ** (-a.BEAT_DIVISIONS) * a.BEAT_MS)
 print("Smallest unit: %ss" % UNIT_MS)
-ZOOM_STEPS = int(min(GRID_W, GRID_H) / 2) - 1
-ZOOM_START = int(1.0 * a.ZOOM_START * (ZOOM_STEPS-1))
-ZOOM_END = int(1.0 * a.ZOOM_END * (ZOOM_STEPS-1))
-CENTER_NX, CENTER_NY = tuple([float(v) for v in a.CENTER.strip().split(",")])
-CENTER_IX, CENTER_IY = (int(CENTER_NX * (GRID_W-1)), int(CENTER_NY * (GRID_H-1)))
-CENTER_X, CENTER_Y = (int(CENTER_NX * (a.WIDTH-1)), int(CENTER_NY * (a.HEIGHT-1)))
-FRAMES_PER_ZOOM = int(a.ZOOM_DUR / 1000.0 * a.FPS)
-FRAMES_PER_WAVE = int(a.WAVE_DUR / 1000.0 * a.FPS)
 
 # Get video data
 startTime = logTime()
@@ -101,7 +91,6 @@ samples = addNormalizedValues(samples, "power", "nPower")
 samples = addNormalizedValues(samples, "distanceFromCenter", "nDistanceFromCenter")
 stepTime = logTime(stepTime, "Calculate clip properties")
 
-
 # limit the number of clips playing
 if sampleCount > a.MAX_AUDIO_CLIPS:
     samples = limitAudioClips(samples, a.MAX_AUDIO_CLIPS, "nDistanceFromCenter", keepFirst=16, invert=True, seed=(a.RANDOM_SEED+2))
@@ -136,19 +125,28 @@ for i, clip in enumerate(clips):
 ms = a.PAD_START
 cols = GRID_W
 fromWidth = 1.0 * a.WIDTH / cols * GRID_W
-halfWaveDur = roundInt(a.WAVE_DUR * 0.5)
 while cols >= 2:
+    zoomSteps = max(1, roundInt(1.0 * cols ** 0.5)) # zoom more steps when we're zoomed out
+    cols -= (zoomSteps * 2)
+    if cols < 2:
+        break
+
+    waveDur = max(a.WAVE_UNIT_DUR * int(zoomSteps/2), a.WAVE_UNIT_DUR)
+    halfWaveDur = roundInt(waveDur * 0.5)
 
     # play bass
 
+    visibleClips = [clip for clip in clips if clip.vector.isVisible(a.WIDTH, a.HEIGHT)]
+    visibleClipCount = len(visibleClips)
+
     # play and render waves
-    for i, clip in enumerate(clips):
-        clipStartMs = ms + roundInt(a.WAVE_DUR * clip.props["nPlayOrder"])
+    for i, clip in enumerate(visibleClips):
+        nprogress = 1.0 * i / visibleClipCount
+        clipStartMs = ms + roundInt(waveDur * nprogress)
 
         # play clip
         audioDur = clip.props["audioDur"]
-        playAudio = clip.props["playAudio"] and clip.vector.isVisible(a.WIDTH, a.HEIGHT)
-        if playAudio:
+        if clip.props["playAudio"]:
             clip.queuePlay(clipStartMs, {
                 "dur": audioDur,
                 "volume": lerp(VOLUME_RANGE, 1.0 - clip.props["nDistanceFromCenter"]),
@@ -158,25 +156,20 @@ while cols >= 2:
                 "reverb": a.REVERB
             })
 
-        # onset the alpha
-        onsetMs = 100
-        clip.queueTween(clipStartMs-onsetMs, onsetMs, ("alpha", ALPHA_RANGE[0], ALPHA_RANGE[1], "sin"))
-        # fade out the alpha
+        # move the clip outward then back inward, alpha up then down
+        alphaFrom = lerp(ALPHA_RANGE, ease(1.0 - clip.props["nDistanceFromCenter"]))
+        alphaTo = ALPHA_RANGE[0]
         renderDur = clip.props["dur"]
-        clip.queueTween(clipStartMs, audioDur, ("alpha", ALPHA_RANGE[1], ALPHA_RANGE[0], "sin"))
-        # move the clip outward then back inward
         halfLeft = int(renderDur / 2)
         halfRight = renderDur - halfLeft
         tx, ty = clip.props["translateAmount"]
-        clip.queueTween(clipStartMs, halfLeft, [("translateX", 0, tx, "sin"), ("translateY", 0, ty, "sin")])
-        clip.queueTween(clipStartMs+halfLeft, halfRight, [("translateX", tx, 0, "sin"), ("translateY", ty, 0, "sin")])
+        clip.queueTween(clipStartMs, halfLeft, [("translateX", 0, tx, "sin"), ("translateY", 0, ty, "sin"), ("alpha", alphaTo, alphaFrom, "sin")])
+        clip.queueTween(clipStartMs+halfLeft, halfRight, [("translateX", tx, 0, "sin"), ("translateY", ty, 0, "sin"), ("alpha", alphaFrom, alphaTo, "sin")])
 
     ms += halfWaveDur
 
     # play snare
 
-    zoomSteps = max(1, roundInt(1.0 * cols ** 0.5)) # zoom more steps when we're zoomed out
-    cols -= (zoomSteps * 2)
     toWidth = 1.0 * a.WIDTH / cols * GRID_W
     fromScale = container.vector.getScaleFromWidth(fromWidth)
     toScale = container.vector.getScaleFromWidth(toWidth)
