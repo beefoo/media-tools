@@ -32,10 +32,11 @@ parser.add_argument('-margin', dest="CLIP_MARGIN", default=1, type=int, help="Ma
 parser.add_argument('-beats', dest="BEAT_DIVISIONS", default=3, type=int, help="Number of times to divide beat, e.g. 1 = 1/2 notes, 2 = 1/4 notes, 3 = 1/8th notes, 4 = 1/16 notes")
 parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.3,0.6", help="Volume range")
 parser.add_argument('-alphar', dest="ALPHA_RANGE", default="0.2,1.0", help="Alpha range")
-parser.add_argument('-translate', dest="TRANSLATE_AMOUNT", default=0.33, type=float, help="Amount to translate clip correlated to minimum dimension")
+parser.add_argument('-translate', dest="TRANSLATE_AMOUNT", default=0.667, type=float, help="Amount to translate clip as a percentage of minimum dimension")
 parser.add_argument('-grid', dest="GRID", default="256x256", help="Size of grid")
 parser.add_argument('-zd', dest="ZOOM_DUR", default=1000, type=int, help="Zoom duration in milliseconds")
-parser.add_argument('-wd', dest="WAVE_UNIT_DUR", default=1000, type=int, help="Wave duration in milliseconds per zoom level")
+parser.add_argument('-wd', dest="WAVE_DUR", default=8000, type=int, help="Wave duration in milliseconds")
+parser.add_argument('-bd', dest="BEAT_DUR", default=6000, type=int, help="Beat duration in milliseconds")
 parser.add_argument('-mcd', dest="MIN_CLIP_DUR", default=2000, type=int, help="Minumum clip duration")
 parser.add_argument('-maxa', dest="MAX_AUDIO_CLIPS", default=1024, type=int, help="Maximum number of audio clips to play")
 parser.add_argument('-center', dest="CENTER", default="0.5,0.5", help="Center position")
@@ -47,8 +48,6 @@ makeDirectories([a.OUTPUT_FRAME, a.OUTPUT_FILE, a.CACHE_FILE])
 VOLUME_RANGE = tuple([float(v) for v in a.VOLUME_RANGE.strip().split(",")])
 ALPHA_RANGE =  tuple([float(v) for v in a.ALPHA_RANGE.strip().split(",")])
 GRID_W, GRID_H = tuple([int(v) for v in a.GRID.strip().split("x")])
-UNIT_MS = roundInt(2 ** (-a.BEAT_DIVISIONS) * a.BEAT_MS)
-print("Smallest unit: %ss" % UNIT_MS)
 
 # Get video data
 startTime = logTime()
@@ -131,8 +130,8 @@ while cols >= 2:
     if cols < 2:
         break
 
-    waveDur = max(a.WAVE_UNIT_DUR * int(zoomSteps/2), a.WAVE_UNIT_DUR)
-    halfWaveDur = roundInt(waveDur * 0.5)
+    waveDur = a.WAVE_DUR
+    halfBeatDur = roundInt(a.BEAT_DUR * 0.5)
 
     # play bass
 
@@ -166,7 +165,7 @@ while cols >= 2:
         clip.queueTween(clipStartMs, halfLeft, [("translateX", 0, tx, "sin"), ("translateY", 0, ty, "sin"), ("alpha", alphaTo, alphaFrom, "sin")])
         clip.queueTween(clipStartMs+halfLeft, halfRight, [("translateX", tx, 0, "sin"), ("translateY", ty, 0, "sin"), ("alpha", alphaFrom, alphaTo, "sin")])
 
-    ms += halfWaveDur
+    ms += halfBeatDur
 
     # play snare
 
@@ -177,7 +176,7 @@ while cols >= 2:
     container.vector.setTransform(scale=(toScale, toScale)) # temporarily set scale so we can calculate clip visibility for playing audio
     fromWidth = toWidth
 
-    ms += halfWaveDur
+    ms += halfBeatDur
 
 # sort frames
 container.vector.sortFrames()

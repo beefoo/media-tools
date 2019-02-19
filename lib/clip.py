@@ -55,6 +55,8 @@ class Vector:
         elif name == "y":
             keyframe.update({"name": "pos", "dimension": 1})
 
+        name = keyframe["name"]
+
         if name in self.keyframes:
             self.keyframes[name].append(keyframe)
             if sortFrames:
