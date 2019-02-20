@@ -96,6 +96,7 @@ samples = addNormalizedValues(samples, "distanceFromCenter", "nDistanceFromCente
 for i, s in enumerate(samples):
     audioDur = s["audioDur"]
     samples[i].update({
+        "zindex": sampleCount-i,
         "volume": lerp(VOLUME_RANGE, (1.0 - s["nDistanceFromCenter"]) * s["volumeMultiplier"]),
         "fadeOut": getClipFadeDur(audioDur, percentage=0.5, maxDur=-1),
         "fadeIn": getClipFadeDur(audioDur),

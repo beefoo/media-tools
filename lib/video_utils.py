@@ -189,7 +189,7 @@ def clipsToFrameGPU(clips, width, height):
     offset = 0
     precision = 3
 
-    for zindex, clip in enumerate(clips):
+    for index, clip in enumerate(clips):
         framePixelData = clip["framePixelData"]
         count = len(framePixelData)
         if count > 0:
@@ -215,7 +215,8 @@ def clipsToFrameGPU(clips, width, height):
             alpha = getAlpha(clip)
             # rotation = roundInt(getRotation(clip) * 1000)
             # blur = roundInt(getValue(clip, "blur", 0) * 1000)
-            properties.append([offset, x, y, w, h, tw, th, alpha, zindex+1])
+            zindex = clip["zindex"] if "zindex" in clip else index+1
+            properties.append([offset, x, y, w, h, tw, th, alpha, zindex])
             offset += (h*w*c)
     pixels = clipsToImageGPU(width, height, pixelData, properties, c)
     return Image.fromarray(pixels, mode="RGB")
