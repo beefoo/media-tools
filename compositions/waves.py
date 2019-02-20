@@ -72,7 +72,7 @@ samples = addIndices(samples)
 samples = prependAll(samples, ("filename", a.MEDIA_DIRECTORY))
 samples = addGridPositions(samples, GRID_W, a.WIDTH, a.HEIGHT, marginX=a.CLIP_MARGIN, marginY=a.CLIP_MARGIN)
 
-cCol, cRow = (GRID_W * 0.5, GRID_H * 0.5)
+cCol, cRow = ((GRID_W-1) * 0.5, (GRID_H-1) * 0.5)
 for i, s in enumerate(samples):
     # play in order: center first, clockwise
     samples[i]["distanceFromCenter"] = distance(cCol, cRow, s["col"], s["row"])
