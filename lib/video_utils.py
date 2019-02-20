@@ -127,6 +127,8 @@ def clipsToFrame(p):
             if useGPU:
                 im = clipsToFrameGPU(clips, width, height)
             else:
+                if len(clips) > 0 and "zindex" in clips[0]:
+                    clips = sorted(clips, key=lambda c: c["zindex"])
                 for clip in clips:
                     framePixelData = clip["framePixelData"]
                     count = len(framePixelData)
