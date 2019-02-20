@@ -138,7 +138,7 @@ def clipsToFrame(p):
                         clipImg = Image.fromarray(pixels, mode="RGB")
                         clipImg = fillImage(clipImg, roundInt(clip["width"]), roundInt(clip["height"]))
                         clipImg, x, y = applyEffects(clipImg, clip)
-                        im = pasteImage(im, clipImg, x, y)
+                        im = pasteImage(im, clipImg, roundInt(x), roundInt(y))
 
         # otherwise, load pixels from the video source
         else:
@@ -156,7 +156,7 @@ def clipsToFrame(p):
                 for clip in vclips:
                     clipImg = getVideoClipImage(video, videoDur, clip)
                     clipImg, x, y = applyEffects(clipImg, clip)
-                    im = pasteImage(im, clipImg, x, y)
+                    im = pasteImage(im, clipImg, roundInt(x), roundInt(y))
                 video.reader.close()
                 del video
 
@@ -185,11 +185,11 @@ def clipsToFrameDebug(im, clips, width, height):
         # sys.stdout.flush()
     return clipsToFrameGPU(clips, width, height)
 
-def clipsToFrameGPU(clips, width, height):
+def clipsToFrameGPU(clips, width, height, precision=5):
     pixelData = []
     properties = []
     offset = 0
-    precision = 3
+    precisionMultiplier = int(10 ** precision)
 
     for index, clip in enumerate(clips):
         framePixelData = clip["framePixelData"]
@@ -218,9 +218,10 @@ def clipsToFrameGPU(clips, width, height):
             # rotation = roundInt(getRotation(clip) * 1000)
             # blur = roundInt(getValue(clip, "blur", 0) * 1000)
             zindex = clip["zindex"] if "zindex" in clip else index+1
-            properties.append([offset, x, y, w, h, tw, th, alpha, zindex])
+            # print("%s, %s, %s, %s" % (x, y, tw, th))
+            properties.append([offset, roundInt(x*precisionMultiplier), roundInt(y*precisionMultiplier), w, h, roundInt(tw*precisionMultiplier), roundInt(th*precisionMultiplier), alpha, zindex])
             offset += (h*w*c)
-    pixels = clipsToImageGPU(width, height, pixelData, properties, c)
+    pixels = clipsToImageGPU(width, height, pixelData, properties, c, precision)
     return Image.fromarray(pixels, mode="RGB")
 
 def compileFrames(infile, fps, outfile, padZeros, audioFile=None):

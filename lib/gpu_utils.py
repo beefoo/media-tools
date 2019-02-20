@@ -13,8 +13,9 @@ try:
 except ImportError:
     print("Warning: no PyOpenCL detected, so no GPU-accellerated processing available")
 
-def clipsToImageGPU(width, height, pixelData, properties, colorDimensions):
+def clipsToImageGPU(width, height, pixelData, properties, colorDimensions, precision):
     count = len(pixelData)
+    precisionMultiplier = int(10 ** precision)
     flatPixelData = []
     isUniform = np.array(pixelData).ndim > 1
     if isUniform:
@@ -32,7 +33,25 @@ def clipsToImageGPU(width, height, pixelData, properties, colorDimensions):
 
     # the kernel function
     srcCode = """
+    static float norm(float value, float a, float b) {
+        float n = (value - a) / (b - a);
+        return n;
+    }
+
+    static int4 blendColors(int4 color1, int4 color2, float amount) {
+        float invAmount = 1.0 - amount;
+
+        // x, y, z, w = r, g, b, a
+        int r = (int) round(((float) color1.x * amount) + ((float) color2.x * invAmount));
+        int g = (int) round(((float) color1.y * amount) + ((float) color2.y * invAmount));
+        int b = (int) round(((float) color1.z * amount) + ((float) color2.z * invAmount));
+        int a = (int) round(((float) color1.w * amount) + ((float) color2.w * invAmount));
+
+        return (int4)(r, g, b, a);
+    }
+
     int4 getPixel(__global uchar *pdata, int x, int y, int h, int w, int dim, int offset);
+    int4 getPixelF(__global uchar *pdata, float xF, float yF, int h, int w, int dim, int offset);
 
     int4 getPixel(__global uchar *pdata, int x, int y, int h, int w, int dim, int offset) {
         if (x < 0 || y < 0 || x >= w || y >= h) {
@@ -49,38 +68,67 @@ def clipsToImageGPU(width, height, pixelData, properties, colorDimensions):
         return (int4)(r, g, b, a);
     }
 
+    int4 getPixelF(__global uchar *pdata, float xF, float yF, int h, int w, int dim, int offset) {
+        if (xF <= -1.0 || yF <= -1.0 || xF >= (float)(w+1) || yF >= (float)(h+1)) {
+            return (int4)(0, 0, 0, 0);
+        }
+        int x0 = (int) floor(xF);
+        int x1 = (int) ceil(xF);
+        float xLerp = xF - (float) x0;
+        int y0 = (int) floor(yF);
+        int y1 = (int) ceil(yF);
+        float yLerp = yF - (float) y0;
+
+        xLerp = 1.0 - xLerp;
+        yLerp = 1.0 - yLerp;
+
+        int4 colorTL = getPixel(pdata, x0, y0, h, w, dim, offset);
+        int4 colorTR = getPixel(pdata, x1, y0, h, w, dim, offset);
+        int4 colorBL = getPixel(pdata, x0, y1, h, w, dim, offset);
+        int4 colorBR = getPixel(pdata, x1, y1, h, w, dim, offset);
+
+        int4 colorT = blendColors(colorTL, colorTR, xLerp);
+        int4 colorB = blendColors(colorBL, colorBR, xLerp);
+
+        return blendColors(colorT, colorB, yLerp);
+    }
+
     __kernel void makeImage(__global uchar *pdata, __global int *props, __global int *zvalues, __global uchar *result){
         int canvasW = %d;
         int canvasH = %d;
         int i = get_global_id(0);
         int pcount = %d;
         int colorDimensions = %d;
+        int precisionMultiplier = %d;
         int offset = props[i*pcount];
-        int x = props[i*pcount+1];
-        int y = props[i*pcount+2];
+        float xF = (float) props[i*pcount+1] / (float) precisionMultiplier;
+        float yF = (float) props[i*pcount+2] / (float) precisionMultiplier;
+        int x = (int) floor(xF);
+        int y = (int) floor(yF);
+        float remainderX = xF - (float) x;
+        float remainderY = yF - (float) y;
         int w = props[i*pcount+3];
         int h = props[i*pcount+4];
-        int tw = props[i*pcount+5];
-        int th = props[i*pcount+6];
+        float twF = (float) props[i*pcount+5] / (float) precisionMultiplier;
+        float thF = (float) props[i*pcount+6] / (float) precisionMultiplier;
+        int tw = (int) ceil(twF);
+        int th = (int) ceil(thF);
         int alpha = props[i*pcount+7];
         int zdindex = props[i*pcount+8];
         float falpha = (float) alpha / (float) 255.0;
-        bool isScaled = (w != tw || h != th);
+
+        // printf("%%s", " v3 ");
 
         for (int row=0; row<th; row++) {
             for (int col=0; col<tw; col++) {
-                int srcX = col;
-                int srcY = row;
-                int dstX = col;
-                int dstY = row;
-                if (isScaled) {
-                    srcX = (int) round(((float) dstX / (float) (tw-1)) * (float) (w-1));
-                    srcY = (int) round(((float) dstY / (float) (th-1)) * (float) (h-1));
-                }
-                dstX = dstX + x;
-                dstY = dstY + y;
+                int dstX = col + x;
+                int dstY = row + y;
+
+                float srcXF = norm((float) col, remainderX, remainderX+twF) * (float) (w-1);
+                float srcYF = norm((float) row, remainderY, remainderY+thF) * (float) (h-1);
+
                 if (dstX >= 0 && dstX < canvasW && dstY >= 0 && dstY < canvasH) {
-                    int4 srcColor = getPixel(pdata, srcX, srcY, h, w, colorDimensions, offset);
+                    int4 srcColor = getPixelF(pdata, srcXF, srcYF, h, w, colorDimensions, offset);
                     int destIndex = dstY * canvasW * 3 + dstX * 3;
                     int destZIndex = dstY * canvasW + dstX;
                     int destZValue = zvalues[dstY * canvasW + dstX];
@@ -102,7 +150,7 @@ def clipsToImageGPU(width, height, pixelData, properties, colorDimensions):
             }
         }
     }
-    """ % (width, height, pcount, colorDimensions)
+    """ % (width, height, pcount, colorDimensions, precisionMultiplier)
 
     # Get platforms, both CPU and GPU
     plat = cl.get_platforms()

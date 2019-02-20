@@ -155,10 +155,10 @@ class Vector:
 
     def getPropsAtTime(self, ms):
         props = {
-            "x": roundInt(self.getX(ms)),
-            "y": roundInt(self.getY(ms)),
-            "width": roundInt(self.getWidth(ms)),
-            "height": roundInt(self.getHeight(ms)),
+            "x": self.getX(ms),
+            "y": self.getY(ms),
+            "width": self.getWidth(ms),
+            "height": self.getHeight(ms),
             "rotation": self.getRotation(ms),
             "alpha": self.getAlpha(ms),
             "blur": self.getBlur(ms)
