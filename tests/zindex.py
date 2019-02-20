@@ -46,4 +46,16 @@ clipsToFrame({
     "clips": clips
 })
 
+for i, clip in enumerate(clips):
+    clips[i]["alpha"] = 0.5
+
+clipsToFrame({
+    "filename": "output/zindexTest3.png",
+    "width": 150,
+    "height": 150,
+    "overwrite": True,
+    "gpu": True,
+    "clips": clips
+})
+
 print("Done.")

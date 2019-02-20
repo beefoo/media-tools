@@ -88,9 +88,14 @@ def clipsToImageGPU(width, height, pixelData, properties, colorDimensions):
                     // if alpha is greater than zero and z-index is lower than existing (if applicable)
                     if (srcColor.w > 0 && (destZValue <= 0 || destZValue < zdindex)) {
                         float talpha = (float) srcColor.w / (float) 255.0 * falpha;
-                        result[destIndex] = (int) round((float) srcColor.x * talpha);
-                        result[destIndex+1] = (int) round((float) srcColor.y * talpha);
-                        result[destIndex+2] = (int) round((float) srcColor.z * talpha);
+                        float invalpha = 1.0 - talpha;
+                        // mix the existing color with new color
+                        int dr = result[destIndex];
+                        int dg = result[destIndex+1];
+                        int db = result[destIndex+2];
+                        result[destIndex] = (int) round(((float) srcColor.x * talpha) + ((float) dr * invalpha));
+                        result[destIndex+1] = (int) round(((float) srcColor.y * talpha) + ((float) dg * invalpha));
+                        result[destIndex+2] = (int) round(((float) srcColor.z * talpha) + ((float) db * invalpha));
                         zvalues[destZIndex] = zdindex;
                     }
                 }
@@ -118,7 +123,7 @@ def clipsToImageGPU(width, height, pixelData, properties, colorDimensions):
     bufIn1 =  cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=flatPixelData)
     bufIn2 =  cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=properties)
     bufInZ = cl.Buffer(ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=zvalues)
-    bufOut = cl.Buffer(ctx, mf.WRITE_ONLY | mf.COPY_HOST_PTR, hostbuf=result)
+    bufOut = cl.Buffer(ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=result)
     prg.makeImage(queue, (count, ), None , bufIn1, bufIn2, bufInZ, bufOut)
 
     # Copy result
