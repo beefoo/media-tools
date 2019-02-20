@@ -3,6 +3,7 @@
 import numpy as np
 import os
 from pprint import pprint
+import sys
 
 # Don't require pyopencl to be installed, but it will throw error if we try to use it and it doesn't exist
 try:
@@ -26,6 +27,7 @@ def clipsToImageGPU(width, height, pixelData, properties, colorDimensions):
     properties = np.array(properties).reshape(-1)
     flatPixelData = flatPixelData.astype(np.uint8)
     properties = properties.astype(np.int32)
+    zvalues = np.zeros(width * height, dtype=np.int32)
     result = np.zeros(width * height * 3, dtype=np.uint8)
 
     # the kernel function
@@ -47,7 +49,7 @@ def clipsToImageGPU(width, height, pixelData, properties, colorDimensions):
         return (int4)(r, g, b, a);
     }
 
-    __kernel void makeImage(__global uchar *pdata, __global int *props, __global uchar *result){
+    __kernel void makeImage(__global uchar *pdata, __global int *props, __global int *zvalues, __global uchar *result){
         int canvasW = %d;
         int canvasH = %d;
         int i = get_global_id(0);
@@ -61,6 +63,7 @@ def clipsToImageGPU(width, height, pixelData, properties, colorDimensions):
         int tw = props[i*pcount+5];
         int th = props[i*pcount+6];
         int alpha = props[i*pcount+7];
+        int zdindex = props[i*pcount+8];
         float falpha = (float) alpha / (float) 255.0;
         bool isScaled = (w != tw || h != th);
 
@@ -79,12 +82,16 @@ def clipsToImageGPU(width, height, pixelData, properties, colorDimensions):
                 if (dstX >= 0 && dstX < canvasW && dstY >= 0 && dstY < canvasH) {
                     int4 srcColor = getPixel(pdata, srcX, srcY, h, w, colorDimensions, offset);
                     int destIndex = dstY * canvasW * 3 + dstX * 3;
+                    int destZIndex = dstY * canvasW + dstX;
+                    int destZValue = zvalues[dstY * canvasW + dstX];
                     // r, g, b, a = x, y, z, w
-                    if (srcColor.w > 0) {
+                    // if alpha is greater than zero and z-index is lower than existing (if applicable)
+                    if (srcColor.w > 0 && (destZValue <= 0 || destZValue < zdindex)) {
                         float talpha = (float) srcColor.w / (float) 255.0 * falpha;
                         result[destIndex] = (int) round((float) srcColor.x * talpha);
                         result[destIndex+1] = (int) round((float) srcColor.y * talpha);
                         result[destIndex+2] = (int) round((float) srcColor.z * talpha);
+                        zvalues[destZIndex] = zdindex;
                     }
                 }
             }
@@ -110,8 +117,9 @@ def clipsToImageGPU(width, height, pixelData, properties, colorDimensions):
 
     bufIn1 =  cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=flatPixelData)
     bufIn2 =  cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=properties)
+    bufInZ = cl.Buffer(ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=zvalues)
     bufOut = cl.Buffer(ctx, mf.WRITE_ONLY | mf.COPY_HOST_PTR, hostbuf=result)
-    prg.makeImage(queue, (count, ), None , bufIn1, bufIn2, bufOut)
+    prg.makeImage(queue, (count, ), None , bufIn1, bufIn2, bufInZ, bufOut)
 
     # Copy result
     cl.enqueue_copy(queue, result, bufOut)

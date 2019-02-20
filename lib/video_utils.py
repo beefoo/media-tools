@@ -131,7 +131,8 @@ def clipsToFrame(p):
                     framePixelData = clip["framePixelData"]
                     count = len(framePixelData)
                     if count > 0:
-                        pixels = np.array(framePixelData[roundInt(clip["tn"] * (count-1))])
+                        tn = clip["tn"] if "tn" in clip else 0
+                        pixels = np.array(framePixelData[roundInt(tn * (count-1))])
                         clipImg = Image.fromarray(pixels, mode="RGB")
                         clipImg = fillImage(clipImg, roundInt(clip["width"]), roundInt(clip["height"]))
                         clipImg, x, y = applyEffects(clipImg, clip)
@@ -188,7 +189,7 @@ def clipsToFrameGPU(clips, width, height):
     offset = 0
     precision = 3
 
-    for clip in clips:
+    for zindex, clip in enumerate(clips):
         framePixelData = clip["framePixelData"]
         count = len(framePixelData)
         if count > 0:
@@ -214,7 +215,7 @@ def clipsToFrameGPU(clips, width, height):
             alpha = getAlpha(clip)
             # rotation = roundInt(getRotation(clip) * 1000)
             # blur = roundInt(getValue(clip, "blur", 0) * 1000)
-            properties.append([offset, x, y, w, h, tw, th, alpha])
+            properties.append([offset, x, y, w, h, tw, th, alpha, zindex+1])
             offset += (h*w*c)
     pixels = clipsToImageGPU(width, height, pixelData, properties, c)
     return Image.fromarray(pixels, mode="RGB")
