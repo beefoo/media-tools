@@ -38,7 +38,8 @@ parser.add_argument('-zd', dest="ZOOM_DUR", default=1000, type=int, help="Zoom d
 parser.add_argument('-wd', dest="WAVE_DUR", default=8000, type=int, help="Wave duration in milliseconds")
 parser.add_argument('-bd', dest="BEAT_DUR", default=6000, type=int, help="Beat duration in milliseconds")
 parser.add_argument('-mcd', dest="MIN_CLIP_DUR", default=2000, type=int, help="Minumum clip duration")
-parser.add_argument('-maxa', dest="MAX_AUDIO_CLIPS", default=1024, type=int, help="Maximum number of audio clips to play")
+parser.add_argument('-maxa', dest="MAX_AUDIO_CLIPS", default=2048, type=int, help="Maximum number of audio clips to play")
+parser.add_argument('-keep', dest="KEEP_FIRST_AUDIO_CLIPS", default=64, type=int, help="Ensure the middle x audio files play")
 parser.add_argument('-center', dest="CENTER", default="0.5,0.5", help="Center position")
 a = parser.parse_args()
 parseVideoArgs(a)
@@ -82,17 +83,31 @@ for i, s in enumerate(samples):
     # calculate translate distance
     translateDistance = min(s["width"], s["height"]) * a.TRANSLATE_AMOUNT
     samples[i]["translateAmount"] = translatePoint(0, 0, translateDistance, samples[i]["angleFromCenter"])
+    # randomized volume multiplier
+    samples[i]["volumeMultiplier"] = pseudoRandom(a.RANDOM_SEED+i, range=(0.33, 1.0))
 
 samples = sorted(samples, key=lambda s: (s["distanceFromCenter"], s["angleFromCenter"]))
 samples = addIndices(samples, "playOrder")
 samples = addNormalizedValues(samples, "playOrder", "nPlayOrder")
 samples = addNormalizedValues(samples, "power", "nPower")
 samples = addNormalizedValues(samples, "distanceFromCenter", "nDistanceFromCenter")
+
+# add audio clip properties
+for i, s in enumerate(samples):
+    audioDur = s["audioDur"]
+    samples[i].update({
+        "volume": lerp(VOLUME_RANGE, (1.0 - s["nDistanceFromCenter"]) * s["volumeMultiplier"]),
+        "fadeOut": getClipFadeDur(audioDur, percentage=0.5, maxDur=-1),
+        "fadeIn": getClipFadeDur(audioDur),
+        "pan": lerp((-1.0, 1.0), s["nx"]),
+        "reverb": a.REVERB
+    })
+
 stepTime = logTime(stepTime, "Calculate clip properties")
 
 # limit the number of clips playing
 if sampleCount > a.MAX_AUDIO_CLIPS:
-    samples = limitAudioClips(samples, a.MAX_AUDIO_CLIPS, "nDistanceFromCenter", keepFirst=16, invert=True, seed=(a.RANDOM_SEED+2))
+    samples = limitAudioClips(samples, a.MAX_AUDIO_CLIPS, "nDistanceFromCenter", keepFirst=a.KEEP_FIRST_AUDIO_CLIPS, invert=True, seed=(a.RANDOM_SEED+2))
     stepTime = logTime(stepTime, "Calculate which audio clips are playing")
 
 if a.DEBUG:
@@ -144,15 +159,14 @@ while cols >= 2:
         clipStartMs = ms + roundInt(waveDur * nprogress)
 
         # play clip
-        audioDur = clip.props["audioDur"]
         if clip.props["playAudio"]:
             clip.queuePlay(clipStartMs, {
-                "dur": audioDur,
-                "volume": lerp(VOLUME_RANGE, 1.0 - clip.props["nDistanceFromCenter"]),
-                "fadeOut": getClipFadeDur(audioDur, percentage=0.5, maxDur=-1),
-                "fadeIn": getClipFadeDur(audioDur),
-                "pan": lerp((-1.0, 1.0), clip.props["nx"]),
-                "reverb": a.REVERB
+                "dur": clip.props["audioDur"],
+                "volume": clip.props["volume"],
+                "fadeOut": clip.props["fadeOut"],
+                "fadeIn": clip.props["fadeIn"],
+                "pan": clip.props["pan"],
+                "reverb": clip.props["reverb"]
             })
 
         # move the clip outward then back inward, alpha up then down
