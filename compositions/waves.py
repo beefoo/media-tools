@@ -33,6 +33,7 @@ parser.add_argument('-beats', dest="BEAT_DIVISIONS", default=3, type=int, help="
 parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.3,0.6", help="Volume range")
 parser.add_argument('-alphar', dest="ALPHA_RANGE", default="0.2,1.0", help="Alpha range")
 parser.add_argument('-translate', dest="TRANSLATE_AMOUNT", default=0.8, type=float, help="Amount to translate clip as a percentage of minimum dimension")
+parser.add_argument('-scale', dest="SCALE_AMOUNT", default=1.33, type=float, help="Amount to scale clip")
 parser.add_argument('-grid', dest="GRID", default="256x256", help="Size of grid")
 parser.add_argument('-grid1', dest="END_GRID", default="6x6", help="End size of grid")
 parser.add_argument('-zd', dest="ZOOM_DUR", default=500, type=int, help="Zoom duration in milliseconds")
@@ -181,8 +182,18 @@ while True:
         halfLeft = int(renderDur / 2)
         halfRight = renderDur - halfLeft
         tx, ty = clip.props["translateAmount"]
-        clip.queueTween(clipStartMs, halfLeft, [("translateX", 0, tx, "sin"), ("translateY", 0, ty, "sin"), ("alpha", alphaTo, alphaFrom, "sin")])
-        clip.queueTween(clipStartMs+halfLeft, halfRight, [("translateX", tx, 0, "sin"), ("translateY", ty, 0, "sin"), ("alpha", alphaFrom, alphaTo, "sin")])
+        clip.queueTween(clipStartMs, halfLeft, [
+            ("translateX", 0, tx, "sin"),
+            ("translateY", 0, ty, "sin"),
+            ("alpha", alphaTo, alphaFrom, "sin"),
+            ("scale", 1.0, a.SCALE_AMOUNT, "sin")
+        ])
+        clip.queueTween(clipStartMs+halfLeft, halfRight, [
+            ("translateX", tx, 0, "sin"),
+            ("translateY", ty, 0, "sin"),
+            ("alpha", alphaFrom, alphaTo, "sin"),
+            ("scale", a.SCALE_AMOUNT, 1.0, "sin")
+        ])
 
     ms += halfBeatDur
 
