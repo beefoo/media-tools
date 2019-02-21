@@ -34,6 +34,7 @@ parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.3,0.6", help="Volum
 parser.add_argument('-alphar', dest="ALPHA_RANGE", default="0.2,1.0", help="Alpha range")
 parser.add_argument('-translate', dest="TRANSLATE_AMOUNT", default=0.8, type=float, help="Amount to translate clip as a percentage of minimum dimension")
 parser.add_argument('-grid', dest="GRID", default="256x256", help="Size of grid")
+parser.add_argument('-grid1', dest="END_GRID", default="6x6", help="End size of grid")
 parser.add_argument('-zd', dest="ZOOM_DUR", default=500, type=int, help="Zoom duration in milliseconds")
 parser.add_argument('-wd', dest="WAVE_DUR", default=8000, type=int, help="Wave duration in milliseconds")
 parser.add_argument('-bd', dest="BEAT_DUR", default=6000, type=int, help="Beat duration in milliseconds")
@@ -49,6 +50,7 @@ makeDirectories([a.OUTPUT_FRAME, a.OUTPUT_FILE, a.CACHE_FILE])
 VOLUME_RANGE = tuple([float(v) for v in a.VOLUME_RANGE.strip().split(",")])
 ALPHA_RANGE =  tuple([float(v) for v in a.ALPHA_RANGE.strip().split(",")])
 GRID_W, GRID_H = tuple([int(v) for v in a.GRID.strip().split("x")])
+END_GRID_W, END_GRID_H = tuple([int(v) for v in a.END_GRID.strip().split("x")])
 
 # Get video data
 startTime = logTime()
@@ -140,11 +142,13 @@ for i, clip in enumerate(clips):
 ms = a.PAD_START
 cols = GRID_W
 fromWidth = 1.0 * a.WIDTH / cols * GRID_W
-while cols >= 2:
+while True:
     zoomSteps = max(1, roundInt(1.0 * cols ** 0.5)) # zoom more steps when we're zoomed out
     cols -= (zoomSteps * 2)
-    if cols < 2:
-        break
+    lastStep = False
+    if cols <= END_GRID_W:
+        cols = END_GRID_W
+        lastStep = True
 
     waveDur = a.WAVE_DUR
     halfBeatDur = roundInt(a.BEAT_DUR * 0.5)
@@ -192,6 +196,9 @@ while cols >= 2:
     fromWidth = toWidth
 
     ms += halfBeatDur
+
+    if lastStep:
+        break
 
 # sort frames
 container.vector.sortFrames()
