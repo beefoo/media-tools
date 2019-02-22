@@ -113,11 +113,14 @@ def clipsToImageGPU(width, height, pixelData, properties, colorDimensions, preci
         float thF = (float) props[i*pcount+6] / (float) precisionMultiplier;
         int tw = (int) ceil(twF);
         int th = (int) ceil(thF);
+        // int tw = (int) ceil(twF) + (int) ceil(remainderX);
+        // int th = (int) ceil(thF) + (int) ceil(remainderY);
         int alpha = props[i*pcount+7];
         int zdindex = props[i*pcount+8];
         float falpha = (float) alpha / (float) 255.0;
 
-        // printf("%%s", " v3 ");
+        //printf(" %%d ", tw);
+        //printf(" %%d ", th);
 
         for (int row=0; row<th; row++) {
             for (int col=0; col<tw; col++) {
@@ -126,6 +129,8 @@ def clipsToImageGPU(width, height, pixelData, properties, colorDimensions, preci
 
                 float srcXF = norm((float) col, remainderX, remainderX+twF) * (float) (w-1);
                 float srcYF = norm((float) row, remainderY, remainderY+thF) * (float) (h-1);
+
+                // printf(" %%f ", srcXF);
 
                 if (dstX >= 0 && dstX < canvasW && dstY >= 0 && dstY < canvasH) {
                     int4 srcColor = getPixelF(pdata, srcXF, srcYF, h, w, colorDimensions, offset);

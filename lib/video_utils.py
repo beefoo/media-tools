@@ -358,6 +358,12 @@ def getMediaTypes(filename):
         result = subprocess.check_output(command).splitlines()
     return result
 
+def getSolidPixels(color, width=100, height=100):
+    dim = len(color)
+    pixels = np.zeros((height, width, dim))
+    pixels[:,:] = color
+    return pixels
+
 def getVideoClipImage(video, videoDur, clip):
     videoT = clip["t"] / 1000.0
     cw = roundInt(clip["width"])
