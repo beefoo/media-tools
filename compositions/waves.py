@@ -45,7 +45,7 @@ parser.add_argument('-keep', dest="KEEP_FIRST_AUDIO_CLIPS", default=64, type=int
 parser.add_argument('-center', dest="CENTER", default="0.5,0.5", help="Center position")
 a = parser.parse_args()
 parseVideoArgs(a)
-makeDirectories([a.OUTPUT_FRAME, a.OUTPUT_FILE, a.CACHE_FILE])
+makeDirectories([a.OUTPUT_FRAME, a.OUTPUT_FILE, a.CACHE_DIR])
 
 # parse arguments
 VOLUME_RANGE = tuple([float(v) for v in a.VOLUME_RANGE.strip().split(",")])
@@ -256,7 +256,7 @@ for f in range(totalFrames):
 stepTime = logTime(stepTime, "Processed video frame sequence")
 
 if a.CACHE_VIDEO:
-    loadVideoPixelDataFromFrames(videoFrames, clips, a.FPS, a.CACHE_FILE)
+    loadVideoPixelDataFromFrames(videoFrames, clips, a.FPS, a.CACHE_DIR, a.VERIFY_CACHE)
 
 if not a.VIDEO_ONLY and (not os.path.isfile(a.AUDIO_OUTPUT_FILE) or a.OVERWRITE):
     mixAudio(audioSequence, durationMs, a.AUDIO_OUTPUT_FILE)

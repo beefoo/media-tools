@@ -27,8 +27,7 @@ parseVideoArgs(a)
 va = vars(a)
 va["OUTPUT_FRAME"] = "tmp/smoothtest/frame.%s.png"
 va["OUTPUT_FILE"] = "output/smoothtest.mp4"
-va["CACHE_FILE"] = "tmp/smoothtest_cache.p"
-makeDirectories([a.OUTPUT_FRAME, a.OUTPUT_FILE, a.CACHE_FILE])
+makeDirectories([a.OUTPUT_FRAME, a.OUTPUT_FILE, a.CACHE_DIR])
 
 FILENAME = "media/sample/LivingSt1958.mp4"
 WIDTH = 800
@@ -76,7 +75,7 @@ for f in range(totalFrames):
         "gpu": True
     })
 
-loadVideoPixelDataFromFrames(videoFrames, clips, a.FPS, a.CACHE_FILE)
+loadVideoPixelDataFromFrames(videoFrames, clips, a.FPS, a.CACHE_DIR, verifyData=True)
 
 processFrames(videoFrames, threads=1)
 compileFrames(a.OUTPUT_FRAME, a.FPS, a.OUTPUT_FILE, getZeroPadding(totalFrames))

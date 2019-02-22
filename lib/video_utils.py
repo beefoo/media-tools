@@ -54,7 +54,8 @@ def addVideoArgs(parser):
     parser.add_argument('-ao', dest="AUDIO_ONLY", action="store_true", help="Render audio only?")
     parser.add_argument('-vo', dest="VIDEO_ONLY", action="store_true", help="Render video only?")
     parser.add_argument('-cache', dest="CACHE_VIDEO", action="store_true", help="Cache video clips?")
-    parser.add_argument('-cf', dest="CACHE_FILE", default="tmp/pixel_cache.p", help="File for caching data")
+    parser.add_argument('-cd', dest="CACHE_DIR", default="tmp/cache/", help="Dir for caching data")
+    parser.add_argument('-verifyc', dest="VERIFY_CACHE", action="store_true", help="Add a step for verifying existing cache data?")
     parser.add_argument('-gpu', dest="USE_GPU", action="store_true", help="Use GPU? (requires caching to be true)")
     parser.add_argument('-rand', dest="RANDOM_SEED", default=1, type=int, help="Random seed to use for pseudo-randomness")
     parser.add_argument('-pad0', dest="PAD_START", default=1000, type=int, help="Pad the beginning")
@@ -364,8 +365,8 @@ def getSolidPixels(color, width=100, height=100):
     pixels[:,:] = color
     return pixels
 
-def getVideoClipImage(video, videoDur, clip):
-    videoT = clip["t"] / 1000.0
+def getVideoClipImage(video, videoDur, clip, t=None):
+    videoT = clip["t"] / 1000.0 if t is None else t / 1000.0
     cw = roundInt(clip["width"])
     ch = roundInt(clip["height"])
     delta = videoDur - videoT
@@ -398,97 +399,134 @@ def isClipVisible(clip, width, height):
     isOpaque = getAlpha(clip) > 0
     return isInFrame and isOpaque
 
-def loadVideoPixelDataFromFile(filename, clipCount, clipsPerCacheFile=1000):
-    loaded, pixelData = loadCacheFiles(filename, clipCount, clipsPerCacheFile)
-    if loaded and len(pixelData) != clipCount:
-        print("Cache pixel mismatch (%s != expected %s), ignoring" % (len(pixelData), clipCount))
+def loadVideoPixelData(clips, fps, cacheDir="tmp/", width=None, height=None, verifyData=True, cache=True):
+    # load videos
+    filenames = list(set([clip.props["filename"] for clip in clips]))
+    fileCount = len(filenames)
+    msStep = frameToMs(1, fps, False)
+
+    # only open one video at a time
+    for i, fn in enumerate(filenames):
+        # check for cache fors filename
+        cacheFn = cacheDir + os.path.basename(fn) + ".p"
         loaded = False
-    return (loaded, pixelData)
+        fileCacheData = []
+        if cache:
+            loaded, fileCacheData = loadCacheFile(cacheFn)
+        vclips = [c for c in clips if fn==c.props["filename"]]
+        valid = True
 
-def loadVideoPixelData(clips, fps, filename=None, width=None, height=None, checkVisibility=True, clipsPerCacheFile=1000):
-    # assumes clip has width, height, and index
-    print("Loading video pixel data...")
-    clipCount = len(clips)
-    dataLoaded, pixelData = loadVideoPixelDataFromFile(filename, clipCount, clipsPerCacheFile)
+        # Verify loaded data
+        if loaded and verifyData:
+            print("Verifying cache data for %s..." % cacheFn)
+            clipTimesSet = set(fileCacheData[0])
+            for clip in vclips:
+                start = clip.props["start"]
+                end = start + clip.props["dur"]
+                ms = start
+                while ms < end:
+                    t = roundInt(ms)
+                    ms += msStep
+                    if t not in clipTimesSet:
+                        print("%s not found in %s. Resetting cache data" % (t, cacheFn))
+                        loaded = False
+                        break
+                    index = fileCacheData[0].index(t)
+                    clipH, clipW, _ = fileCacheData[1][index].shape
+                    if roundInt(clip.props["width"]) > clipW:
+                        print("Clip width is too small (%s > %s) for %s at %s. Resetting cache data" % (clip.props["width"], clipW, cacheFn, t))
+                        loaded = False
+                        break
+                    # TODO: Add check for aspect ratio?
+                if not loaded:
+                    break
+            print("Verified cache data for %s" % cacheFn)
 
-    if not dataLoaded:
-        print("No cached data found... rebuilding...")
-        # pixelData = [None for i in range(clipCount)]
-        cacheData = getEmptyCacheDataArr(clipCount, clipsPerCacheFile)
-        # load videos
-        filenames = list(set([clip["filename"] for clip in clips]))
-        fileCount = len(filenames)
-        msStep = frameToMs(1, fps, False)
-
-        # only open one video at a time
-        for i, fn in enumerate(filenames):
+        if not loaded:
+            print("No cache for %s, rebuilding..." % fn)
             video = VideoFileClip(fn, audio=False)
             videoDur = video.duration
-            vclips = [c for c in clips if fn==c["filename"]]
+            clipTimes = []
+            clipPixels = []
+
+            # Already loaded cache data; append to it rather than overwrite it
+            if len(fileCacheData) > 0:
+                clipTimes, clipPixels = fileCacheData
 
             # extract frames from videos
-            for clip in vclips:
-                if not checkVisibility or width and height and isClipVisible(clip, width, height):
-                    start = clip["start"]
-                    end = start + clip["dur"]
-                    ms = start
-                    clipData = []
-                    while ms <= end:
-                        fclip = clip.copy()
-                        fclip["t"] = roundInt(ms)
-                        clipImg = getVideoClipImage(video, videoDur, fclip)
-                        clipData.append(np.array(clipImg))
-                        ms += msStep
-                    cacheData = addEntryToCacheArr(filename, cacheData, clipCount, clipsPerCacheFile, clip["index"], clipData)
-                else:
-                    cacheData = addEntryToCacheArr(filename, cacheData, clipCount, clipsPerCacheFile, clip["index"], [])
+            vclipCount = len(vclips)
+            for j, clip in enumerate(vclips):
+                start = clip.props["start"]
+                end = start + clip.props["dur"]
+                ms = start
+                while ms < end:
+                    fclip = clip.props
+                    t = roundInt(ms)
+                    ms += msStep
+                    # already exists, check size
+                    existIndex = None
+                    if t in set(clipTimes):
+                        existIndex = clipTimes.index(t)
+                        clipH, clipW, _ = clipPixels[existIndex].shape
+                        if roundInt(fclip["width"]) <= clipW:
+                            continue
+                    clipImg = getVideoClipImage(video, videoDur, fclip, t)
+                    if existIndex is not None:
+                        clipPixels[existIndex] = np.array(clipImg, dtype=np.uint8)
+                    else:
+                        clipTimes.append(t)
+                        clipPixels.append(np.array(clipImg, dtype=np.uint8))
+                printProgress(j+1, vclipCount)
 
+            # save cache data
+            fileCacheData = (clipTimes, clipPixels)
+
+            if cache:
+                saveCacheFile(cacheFn, fileCacheData, overwrite=True)
+
+            # close video to free up memory
             video.reader.close()
             del video
-            printProgress(i+1, fileCount)
 
-        # flatten the list
-        pixelData = [item for sublist in cacheData for item in sublist]
+        # assign pixel data to clips
+        for clip in vclips:
+            start = clip.props["start"]
+            end = start + clip.props["dur"]
+            ms = start
+            pixelData = []
+            while ms < end:
+                t = roundInt(ms)
+                ms += msStep
+                index = fileCacheData[0].index(t)
+                pixelData.append(fileCacheData[1][index])
+            clip.setProp("framePixelData", pixelData)
 
-    for i, clip in enumerate(clips):
-        clips[i]["framePixelData"] = pixelData[clip["index"]]
+        printProgress(i+1, fileCount)
 
     print("Finished loading pixel data.")
 
-    return clips
+def loadVideoPixelDataFromFrames(frames, clips, fps, cacheDir="tmp/", verifyData=True, cache=True):
+    print("Calculating max widths and heights from frame sequence...")
+    frameCount = len(frames)
+    clipCount = len(clips)
+    clipDimensions = np.zeros((frameCount, clipCount, 2)) # will store each clip's width/height for each frame
+    for i, frame in enumerate(frames):
+        frameClips = clipsToDicts(clips, frame["ms"])
+        # filter out clips that are not visible
+        frameClips = [clip for clip in frameClips if isClipVisible(clip, frame["width"], frame["height"])]
+        for clip in frameClips:
+            clipDimensions[i, clip["index"], 0] = clip["width"]
+            clipDimensions[i, clip["index"], 1] = clip["height"]
+        printProgress(i+1, frameCount)
+    # get max dimension of each clip
+    clipMaxes = np.amax(clipDimensions, axis=0)
 
-def loadVideoPixelDataFromFrames(frames, clips, fps, filename, clipsPerCacheFile=1000):
-    print("Reading frames for caching...")
-    dataLoaded, pixelData = loadVideoPixelDataFromFile(filename, len(clips), clipsPerCacheFile)
+    # update clips with max width/height
+    for i, clip in enumerate(clips):
+        clip.setProp("width", clipMaxes[i, 0])
+        clip.setProp("height", clipMaxes[i, 1])
 
-    if not dataLoaded:
-        frameCount = len(frames)
-        clipCount = len(clips)
-        clipData = np.zeros((frameCount, clipCount, 2)) # will store each clip's width/height for each frame
-        for i, frame in enumerate(frames):
-            frameClips = clipsToDicts(clips, frame["ms"])
-            # filter out clips that are not visible
-            frameClips = [clip for clip in frameClips if isClipVisible(clip, frame["width"], frame["height"])]
-            for clip in frameClips:
-                clipData[i, clip["index"], 0] = clip["width"]
-                clipData[i, clip["index"], 1] = clip["height"]
-            printProgress(i+1, frameCount)
-        # get max dimension of each clip
-        clipMaxes = np.amax(clipData, axis=0)
-        # update clip dicts with max width/height
-        print("Assigning widths and heights")
-        clipDicts = clipsToDicts(clips)
-        for i, clip in enumerate(clipDicts):
-            clipDicts[i]["width"] = clipMaxes[i, 0]
-            clipDicts[i]["height"] = clipMaxes[i, 1]
-        clipDicts = loadVideoPixelData(clipDicts, fps, filename=filename, checkVisibility=False, clipsPerCacheFile=clipsPerCacheFile)
-        print("Assigning clip pixel data")
-        for i, clip in enumerate(clipDicts):
-            clips[i].setProp("framePixelData", clip["framePixelData"])
-
-    else:
-        for clip in clips:
-            clip.setProp("framePixelData", pixelData[clip.props["index"]])
+    loadVideoPixelData(clips, fps, cacheDir=cacheDir, verifyData=verifyData, cache=cache)
 
 def msToFrame(ms, fps):
     return roundInt((ms / 1000.0) * fps)

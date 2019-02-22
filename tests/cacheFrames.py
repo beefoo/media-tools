@@ -25,14 +25,12 @@ a = parser.parse_args()
 parseVideoArgs(a)
 
 va = vars(a)
-va["OUTPUT_FRAME"] = "tmp/test/frame.%s.png"
-va["OUTPUT_FILE"] = "output/test.mp4"
-va["CACHE_FILE"] = "tmp/pixel_cache_test.p"
-makeDirectories([a.OUTPUT_FRAME, a.OUTPUT_FILE, a.CACHE_FILE])
+va["OUTPUT_FRAME"] = "tmp/cachetest/frame.%s.png"
+va["OUTPUT_FILE"] = "output/cachetest.mp4"
+makeDirectories([a.OUTPUT_FRAME, a.OUTPUT_FILE, a.CACHE_DIR])
 
 FILENAME = "media/sample/LivingSt1958.mp4"
 CLIPS = 256
-CLIPS_PER_FILE = 50
 COLS = int(math.sqrt(CLIPS))
 ROWS = ceilInt(1.0 * CLIPS / COLS)
 DURATION_MS = int(getDurationFromFile(FILENAME, accurate=True) * 1000)
@@ -85,7 +83,7 @@ for f in range(totalFrames):
         "gpu": True
     })
 
-loadVideoPixelDataFromFrames(videoFrames, clips, a.FPS, a.CACHE_FILE, clipsPerCacheFile=CLIPS_PER_FILE)
+loadVideoPixelDataFromFrames(videoFrames, clips, a.FPS, a.CACHE_DIR, verifyData=True)
 
 processFrames(videoFrames, threads=1)
 compileFrames(a.OUTPUT_FRAME, a.FPS, a.OUTPUT_FILE, getZeroPadding(totalFrames))
