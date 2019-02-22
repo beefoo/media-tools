@@ -28,7 +28,7 @@ from lib.video_utils import *
 parser = argparse.ArgumentParser()
 addVideoArgs(parser)
 parser.add_argument('-beatms', dest="BEAT_MS", default=1024, type=int, help="Milliseconds per beat")
-parser.add_argument('-margin', dest="CLIP_MARGIN", default=1, type=int, help="Margin between clips in pixels")
+parser.add_argument('-margin', dest="CLIP_MARGIN", default=1.0, type=float, help="Margin between clips in pixels")
 parser.add_argument('-beats', dest="BEAT_DIVISIONS", default=3, type=int, help="Number of times to divide beat, e.g. 1 = 1/2 notes, 2 = 1/4 notes, 3 = 1/8th notes, 4 = 1/16 notes")
 parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.3,0.6", help="Volume range")
 parser.add_argument('-alphar', dest="ALPHA_RANGE", default="0.2,1.0", help="Alpha range")
@@ -180,7 +180,7 @@ while True:
         alphaTo = ALPHA_RANGE[0]
         renderDur = clip.props["dur"]
         halfLeft = int(renderDur / 2)
-        halfRight = renderDur - halfLeft
+        halfRight = (renderDur - halfLeft) * 2
         tx, ty = clip.props["translateAmount"]
         clip.queueTween(clipStartMs, halfLeft, [
             ("translateX", 0, tx, "sin"),
