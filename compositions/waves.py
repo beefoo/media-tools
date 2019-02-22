@@ -28,7 +28,7 @@ from lib.video_utils import *
 parser = argparse.ArgumentParser()
 addVideoArgs(parser)
 parser.add_argument('-beatms', dest="BEAT_MS", default=1024, type=int, help="Milliseconds per beat")
-parser.add_argument('-margin', dest="CLIP_MARGIN", default=1.0, type=float, help="Margin between clips in pixels")
+parser.add_argument('-margin', dest="CLIP_MARGIN", default=0.5, type=float, help="Margin between clips in pixels")
 parser.add_argument('-beats', dest="BEAT_DIVISIONS", default=3, type=int, help="Number of times to divide beat, e.g. 1 = 1/2 notes, 2 = 1/4 notes, 3 = 1/8th notes, 4 = 1/16 notes")
 parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.3,0.6", help="Volume range")
 parser.add_argument('-alphar', dest="ALPHA_RANGE", default="0.2,1.0", help="Alpha range")
@@ -73,7 +73,7 @@ elif gridCount < sampleCount:
 samples = sorted(samples, key=lambda s: (s["gridY"], s["gridX"]))
 samples = addIndices(samples)
 samples = prependAll(samples, ("filename", a.MEDIA_DIRECTORY))
-samples = addGridPositions(samples, GRID_W, a.WIDTH, a.HEIGHT, marginX=a.CLIP_MARGIN, marginY=a.CLIP_MARGIN)
+samples = addGridPositions(samples, GRID_W, a.WIDTH, a.HEIGHT, marginX=a.CLIP_MARGIN, marginY=(a.CLIP_MARGIN*(1.0*a.HEIGHT/a.WIDTH)))
 
 cCol, cRow = ((GRID_W-1) * 0.5, (GRID_H-1) * 0.5)
 for i, s in enumerate(samples):

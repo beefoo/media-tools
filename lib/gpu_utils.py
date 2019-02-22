@@ -54,9 +54,13 @@ def clipsToImageGPU(width, height, pixelData, properties, colorDimensions, preci
     int4 getPixelF(__global uchar *pdata, float xF, float yF, int h, int w, int dim, int offset);
 
     int4 getPixel(__global uchar *pdata, int x, int y, int h, int w, int dim, int offset) {
-        if (x < 0 || y < 0 || x >= w || y >= h) {
-            return (int4)(0, 0, 0, 0);
-        }
+        // check bounds; retain rgb color of edge, but make alpha=0
+        bool isVisible = true;
+        if (x < 0) { isVisible = false; x = 0; }
+        if (y < 0) { isVisible = false; y = 0; }
+        if (x >= w) { isVisible = false; x = w-1; }
+        if (y >= h) { isVisible = false; y = h-1; }
+
         int index = y * w * dim + x * dim + offset;
         int r = pdata[index];
         int g = pdata[index+1];
@@ -65,13 +69,18 @@ def clipsToImageGPU(width, height, pixelData, properties, colorDimensions, preci
         if (dim > 3) {
             a = pdata[index+3];
         }
+        if (!isVisible) {
+            a = 0;
+        }
         return (int4)(r, g, b, a);
     }
 
     int4 getPixelF(__global uchar *pdata, float xF, float yF, int h, int w, int dim, int offset) {
-        if (xF <= -1.0 || yF <= -1.0 || xF >= (float)(w+1) || yF >= (float)(h+1)) {
-            return (int4)(0, 0, 0, 0);
-        }
+        if (xF < -1.0) { xF = -1.0; }
+        if (yF < -1.0) { yF = -1.0; }
+        if (xF > (float)(w+1)) { xF = (float)(w+1); }
+        if (yF > (float)(h+1)) { yF = (float)(h+1); }
+
         int x0 = (int) floor(xF);
         int x1 = (int) ceil(xF);
         float xLerp = xF - (float) x0;
@@ -111,12 +120,12 @@ def clipsToImageGPU(width, height, pixelData, properties, colorDimensions, preci
         int h = props[i*pcount+4];
         float twF = (float) props[i*pcount+5] / (float) precisionMultiplier;
         float thF = (float) props[i*pcount+6] / (float) precisionMultiplier;
-        //float remainderW = (remainderX+twF) - floor(remainderX+twF);
-        //float remainderH = (remainderY+thF) - floor(remainderY+thF);
-        int tw = (int) ceil(twF);
-        int th = (int) ceil(thF);
-        //int tw = (int) ceil(twF) + (int) ceil(remainderX);
-        //int th = (int) ceil(thF) + (int) ceil(remainderY);
+        float remainderW = (remainderX+twF) - floor(remainderX+twF);
+        float remainderH = (remainderY+thF) - floor(remainderY+thF);
+        //int tw = (int) ceil(twF);
+        //int th = (int) ceil(thF);
+        int tw = (int) ceil(remainderX+twF);
+        int th = (int) ceil(remainderY+thF);
         int alpha = props[i*pcount+7];
         int zdindex = props[i*pcount+8];
         float falpha = (float) alpha / (float) 255.0;
@@ -129,17 +138,17 @@ def clipsToImageGPU(width, height, pixelData, properties, colorDimensions, preci
                 int dstX = col + x;
                 int dstY = row + y;
 
-                //float srcNX = norm((float) col, remainderX, remainderX+twF-1.0);
-                //float srcNY = norm((float) row, remainderY, remainderY+thF-1.0);
-                //float srcXF = srcNX * (float) (w-1);
-                //float srcYF = srcNY * (float) (h-1);
-                float srcXF = norm((float) col, remainderX, remainderX+twF) * (float) (w-1);
-                float srcYF = norm((float) row, remainderY, remainderY+thF) * (float) (h-1);
+                float srcNX = norm((float) col, remainderX, remainderX+twF-1.0);
+                float srcNY = norm((float) row, remainderY, remainderY+thF-1.0);
+                float srcXF = srcNX * (float) (w-1);
+                float srcYF = srcNY * (float) (h-1);
+                //float srcXF = norm((float) col, remainderX, remainderX+twF) * (float) (w-1);
+                //float srcYF = norm((float) row, remainderY, remainderY+thF) * (float) (h-1);
 
-                //if (srcNX < 0.0) { srcXF = -remainderX; }
-                //if (srcNY < 0.0) { srcYF = -remainderY; }
-                //if (srcNX > 1.0) { srcXF = (float) (w-1) + remainderW; }
-                //if (srcNY > 1.0) { srcYF = (float) (h-1) + remainderH; }
+                if (srcNX < 0.0) { srcXF = -remainderX; }
+                if (srcNY < 0.0) { srcYF = -remainderY; }
+                if (srcNX > 1.0) { srcXF = (float) (w-1) + (1.0-remainderW); }
+                if (srcNY > 1.0) { srcYF = (float) (h-1) + (1.0-remainderH); }
 
                 // printf("(%%f,%%f) ", srcXF, srcYF);
 

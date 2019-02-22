@@ -29,7 +29,9 @@ a = parser.parse_args()
 GRID_W, GRID_H = tuple([int(v) for v in a.GRID.strip().split("x")])
 
 samples = [{"index": i, "filename": "", "start": 0, "dur": 0} for i in range(GRID_W*GRID_H)]
-samples = addGridPositions(samples, GRID_W, a.WIDTH, a.HEIGHT, marginX=a.CLIP_MARGIN, marginY=a.CLIP_MARGIN)
+samples = addGridPositions(samples, GRID_W, a.WIDTH, a.HEIGHT, marginX=a.CLIP_MARGIN, marginY=a.CLIP_MARGIN*(1.0*a.HEIGHT/a.WIDTH))
+
+# pprint(samples[0])
 
 for i, s in enumerate(samples):
     pixels = np.array([[getRandomColor(i)]])
@@ -55,7 +57,7 @@ clipsToFrame({
         "x": 0.5,
         "y": 0.5,
         "index": 0,
-        "framePixelData": [getSolidPixels((255,0,0))]
+        "framePixelData": [np.array([[[255,0,0]]])]
     }],
     "overwrite": True,
     "gpu": True,
@@ -71,7 +73,7 @@ clipsToFrame({
         "x": 0.0,
         "y": 0.0,
         "index": 0,
-        "framePixelData": [getSolidPixels((255,0,0))]
+        "framePixelData": [np.array([[[255,0,0]]])]
     }],
     "overwrite": True,
     "gpu": True,
@@ -87,7 +89,7 @@ clipsToFrame({
         "x": 0.5,
         "y": 0.5,
         "index": 0,
-        "framePixelData": [getSolidPixels((255,0,0))]
+        "framePixelData": [np.array([[[255,0,0]]])]
     }],
     "overwrite": True,
     "gpu": True,
