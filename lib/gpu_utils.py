@@ -111,10 +111,12 @@ def clipsToImageGPU(width, height, pixelData, properties, colorDimensions, preci
         int h = props[i*pcount+4];
         float twF = (float) props[i*pcount+5] / (float) precisionMultiplier;
         float thF = (float) props[i*pcount+6] / (float) precisionMultiplier;
+        //float remainderW = (remainderX+twF) - floor(remainderX+twF);
+        //float remainderH = (remainderY+thF) - floor(remainderY+thF);
         int tw = (int) ceil(twF);
         int th = (int) ceil(thF);
-        // int tw = (int) ceil(twF) + (int) ceil(remainderX);
-        // int th = (int) ceil(thF) + (int) ceil(remainderY);
+        //int tw = (int) ceil(twF) + (int) ceil(remainderX);
+        //int th = (int) ceil(thF) + (int) ceil(remainderY);
         int alpha = props[i*pcount+7];
         int zdindex = props[i*pcount+8];
         float falpha = (float) alpha / (float) 255.0;
@@ -127,10 +129,19 @@ def clipsToImageGPU(width, height, pixelData, properties, colorDimensions, preci
                 int dstX = col + x;
                 int dstY = row + y;
 
+                //float srcNX = norm((float) col, remainderX, remainderX+twF-1.0);
+                //float srcNY = norm((float) row, remainderY, remainderY+thF-1.0);
+                //float srcXF = srcNX * (float) (w-1);
+                //float srcYF = srcNY * (float) (h-1);
                 float srcXF = norm((float) col, remainderX, remainderX+twF) * (float) (w-1);
                 float srcYF = norm((float) row, remainderY, remainderY+thF) * (float) (h-1);
 
-                // printf(" %%f ", srcXF);
+                //if (srcNX < 0.0) { srcXF = -remainderX; }
+                //if (srcNY < 0.0) { srcYF = -remainderY; }
+                //if (srcNX > 1.0) { srcXF = (float) (w-1) + remainderW; }
+                //if (srcNY > 1.0) { srcYF = (float) (h-1) + remainderH; }
+
+                // printf("(%%f,%%f) ", srcXF, srcYF);
 
                 if (dstX >= 0 && dstX < canvasW && dstY >= 0 && dstY < canvasH) {
                     int4 srcColor = getPixelF(pdata, srcXF, srcYF, h, w, colorDimensions, offset);
@@ -153,6 +164,7 @@ def clipsToImageGPU(width, height, pixelData, properties, colorDimensions, preci
                     }
                 }
             }
+            // printf("\\n");
         }
     }
     """ % (width, height, pcount, colorDimensions, precisionMultiplier)

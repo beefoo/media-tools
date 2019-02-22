@@ -35,23 +35,55 @@ for i, s in enumerate(samples):
     pixels = np.array([[getRandomColor(i)]])
     samples[i]["framePixelData"] = [pixels]
 
-# clipsToFrame({
-#     "filename": "output/test_grid.png",
-#     "width": a.WIDTH,
-#     "height": a.HEIGHT,
-#     "clips": samples,
-#     "overwrite": True,
-#     "gpu": True,
-#     "debug": True
-# })
+clipsToFrame({
+    "filename": "output/test_grid.png",
+    "width": a.WIDTH,
+    "height": a.HEIGHT,
+    "clips": samples,
+    "overwrite": True,
+    "gpu": True,
+    "debug": True
+})
 
 clipsToFrame({
     "filename": "output/test_grid2.png",
-    "width": 4,
-    "height": 4,
+    "width": 100,
+    "height": 100,
     "clips": [{
-        "width": 2.0,
-        "height": 2.0,
+        "width": 99.0,
+        "height": 99.0,
+        "x": 0.5,
+        "y": 0.5,
+        "index": 0,
+        "framePixelData": [getSolidPixels((255,0,0))]
+    }],
+    "overwrite": True,
+    "gpu": True,
+    "debug": True
+})
+clipsToFrame({
+    "filename": "output/test_grid3.png",
+    "width": 100,
+    "height": 100,
+    "clips": [{
+        "width": 99.5,
+        "height": 99.5,
+        "x": 0.0,
+        "y": 0.0,
+        "index": 0,
+        "framePixelData": [getSolidPixels((255,0,0))]
+    }],
+    "overwrite": True,
+    "gpu": True,
+    "debug": True
+})
+clipsToFrame({
+    "filename": "output/test_grid4.png",
+    "width": 100,
+    "height": 100,
+    "clips": [{
+        "width": 99.5,
+        "height": 99.5,
         "x": 0.5,
         "y": 0.5,
         "index": 0,
