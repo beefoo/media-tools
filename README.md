@@ -16,15 +16,24 @@ Not all of these are required for individual scripts, but covers what's needed f
 
 - [Python](https://www.python.org/) (I developed using 3.6, but should be compatible with 2.7+ and 3.5+)
 - [SciPy](https://www.scipy.org/) for math functions (probably already installed)
+
+### Working with video
+
 - [FFmpeg and FFprobe](https://www.ffmpeg.org/) for working with media files
 - [Pillow](https://pillow.readthedocs.io/en/stable/) for image/frame generation
+- [MoviePy](https://zulko.github.io/moviepy/) for programmatic video editing
+- [PyOpenCL](https://mathema.tician.de/software/pyopencl/) for GPU-accelerated image processing
+
+### Working with audio
+
 - [LibROSA](https://librosa.github.io/librosa/) for audio analysis
 - [Pydub](http://pydub.com/) for audio manipulation
 - [SoX](http://sox.sourceforge.net/) and [pysndfx](https://pypi.org/project/pysndfx/) for audio effects like reverb
-- [MoviePy](https://zulko.github.io/moviepy/) for programmatic video editing
-- [PyOpenCL](https://mathema.tician.de/software/pyopencl/) for GPU-accelerated image processing
+
+### Misc
+
 - [scikit-learn](https://scikit-learn.org/stable/) for statistics and machine learning features (e.g. TSNE, clustering, classification)
-- [Requests](http://docs.python-requests.org/en/master/) for making json requests
+- [Requests](http://docs.python-requests.org/en/master/) for making remote web requests for scraping metadata
 
 ## Large collection workflow
 
