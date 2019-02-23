@@ -99,7 +99,14 @@ def clipsToImageGPU(width, height, pixelData, properties, colorDimensions, preci
         int4 colorT = blendColors(colorTL, colorTR, xLerp);
         int4 colorB = blendColors(colorBL, colorBR, xLerp);
 
-        return blendColors(colorT, colorB, yLerp);
+        int4 finalcolor = blendColors(colorT, colorB, yLerp);
+
+        // avoid dark corners
+        if (colorT.w < 255 && colorB.w < 255) {
+            finalcolor.w = max(colorT.w, colorB.w);
+        }
+
+        return finalcolor;
     }
 
     __kernel void makeImage(__global uchar *pdata, __global int *props, __global int *zvalues, __global uchar *result){
