@@ -256,7 +256,7 @@ for f in range(totalFrames):
 stepTime = logTime(stepTime, "Processed video frame sequence")
 
 if a.CACHE_VIDEO:
-    loadVideoPixelDataFromFrames(videoFrames, clips, a.FPS, a.CACHE_DIR, a.VERIFY_CACHE)
+    loadVideoPixelDataFromFrames(videoFrames, clips, a.FPS, a.CACHE_DIR, a.CACHE_FILE, a.VERIFY_CACHE)
 
 if not a.VIDEO_ONLY and (not os.path.isfile(a.AUDIO_OUTPUT_FILE) or a.OVERWRITE):
     mixAudio(audioSequence, durationMs, a.AUDIO_OUTPUT_FILE)

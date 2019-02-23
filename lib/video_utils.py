@@ -55,6 +55,7 @@ def addVideoArgs(parser):
     parser.add_argument('-vo', dest="VIDEO_ONLY", action="store_true", help="Render video only?")
     parser.add_argument('-cache', dest="CACHE_VIDEO", action="store_true", help="Cache video clips?")
     parser.add_argument('-cd', dest="CACHE_DIR", default="tmp/cache/", help="Dir for caching data")
+    parser.add_argument('-cf', dest="CACHE_FILE", default="clip_cache.p", help="File for caching data")
     parser.add_argument('-verifyc', dest="VERIFY_CACHE", action="store_true", help="Add a step for verifying existing cache data?")
     parser.add_argument('-gpu', dest="USE_GPU", action="store_true", help="Use GPU? (requires caching to be true)")
     parser.add_argument('-rand', dest="RANDOM_SEED", default=1, type=int, help="Random seed to use for pseudo-randomness")
@@ -505,21 +506,30 @@ def loadVideoPixelData(clips, fps, cacheDir="tmp/", width=None, height=None, ver
 
     print("Finished loading pixel data.")
 
-def loadVideoPixelDataFromFrames(frames, clips, fps, cacheDir="tmp/", verifyData=True, cache=True):
+def loadVideoPixelDataFromFrames(frames, clips, fps, cacheDir="tmp/", cacheFile="clip_cache.p", verifyData=True, cache=True):
     print("Calculating max widths and heights from frame sequence...")
     frameCount = len(frames)
     clipCount = len(clips)
-    clipDimensions = np.zeros((frameCount, clipCount, 2)) # will store each clip's width/height for each frame
-    for i, frame in enumerate(frames):
-        frameClips = clipsToDicts(clips, frame["ms"])
-        # filter out clips that are not visible
-        frameClips = [clip for clip in frameClips if isClipVisible(clip, frame["width"], frame["height"])]
-        for clip in frameClips:
-            clipDimensions[i, clip["index"], 0] = clip["width"]
-            clipDimensions[i, clip["index"], 1] = clip["height"]
-        printProgress(i+1, frameCount)
-    # get max dimension of each clip
-    clipMaxes = np.amax(clipDimensions, axis=0)
+
+    loaded = False
+    clipMaxes = []
+    if cache:
+        loaded, clipMaxes = loadCacheFile(cacheDir+cacheFile)
+
+    if not loaded or len(clipMaxes) != clipCount:
+        clipDimensions = np.zeros((frameCount, clipCount, 2)) # will store each clip's width/height for each frame
+        for i, frame in enumerate(frames):
+            frameClips = clipsToDicts(clips, frame["ms"])
+            # filter out clips that are not visible
+            frameClips = [clip for clip in frameClips if isClipVisible(clip, frame["width"], frame["height"])]
+            for clip in frameClips:
+                clipDimensions[i, clip["index"], 0] = clip["width"]
+                clipDimensions[i, clip["index"], 1] = clip["height"]
+            printProgress(i+1, frameCount)
+        # get max dimension of each clip
+        clipMaxes = np.amax(clipDimensions, axis=0)
+        if cache:
+            saveCacheFile(cacheDir+cacheFile, clipMaxes, overwrite=True)
 
     # update clips with max width/height
     for i, clip in enumerate(clips):

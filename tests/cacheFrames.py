@@ -27,6 +27,7 @@ parseVideoArgs(a)
 va = vars(a)
 va["OUTPUT_FRAME"] = "tmp/cachetest/frame.%s.png"
 va["OUTPUT_FILE"] = "output/cachetest.mp4"
+va["CACHE_FILE"] = "framestest_cache.p"
 makeDirectories([a.OUTPUT_FRAME, a.OUTPUT_FILE, a.CACHE_DIR])
 
 FILENAME = "media/sample/LivingSt1958.mp4"
@@ -83,7 +84,7 @@ for f in range(totalFrames):
         "gpu": True
     })
 
-loadVideoPixelDataFromFrames(videoFrames, clips, a.FPS, a.CACHE_DIR, verifyData=True)
+loadVideoPixelDataFromFrames(videoFrames, clips, a.FPS, a.CACHE_DIR, a.CACHE_FILE, verifyData=True)
 
 processFrames(videoFrames, threads=1)
 compileFrames(a.OUTPUT_FRAME, a.FPS, a.OUTPUT_FILE, getZeroPadding(totalFrames))
