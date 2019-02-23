@@ -12,18 +12,19 @@ Where `sort` can be one of: [tsne](https://lvdmaaten.github.io/tsne/) (spectral 
 
 ## Requirements
 
-These are the requirements for the full workflow below, but each individual script has it's own subset of requirements.
+Not all of these are required for individual scripts, but covers what's needed for most workflows.
 
-- [Python](https://www.python.org/) (I developed using 2.7, but should be compatible with 3.6+ too)
+- [Python](https://www.python.org/) (I developed using 3.6, but should be compatible with 2.7+ and 3.5+)
 - [SciPy](https://www.scipy.org/) for math functions (probably already installed)
 - [FFmpeg and FFprobe](https://www.ffmpeg.org/) for working with media files
+- [Pillow](https://pillow.readthedocs.io/en/stable/) for image/frame generation
 - [LibROSA](https://librosa.github.io/librosa/) for audio analysis
 - [Pydub](http://pydub.com/) for audio manipulation
 - [SoX](http://sox.sourceforge.net/) and [pysndfx](https://pypi.org/project/pysndfx/) for audio effects like reverb
 - [MoviePy](https://zulko.github.io/moviepy/) for programmatic video editing
+- [PyOpenCL](https://mathema.tician.de/software/pyopencl/) for GPU-accelerated image processing
 - [scikit-learn](https://scikit-learn.org/stable/) for statistics and machine learning features (e.g. TSNE, clustering, classification)
-- _(optional)_ [Requests](http://docs.python-requests.org/en/master/) for making json requests
-- _(optional)_ [PyOpenCL](https://mathema.tician.de/software/pyopencl/) for GPU-accelerated video processing
+- [Requests](http://docs.python-requests.org/en/master/) for making json requests
 
 ## Large collection workflow
 
@@ -75,7 +76,7 @@ Next we will update the original metadata .csv file with metadata about the samp
 python get_sample_features.py -in "tmp/ia_fedflixnara.csv" -dir "tmp/sampledata/ia_fedflixnara/"
 ```
 
-### 6. Inspecting audio analysis
+### 6. Audio analysis
 
 Optionally, you can view the stats of the samples you created:
 
@@ -96,9 +97,27 @@ Or view two properties as a scatter plot:
 python stats_plot.py -in "tmp/sampledata/ia_fedflixnara/gov.archives.111-tv-221.mp4.csv" -props "power,hz"
 ```
 
-### 7. Visualizing audio
+### 7. Visualizing audio/video
 
-TODO
+Create a subset by taking all films with more than 500 samples with sound; take the 65,536 (256x256) samples with most power and clarity; limit 100 samples per film
+
+```
+python samples_subset.py -in "tmp/ia_fedflixnara.csv" -dir "tmp/sampledata/ia_fedflixnara/" -out "tmp/ia_fedflixnara_subset.csv" -filter "samples>500&medianPower>0.5" -lim 65536 -ffilter "octave>1&power>0" -fsort "power=desc=0.75&clarity=desc" -flim 100
+```
+
+Extract [t-SNE](https://en.wikipedia.org/wiki/T-distributed_stochastic_neighbor_embedding) features of the sample subset and cache the feature data
+
+```
+python samples_to_tsne.py -in "tmp/ia_fedflixnara_subset.csv" -dir "tmp/downloads/ia_fedflixnara/" -components 2 -angle 0.2 -cache "tmp/ia_fedflixnara_subset_features.p"
+```
+
+Put the sample subset in a 256x256 grid based on the t-SNE features (essentially created a matrix of samples organized by spectral similarity). This requires [rasterfairy](https://github.com/Quasimondo/RasterFairy) and Python 2.7+
+
+```
+python samples_to_grid.py -in "tmp/ia_fedflixnara_subset.csv" -grid "256x256"
+```
+
+More soon...
 
 
 ## Small collection workflow

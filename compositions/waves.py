@@ -250,7 +250,6 @@ for f in range(totalFrames):
         "width": a.WIDTH,
         "height": a.HEIGHT,
         "overwrite": a.OVERWRITE,
-        "gpu": a.USE_GPU,
         "debug": a.DEBUG
     })
 stepTime = logTime(stepTime, "Processed video frame sequence")

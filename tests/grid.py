@@ -43,7 +43,6 @@ clipsToFrame({
     "height": a.HEIGHT,
     "clips": samples,
     "overwrite": True,
-    "gpu": True,
     "debug": True
 })
 
@@ -60,7 +59,6 @@ clipsToFrame({
         "framePixelData": [np.array([[[255,0,0]]])]
     }],
     "overwrite": True,
-    "gpu": True,
     "debug": True
 })
 clipsToFrame({
@@ -76,7 +74,6 @@ clipsToFrame({
         "framePixelData": [np.array([[[255,0,0]]])]
     }],
     "overwrite": True,
-    "gpu": True,
     "debug": True
 })
 clipsToFrame({
@@ -92,7 +89,6 @@ clipsToFrame({
         "framePixelData": [np.array([[[255,0,0]]])]
     }],
     "overwrite": True,
-    "gpu": True,
     "debug": True
 })
 

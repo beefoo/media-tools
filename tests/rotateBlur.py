@@ -22,7 +22,6 @@ CY = HEIGHT/2
 VIDEO = "../media/sample/LivingSt1958.mp4"
 OUTPUT_FILE = "../output/rotate_test.png"
 COUNT = 24
-GPU = True
 clipW = 100
 clipH = 50
 
@@ -75,6 +74,5 @@ clipsToFrame({
     "filename": OUTPUT_FILE,
     "width": WIDTH,
     "height": HEIGHT,
-    "gpu": GPU,
     "overwrite": True
 })

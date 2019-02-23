@@ -80,8 +80,7 @@ for f in range(totalFrames):
         "ms": ms,
         "width": a.WIDTH,
         "height": a.HEIGHT,
-        "overwrite": True,
-        "gpu": True
+        "overwrite": True
     })
 
 loadVideoPixelDataFromFrames(videoFrames, clips, a.FPS, a.CACHE_DIR, a.CACHE_FILE, verifyData=True)

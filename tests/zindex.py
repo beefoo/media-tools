@@ -33,7 +33,6 @@ clipsToFrame({
     "width": 150,
     "height": 150,
     "overwrite": True,
-    "gpu": True,
     "clips": clips
 })
 clips = list(reversed(clips))
@@ -42,7 +41,6 @@ clipsToFrame({
     "width": 150,
     "height": 150,
     "overwrite": True,
-    "gpu": True,
     "clips": clips
 })
 
@@ -54,7 +52,6 @@ clipsToFrame({
     "width": 150,
     "height": 150,
     "overwrite": True,
-    "gpu": True,
     "clips": clips
 })
 

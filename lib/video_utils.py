@@ -57,7 +57,6 @@ def addVideoArgs(parser):
     parser.add_argument('-cd', dest="CACHE_DIR", default="tmp/cache/", help="Dir for caching data")
     parser.add_argument('-cf', dest="CACHE_FILE", default="clip_cache.p", help="File for caching data")
     parser.add_argument('-verifyc', dest="VERIFY_CACHE", action="store_true", help="Add a step for verifying existing cache data?")
-    parser.add_argument('-gpu', dest="USE_GPU", action="store_true", help="Use GPU? (requires caching to be true)")
     parser.add_argument('-rand', dest="RANDOM_SEED", default=1, type=int, help="Random seed to use for pseudo-randomness")
     parser.add_argument('-pad0', dest="PAD_START", default=1000, type=int, help="Pad the beginning")
     parser.add_argument('-pad1', dest="PAD_END", default=3000, type=int, help="Pad the end")
@@ -99,12 +98,10 @@ def blurImage(im, radius):
 
 def clipsToFrame(p):
     filename = p["filename"]
-    saveFrame = p["saveFrame"] if "saveFrame" in p else True
     width = p["width"]
     height = p["height"]
     overwrite = p["overwrite"] if "overwrite" in p else False
     verbose = p["verbose"] if "verbose" in p else False
-    useGPU = p["gpu"] if "gpu" in p else False
     debug = p["debug"] if "debug" in p else False
     im = None
     fileExists = os.path.isfile(filename) and not overwrite
@@ -124,54 +121,18 @@ def clipsToFrame(p):
         if debug:
             im = clipsToFrameDebug(im, clips, width, height)
 
-        # pixels are cached
-        elif len(clips) > 0 and "framePixelData" in clips[0]:
-            if useGPU:
-                im = clipsToFrameGPU(clips, width, height)
-            else:
-                if len(clips) > 0 and "zindex" in clips[0]:
-                    clips = sorted(clips, key=lambda c: c["zindex"])
-                for clip in clips:
-                    framePixelData = clip["framePixelData"]
-                    count = len(framePixelData)
-                    if count > 0:
-                        tn = clip["tn"] if "tn" in clip else 0
-                        pixels = np.array(framePixelData[roundInt(tn * (count-1))])
-                        clipImg = Image.fromarray(pixels, mode="RGB")
-                        clipImg = fillImage(clipImg, roundInt(clip["width"]), roundInt(clip["height"]))
-                        clipImg, x, y = applyEffects(clipImg, clip)
-                        im = pasteImage(im, clipImg, roundInt(x), roundInt(y))
-
-        # otherwise, load pixels from the video source
         else:
-            # load videos
-            filenames = list(set([clip["filename"] for clip in clips]))
-            fileCount = len(filenames)
+            # check to see if frame pixel data exists
+            if len(clips) > 0 and "framePixelData" not in clips[0]:
+                print("Must load frame pixel data beforehand via loadVideoPixelData()")
+                sys.exit()
+                return False
 
-            # only open one video at a time
-            for i, fn in enumerate(filenames):
-                video = VideoFileClip(fn, audio=False)
-                videoDur = video.duration
-                vclips = [c for c in clips if fn==c["filename"]]
-
-                # extract frames from videos
-                for clip in vclips:
-                    clipImg = getVideoClipImage(video, videoDur, clip)
-                    clipImg, x, y = applyEffects(clipImg, clip)
-                    im = pasteImage(im, clipImg, roundInt(x), roundInt(y))
-                video.reader.close()
-                del video
-
-                if verbose:
-                    sys.stdout.write('\r')
-                    sys.stdout.write("%s%%" % round(1.0*(i+1)/fileCount*100,1))
-                    sys.stdout.flush()
+            im = clipsToFrameGPU(clips, width, height)
 
         im = im.convert("RGB")
-
-        if saveFrame:
-            im.save(filename)
-            print("Saved frame %s" % filename)
+        im.save(filename)
+        print("Saved frame %s" % filename)
 
     return True
 
@@ -548,7 +509,7 @@ def parseVideoArgs(args):
     d["THREADS"] = min(args.THREADS, multiprocessing.cpu_count()) if args.THREADS > 0 else multiprocessing.cpu_count()
     d["AUDIO_OUTPUT_FILE"] = args.OUTPUT_FILE.replace(".mp4", ".mp3")
     d["MS_PER_FRAME"] = frameToMs(1, args.FPS, False)
-    d["CACHE_VIDEO"] = args.CACHE_VIDEO or args.USE_GPU
+    d["CACHE_VIDEO"] = args.CACHE_VIDEO
     d["MATCH_DB"] = args.MATCH_DB if args.MATCH_DB > -9999 else False
 
 def pasteImage(im, clipImg, x, y):
