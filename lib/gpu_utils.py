@@ -13,21 +13,23 @@ try:
 except ImportError:
     print("Warning: no PyOpenCL detected, so no GPU-accellerated processing available")
 
-def clipsToImageGPU(width, height, pixelData, properties, colorDimensions, precision):
+def clipsToImageGPU(width, height, pixelData, properties, colorDimensions, precision, offset, isUniform=False):
     count = len(pixelData)
     precisionMultiplier = int(10 ** precision)
     flatPixelData = []
-    isUniform = np.array(pixelData).ndim > 1
-    if isUniform:
-        flatPixelData = np.array(pixelData).reshape(-1)
-    else:
-        for d in pixelData:
-            flatPixelData += list(d.reshape(-1))
-        flatPixelData = np.array(flatPixelData)
     pcount = len(properties[0])
-    properties = np.array(properties).reshape(-1)
-    flatPixelData = flatPixelData.astype(np.uint8)
-    properties = properties.astype(np.int32)
+    # isUniform = np.array(pixelData, dtype=np.uint8).ndim > 1
+    if isUniform:
+        flatPixelData = np.array(pixelData, dtype=np.uint8).reshape(-1)
+    else:
+        flatPixelData = np.zeros(offset, dtype=np.uint8)
+        for i, p in enumerate(properties):
+            poffset = p[0]
+            pw = p[3]
+            ph = p[4]
+            flatPixelData[poffset:poffset+(pw*ph*colorDimensions)] = pixelData[i].reshape(-1)
+
+    properties = np.array(properties, dtype=np.int32).reshape(-1)
     zvalues = np.zeros(width * height, dtype=np.int32)
     result = np.zeros(width * height * 3, dtype=np.uint8)
 

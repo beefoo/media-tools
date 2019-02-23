@@ -153,6 +153,8 @@ def clipsToFrameGPU(clips, width, height, precision=5):
     properties = []
     offset = 0
     precisionMultiplier = int(10 ** precision)
+    isUniform = True
+    previousShape = None
 
     for index, clip in enumerate(clips):
         framePixelData = clip["framePixelData"]
@@ -183,8 +185,12 @@ def clipsToFrameGPU(clips, width, height, precision=5):
             zindex = clip["zindex"] if "zindex" in clip else index+1
             # print("%s, %s, %s, %s" % (x, y, tw, th))
             properties.append([offset, roundInt(x*precisionMultiplier), roundInt(y*precisionMultiplier), w, h, roundInt(tw*precisionMultiplier), roundInt(th*precisionMultiplier), alpha, zindex])
-            offset += (h*w*c)
-    pixels = clipsToImageGPU(width, height, pixelData, properties, c, precision)
+            if previousShape is None:
+                previousShape = (h, w, c)
+            elif isUniform and previousShape != (h, w, c):
+                isUniform = False
+            offset += int(h*w*c)
+    pixels = clipsToImageGPU(width, height, pixelData, properties, c, precision, offset, isUniform)
     return Image.fromarray(pixels, mode="RGB")
 
 def compileFrames(infile, fps, outfile, padZeros, audioFile=None):
