@@ -4,6 +4,7 @@ from multiprocessing.dummy import Pool as ThreadPool
 from lib.collection_utils import *
 from lib.math_utils import *
 from lib.processing_utils import *
+from lib.audio_utils import getDurationFromAudioFile
 
 class Vector:
 
@@ -246,7 +247,7 @@ class Clip:
         defaults = {
             "filename": None,
             "start": 0,
-            "dur": 1,
+            "dur": 0,
             "state": {},
             "plays": []
         }
@@ -258,6 +259,10 @@ class Clip:
         self.start = defaults["start"]
         self.dur = defaults["dur"]
         self.plays = defaults["plays"]
+
+        if self.dur <= 0:
+            self.dur = getDurationFromAudioFile(self.filename)
+        self.dur = max(1, self.dur)
 
         self.setFadeIn(getClipFadeDur(self.dur))
         self.setFadeOut(getClipFadeDur(self.dur, 0.25))

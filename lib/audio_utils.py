@@ -92,7 +92,7 @@ def getAudioSamples(fn, min_dur=50, max_dur=-1, fft=2048, hop_length=512, backtr
     # maxVal = y.max()
     # if maxVal != 0:
     #     y /= maxVal
-    duration = roundInt(getDuration(y, sr) * 1000)
+    duration = int(getDurationFromAudioData(y, sr) * 1000)
 
     # retrieve onsets using superflux method
     # https://librosa.github.io/librosa/auto_examples/plot_superflux.html#sphx-glr-auto-examples-plot-superflux-py
@@ -142,9 +142,16 @@ def getAudioSimilarity(test, references):
         sumValue += refDistance
     return 1.0 * sumValue / refCount
 
-def getDuration(y, sr):
+def getDurationFromAudioData(y, sr):
     ylen = len(y)
     return 1.0 * ylen / sr
+
+def getDurationFromAudioFile(fn):
+    duration = 0
+    if os.path.isfile(fn):
+        y, sr = librosa.load(getAudioFile(fn))
+        duration = int(getDurationFromAudioData(y, sr) * 1000)
+    return duration
 
 def getFeatures(y, sr, start, dur=100, fft=2048, hop_length=512):
     # analyze just the sample
@@ -304,7 +311,7 @@ def gePowerFromTimecodes(timecodes, method="max"):
     # get features for each timecode in file
     for filename in filenames:
         y, sr = librosa.load(getAudioFile(filename))
-        duration = roundInt(getDuration(y, sr) * 1000)
+        duration = int(getDurationFromAudioData(y, sr) * 1000)
         stft = getStft(y)
         maxStft = 1
         if method=="mean":
