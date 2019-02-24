@@ -21,6 +21,7 @@ from lib.collection_utils import *
 from lib.composition_utils import *
 from lib.io_utils import *
 from lib.math_utils import *
+from lib.sampler import *
 from lib.statistics_utils import *
 from lib.video_utils import *
 
@@ -31,7 +32,7 @@ parser.add_argument('-beatms', dest="BEAT_MS", default=1024, type=int, help="Mil
 parser.add_argument('-margin', dest="CLIP_MARGIN", default=0.5, type=float, help="Margin between clips in pixels")
 parser.add_argument('-beats', dest="BEAT_DIVISIONS", default=3, type=int, help="Number of times to divide beat, e.g. 1 = 1/2 notes, 2 = 1/4 notes, 3 = 1/8th notes, 4 = 1/16 notes")
 parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.3,0.6", help="Volume range")
-parser.add_argument('-alphar', dest="ALPHA_RANGE", default="0.2,1.0", help="Alpha range")
+parser.add_argument('-alphar', dest="ALPHA_RANGE", default="0.33,1.0", help="Alpha range")
 parser.add_argument('-translate', dest="TRANSLATE_AMOUNT", default=0.8, type=float, help="Amount to translate clip as a percentage of minimum dimension")
 parser.add_argument('-scale', dest="SCALE_AMOUNT", default=1.33, type=float, help="Amount to scale clip")
 parser.add_argument('-grid', dest="GRID", default="256x256", help="Size of grid")
@@ -59,6 +60,7 @@ stepTime = startTime
 _, samples = readCsv(a.INPUT_FILE)
 stepTime = logTime(stepTime, "Read CSV")
 sampleCount = len(samples)
+sampler = Sampler()
 
 gridCount = GRID_W * GRID_H
 if gridCount > sampleCount:
@@ -143,6 +145,7 @@ for i, clip in enumerate(clips):
 ms = a.PAD_START
 cols = GRID_W
 fromWidth = 1.0 * a.WIDTH / cols * GRID_W
+step = 0
 while True:
     zoomSteps = max(1, roundInt(1.0 * cols ** 0.5)) # zoom more steps when we're zoomed out
     cols -= (zoomSteps * 2)
@@ -154,7 +157,8 @@ while True:
     waveDur = a.WAVE_DUR
     halfBeatDur = roundInt(a.BEAT_DUR * 0.5)
 
-    # play bass
+    # play kick
+    sampler.queuePlay(ms, "kick", index=step)
 
     visibleClips = [clip for clip in clips if clip.vector.isVisible(a.WIDTH, a.HEIGHT)]
     visibleClipCount = len(visibleClips)
@@ -198,6 +202,7 @@ while True:
     ms += halfBeatDur
 
     # play snare
+    sampler.queuePlay(ms, "snare", index=step)
 
     toWidth = 1.0 * a.WIDTH / cols * GRID_W
     fromScale = container.vector.getScaleFromWidth(fromWidth)
@@ -207,6 +212,7 @@ while True:
     fromWidth = toWidth
 
     ms += halfBeatDur
+    step += 1
 
     if lastStep:
         break
@@ -220,7 +226,7 @@ container.vector.setTransform(scale=(1.0, 1.0)) # reset scale
 stepTime = logTime(stepTime, "Created video clip sequence")
 
 # get audio sequence
-audioSequence = clipsToSequence(clips)
+audioSequence = clipsToSequence(clips + sampler.getClips())
 stepTime = logTime(stepTime, "Processed audio clip sequence")
 
 # plotAudioSequence(audioSequence)
