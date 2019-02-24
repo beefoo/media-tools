@@ -260,7 +260,7 @@ class Clip:
         self.dur = defaults["dur"]
         self.plays = defaults["plays"]
 
-        if self.dur <= 0:
+        if self.dur <= 0 and self.filename is not None:
             self.dur = getDurationFromAudioFile(self.filename)
         self.dur = max(1, self.dur)
 
