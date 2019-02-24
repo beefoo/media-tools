@@ -39,7 +39,7 @@ parser.add_argument('-grid1', dest="END_GRID", default="6x6", help="End size of 
 parser.add_argument('-zd', dest="ZOOM_DUR", default=500, type=int, help="Zoom duration in milliseconds")
 parser.add_argument('-wd', dest="WAVE_DUR", default=8000, type=int, help="Wave duration in milliseconds")
 parser.add_argument('-bd', dest="BEAT_DUR", default=6000, type=int, help="Beat duration in milliseconds")
-parser.add_argument('-mcd', dest="MIN_CLIP_DUR", default=2000, type=int, help="Minumum clip duration")
+parser.add_argument('-mcd', dest="MIN_CLIP_DUR", default=1500, type=int, help="Minumum clip duration")
 parser.add_argument('-maxa', dest="MAX_AUDIO_CLIPS", default=2048, type=int, help="Maximum number of audio clips to play")
 parser.add_argument('-keep', dest="KEEP_FIRST_AUDIO_CLIPS", default=64, type=int, help="Ensure the middle x audio files play")
 parser.add_argument('-center', dest="CENTER", default="0.5,0.5", help="Center position")
@@ -82,7 +82,7 @@ for i, s in enumerate(samples):
     samples[i]["angleFromCenter"] = angleBetween(cCol, cRow, s["col"], s["row"])
     # make clip longer if necessary
     samples[i]["audioDur"] = s["dur"]
-    samples[i]["dur"] = max(s["dur"], a.MIN_CLIP_DUR)
+    samples[i]["dur"] = s["dur"] if s["dur"] > a.MIN_CLIP_DUR else int(math.ceil(1.0 * a.MIN_CLIP_DUR / s["dur"]) * s["dur"])
     # calculate translate distance
     translateDistance = min(s["width"], s["height"]) * a.TRANSLATE_AMOUNT
     samples[i]["translateAmount"] = translatePoint(0, 0, translateDistance, samples[i]["angleFromCenter"])
