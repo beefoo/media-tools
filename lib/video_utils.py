@@ -428,7 +428,7 @@ def loadVideoPixelData(clips, fps, cacheDir="tmp/", width=None, height=None, ver
                 end = start + clip.props["dur"]
                 ms = start
                 while ms < end:
-                    fclip = clip.props
+                    fclip = clip.props.copy()
                     t = roundInt(ms)
                     ms += msStep
                     # already exists, check size
@@ -474,7 +474,6 @@ def loadVideoPixelData(clips, fps, cacheDir="tmp/", width=None, height=None, ver
     print("Finished loading pixel data.")
 
 def loadVideoPixelDataFromFrames(frames, clips, fps, cacheDir="tmp/", cacheFile="clip_cache.p", verifyData=True, cache=True):
-    print("Calculating max widths and heights from frame sequence...")
     frameCount = len(frames)
     clipCount = len(clips)
 
@@ -484,6 +483,7 @@ def loadVideoPixelDataFromFrames(frames, clips, fps, cacheDir="tmp/", cacheFile=
         loaded, clipMaxes = loadCacheFile(cacheDir+cacheFile)
 
     if not loaded or len(clipMaxes) != clipCount:
+        print("Calculating max widths and heights from frame sequence...")
         clipDimensions = np.zeros((frameCount, clipCount, 2)) # will store each clip's width/height for each frame
         for i, frame in enumerate(frames):
             frameClips = clipsToDicts(clips, frame["ms"])
@@ -500,8 +500,8 @@ def loadVideoPixelDataFromFrames(frames, clips, fps, cacheDir="tmp/", cacheFile=
 
     # update clips with max width/height
     for i, clip in enumerate(clips):
-        clip.setProp("width", clipMaxes[i, 0])
-        clip.setProp("height", clipMaxes[i, 1])
+        clip.setProp("width", clipMaxes[clip.props["index"], 0])
+        clip.setProp("height", clipMaxes[clip.props["index"], 1])
 
     loadVideoPixelData(clips, fps, cacheDir=cacheDir, verifyData=verifyData, cache=cache)
 

@@ -30,11 +30,14 @@ va["OUTPUT_FILE"] = "output/cachetest.mp4"
 va["CACHE_FILE"] = "framestest_cache.p"
 makeDirectories([a.OUTPUT_FRAME, a.OUTPUT_FILE, a.CACHE_DIR])
 
-FILENAME = "media/sample/LivingSt1958.mp4"
-CLIPS = 256
+FILENAMES = ["media/sample/LivingSt1958.mp4", "media/downloads/Snuffy's Turf Luck (1963).mp4"]
+files = [{"filename": fn, "dur": int(getDurationFromFile(fn, accurate=True) * 1000)} for fn in FILENAMES]
+
+CLIPS_PER_FILE = 256
+CLIPS = CLIPS_PER_FILE * len(FILENAMES)
 COLS = int(math.sqrt(CLIPS))
 ROWS = ceilInt(1.0 * CLIPS / COLS)
-DURATION_MS = int(getDurationFromFile(FILENAME, accurate=True) * 1000)
+DURATION_MS = min([f["dur"] for f in files])
 OUT_DUR_MS = 2000
 MAX_CLIP_DUR_MS = 1000
 
@@ -45,13 +48,14 @@ container = Clip({
 })
 
 samples = []
-clipDur = min(MAX_CLIP_DUR_MS, int(1.0 * DURATION_MS / CLIPS))
-for i in range(CLIPS):
-    samples.append({
-        "filename": FILENAME,
-        "start": int(i * clipDur),
-        "dur": clipDur
-    })
+clipDur = min(MAX_CLIP_DUR_MS, int(1.0 * DURATION_MS / CLIPS_PER_FILE))
+for f in files:
+    for i in range(CLIPS_PER_FILE):
+        samples.append({
+            "filename": f["filename"],
+            "start": int(i * clipDur),
+            "dur": clipDur
+        })
 
 samples = addGridPositions(samples, COLS, a.WIDTH, a.HEIGHT)
 samples = addIndices(samples)
