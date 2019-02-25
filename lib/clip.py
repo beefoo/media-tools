@@ -22,7 +22,7 @@ class Vector:
 
         self.pos = [0.0, 0.0, 0.0]
         self.size = [100.0, 100.0]
-        self.keyframes = {}
+        self.keyframes = []
 
         # for caching
         self.cache = defaults["cache"]
@@ -56,14 +56,9 @@ class Vector:
         elif name == "y":
             keyframe.update({"name": "pos", "dimension": 1})
 
-        name = keyframe["name"]
-
-        if name in self.keyframes:
-            self.keyframes[name].append(keyframe)
-            if sortFrames:
-                self.keyframes[name] = sorted(self.keyframes[name], key=lambda k: k["ms"])
-        else:
-            self.keyframes[name] = [keyframe]
+        self.keyframes.append(keyframe)
+        if sortFrames:
+            self.sortFrames()
 
     def getAlpha(self, ms=None):
         return self.getPropValue("alpha", ms=ms)
@@ -119,8 +114,7 @@ class Vector:
             return value
 
         # retrieve keyframes for this property
-        keyframes = self.keyframes[name] if name in self.keyframes else []
-        keyframes = [k for k in keyframes if k["dimension"]==dimension or k["dimension"] is None or dimension is None]
+        keyframes = [k for k in keyframes if k["name"]==name and (k["dimension"]==dimension or k["dimension"] is None or dimension is None)]
         kcount = len(keyframes)
 
         # assuming keyframes are sorted
@@ -237,10 +231,34 @@ class Vector:
         self.transformOrigin = origin
 
     def sortFrames(self):
-        for name in self.keyframes:
-            self.keyframes[name] = sorted(self.keyframes[name], key=lambda k: k["ms"])
+        self.keyframes = sorted(self.keyframes, key=lambda k: k["ms"])
 
 class Clip:
+
+    # define the indices for gpu arrays
+    # clip properties
+    CLIP_PROPERTIES = {
+        "X": 0, "Y": 1, "WIDTH": 2, "HEIGHT": 3,
+        "ALPHA": 4, "Z": 5, "ORIGIN_X": 6, "ORIGIN_Y": 7,
+        "T_ORIGIN_X": 8, "T_ORIGIN_Y": 9, "DUR": 10
+    }
+    # keyframe properties
+    KEYFRAME_PROPERTIES = {
+        "KF_MS": 0, "KF_PROPERTY": 1, "KF_DIMENSION": 2, "KF_VALUE": 3, "KF_EASING": 4
+    }
+    PROPERTY_NAMES = {
+        "pos": 1,
+        "translate": 2,
+        "scale", 3,
+        "alpha": 4
+    }
+    # easing properties
+    EASING_PROPERTIES = {
+        "linear": 1,
+        "sin": 2,
+        "cubicInOut": 3,
+        "quartInOut": 4
+    }
 
     def __init__(self, props={}):
         self.props = props
@@ -356,6 +374,54 @@ class Clip:
         })
         props.update(self.vector.getPropsAtTime(ms))
         return props
+
+    def toGPUArray(self, playCount, keyframeCount, precision):
+        ci = self.CLIP_PROPERTIES
+        ki = self.KEYFRAME_PROPERTIES
+        pi = self.PROPERTY_NAMES
+        ei = self.EASING_PROPERTIES
+
+        precisionMultiplier = int(10 ** precision)
+        clipPropertyCount = len(ci.keys())
+        keyframePropertyCount = len(ki.keys())
+
+        arrLen = clipPropertyCount + keyframeCount * keyframePropertyCount + playCount * 2
+        arr = np.zeros(arrLen, dtype=np.int32)
+
+        arr[ci["X"]] = roundInt(self.vector.pos[0] * precisionMultiplier)
+        arr[ci["Y"]] = roundInt(self.vector.pos[1] * precisionMultiplier)
+        arr[ci["WIDTH"]] = roundInt(self.vector.size[0] * precisionMultiplier)
+        arr[ci["HEIGHT"]] = roundInt(self.vector.size[1] * precisionMultiplier)
+        arr[ci["ALPHA"]] = roundInt(self.vector.alpha * precisionMultiplier)
+        arr[ci["Z"]] = self.props["zindex"] if "zindex" in self.props else self.props["index"] + 1
+        arr[ci["ORIGIN_X"]] = roundInt(self.vector.origin[0] * precisionMultiplier)
+        arr[ci["ORIGIN_Y"]] = roundInt(self.vector.origin[1] * precisionMultiplier)
+        arr[ci["T_ORIGIN_X"]] = roundInt(self.vector.transformOrigin[0] * precisionMultiplier)
+        arr[ci["T_ORIGIN_Y"]] = roundInt(self.vector.transformOrigin[1] * precisionMultiplier)
+        arr[ci["DUR"]] = self.dur
+
+        offset = clipPropertyCount
+        for i, kf in enumerate(self.vector.keyframes):
+            kfOffset = offset + i * keyframePropertyCount
+            if (kfOffset+keyframePropertyCount-1) >= arrLen:
+                print("Not enough keyframes alotted for GPU clip array")
+                break
+            arr[kOffset+ki["KF_MS"]] = kf["ms"]
+            arr[kOffset+ki["KF_PROPERTY"]] = pi[kf["name"]]
+            arr[kOffset+ki["KF_DIMENSION"]] = kf["dimension"] if "dimension" in kf and kf["dimension"] is not None else -1
+            arr[kOffset+ki["KF_VALUE"]] = roundInt(kf["value"] * precisionMultiplier)
+            arr[kOffset+ki["KF_EASING"]] = ei[kf["easing"]]
+
+        offset += keyframeCount * keyframePropertyCount
+        for i, play in enumerate(self.plays):
+            pOffset = offset + i * 2
+            if (pOffset+1) >= arrLen:
+                print("Not enough plays alotted for GPU clip array")
+                break
+            arr[pOffset] = play[0]
+            arr[pOffset+1] = play[1]
+
+        return arr
 
 def clipToDict(p):
     ms, clip = p
