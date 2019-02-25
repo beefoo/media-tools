@@ -6,6 +6,7 @@ import math
 import numpy as np
 import os
 from pprint import pprint
+import random
 import sys
 
 # add parent directory to sys path to import relative modules
@@ -25,9 +26,9 @@ a = parser.parse_args()
 parseVideoArgs(a)
 
 va = vars(a)
-va["OUTPUT_FRAME"] = "tmp/cachetest/frame.%s.png"
-va["OUTPUT_FILE"] = "output/cachetest.mp4"
-va["CACHE_FILE"] = "framestest_cache.p"
+va["OUTPUT_FRAME"] = "tmp/cacheFrames_frames/frame.%s.jpg"
+va["OUTPUT_FILE"] = "output/cacheFramesTest.mp4"
+va["CACHE_DIR"] = "tmp/cacheFrames_cache/"
 makeDirectories([a.OUTPUT_FRAME, a.OUTPUT_FILE, a.CACHE_DIR])
 
 FILENAMES = ["media/sample/LivingSt1958.mp4", "media/downloads/Snuffy's Turf Luck (1963).mp4"]
@@ -59,6 +60,7 @@ for f in files:
 
 samples = addGridPositions(samples, COLS, a.WIDTH, a.HEIGHT)
 samples = addIndices(samples)
+random.shuffle(samples)
 clips = samplesToClips(samples)
 
 for i, clip in enumerate(clips):
@@ -80,15 +82,14 @@ for f in range(totalFrames):
     ms = frameToMs(frame, a.FPS)
     videoFrames.append({
         "filename": a.OUTPUT_FRAME % zeroPad(frame, totalFrames),
-        "clips": clips,
         "ms": ms,
         "width": a.WIDTH,
         "height": a.HEIGHT,
         "overwrite": True
     })
 
-loadVideoPixelDataFromFrames(videoFrames, clips, a.FPS, a.CACHE_DIR, a.CACHE_FILE, verifyData=True)
+clipSequence, clipsPixelData = loadVideoPixelDataFromFrames(videoFrames, clips, a.FPS, a.CACHE_DIR, a.CACHE_FILE, verifyData=True, cache=True)
 
-processFrames(videoFrames, threads=1)
+processFrames(videoFrames, clipSequence, clipsPixelData, threads=1)
 compileFrames(a.OUTPUT_FRAME, a.FPS, a.OUTPUT_FILE, getZeroPadding(totalFrames))
 print("Done.")

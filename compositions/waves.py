@@ -116,10 +116,10 @@ if sampleCount > a.MAX_AUDIO_CLIPS:
     samples = limitAudioClips(samples, a.MAX_AUDIO_CLIPS, "nDistanceFromCenter", keepFirst=a.KEEP_FIRST_AUDIO_CLIPS, invert=True, seed=(a.RANDOM_SEED+2))
     stepTime = logTime(stepTime, "Calculate which audio clips are playing")
 
-if a.DEBUG:
-    for i, s in enumerate(samples):
-        pixels = np.array([[getRandomColor(i)]])
-        samples[i]["framePixelData"] = [pixels]
+# if a.DEBUG:
+#     for i, s in enumerate(samples):
+#         pixels = np.array([[getRandomColor(i)]])
+#         samples[i]["framePixelData"] = [pixels]
 
 # show a viz of which frames are playing
 if a.DEBUG:
@@ -251,7 +251,6 @@ for f in range(totalFrames):
     ms = frameToMs(frame, a.FPS)
     videoFrames.append({
         "filename": a.OUTPUT_FRAME % zeroPad(frame, totalFrames),
-        "clips": clips,
         "ms": ms,
         "width": a.WIDTH,
         "height": a.HEIGHT,
@@ -260,16 +259,15 @@ for f in range(totalFrames):
     })
 stepTime = logTime(stepTime, "Processed video frame sequence")
 
-if a.CACHE_VIDEO:
-    loadVideoPixelDataFromFrames(videoFrames, clips, a.FPS, a.CACHE_DIR, a.CACHE_FILE, a.VERIFY_CACHE)
-    stepTime = logTime(stepTime, "Loaded pixel data")
+clipSequence, clipsPixelData = loadVideoPixelDataFromFrames(videoFrames, clips, a.FPS, a.CACHE_DIR, a.CACHE_FILE, a.VERIFY_CACHE, cache=True, debug=a.DEBUG)
+stepTime = logTime(stepTime, "Loaded pixel data")
 
 if not a.VIDEO_ONLY and (not os.path.isfile(a.AUDIO_OUTPUT_FILE) or a.OVERWRITE):
     mixAudio(audioSequence, durationMs, a.AUDIO_OUTPUT_FILE)
     stepTime = logTime(stepTime, "Mix audio")
 
 if not a.AUDIO_ONLY:
-    processFrames(videoFrames, threads=a.THREADS)
+    processFrames(videoFrames, clipSequence, clipsPixelData, threads=a.THREADS)
     stepTime = logTime(stepTime, "Process video")
 
 if not a.AUDIO_ONLY:
