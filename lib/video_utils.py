@@ -471,16 +471,15 @@ def loadVideoPixelDataFromFrames(frames, clips, fps, cacheDir="tmp/", cacheFile=
         clipSequence = np.zeros((frameCount, clipCount, 7), dtype=np.float32) # will store each clip's x/y/width/height/alpha for each frame
         for i, frame in enumerate(frames):
             frameClips = clipsToDicts(clips, frame["ms"])
-            # filter out clips that are not visible
-            frameClips = [clip for clip in frameClips if isClipVisible(clip, frame["width"], frame["height"])]
             for clip in frameClips:
-                clipSequence[i, clip["index"], 0] = clip["x"]
-                clipSequence[i, clip["index"], 1] = clip["y"]
-                clipSequence[i, clip["index"], 2] = clip["width"]
-                clipSequence[i, clip["index"], 3] = clip["height"]
-                clipSequence[i, clip["index"], 4] = clip["alpha"]
-                clipSequence[i, clip["index"], 5] = clip["tn"]
-                clipSequence[i, clip["index"], 6] = clip["zindex"] if "zindex" in clip else clip["index"]+1
+                if isClipVisible(clip, frame["width"], frame["height"]):
+                    clipSequence[i, clip["index"], 0] = clip["x"]
+                    clipSequence[i, clip["index"], 1] = clip["y"]
+                    clipSequence[i, clip["index"], 2] = clip["width"]
+                    clipSequence[i, clip["index"], 3] = clip["height"]
+                    clipSequence[i, clip["index"], 4] = clip["alpha"]
+                    clipSequence[i, clip["index"], 5] = clip["tn"]
+                    clipSequence[i, clip["index"], 6] = clip["zindex"] if "zindex" in clip else clip["index"]+1
             printProgress(i+1, frameCount)
         # get max dimension of each clip
 
