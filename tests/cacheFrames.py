@@ -90,6 +90,6 @@ for f in range(totalFrames):
 
 clipsPixelData = loadVideoPixelDataFromFrames(videoFrames, clips, a.WIDTH, a.HEIGHT, a.FPS, a.CACHE_DIR, a.CACHE_FILE, verifyData=True, cache=True)
 
-processFrames(videoFrames, clips, clipsPixelData, threads=1)
+processFrames(videoFrames, clips, clipsPixelData, threads=2)
 compileFrames(a.OUTPUT_FRAME, a.FPS, a.OUTPUT_FILE, getZeroPadding(totalFrames))
 print("Done.")

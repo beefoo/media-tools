@@ -528,7 +528,8 @@ def pasteImage(im, clipImg, x, y):
 def processFrames(params, clips, clipsPixelData, threads=1, verbose=True, precision=5):
     count = len(params)
     print("Processing %s frames" % count)
-
+    threads = getThreadCount(threads)
+    
     if threads > 1:
         pool = ThreadPool(threads)
         pclipsToFrame = partial(clipsToFrame, clips=clips, pixelData=clipsPixelData, precision=precision)
