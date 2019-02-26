@@ -13,7 +13,7 @@ os.environ['PYOPENCL_COMPILER_OUTPUT'] = '1'
 def clipsToDictsGPU(clips, ms, container=None, precision=5):
     clipCount = len(clips)
     clipPropertyInCount = len(Clip.CLIP_PROPERTIES.keys())
-    clipPropertyOutCount = 7
+    clipPropertyOutCount = 8
     keyframePropertyCount = len(Clip.KEYFRAME_PROPERTIES.keys())
     precisionMultiplier = int(10 ** precision)
 
@@ -39,6 +39,10 @@ def clipsToDictsGPU(clips, ms, container=None, precision=5):
     easingPropsString = " ".join(["int easing_%s = %d;" % (key, value) for key, value in Clip.EASING_PROPERTIES.items()])
 
     srcCode = """
+    static bool isClipVisible(int x, int y, int w, int h, int alpha, int containerW, int containerH) {
+        return (containerW<=0 || containerH <= 0 || ((x+w) > 0 && (y+h) > 0 && (x<containerW) && (y<containerH) && alpha > 0));
+    }
+
     static int lerp(int fromValue, int toValue, float amount) {
         return (int)round((float)(toValue-fromValue) * amount) + fromValue;
     }
@@ -63,7 +67,7 @@ def clipsToDictsGPU(clips, ms, container=None, precision=5):
     }
 
     int getClipTime(__global int *clipsData, int ms, int offsetIn, float precisionMultiplierF, int playCount, int dur);
-    int9 getKeyframedProperties(__global int *clipsData, int ms, int offsetIn, float precisionMultiplierF, int clipPropertyInCount, int keyframePropertyCount, int kfCount, int containerX, int containerY, int containerW, int containerH, int containerFromW, int containerFromH);
+    int10 getKeyframedProperties(__global int *clipsData, int ms, int offsetIn, float precisionMultiplierF, int clipPropertyInCount, int keyframePropertyCount, int kfCount, int containerX, int containerY, int containerW, int containerH, int containerFromW, int containerFromH);
 
     int getClipTime(__global int *clipsData, int ms, int offsetIn, float precisionMultiplierF, int playCount, int dur) {
         int closestFromMs = 0;
@@ -90,7 +94,7 @@ def clipsToDictsGPU(clips, ms, container=None, precision=5):
         return time;
     }
 
-    int9 getKeyframedProperties(__global int *clipsData, int ms, int offsetIn, float precisionMultiplierF, int clipPropertyInCount, int keyframePropertyCount, int kfCount, int containerX, int containerY, int containerW, int containerH, int containerFromW, int containerFromH) {
+    int10 getKeyframedProperties(__global int *clipsData, int ms, int offsetIn, float precisionMultiplierF, int clipPropertyInCount, int keyframePropertyCount, int kfCount, int containerX, int containerY, int containerW, int containerH, int containerFromW, int containerFromH) {
         %s // keyframe properties
         %s // property names for keyframes
 
@@ -104,6 +108,7 @@ def clipsToDictsGPU(clips, ms, container=None, precision=5):
         float2 origin = (float2)((float)clipsData[offsetIn + ORIGIN_X]/precisionMultiplierF, (float)clipsData[offsetIn + ORIGIN_Y]/precisionMultiplierF);
         float2 transformOrigin = (float2)((float)clipsData[offsetIn + T_ORIGIN_X]/precisionMultiplierF, (float)clipsData[offsetIn + T_ORIGIN_Y]/precisionMultiplierF);
         int dur = clipsData[offsetIn + DUR];
+        int index = clipsData[offsetIn + INDEX];
 
          // pos
         int xFrom = 0; int xTo = 0; int yFrom = 0; int yTo = 0; int posEasing = 1;
@@ -248,7 +253,7 @@ def clipsToDictsGPU(clips, ms, container=None, precision=5):
             pos.y = (int) round((float) containerH * ny) + containerY;
         }
 
-        return (int9)(pos.x, pos.y, size.x, size.y, alpha, zindex, dur, fromW, fromH);
+        return (int10)(pos.x, pos.y, size.x, size.y, alpha, zindex, dur, fromW, fromH, index);
     }
 
     __kernel void processClips(__global int *containerData, __global int *clipsData, __global int *result){
@@ -270,7 +275,7 @@ def clipsToDictsGPU(clips, ms, container=None, precision=5):
         int containerW = 0; int containerH = 0;
 
         if (containerData[0] >= 0) {
-            int9 containerProps = getKeyframedProperties(containerData, ms, 0, precisionMultiplierF, clipPropertyInCount, keyframePropertyCount, containerKeyframeCount, 0, 0, 0, 0, 0, 0);
+            int10 containerProps = getKeyframedProperties(containerData, ms, 0, precisionMultiplierF, clipPropertyInCount, keyframePropertyCount, containerKeyframeCount, 0, 0, 0, 0, 0, 0);
             containerX = containerProps[0]; containerY = containerProps[1];
             containerW = containerProps[2]; containerH = containerProps[3];
             containerFromW = containerProps[7]; containerFromH = containerProps[8];
@@ -278,21 +283,31 @@ def clipsToDictsGPU(clips, ms, container=None, precision=5):
 
         // get keyframed clip properties
         int offsetIn = i * (clipPropertyInCount + keyframePropertyCount * kfCount + playCount * 2);
-        int9 clipProps = getKeyframedProperties(clipsData, ms, offsetIn, precisionMultiplierF, clipPropertyInCount, keyframePropertyCount, kfCount, containerX, containerY, containerW, containerH, containerFromW, containerFromH);
+        int10 clipProps = getKeyframedProperties(clipsData, ms, offsetIn, precisionMultiplierF, clipPropertyInCount, keyframePropertyCount, kfCount, containerX, containerY, containerW, containerH, containerFromW, containerFromH);
 
         // get the time based on plays
         offsetIn += clipPropertyInCount + keyframePropertyCount * kfCount;
         int dur = clipProps[6];
         int time = getClipTime(clipsData, ms, offsetIn, precisionMultiplierF, playCount, dur);
 
+        int x = clipProps[0];
+        int y = clipProps[1];
+        int w = clipProps[2];
+        int h = clipProps[3];
+        int alpha = clipProps[4];
+
+        bool isVisible = isClipVisible(x, y, w, h, containerFromW, containerFromH);
         int offset = i * clipPropertyOutCount;
-        result[offset] = clipProps[0]; // x
-        result[offset+1] = clipProps[1]; // y
-        result[offset+2] = clipProps[2]; // w
-        result[offset+3] = clipProps[3]; // h
-        result[offset+4] = clipProps[4]; // alpha
-        result[offset+5] = time;
-        result[offset+6] = clipProps[5]; // zindex
+        if (isVisible) {
+            result[offset] = x;
+            result[offset+1] = y;
+            result[offset+2] = w;
+            result[offset+3] = h;
+            result[offset+4] = alpha;
+            result[offset+5] = time;
+            result[offset+6] = clipProps[5]; // zindex
+        }
+        result[offset+7] = clipProps[9]; // index
     }
     """ % (easingPropsString, keyframeString, keyframePropsString, propertyString, ms, clipPropertyInCount, clipPropertyOutCount, keyframePropertyCount, playCount, kfCount, containerKeyframeCount, precisionMultiplier)
 

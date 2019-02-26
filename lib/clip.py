@@ -240,7 +240,7 @@ class Clip:
     CLIP_PROPERTIES = {
         "X": 0, "Y": 1, "WIDTH": 2, "HEIGHT": 3,
         "ALPHA": 4, "Z": 5, "ORIGIN_X": 6, "ORIGIN_Y": 7,
-        "T_ORIGIN_X": 8, "T_ORIGIN_Y": 9, "DUR": 10
+        "T_ORIGIN_X": 8, "T_ORIGIN_Y": 9, "DUR": 10, "INDEX": 11
     }
     # keyframe properties
     KEYFRAME_PROPERTIES = {
@@ -399,6 +399,7 @@ class Clip:
         arr[ci["T_ORIGIN_X"]] = roundInt(self.vector.transformOrigin[0] * precisionMultiplier)
         arr[ci["T_ORIGIN_Y"]] = roundInt(self.vector.transformOrigin[1] * precisionMultiplier)
         arr[ci["DUR"]] = self.dur
+        arr[ci["INDEX"]] = self.props["index"]
 
         offset = clipPropertyCount
         for i, kf in enumerate(self.vector.keyframes):
