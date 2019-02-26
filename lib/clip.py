@@ -6,6 +6,12 @@ from lib.math_utils import *
 from lib.processing_utils import *
 from lib.audio_utils import getDurationFromAudioFile
 
+def isClipVisible(clip, width, height):
+    isInFrame = clip["x"]+clip["width"] > 0 and clip["y"]+clip["height"] > 0 and clip["x"] < width and clip["y"] < height
+    alpha = clip["alpha"] if "alpha" in clip else 1.0
+    isOpaque = alpha > 0
+    return isInFrame and isOpaque
+
 class Vector:
 
     def __init__(self, props={}):
@@ -114,7 +120,7 @@ class Vector:
             return value
 
         # retrieve keyframes for this property
-        keyframes = [k for k in keyframes if k["name"]==name and (k["dimension"]==dimension or k["dimension"] is None or dimension is None)]
+        keyframes = [k for k in self.keyframes if k["name"]==name and (k["dimension"]==dimension or k["dimension"] is None or dimension is None)]
         kcount = len(keyframes)
 
         # assuming keyframes are sorted
@@ -154,9 +160,9 @@ class Vector:
             "y": self.getY(ms),
             "width": self.getWidth(ms),
             "height": self.getHeight(ms),
-            "rotation": self.getRotation(ms),
-            "alpha": self.getAlpha(ms),
-            "blur": self.getBlur(ms)
+            "alpha": self.getAlpha(ms)
+            # "rotation": self.getRotation(ms),
+            # "blur": self.getBlur(ms)
         }
         return props
 
@@ -187,7 +193,7 @@ class Vector:
     def getY(self, ms=None):
         return self.getPosDimension(1, ms)
 
-    def isVisible(self, containerW, containerH, ms=None):
+    def isVisible(self, containerW, containerH, ms=None, props=None):
         x, y = self.getPos(ms)
         w, h = self.getSize(ms)
         alpha = self.getAlpha(ms)
@@ -218,6 +224,7 @@ class Vector:
             self.size[0] = width
         if height is not None:
             self.size[1] = height
+        self.aspectRatio = 1.0 * self.size[0] / self.size[1]
 
     def setTransform(self, translate=None, scale=None, rotation=None):
         if translate is not None:
@@ -249,7 +256,7 @@ class Clip:
     PROPERTY_NAMES = {
         "pos": 1,
         "translate": 2,
-        "scale", 3,
+        "scale": 3,
         "alpha": 4
     }
     # easing properties
@@ -267,7 +274,8 @@ class Clip:
             "start": 0,
             "dur": 0,
             "state": {},
-            "plays": []
+            "plays": [],
+            "index": 0
         }
 
         defaults.update(props)
@@ -365,68 +373,52 @@ class Clip:
     def setVector(self, vector):
         self.vector = Vector() if vector is None else vector
 
-    def toDict(self, ms=None):
+    def toDict(self, ms=None, containerW=None, containerH=None):
         props = self.props.copy()
         t = self.getClipTime(ms)
         props.update({
             "t": t,
             "tn": norm(t, (self.start, self.start+self.dur), limit=True)
         })
+        props["zindex"] = self.props["zindex"] if "zindex" in props else self.props["index"]+1
         props.update(self.vector.getPropsAtTime(ms))
+        # update properties if not visible
+        if containerW is not None and containerH is not None:
+            isVisible = isClipVisible(props, containerW, containerH)
+            if not isVisible:
+                props.update({
+                    "width": 0,
+                    "height": 0,
+                    "alpha": 0
+                })
         return props
 
-    def toGPUArray(self, playCount, keyframeCount, precision):
-        ci = self.CLIP_PROPERTIES
-        ki = self.KEYFRAME_PROPERTIES
-        pi = self.PROPERTY_NAMES
-        ei = self.EASING_PROPERTIES
-
+    def toNpArr(self, ms=None, containerW=None, containerH=None, precision=5):
         precisionMultiplier = int(10 ** precision)
-        clipPropertyCount = len(ci.keys())
-        keyframePropertyCount = len(ki.keys())
-
-        arrLen = clipPropertyCount + keyframeCount * keyframePropertyCount + playCount * 2
-        arr = np.zeros(arrLen, dtype=np.int32)
-
-        arr[ci["X"]] = roundInt(self.vector.pos[0] * precisionMultiplier)
-        arr[ci["Y"]] = roundInt(self.vector.pos[1] * precisionMultiplier)
-        arr[ci["WIDTH"]] = roundInt(self.vector.size[0] * precisionMultiplier)
-        arr[ci["HEIGHT"]] = roundInt(self.vector.size[1] * precisionMultiplier)
-        arr[ci["ALPHA"]] = roundInt(self.vector.alpha * precisionMultiplier)
-        arr[ci["Z"]] = self.props["zindex"] if "zindex" in self.props else self.props["index"] + 1
-        arr[ci["ORIGIN_X"]] = roundInt(self.vector.origin[0] * precisionMultiplier)
-        arr[ci["ORIGIN_Y"]] = roundInt(self.vector.origin[1] * precisionMultiplier)
-        arr[ci["T_ORIGIN_X"]] = roundInt(self.vector.transformOrigin[0] * precisionMultiplier)
-        arr[ci["T_ORIGIN_Y"]] = roundInt(self.vector.transformOrigin[1] * precisionMultiplier)
-        arr[ci["DUR"]] = self.dur
-        arr[ci["INDEX"]] = self.props["index"]
-
-        offset = clipPropertyCount
-        for i, kf in enumerate(self.vector.keyframes):
-            kfOffset = offset + i * keyframePropertyCount
-            if (kfOffset+keyframePropertyCount-1) >= arrLen:
-                print("Not enough keyframes alotted for GPU clip array")
-                break
-            arr[kOffset+ki["KF_MS"]] = kf["ms"]
-            arr[kOffset+ki["KF_PROPERTY"]] = pi[kf["name"]]
-            arr[kOffset+ki["KF_DIMENSION"]] = kf["dimension"] if "dimension" in kf and kf["dimension"] is not None else -1
-            arr[kOffset+ki["KF_VALUE"]] = roundInt(kf["value"] * precisionMultiplier)
-            arr[kOffset+ki["KF_EASING"]] = ei[kf["easing"]]
-
-        offset += keyframeCount * keyframePropertyCount
-        for i, play in enumerate(self.plays):
-            pOffset = offset + i * 2
-            if (pOffset+1) >= arrLen:
-                print("Not enough plays alotted for GPU clip array")
-                break
-            arr[pOffset] = play[0]
-            arr[pOffset+1] = play[1]
-
-        return arr
+        props = self.toDict(ms, containerW, containerH)
+        return np.array([
+            roundInt(props["x"] * precisionMultiplier),
+            roundInt(props["y"] * precisionMultiplier),
+            roundInt(props["width"] * precisionMultiplier),
+            roundInt(props["height"] * precisionMultiplier),
+            roundInt(props["alpha"] * precisionMultiplier),
+            roundInt(props["tn"] * precisionMultiplier),
+            roundInt(props["zindex"])
+        ], dtype=np.int32)
 
 def clipToDict(p):
     ms, clip = p
     return clip.toDict(ms)
+
+def clipsToNpArr(clips, ms=None, containerW=None, containerH=None, precision=5):
+    # startTime = logTime()
+    clipCount = len(clips)
+    propertyCount = 7
+    arr = np.zeros((clipCount, propertyCount), dtype=np.int32)
+    for i, clip in enumerate(clips):
+        arr[clip.props["index"]] = clip.toNpArr(ms, containerW, containerH, precision)
+    # stepTime = logTime(startTime, "Step %s" % ms)
+    return arr
 
 def clipsToDicts(clips, ms=None, threads=-1):
     # startTime = logTime()

@@ -26,21 +26,15 @@ a = parser.parse_args()
 parseVideoArgs(a)
 
 va = vars(a)
-va["OUTPUT_FRAME"] = "tmp/cacheFrames_frames/frame.%s.jpg"
-va["OUTPUT_FILE"] = "output/cacheFramesTest.mp4"
-va["CACHE_DIR"] = "tmp/cacheFrames_cache/"
+va["OUTPUT_FRAME"] = "tmp/gpuFrames_frames/frame.%s.jpg"
+va["OUTPUT_FILE"] = "output/gpuFramesTest.mp4"
+va["CACHE_DIR"] = "tmp/gpuFrames_cache/"
 makeDirectories([a.OUTPUT_FRAME, a.OUTPUT_FILE, a.CACHE_DIR])
 
-FILENAMES = ["media/sample/LivingSt1958.mp4", "media/downloads/Snuffy's Turf Luck (1963).mp4"]
-files = [{"filename": fn, "dur": int(getDurationFromFile(fn, accurate=True) * 1000)} for fn in FILENAMES]
-
-CLIPS_PER_FILE = 256
-CLIPS = CLIPS_PER_FILE * len(FILENAMES)
-COLS = int(math.sqrt(CLIPS))
-ROWS = ceilInt(1.0 * CLIPS / COLS)
-DURATION_MS = min([f["dur"] for f in files])
-OUT_DUR_MS = 2000
-MAX_CLIP_DUR_MS = 1000
+FILENAME = "media/sample/LivingSt1958.mp4"
+DUR = 10000
+HALF_DUR = int(DUR/2)
+QUARTER_DUR = int(HALF_DUR/2)
 
 container = Clip({
     "width": a.WIDTH,
@@ -48,27 +42,32 @@ container = Clip({
     "cache": True
 })
 
-samples = []
-clipDur = min(MAX_CLIP_DUR_MS, int(1.0 * DURATION_MS / CLIPS_PER_FILE))
-for f in files:
-    for i in range(CLIPS_PER_FILE):
-        samples.append({
-            "filename": f["filename"],
-            "start": int(i * clipDur),
-            "dur": clipDur
-        })
+CLIP_W = 320
+CLIP_H = 240
+HALF_W = CLIP_W/2
+HALF_H = CLIP_H/2
+clip = Clip({
+    "filename": FILENAME,
+    "start": 10000,
+    "dur": HALF_DUR,
+    "index": 0,
+    "width": CLIP_W,
+    "height": CLIP_H,
+    "x": a.WIDTH * 0.5 - CLIP_W * 0.5,
+    "y": a.HEIGHT * 0.5 - CLIP_H * 0.5
+})
+clip.vector.setParent(container.vector)
 
-samples = addGridPositions(samples, COLS, a.WIDTH, a.HEIGHT)
-samples = addIndices(samples)
-random.shuffle(samples)
-clips = samplesToClips(samples)
+container.queueTween(0, HALF_DUR, ("scale", 1.0, 4.0, "sin"))
+container.queueTween(HALF_DUR, HALF_DUR, ("scale", 4.0, 1.0, "sin"))
 
-for i, clip in enumerate(clips):
-    clip.vector.setParent(container.vector)
+clip.queueTween(0, QUARTER_DUR, [("translateX", 0, -HALF_W), ("translateY", 0, -HALF_H), ("scale", 1.0, 0.5, "sin"), ("alpha", 1.0, 0.5, "sin")])
+clip.queueTween(QUARTER_DUR, HALF_DUR, [("translateX", -HALF_W, HALF_W), ("translateY", -HALF_H, HALF_H)])
+clip.queueTween(QUARTER_DUR+HALF_DUR, QUARTER_DUR, [("translateX", HALF_W, 0), ("translateY", HALF_H, 0), ("scale", 0.5, 1.0, "sin"), ("alpha", 0.5, 1.0, "sin")])
 
-container.queueTween(0, OUT_DUR_MS, ("scale", 1.0, 4.0, "sin"))
+clips = [clip]
 
-durationMs = OUT_DUR_MS
+durationMs = DUR
 print("Total time: %s" % formatSeconds(durationMs/1000.0))
 
 # adjust frames if audio is longer than video

@@ -25,9 +25,9 @@ a = parser.parse_args()
 parseVideoArgs(a)
 
 va = vars(a)
-va["OUTPUT_FRAME"] = "tmp/smoothtest/frame.%s.png"
+va["OUTPUT_FRAME"] = "tmp/smoothtest_frames/frame.%s.jpg"
 va["OUTPUT_FILE"] = "output/smoothtest.mp4"
-va["CACHE_FILE"] = "smoothtest_cache.p"
+va["CACHE_DIR"] = "tmp/smoothtest_cache/"
 makeDirectories([a.OUTPUT_FRAME, a.OUTPUT_FILE, a.CACHE_DIR])
 
 FILENAME = "media/sample/LivingSt1958.mp4"
@@ -75,8 +75,8 @@ for f in range(totalFrames):
         "overwrite": True
     })
 
-loadVideoPixelDataFromFrames(videoFrames, clips, a.FPS, a.CACHE_DIR, a.CACHE_FILE, verifyData=True)
+clipsPixelData = loadVideoPixelDataFromFrames(videoFrames, clips, a.WIDTH, a.HEIGHT, a.FPS, a.CACHE_DIR, a.CACHE_FILE, verifyData=True, cache=True)
 
-processFrames(videoFrames, threads=1)
+processFrames(videoFrames, clips, clipsPixelData, threads=1)
 compileFrames(a.OUTPUT_FRAME, a.FPS, a.OUTPUT_FILE, getZeroPadding(totalFrames))
 print("Done.")
