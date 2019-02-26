@@ -97,11 +97,11 @@ def blurImage(im, radius):
         im = im.filter(ImageFilter.GaussianBlur(radius=radius))
     return im
 
-def clipsToFrame(params, pixelData):
-    p, clips = params
+def clipsToFrame(p, container, clips, pixelData, precision=5):
     filename = p["filename"]
     width = p["width"]
     height = p["height"]
+    ms = p["ms"]
     overwrite = p["overwrite"] if "overwrite" in p else False
     verbose = p["verbose"] if "verbose" in p else False
     debug = p["debug"] if "debug" in p else False
@@ -111,7 +111,8 @@ def clipsToFrame(params, pixelData):
     # frame already exists, read it directly
     if not fileExists:
         im = Image.new(mode="RGBA", size=(width, height), color=(0, 0, 0, 255))
-        im = clipsToFrameGPU(clips, width, height, pixelData)
+        clipArr = clipsToDictsGPU(clips, ms, container, precision)
+        im = clipsToFrameGPU(clipArr, width, height, pixelData)
         im = im.convert("RGB")
         im.save(filename)
         print("Saved frame %s" % filename)
@@ -123,9 +124,8 @@ def clipsToFrameGPU(clips, width, height, clipsPixelData, precision=5):
     properties = []
     offset = 0
     c = 3
-    precisionMultiplier = int(10 ** precision)
 
-    _x, _y, _w, _h, _alpha, _tn, _z = (0, 1, 2, 3, 4, 5, 6)
+    _x, _y, _w, _h, _alpha, _tn, _z, _index = (0, 1, 2, 3, 4, 5, 6, 7)
 
     # filter out clips with no pixels, or zero [width, height, alpha]
     # keep track of how many pixels we'll need
@@ -133,10 +133,11 @@ def clipsToFrameGPU(clips, width, height, clipsPixelData, precision=5):
     pixelCount = 0
     for i in range(len(clips)):
         clip = clips[i]
-        frameCount = len(clipsPixelData[i])
+        clipIndex = clip[_index]
+        frameCount = len(clipsPixelData[clipIndex])
         if frameCount > 0 and clip[_w] > 0 and clip[_h] > 0 and clip[_alpha] > 0:
-            indices.append(i)
-            h, w, c = clipsPixelData[i][roundInt(clip[_tn] * (frameCount-1))].shape
+            indices.append(clipIndex)
+            h, w, c = clipsPixelData[clipIndex][roundInt(clip[_tn] * (frameCount-1))].shape
             pixelCount += int(h*w*c)
 
     validCount = len(indices)
@@ -147,7 +148,7 @@ def clipsToFrameGPU(clips, width, height, clipsPixelData, precision=5):
         clip = clips[clipIndex]
         clipPixelData = clipsPixelData[clipIndex]
         frameCount = len(clipPixelData)
-        x, y, tw, th, alpha, tn, zindex = tuple(clip)
+        x, y, tw, th, alpha, tn, zindex, index = tuple(clip)
         pixels = clipPixelData[roundInt(tn * (frameCount-1))]
         h, w, c = pixels.shape
         alpha = roundInt(alpha*255)
@@ -163,9 +164,7 @@ def clipsToFrameGPU(clips, width, height, clipsPixelData, precision=5):
         #     th = roundInt(1.0 * h / h0 * th)
         # print("%s, %s, %s" % pixels.shape)
         # print("%s, %s, %s, %s" % (x, y, tw, th))
-
-        properties[i] = np.array([offset, roundInt(x*precisionMultiplier), roundInt(y*precisionMultiplier), w, h, roundInt(tw*precisionMultiplier), roundInt(th*precisionMultiplier), alpha, zindex])
-
+        properties[i] = np.array([offset, x, y, w, h, tw, th, alpha, zindex])
         px0 = offset
         px1 = px0 + int(h*w*c)
         pixelData[px0:px1] = pixels.reshape(-1)
@@ -457,48 +456,41 @@ def loadVideoPixelData(clips, fps, cacheDir="tmp/", width=None, height=None, ver
     print("Finished loading pixel data.")
     return clipsPixelData
 
-def loadVideoPixelDataFromFrames(frames, clips, fps, cacheDir="tmp/", cacheFile="clip_cache.p", verifyData=True, cache=True, debug=False):
+def loadVideoPixelDataFromFrames(frames, clips, container, fps, cacheDir="tmp/", cacheFile="clip_cache.p", verifyData=True, cache=True, debug=False, precision=5):
     frameCount = len(frames)
     clipCount = len(clips)
-
-    loaded = False
-    clipSequence = []
-    if cache:
-        loaded, clipSequence = loadCacheFile(cacheDir+cacheFile)
-
-    if not loaded or clipSequence.shape[0] != frameCount or clipSequence.shape[1] != clipCount:
-        print("Calculating clip size/position from frame sequence...")
-        clipSequence = np.zeros((frameCount, clipCount, 7), dtype=np.float32) # will store each clip's x/y/width/height/alpha for each frame
-        for i, frame in enumerate(frames):
-            frameClips = clipsToDicts(clips, frame["ms"])
-            for clip in frameClips:
-                if isClipVisible(clip, frame["width"], frame["height"]):
-                    clipSequence[i, clip["index"], 0] = clip["x"]
-                    clipSequence[i, clip["index"], 1] = clip["y"]
-                    clipSequence[i, clip["index"], 2] = clip["width"]
-                    clipSequence[i, clip["index"], 3] = clip["height"]
-                    clipSequence[i, clip["index"], 4] = clip["alpha"]
-                    clipSequence[i, clip["index"], 5] = clip["tn"]
-                    clipSequence[i, clip["index"], 6] = clip["zindex"] if "zindex" in clip else clip["index"]+1
-            printProgress(i+1, frameCount)
-        # get max dimension of each clip
-
-        if cache:
-            saveCacheFile(cacheDir+cacheFile, clipSequence, overwrite=True)
 
     if debug:
         clipsPixelData = np.zeros((clipCount, 1, 1, 3))
         for i in range(clipCount):
             clipsPixelData[i, 0, 0] = getRandomColor(i)
-    else:
-        clipMaxes = np.amax(clipSequence, axis=0)
-        # update clips with max width/height
-        for i, clip in enumerate(clips):
-            clip.setProp("width", clipMaxes[clip.props["index"], 2])
-            clip.setProp("height", clipMaxes[clip.props["index"], 3])
-        clipsPixelData = loadVideoPixelData(clips, fps, cacheDir=cacheDir, verifyData=verifyData, cache=cache)
+        return clipsPixelData
 
-    return (clipSequence, clipsPixelData)
+    loaded = False
+    clipMaxes = None
+    if cache:
+        loaded, clipMaxes = loadCacheFile(cacheDir+cacheFile)
+
+    if not loaded or len(clipMaxes) != clipCount:
+        print("Calculating clip size/position from frame sequence...")
+        clipMaxes = np.zeros((clipCount, 2), dtype=np.int32)
+        clipCompare = np.zeros((2, clipCount, 2), dtype=np.int32)
+        for i, frame in enumerate(frames):
+            frameClips = clipsToDictsGPU(clips, ms, container, precision)
+            clipCompare[0] = clipMaxes
+            clipCompare[1] = frameClips[:,2:3] # just take the width (2) and height (3)
+            clipMaxes = np.amax(clipCompare, axis=0)
+            printProgress(i+1, frameCount)
+        if cache:
+            saveCacheFile(cacheDir+cacheFile, clipMaxes, overwrite=True)
+
+    # update clips with max width/height
+    for i, clip in enumerate(clips):
+        clip.setProp("width", clipMaxes[clip.props["index"], 0])
+        clip.setProp("height", clipMaxes[clip.props["index"], 1])
+    clipsPixelData = loadVideoPixelData(clips, fps, cacheDir=cacheDir, verifyData=verifyData, cache=cache)
+
+    return clipsPixelData
 
 def msToFrame(ms, fps):
     return roundInt((ms / 1000.0) * fps)
@@ -521,21 +513,19 @@ def pasteImage(im, clipImg, x, y):
     im = Image.alpha_composite(im, stagingImg)
     return im
 
-def processFrames(params, clipSequence, clipsPixelData, threads=1, verbose=True):
+def processFrames(params, container, clips, clipsPixelData, threads=1, verbose=True):
     count = len(params)
     print("Processing %s frames" % count)
 
-    zippedParams = zip(params, clipSequence)
-
     if threads > 1:
         pool = ThreadPool(threads)
-        pclipsToFrame = partial(clipsToFrame, pixelData=clipsPixelData)
-        results = pool.map(pclipsToFrame, zippedParams)
+        pclipsToFrame = partial(clipsToFrame, container=container, clips=clips, pixelData=clipsPixelData)
+        results = pool.map(pclipsToFrame, params)
         pool.close()
         pool.join()
     else:
-        for i, p in enumerate(zippedParams):
-            clipsToFrame(p, pixelData=clipsPixelData)
+        for i, p in enumerate(params):
+            clipsToFrame(p, container=container, clips=clips, pixelData=clipsPixelData)
             if verbose:
                 printProgress(i+1, count)
 

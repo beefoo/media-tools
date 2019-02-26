@@ -433,9 +433,9 @@ def clipsToImageGPU(width, height, flatPixelData, properties, colorDimensions, p
         //int th = (int) ceil(thF);
         int tw = (int) ceil(remainderX+twF);
         int th = (int) ceil(remainderY+thF);
-        int alpha = props[i*pcount+7];
+        float falpha = (float) props[i*pcount+7] / (float) precisionMultiplier;
+        int alpha = (int)round(falpha*255.0);
         int zdindex = props[i*pcount+8];
-        float falpha = (float) alpha / (float) 255.0;
 
         //printf(" %%d ", tw);
         //printf(" %%d ", th);

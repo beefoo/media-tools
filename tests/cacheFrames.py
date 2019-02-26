@@ -88,8 +88,8 @@ for f in range(totalFrames):
         "overwrite": True
     })
 
-clipSequence, clipsPixelData = loadVideoPixelDataFromFrames(videoFrames, clips, a.FPS, a.CACHE_DIR, a.CACHE_FILE, verifyData=True, cache=True)
+clipsPixelData = loadVideoPixelDataFromFrames(videoFrames, clips, container, a.FPS, a.CACHE_DIR, a.CACHE_FILE, verifyData=True, cache=True)
 
-processFrames(videoFrames, clipSequence, clipsPixelData, threads=1)
+processFrames(videoFrames, container, clips, clipsPixelData, threads=1)
 compileFrames(a.OUTPUT_FRAME, a.FPS, a.OUTPUT_FILE, getZeroPadding(totalFrames))
 print("Done.")
