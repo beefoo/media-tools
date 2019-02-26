@@ -37,12 +37,12 @@ parser.add_argument('-translate', dest="TRANSLATE_AMOUNT", default=0.8, type=flo
 parser.add_argument('-scale', dest="SCALE_AMOUNT", default=1.33, type=float, help="Amount to scale clip")
 parser.add_argument('-grid', dest="GRID", default="256x256", help="Size of grid")
 parser.add_argument('-grid1', dest="END_GRID", default="6x6", help="End size of grid")
-parser.add_argument('-zd', dest="ZOOM_DUR", default=500, type=int, help="Zoom duration in milliseconds")
+parser.add_argument('-steps', dest="STEPS", default=12, type=int, help="Number of waves/beats")
 parser.add_argument('-wd', dest="WAVE_DUR", default=8000, type=int, help="Wave duration in milliseconds")
 parser.add_argument('-bd', dest="BEAT_DUR", default=6000, type=int, help="Beat duration in milliseconds")
 parser.add_argument('-mcd', dest="MIN_CLIP_DUR", default=1500, type=int, help="Minumum clip duration")
 parser.add_argument('-maxa', dest="MAX_AUDIO_CLIPS", default=2048, type=int, help="Maximum number of audio clips to play")
-parser.add_argument('-keep', dest="KEEP_FIRST_AUDIO_CLIPS", default=64, type=int, help="Ensure the middle x audio files play")
+parser.add_argument('-keep', dest="KEEP_FIRST_AUDIO_CLIPS", default=128, type=int, help="Ensure the middle x audio files play")
 parser.add_argument('-center', dest="CENTER", default="0.5,0.5", help="Center position")
 a = parser.parse_args()
 parseVideoArgs(a)
@@ -53,6 +53,8 @@ VOLUME_RANGE = tuple([float(v) for v in a.VOLUME_RANGE.strip().split(",")])
 ALPHA_RANGE =  tuple([float(v) for v in a.ALPHA_RANGE.strip().split(",")])
 GRID_W, GRID_H = tuple([int(v) for v in a.GRID.strip().split("x")])
 END_GRID_W, END_GRID_H = tuple([int(v) for v in a.END_GRID.strip().split("x")])
+ZOOM_DUR = a.STEPS * a.BEAT_DUR
+ZOOM_EASE = "sin"
 
 # Get video data
 startTime = logTime()
@@ -116,11 +118,6 @@ if sampleCount > a.MAX_AUDIO_CLIPS:
     samples = limitAudioClips(samples, a.MAX_AUDIO_CLIPS, "nDistanceFromCenter", keepFirst=a.KEEP_FIRST_AUDIO_CLIPS, invert=True, seed=(a.RANDOM_SEED+2))
     stepTime = logTime(stepTime, "Calculate which audio clips are playing")
 
-# if a.DEBUG:
-#     for i, s in enumerate(samples):
-#         pixels = np.array([[getRandomColor(i)]])
-#         samples[i]["framePixelData"] = [pixels]
-
 # show a viz of which frames are playing
 if a.DEBUG:
     for i, s in enumerate(samples):
@@ -143,19 +140,18 @@ for i, clip in enumerate(clips):
     clip.vector.setParent(container.vector)
 
 ms = a.PAD_START
-cols = GRID_W
-fromWidth = 1.0 * a.WIDTH / cols * GRID_W
-step = 0
-while True:
-    zoomSteps = max(1, roundInt(1.0 * cols ** 0.5)) # zoom more steps when we're zoomed out
-    cols -= (zoomSteps * 2)
-    lastStep = False
-    if cols <= END_GRID_W:
-        cols = END_GRID_W
-        lastStep = True
 
-    waveDur = a.WAVE_DUR
-    halfBeatDur = roundInt(a.BEAT_DUR * 0.5)
+fromScale = 1.0
+toScale = 1.0 * GRID_W / END_GRID_W
+container.queueTween(ms, ZOOM_DUR, ("scale", fromScale, toScale, ZOOM_EASE))
+
+for step in range(a.STEPS):
+    nstep = 1.0 * step / a.STEPS
+
+     # temporarily set scale so we can calculate clip visibility for playing audio
+    nzoom = ease(nstep, ZOOM_EASE)
+    currentScale = lerp((fromScale, toScale), nzoom)
+    container.vector.setTransform(scale=(currentScale, currentScale))
 
     # play kick
     sampler.queuePlay(ms, "kick", index=step)
@@ -166,7 +162,7 @@ while True:
     # play and render waves
     for i, clip in enumerate(visibleClips):
         nprogress = 1.0 * i / visibleClipCount
-        clipStartMs = ms + roundInt(waveDur * nprogress)
+        clipStartMs = ms + roundInt(a.WAVE_DUR * nprogress)
 
         # play clip
         if clip.props["playAudio"]:
@@ -199,30 +195,21 @@ while True:
             ("scale", a.SCALE_AMOUNT, 1.0, "sin")
         ])
 
-    ms += halfBeatDur
-
+    # ms += halfBeatDur
     # play snare
-    sampler.queuePlay(ms, "snare", index=step)
+    # sampler.queuePlay(ms, "snare", index=step)
 
-    toWidth = 1.0 * a.WIDTH / cols * GRID_W
-    fromScale = container.vector.getScaleFromWidth(fromWidth)
-    toScale = container.vector.getScaleFromWidth(toWidth)
-    container.queueTween(ms, a.ZOOM_DUR, ("scale", fromScale, toScale, "sin"), sortFrames=False)
-    container.vector.setTransform(scale=(toScale, toScale)) # temporarily set scale so we can calculate clip visibility for playing audio
-    fromWidth = toWidth
+    ms += a.BEAT_DUR
 
-    ms += halfBeatDur
-    step += 1
-
-    if lastStep:
-        break
+ms += max(0, a.WAVE_DUR-a.BEAT_DUR) # add the remainder from the wave
 
 # sort frames
 container.vector.sortFrames()
 for clip in clips:
     clip.vector.sortFrames()
 
-container.vector.setTransform(scale=(1.0, 1.0)) # reset scale
+# reset scale
+container.vector.setTransform(scale=(1.0, 1.0))
 stepTime = logTime(stepTime, "Created video clip sequence")
 
 # get audio sequence
