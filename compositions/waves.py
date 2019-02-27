@@ -248,8 +248,9 @@ for f in range(totalFrames):
     })
 stepTime = logTime(stepTime, "Processed video frame sequence")
 
-clipsPixelData = loadVideoPixelDataFromFrames(videoFrames, clips, a.WIDTH, a.HEIGHT, a.FPS, a.CACHE_DIR, a.CACHE_FILE, a.VERIFY_CACHE, cache=True, debug=a.DEBUG)
-stepTime = logTime(stepTime, "Loaded pixel data")
+if not a.AUDIO_ONLY:
+    clipsPixelData = loadVideoPixelDataFromFrames(videoFrames, clips, a.WIDTH, a.HEIGHT, a.FPS, a.CACHE_DIR, a.CACHE_FILE, a.VERIFY_CACHE, cache=True, debug=a.DEBUG)
+    stepTime = logTime(stepTime, "Loaded pixel data")
 
 if not a.VIDEO_ONLY and (not os.path.isfile(a.AUDIO_OUTPUT_FILE) or a.OVERWRITE):
     mixAudio(audioSequence, durationMs, a.AUDIO_OUTPUT_FILE)
