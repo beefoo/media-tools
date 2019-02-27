@@ -97,7 +97,7 @@ def blurImage(im, radius):
         im = im.filter(ImageFilter.GaussianBlur(radius=radius))
     return im
 
-def clipsToFrame(p, clips, pixelData, precision=5):
+def clipsToFrame(p, clips, pixelData, precision=3):
     filename = p["filename"]
     width = p["width"]
     height = p["height"]
@@ -119,7 +119,7 @@ def clipsToFrame(p, clips, pixelData, precision=5):
 
     return True
 
-def clipsToFrameGPU(clips, width, height, clipsPixelData, precision=5):
+def clipsToFrameGPU(clips, width, height, clipsPixelData, precision=3):
     offset = 0
     c = 3
     precisionMultiplier = int(10 ** precision)
@@ -451,7 +451,7 @@ def loadVideoPixelData(clips, fps, cacheDir="tmp/", width=None, height=None, ver
     print("Finished loading pixel data.")
     return clipsPixelData
 
-def loadVideoPixelDataFromFrames(frames, clips, containerW, containerH, fps, cacheDir="tmp/", cacheFile="clip_cache.p", verifyData=True, cache=True, debug=False, precision=5):
+def loadVideoPixelDataFromFrames(frames, clips, containerW, containerH, fps, cacheDir="tmp/", cacheFile="clip_cache.p", verifyData=True, cache=True, debug=False, precision=3):
     frameCount = len(frames)
     clipCount = len(clips)
     precisionMultiplier = int(10 ** precision)
@@ -525,7 +525,7 @@ def pasteImage(im, clipImg, x, y):
     im = Image.alpha_composite(im, stagingImg)
     return im
 
-def processFrames(params, clips, clipsPixelData, threads=1, verbose=True, precision=5):
+def processFrames(params, clips, clipsPixelData, threads=1, verbose=True, precision=3):
     count = len(params)
     print("Processing %s frames" % count)
     threads = getThreadCount(threads)
