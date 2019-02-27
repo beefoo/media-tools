@@ -36,7 +36,7 @@ parser.add_argument('-alphar', dest="ALPHA_RANGE", default="0.33,1.0", help="Alp
 parser.add_argument('-translate', dest="TRANSLATE_AMOUNT", default=0.8, type=float, help="Amount to translate clip as a percentage of minimum dimension")
 parser.add_argument('-scale', dest="SCALE_AMOUNT", default=1.33, type=float, help="Amount to scale clip")
 parser.add_argument('-grid', dest="GRID", default="256x256", help="Size of grid")
-parser.add_argument('-grid1', dest="END_GRID", default="6x6", help="End size of grid")
+parser.add_argument('-grid1', dest="END_GRID", default="8x8", help="End size of grid")
 parser.add_argument('-steps', dest="STEPS", default=12, type=int, help="Number of waves/beats")
 parser.add_argument('-wd', dest="WAVE_DUR", default=8000, type=int, help="Wave duration in milliseconds")
 parser.add_argument('-bd', dest="BEAT_DUR", default=6000, type=int, help="Beat duration in milliseconds")
@@ -154,7 +154,9 @@ for step in range(a.STEPS):
     container.vector.setTransform(scale=(currentScale, currentScale))
 
     # play kick
-    sampler.queuePlay(ms, "kick", index=step)
+    sampler.queuePlay(ms, "kick", index=step, params={
+        "volume": 1.5
+    })
 
     visibleClips = [clip for clip in clips if clip.vector.isVisible(a.WIDTH, a.HEIGHT)]
     visibleClipCount = len(visibleClips)
