@@ -59,7 +59,7 @@ ZOOM_EASE = "sin"
 # Get video data
 startTime = logTime()
 stepTime = startTime
-samples, sampleCount, container, sampler, stepTime = initComposition(a, GRID_W, GRID_H, stepTime)
+samples, sampleCount, container, sampler, stepTime = initGridComposition(a, GRID_W, GRID_H, stepTime)
 
 cCol, cRow = ((GRID_W-1) * 0.5, (GRID_H-1) * 0.5)
 for i, s in enumerate(samples):
