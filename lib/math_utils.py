@@ -137,6 +137,8 @@ def lim(value, ab=(0, 1)):
     return max(a, min(b, value))
 
 def logTime(startTime=None, label="Elapsed time"):
+    if startTime is False:
+        return False
     now = time.time()
     if startTime is not None:
         secondsElapsed = now - startTime

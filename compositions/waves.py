@@ -59,25 +59,7 @@ ZOOM_EASE = "sin"
 # Get video data
 startTime = logTime()
 stepTime = startTime
-_, samples = readCsv(a.INPUT_FILE)
-stepTime = logTime(stepTime, "Read CSV")
-sampleCount = len(samples)
-sampler = Sampler()
-
-gridCount = GRID_W * GRID_H
-if gridCount > sampleCount:
-    print("Not enough samples (%s) for the grid you want (%s x %s = %s). Exiting." % (sampleCount, GRID_W, GRID_H, gridCount))
-    sys.exit()
-elif gridCount < sampleCount:
-    print("Too many samples (%s), limiting to %s" % (sampleCount, gridCount))
-    samples = samples[:gridCount]
-    sampleCount = gridCount
-
-# Sort by grid
-samples = sorted(samples, key=lambda s: (s["gridY"], s["gridX"]))
-samples = addIndices(samples)
-samples = prependAll(samples, ("filename", a.MEDIA_DIRECTORY))
-samples = addGridPositions(samples, GRID_W, a.WIDTH, a.HEIGHT, marginX=a.CLIP_MARGIN, marginY=(a.CLIP_MARGIN*(1.0*a.HEIGHT/a.WIDTH)))
+samples, sampleCount, container, sampler, stepTime = initComposition(a, GRID_W, GRID_H, stepTime)
 
 cCol, cRow = ((GRID_W-1) * 0.5, (GRID_H-1) * 0.5)
 for i, s in enumerate(samples):
@@ -131,16 +113,10 @@ for i, s in enumerate(samples):
 clips = samplesToClips(samples)
 stepTime = logTime(stepTime, "Samples to clips")
 
-container = Clip({
-    "width": a.WIDTH,
-    "height": a.HEIGHT,
-    "cache": True
-})
 for i, clip in enumerate(clips):
     clip.vector.setParent(container.vector)
 
 ms = a.PAD_START
-
 fromScale = 1.0
 toScale = 1.0 * GRID_W / END_GRID_W
 container.queueTween(ms, ZOOM_DUR, ("scale", fromScale, toScale, ZOOM_EASE))
@@ -214,54 +190,4 @@ for clip in clips:
 container.vector.setTransform(scale=(1.0, 1.0))
 stepTime = logTime(stepTime, "Created video clip sequence")
 
-# get audio sequence
-audioSequence = clipsToSequence(clips + sampler.getClips())
-stepTime = logTime(stepTime, "Processed audio clip sequence")
-
-# plotAudioSequence(audioSequence)
-# sys.exit()
-
-videoDurationMs = ms
-audioDurationMs = getAudioSequenceDuration(audioSequence)
-durationMs = max(videoDurationMs, audioDurationMs) + a.PAD_END
-print("Video time: %s" % formatSeconds(videoDurationMs/1000.0))
-print("Audio time: %s" % formatSeconds(audioDurationMs/1000.0))
-print("Total time: %s" % formatSeconds(durationMs/1000.0))
-
-# adjust frames if audio is longer than video
-totalFrames = msToFrame(durationMs, a.FPS) if durationMs > videoDurationMs else msToFrame(videoDurationMs, a.FPS)
-print("Total frames: %s" % totalFrames)
-
-# get frame sequence
-videoFrames = []
-print("Making video frame sequence...")
-for f in range(totalFrames):
-    frame = f + 1
-    ms = frameToMs(frame, a.FPS)
-    videoFrames.append({
-        "filename": a.OUTPUT_FRAME % zeroPad(frame, totalFrames),
-        "ms": ms,
-        "width": a.WIDTH,
-        "height": a.HEIGHT,
-        "overwrite": a.OVERWRITE,
-        "debug": a.DEBUG
-    })
-stepTime = logTime(stepTime, "Processed video frame sequence")
-
-if not a.AUDIO_ONLY:
-    clipsPixelData = loadVideoPixelDataFromFrames(videoFrames, clips, a.WIDTH, a.HEIGHT, a.FPS, a.CACHE_DIR, a.CACHE_FILE, a.VERIFY_CACHE, cache=True, debug=a.DEBUG)
-    stepTime = logTime(stepTime, "Loaded pixel data")
-
-if not a.VIDEO_ONLY and (not os.path.isfile(a.AUDIO_OUTPUT_FILE) or a.OVERWRITE):
-    mixAudio(audioSequence, durationMs, a.AUDIO_OUTPUT_FILE)
-    stepTime = logTime(stepTime, "Mix audio")
-
-if not a.AUDIO_ONLY:
-    processFrames(videoFrames, clips, clipsPixelData, threads=a.THREADS)
-    stepTime = logTime(stepTime, "Process video")
-
-if not a.AUDIO_ONLY:
-    audioFile = a.AUDIO_OUTPUT_FILE if not a.VIDEO_ONLY else False
-    compileFrames(a.OUTPUT_FRAME, a.FPS, a.OUTPUT_FILE, getZeroPadding(totalFrames), audioFile=audioFile)
-
-logTime(startTime, "Total execution time")
+processComposition(a, clips, ms, sampler, stepTime, startTime)
