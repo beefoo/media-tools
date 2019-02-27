@@ -3,6 +3,7 @@
 import csv
 import glob
 import json
+from lib.collection_utils import *
 from lib.math_utils import *
 import os
 from pprint import pprint
@@ -44,6 +45,26 @@ def getFilenames(fileString):
     files = sorted(files)
     print("Found %s files" % fileCount)
     return files
+
+def getFilesFromString(a):
+    # Read files
+    files = []
+    fieldNames = []
+    fromManifest = a.INPUT_FILE.endswith(".csv")
+    if fromManifest:
+        fieldNames, files = readCsv(INPUT_FILE)
+    else:
+        fieldNames = ["filename"]
+        files = [{"filename": f} for f in getFilenames(a.INPUT_FILE)]
+    fileCount = len(files)
+
+    # Filter out files with no filename, duration, or audio
+    if fromManifest:
+        files = prependAll(files, ("filename", a.MEDIA_DIRECTORY))
+    else:
+        files = [{"filename": f} for f in files]
+
+    return (fieldNames, files, fileCount)
 
 def getFilesInDir(dirname):
     return [os.path.join(dirname, f) for f in os.listdir(dirname) if os.path.isfile(os.path.join(dirname, f))]

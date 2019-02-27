@@ -61,23 +61,12 @@ HOP_LEN = FFT/4
 #     sys.exit()
 
 # Read files
-files = []
-fromManifest = INPUT_FILE.endswith(".csv")
-print("Reading file...")
-if fromManifest:
-    fieldNames, files = readCsv(INPUT_FILE)
-else:
-    files = getFilenames(INPUT_FILE)
-fileCount = len(files)
+fieldNames, files, fileCount = getFilesFromString(args)
 
-# Filter out files with no filename, duration, or audio
-if fromManifest:
+if "duration" in fieldNames and "hasAudio" in fieldNames:
     files = filterWhere(files, [("duration", 0, ">"), ("hasAudio", 0, ">")])
     fileCount = len(files)
     print("Found %s rows after filtering" % fileCount)
-    files = prependAll(files, ("filename", MEDIA_DIRECTORY))
-else:
-    files = [{"filename": f} for f in files]
 
 # Determine the number of samples per file
 samplesPerFile = SAMPLES
