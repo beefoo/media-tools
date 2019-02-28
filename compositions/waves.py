@@ -36,8 +36,8 @@ parser.add_argument('-alphar', dest="ALPHA_RANGE", default="0.33,1.0", help="Alp
 parser.add_argument('-translate', dest="TRANSLATE_AMOUNT", default=0.8, type=float, help="Amount to translate clip as a percentage of minimum dimension")
 parser.add_argument('-scale', dest="SCALE_AMOUNT", default=1.33, type=float, help="Amount to scale clip")
 parser.add_argument('-grid', dest="GRID", default="256x256", help="Size of grid")
-parser.add_argument('-grid1', dest="END_GRID", default="8x8", help="End size of grid")
-parser.add_argument('-steps', dest="STEPS", default=12, type=int, help="Number of waves/beats")
+parser.add_argument('-grid1', dest="END_GRID", default="16x16", help="End size of grid")
+parser.add_argument('-steps', dest="STEPS", default=16, type=int, help="Number of waves/beats")
 parser.add_argument('-wd', dest="WAVE_DUR", default=8000, type=int, help="Wave duration in milliseconds")
 parser.add_argument('-bd', dest="BEAT_DUR", default=6000, type=int, help="Beat duration in milliseconds")
 parser.add_argument('-mcd', dest="MIN_CLIP_DUR", default=1500, type=int, help="Minumum clip duration")
@@ -54,7 +54,7 @@ ALPHA_RANGE =  tuple([float(v) for v in a.ALPHA_RANGE.strip().split(",")])
 GRID_W, GRID_H = tuple([int(v) for v in a.GRID.strip().split("x")])
 END_GRID_W, END_GRID_H = tuple([int(v) for v in a.END_GRID.strip().split("x")])
 ZOOM_DUR = a.STEPS * a.BEAT_DUR
-ZOOM_EASE = "sin"
+ZOOM_EASE = "cubicIn"
 
 # Get video data
 startTime = logTime()
@@ -104,7 +104,8 @@ if sampleCount > a.MAX_AUDIO_CLIPS:
 if a.DEBUG:
     for i, s in enumerate(samples):
         samples[i]["alpha"] = 1.0 if s["playAudio"] else 0.2
-    clipsToFrame({ "filename": a.OUTPUT_FRAME % "playTest", "clips": samples, "width": a.WIDTH, "height": a.HEIGHT, "overwrite": True, "debug": True })
+    clipsToFrame({ "filename": a.OUTPUT_FRAME % "playTest", "width": a.WIDTH, "height": a.HEIGHT, "overwrite": True, "debug": True },
+        samplesToClips(samples), loadVidoPixelDataDebug(len(samples)))
 
 # start with everything with minimum alpha
 for i, s in enumerate(samples):

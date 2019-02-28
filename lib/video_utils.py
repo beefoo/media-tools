@@ -101,7 +101,7 @@ def clipsToFrame(p, clips, pixelData, precision=3):
     filename = p["filename"]
     width = p["width"]
     height = p["height"]
-    ms = p["ms"]
+    ms = p["ms"] if "ms" in p else None
     overwrite = p["overwrite"] if "overwrite" in p else False
     verbose = p["verbose"] if "verbose" in p else False
     debug = p["debug"] if "debug" in p else False
@@ -451,15 +451,19 @@ def loadVideoPixelData(clips, fps, cacheDir="tmp/", width=None, height=None, ver
     print("Finished loading pixel data.")
     return clipsPixelData
 
+def loadVidoPixelDataDebug(clipCount):
+    clipsPixelData = np.zeros((clipCount, 1, 1, 1, 3))
+    for i in range(clipCount):
+        clipsPixelData[i, 0, 0, 0] = getRandomColor(i)
+    return clipsPixelData
+
 def loadVideoPixelDataFromFrames(frames, clips, containerW, containerH, fps, cacheDir="tmp/", cacheFile="clip_cache.p", verifyData=True, cache=True, debug=False, precision=3):
     frameCount = len(frames)
     clipCount = len(clips)
     precisionMultiplier = int(10 ** precision)
 
     if debug:
-        clipsPixelData = np.zeros((clipCount, 1, 1, 3))
-        for i in range(clipCount):
-            clipsPixelData[i, 0, 0] = getRandomColor(i)
+        clipsPixelData = loadVidoPixelDataDebug(clipCount)
         return clipsPixelData
 
     loaded = False
@@ -529,7 +533,7 @@ def processFrames(params, clips, clipsPixelData, threads=1, verbose=True, precis
     count = len(params)
     print("Processing %s frames" % count)
     threads = getThreadCount(threads)
-    
+
     if threads > 1:
         pool = ThreadPool(threads)
         pclipsToFrame = partial(clipsToFrame, clips=clips, pixelData=clipsPixelData, precision=precision)
