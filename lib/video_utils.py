@@ -39,15 +39,10 @@ def addVideoArgs(parser):
     parser.add_argument('-ss', dest="EXCERPT_START", type=float, default=-1, help="Excerpt start in seconds")
     parser.add_argument('-sd', dest="EXCERPT_DUR", type=float, default=-1, help="Excerpt duration in seconds")
     parser.add_argument('-vol', dest="VOLUME", type=float, default=1.0, help="Master volume applied to all clips")
-    # parser.add_argument('-sort', dest="SORT", default="", help="Query string to sort by")
-    parser.add_argument('-count', dest="COUNT", default=-1, type=int, help="Target total sample count, -1 for everything")
-    # parser.add_argument('-filter', dest="FILTER", default="", help="Query string to filter by")
     parser.add_argument('-dir', dest="MEDIA_DIRECTORY", default="media/sample/", help="Input file")
-    parser.add_argument('-aspect', dest="ASPECT_RATIO", default="16:9", help="Aspect ratio of each cell")
     parser.add_argument('-width', dest="WIDTH", default=1920, type=int, help="Output video width")
     parser.add_argument('-height', dest="HEIGHT", default=1080, type=int, help="Output video height")
     parser.add_argument('-fps', dest="FPS", default=30, type=int, help="Output video frames per second")
-    parser.add_argument('-frames', dest="SAVE_FRAMES", action="store_true", help="Save frames?")
     parser.add_argument('-outframe', dest="OUTPUT_FRAME", default="tmp/sample/frame.%s.png", help="Output frames pattern")
     parser.add_argument('-out', dest="OUTPUT_FILE", default="output/sample.mp4", help="Output media file")
     parser.add_argument('-threads', dest="THREADS", default=1, type=int, help="Amount of parallel frames to process (too many may result in too many open files)")
@@ -64,6 +59,10 @@ def addVideoArgs(parser):
     parser.add_argument('-rvb', dest="REVERB", default=80, type=int, help="Reverberence (0-100)")
     parser.add_argument('-debug', dest="DEBUG", action="store_true", help="Debug mode?")
     parser.add_argument('-mdb', dest="MATCH_DB", default=-16, type=int, help="Match decibels, -9999 for none")
+    parser.add_argument('-margin', dest="CLIP_MARGIN", default=0.5, type=float, help="Margin between clips in pixels")
+    parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.3,0.6", help="Volume range")
+    parser.add_argument('-alphar', dest="ALPHA_RANGE", default="0.33,1.0", help="Alpha range")
+    parser.add_argument('-mcd', dest="MIN_CLIP_DUR", default=1500, type=int, help="Minumum clip duration")
 
 def alphaMask(im, mask):
     w, h = im.size
@@ -521,6 +520,8 @@ def parseVideoArgs(args):
     d["MS_PER_FRAME"] = frameToMs(1, args.FPS, False)
     d["CACHE_VIDEO"] = args.CACHE_VIDEO
     d["MATCH_DB"] = args.MATCH_DB if args.MATCH_DB > -9999 else False
+    d["VOLUME_RANGE"] = tuple([float(v) for v in args.VOLUME_RANGE.strip().split(",")])
+    d["ALPHA_RANGE"] =  tuple([float(v) for v in args.ALPHA_RANGE.strip().split(",")])
 
 def pasteImage(im, clipImg, x, y):
     width, height = im.size

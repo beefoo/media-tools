@@ -28,9 +28,6 @@ from lib.video_utils import *
 # input
 parser = argparse.ArgumentParser()
 addVideoArgs(parser)
-parser.add_argument('-margin', dest="CLIP_MARGIN", default=0.5, type=float, help="Margin between clips in pixels")
-parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.3,0.6", help="Volume range")
-parser.add_argument('-alphar', dest="ALPHA_RANGE", default="0.33,1.0", help="Alpha range")
 parser.add_argument('-translate', dest="TRANSLATE_AMOUNT", default=0.8, type=float, help="Amount to translate clip as a percentage of minimum dimension")
 parser.add_argument('-scale', dest="SCALE_AMOUNT", default=1.33, type=float, help="Amount to scale clip")
 parser.add_argument('-grid', dest="GRID", default="256x256", help="Size of grid")
@@ -38,7 +35,6 @@ parser.add_argument('-grid1', dest="END_GRID", default="32x32", help="End size o
 parser.add_argument('-steps', dest="STEPS", default=16, type=int, help="Number of waves/beats")
 parser.add_argument('-wd', dest="WAVE_DUR", default=8000, type=int, help="Wave duration in milliseconds")
 parser.add_argument('-bd', dest="BEAT_DUR", default=6000, type=int, help="Beat duration in milliseconds")
-parser.add_argument('-mcd', dest="MIN_CLIP_DUR", default=1500, type=int, help="Minumum clip duration")
 parser.add_argument('-maxa', dest="MAX_AUDIO_CLIPS", default=4096, type=int, help="Maximum number of audio clips to play")
 parser.add_argument('-keep', dest="KEEP_FIRST_AUDIO_CLIPS", default=256, type=int, help="Ensure the middle x audio files play")
 a = parser.parse_args()
@@ -46,10 +42,9 @@ parseVideoArgs(a)
 makeDirectories([a.OUTPUT_FRAME, a.OUTPUT_FILE, a.CACHE_DIR])
 
 # parse arguments
-VOLUME_RANGE = tuple([float(v) for v in a.VOLUME_RANGE.strip().split(",")])
-ALPHA_RANGE =  tuple([float(v) for v in a.ALPHA_RANGE.strip().split(",")])
-GRID_W, GRID_H = tuple([int(v) for v in a.GRID.strip().split("x")])
+START_GRID_W, START_GRID_H = tuple([int(v) for v in a.GRID.strip().split("x")])
 END_GRID_W, END_GRID_H = tuple([int(v) for v in a.END_GRID.strip().split("x")])
+GRID_W, GRID_H = (max(START_GRID_W, END_GRID_W), max(START_GRID_H, END_GRID_H))
 ZOOM_DUR = a.STEPS * a.BEAT_DUR
 ZOOM_EASE = "cubicIn"
 
@@ -83,7 +78,7 @@ for i, s in enumerate(samples):
     audioDur = s["audioDur"]
     samples[i].update({
         "zindex": sampleCount-i,
-        "volume": lerp(VOLUME_RANGE, (1.0 - s["nDistanceFromCenter"]) * s["volumeMultiplier"]),
+        "volume": lerp(a.VOLUME_RANGE, (1.0 - s["nDistanceFromCenter"]) * s["volumeMultiplier"]),
         "fadeOut": getClipFadeDur(audioDur, percentage=0.5, maxDur=-1),
         "fadeIn": getClipFadeDur(audioDur),
         "pan": lerp((-1.0, 1.0), s["nx"]),
@@ -106,7 +101,7 @@ if a.DEBUG:
 
 # start with everything with minimum alpha
 for i, s in enumerate(samples):
-    samples[i]["alpha"] = ALPHA_RANGE[0]
+    samples[i]["alpha"] = a.ALPHA_RANGE[0]
 
 clips = samplesToClips(samples)
 stepTime = logTime(stepTime, "Samples to clips")
@@ -115,7 +110,7 @@ for i, clip in enumerate(clips):
     clip.vector.setParent(container.vector)
 
 ms = a.PAD_START
-fromScale = 1.0
+fromScale = 1.0 * GRID_W / START_GRID_W
 toScale = 1.0 * GRID_W / END_GRID_W
 container.queueTween(ms, ZOOM_DUR, ("scale", fromScale, toScale, ZOOM_EASE))
 
@@ -152,8 +147,8 @@ for step in range(a.STEPS):
             })
 
         # move the clip outward then back inward, alpha up then down
-        alphaFrom = lerp(ALPHA_RANGE, ease(1.0 - clip.props["nDistanceFromCenter"]))
-        alphaTo = ALPHA_RANGE[0]
+        alphaFrom = lerp(a.ALPHA_RANGE, ease(1.0 - clip.props["nDistanceFromCenter"]))
+        alphaTo = a.ALPHA_RANGE[0]
         renderDur = clip.props["dur"]
         halfLeft = int(renderDur / 2)
         halfRight = (renderDur - halfLeft) * 2
