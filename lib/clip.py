@@ -491,6 +491,6 @@ def updateClipStates(clips, updates):
     for i, clip in enumerate(clips):
         for u in updates:
             key, value = u
-            clips[i].state[key] = value
+            clips[i].setState(key, value)
 
     return clips

@@ -513,8 +513,6 @@ def msToFrame(ms, fps):
 
 def parseVideoArgs(args):
     d = vars(args)
-    aspectW, aspectH = tuple([int(p) for p in args.ASPECT_RATIO.split(":")])
-    d["ASPECT_RATIO"] = 1.0 * aspectW / aspectH
     d["THREADS"] = min(args.THREADS, multiprocessing.cpu_count()) if args.THREADS > 0 else multiprocessing.cpu_count()
     d["AUDIO_OUTPUT_FILE"] = args.OUTPUT_FILE.replace(".mp4", ".mp3")
     d["MS_PER_FRAME"] = frameToMs(1, args.FPS, False)
