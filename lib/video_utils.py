@@ -17,23 +17,6 @@ from pprint import pprint
 import subprocess
 import sys
 
-def addGridPositions(clips, cols, width, height, offsetX=0, offsetY=0, marginX=0, marginY=0):
-    rows = ceilInt(1.0 * len(clips) / cols)
-    cellW = 1.0 * width / cols
-    cellH = 1.0 * height / rows
-    for i, c in enumerate(clips):
-        row = int(i / cols)
-        col = i % cols
-        clips[i]["col"] = col
-        clips[i]["row"] = row
-        clips[i]["x"] = col * cellW + marginX*0.5 + offsetX
-        clips[i]["y"] = row * cellH + marginY*0.5 + offsetY
-        clips[i]["width"] = cellW - marginX
-        clips[i]["height"] = cellH - marginY
-        clips[i]["nx"] = 1.0 * col / (cols-1)
-        clips[i]["ny"] = 1.0 * row / (rows-1)
-    return clips
-
 def addVideoArgs(parser):
     parser.add_argument('-in', dest="INPUT_FILE", default="tmp/samples.csv", help="Input file")
     parser.add_argument('-ss', dest="EXCERPT_START", type=float, default=-1, help="Excerpt start in seconds")
@@ -64,6 +47,7 @@ def addVideoArgs(parser):
     parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.3,0.6", help="Volume range")
     parser.add_argument('-alphar', dest="ALPHA_RANGE", default="0.33,1.0", help="Alpha range")
     parser.add_argument('-mcd', dest="MIN_CLIP_DUR", default=1500, type=int, help="Minumum clip duration")
+    parser.add_argument('-noise', dest="NOISE", default=0.1, type=float, help="Amount of pixel noise to add")
 
 def alphaMask(im, mask):
     w, h = im.size

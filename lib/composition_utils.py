@@ -6,6 +6,29 @@ from lib.sampler import *
 from lib.video_utils import *
 import math
 
+def addGridPositions(clips, cols, width, height, offsetX=0, offsetY=0, marginX=0, marginY=0):
+    rows = ceilInt(1.0 * len(clips) / cols)
+    cellW = 1.0 * width / cols
+    cellH = 1.0 * height / rows
+    for i, c in enumerate(clips):
+        row = int(i / cols)
+        col = i % cols
+        clips[i]["col"] = col
+        clips[i]["row"] = row
+        clips[i]["x"] = col * cellW + marginX*0.5 + offsetX
+        clips[i]["y"] = row * cellH + marginY*0.5 + offsetY
+        clips[i]["width"] = cellW - marginX
+        clips[i]["height"] = cellH - marginY
+        clips[i]["nx"] = 1.0 * col / (cols-1)
+        clips[i]["ny"] = 1.0 * row / (rows-1)
+    return clips
+
+def addPositionNoise(clips, noiseRange, randomSeed=3):
+    for i, c in enumerate(clips):
+        clips[i]["x"] = clip["x"] + pseudoRandom(randomSeed+i*2, range=noiseRange)
+        clips[i]["y"] = clip["y"] + pseudoRandom(randomSeed+i*2+1, range=noiseRange)
+    return clips
+
 def getDivisionIncrement(count):
     if count < 2:
         return 1.0
@@ -61,6 +84,7 @@ def initGridComposition(a, gridW, gridH, stepTime=False):
     samples = addIndices(samples)
     samples = prependAll(samples, ("filename", a.MEDIA_DIRECTORY))
     samples = addGridPositions(samples, gridW, a.WIDTH, a.HEIGHT, marginX=a.CLIP_MARGIN, marginY=(a.CLIP_MARGIN*(1.0*a.HEIGHT/a.WIDTH)))
+    samples = addPositionNoise(samples, (-a.NOISE, a.NOISE), a.RANDOM_SEED+3)
 
     return (samples, sampleCount, container, sampler, stepTime)
 

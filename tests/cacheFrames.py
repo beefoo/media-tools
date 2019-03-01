@@ -15,6 +15,7 @@ parentdir = os.path.dirname(currentdir)
 sys.path.insert(0,parentdir)
 
 from lib.clip import *
+from lib.composition_utils import *
 from lib.io_utils import *
 from lib.math_utils import *
 from lib.video_utils import *
