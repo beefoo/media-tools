@@ -65,8 +65,9 @@ for i, clip in enumerate(clips):
     clip.vector.setParent(container.vector)
 
 # queue the middle four
-playedIndices = set([])
-queuedIndices = set([c.props["index"] for c in clips[:4]])
+playedIndicesSet = set([])
+queuedIndices = [c.props["index"] for c in clips[:4]]
+queuedIndicesSet = set(queuedIndices)
 clips = sorted(clips, key=lambda c: c.props["index"])
 
 ms = a.PAD_START

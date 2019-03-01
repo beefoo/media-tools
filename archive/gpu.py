@@ -1,4 +1,4 @@
-def clipsToDictsGPU(clips, ms, container=None, precision=3):
+def clipsToDictsGPU(clips, ms, container=None, precision=5):
     clipCount = len(clips)
     clipPropertyInCount = len(Clip.CLIP_PROPERTIES.keys())
     clipPropertyOutCount = 8

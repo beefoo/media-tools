@@ -59,7 +59,8 @@ def addVideoArgs(parser):
     parser.add_argument('-rvb', dest="REVERB", default=80, type=int, help="Reverberence (0-100)")
     parser.add_argument('-debug', dest="DEBUG", action="store_true", help="Debug mode?")
     parser.add_argument('-mdb', dest="MATCH_DB", default=-16, type=int, help="Match decibels, -9999 for none")
-    parser.add_argument('-margin', dest="CLIP_MARGIN", default=0.5, type=float, help="Margin between clips in pixels")
+    parser.add_argument('-precision', dest="PRECISION", default=5, type=int, help="Precision for position and size")
+    parser.add_argument('-margin', dest="CLIP_MARGIN", default=0.5314159, type=float, help="Margin between clips in pixels")
     parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.3,0.6", help="Volume range")
     parser.add_argument('-alphar', dest="ALPHA_RANGE", default="0.33,1.0", help="Alpha range")
     parser.add_argument('-mcd', dest="MIN_CLIP_DUR", default=1500, type=int, help="Minumum clip duration")
@@ -96,7 +97,7 @@ def blurImage(im, radius):
         im = im.filter(ImageFilter.GaussianBlur(radius=radius))
     return im
 
-def clipsToFrame(p, clips, pixelData, precision=3):
+def clipsToFrame(p, clips, pixelData, precision=5):
     filename = p["filename"]
     width = p["width"]
     height = p["height"]
@@ -118,7 +119,7 @@ def clipsToFrame(p, clips, pixelData, precision=3):
 
     return True
 
-def clipsToFrameGPU(clips, width, height, clipsPixelData, precision=3):
+def clipsToFrameGPU(clips, width, height, clipsPixelData, precision=5):
     offset = 0
     c = 3
     precisionMultiplier = int(10 ** precision)
@@ -456,7 +457,7 @@ def loadVidoPixelDataDebug(clipCount):
         clipsPixelData[i, 0, 0, 0] = getRandomColor(i)
     return clipsPixelData
 
-def loadVideoPixelDataFromFrames(frames, clips, containerW, containerH, fps, cacheDir="tmp/", cacheKey="sample", verifyData=True, cache=True, debug=False, precision=3):
+def loadVideoPixelDataFromFrames(frames, clips, containerW, containerH, fps, cacheDir="tmp/", cacheKey="sample", verifyData=True, cache=True, debug=False, precision=5):
     frameCount = len(frames)
     clipCount = len(clips)
     precisionMultiplier = int(10 ** precision)
@@ -529,7 +530,7 @@ def pasteImage(im, clipImg, x, y):
     im = Image.alpha_composite(im, stagingImg)
     return im
 
-def processFrames(params, clips, clipsPixelData, threads=1, verbose=True, precision=3):
+def processFrames(params, clips, clipsPixelData, threads=1, verbose=True, precision=5):
     count = len(params)
     print("Processing %s frames" % count)
     threads = getThreadCount(threads)
