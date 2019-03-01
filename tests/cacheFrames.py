@@ -29,6 +29,7 @@ va = vars(a)
 va["OUTPUT_FRAME"] = "tmp/cacheFrames_frames/frame.%s.jpg"
 va["OUTPUT_FILE"] = "output/cacheFramesTest.mp4"
 va["CACHE_DIR"] = "tmp/cacheFrames_cache/"
+va["CACHE_KEY"] = "cacheFrames"
 makeDirectories([a.OUTPUT_FRAME, a.OUTPUT_FILE, a.CACHE_DIR])
 
 FILENAMES = ["media/sample/LivingSt1958.mp4", "media/downloads/Snuffy's Turf Luck (1963).mp4"]
@@ -88,7 +89,7 @@ for f in range(totalFrames):
         "overwrite": True
     })
 
-clipsPixelData = loadVideoPixelDataFromFrames(videoFrames, clips, a.WIDTH, a.HEIGHT, a.FPS, a.CACHE_DIR, a.CACHE_FILE, verifyData=True, cache=True)
+clipsPixelData = loadVideoPixelDataFromFrames(videoFrames, clips, a.WIDTH, a.HEIGHT, a.FPS, a.CACHE_DIR, a.CACHE_KEY, verifyData=True, cache=True)
 
 processFrames(videoFrames, clips, clipsPixelData, threads=2)
 compileFrames(a.OUTPUT_FRAME, a.FPS, a.OUTPUT_FILE, getZeroPadding(totalFrames))

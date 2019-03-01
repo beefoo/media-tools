@@ -123,7 +123,7 @@ def processComposition(a, clips, videoDurationMs, sampler=None, stepTime=False, 
         stepTime = logTime(stepTime, "Mix audio")
 
     if rebuildVideo:
-        clipsPixelData = loadVideoPixelDataFromFrames(videoFrames, clips, a.WIDTH, a.HEIGHT, a.FPS, a.CACHE_DIR, a.CACHE_FILE, a.VERIFY_CACHE, cache=True, debug=a.DEBUG)
+        clipsPixelData = loadVideoPixelDataFromFrames(videoFrames, clips, a.WIDTH, a.HEIGHT, a.FPS, a.CACHE_DIR, a.CACHE_KEY, a.VERIFY_CACHE, cache=True, debug=a.DEBUG)
         stepTime = logTime(stepTime, "Loaded pixel data")
 
         processFrames(videoFrames, clips, clipsPixelData, threads=a.THREADS)

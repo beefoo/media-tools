@@ -28,6 +28,7 @@ va = vars(a)
 va["OUTPUT_FRAME"] = "tmp/smoothtest_frames/frame.%s.jpg"
 va["OUTPUT_FILE"] = "output/smoothtest.mp4"
 va["CACHE_DIR"] = "tmp/smoothtest_cache/"
+va["CACHE_KEY"] = "smoothtest"
 makeDirectories([a.OUTPUT_FRAME, a.OUTPUT_FILE, a.CACHE_DIR])
 
 FILENAME = "media/sample/LivingSt1958.mp4"
@@ -75,7 +76,7 @@ for f in range(totalFrames):
         "overwrite": True
     })
 
-clipsPixelData = loadVideoPixelDataFromFrames(videoFrames, clips, a.WIDTH, a.HEIGHT, a.FPS, a.CACHE_DIR, a.CACHE_FILE, verifyData=True, cache=True)
+clipsPixelData = loadVideoPixelDataFromFrames(videoFrames, clips, a.WIDTH, a.HEIGHT, a.FPS, a.CACHE_DIR, a.CACHE_KEY, verifyData=True, cache=True)
 
 processFrames(videoFrames, clips, clipsPixelData, threads=1)
 compileFrames(a.OUTPUT_FRAME, a.FPS, a.OUTPUT_FILE, getZeroPadding(totalFrames))

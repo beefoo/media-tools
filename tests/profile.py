@@ -27,9 +27,9 @@ a = parser.parse_args()
 parseVideoArgs(a)
 
 va = vars(a)
-va["OUTPUT_FRAME"] = "tmp/profiletest/frame.%s.png"
+va["OUTPUT_FRAME"] = "tmp/profile_frames/frame.%s.png"
 va["CACHE_DIR"] = "tmp/profile_cache/"
-va["CACHE_FILE"] = "profile_cache.p"
+va["CACHE_KEY"] = "profile"
 makeDirectories([a.OUTPUT_FRAME, a.OUTPUT_FILE, a.CACHE_DIR])
 
 FILENAME = "media/sample/LivingSt1958.mp4"
@@ -95,11 +95,10 @@ for f in range(totalFrames):
 
 stepTime = logTime(stepTime, "Make sequence")
 
-loadVideoPixelDataFromFrames(videoFrames, clips, a.FPS, a.CACHE_DIR, a.CACHE_FILE, verifyData=True)
+clipsPixelData = loadVideoPixelDataFromFrames(videoFrames, clips, a.WIDTH, a.HEIGHT, a.FPS, a.CACHE_DIR, a.CACHE_KEY, verifyData=True)
 stepTime = logTime(stepTime, "Load pixel data")
 
-processFrames([videoFrames[0]], threads=1)
-
+processFrames([videoFrames[0]], clips, clipsPixelData, threads=1)
 stepTime = logTime(stepTime, "Process frame")
 
 print("Done.")

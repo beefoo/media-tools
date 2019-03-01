@@ -56,7 +56,7 @@ def addVideoArgs(parser):
     parser.add_argument('-vo', dest="VIDEO_ONLY", action="store_true", help="Render video only?")
     parser.add_argument('-cache', dest="CACHE_VIDEO", action="store_true", help="Cache video clips?")
     parser.add_argument('-cd', dest="CACHE_DIR", default="tmp/cache/", help="Dir for caching data")
-    parser.add_argument('-cf', dest="CACHE_FILE", default="clip_cache.p", help="File for caching data")
+    parser.add_argument('-ckey', dest="CACHE_KEY", default="sample", help="Key for caching data")
     parser.add_argument('-verifyc', dest="VERIFY_CACHE", action="store_true", help="Add a step for verifying existing cache data?")
     parser.add_argument('-rand', dest="RANDOM_SEED", default=1, type=int, help="Random seed to use for pseudo-randomness")
     parser.add_argument('-pad0', dest="PAD_START", default=1000, type=int, help="Pad the beginning")
@@ -457,10 +457,11 @@ def loadVidoPixelDataDebug(clipCount):
         clipsPixelData[i, 0, 0, 0] = getRandomColor(i)
     return clipsPixelData
 
-def loadVideoPixelDataFromFrames(frames, clips, containerW, containerH, fps, cacheDir="tmp/", cacheFile="clip_cache.p", verifyData=True, cache=True, debug=False, precision=3):
+def loadVideoPixelDataFromFrames(frames, clips, containerW, containerH, fps, cacheDir="tmp/", cacheKey="sample", verifyData=True, cache=True, debug=False, precision=3):
     frameCount = len(frames)
     clipCount = len(clips)
     precisionMultiplier = int(10 ** precision)
+    cacheFile = cacheKey + "_maxes.p"
 
     if debug:
         clipsPixelData = loadVidoPixelDataDebug(clipCount)
