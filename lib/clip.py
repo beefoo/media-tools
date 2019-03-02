@@ -411,7 +411,7 @@ class Clip:
                 })
         return props
 
-    def toNpArr(self, ms=None, containerW=None, containerH=None, precision=5, parent=None):
+    def toNpArr(self, ms=None, containerW=None, containerH=None, precision=3, parent=None):
         precisionMultiplier = int(10 ** precision)
         props = self.toDict(ms, containerW, containerH, parent)
         return np.array([
@@ -428,7 +428,7 @@ def clipToDict(p):
     ms, clip = p
     return clip.toDict(ms)
 
-def clipsToNpArr(clips, ms=None, containerW=None, containerH=None, precision=5):
+def clipsToNpArr(clips, ms=None, containerW=None, containerH=None, precision=3):
     # startTime = logTime()
     parentProps = clips[0].vector.parent.toDict(ms) if len(clips) > 0 and clips[0].vector.parent is not None else None
     clipCount = len(clips)

@@ -46,7 +46,7 @@ START_GRID_W, START_GRID_H = tuple([int(v) for v in a.GRID.strip().split("x")])
 END_GRID_W, END_GRID_H = tuple([int(v) for v in a.END_GRID.strip().split("x")])
 GRID_W, GRID_H = (max(START_GRID_W, END_GRID_W), max(START_GRID_H, END_GRID_H))
 ZOOM_DUR = a.STEPS * a.BEAT_DUR
-ZOOM_EASE = "cubicIn"
+ZOOM_EASE = "cubicInOut"
 
 # Get video data
 startTime = logTime()
