@@ -135,11 +135,13 @@ def clipsToImageGPU(width, height, flatPixelData, properties, colorDimensions, p
                 float srcYF = srcNY * (float) (h-1);
                 //float srcXF = normF((float) col, remainderX, remainderX+twF) * (float) (w-1);
                 //float srcYF = normF((float) row, remainderY, remainderY+thF) * (float) (h-1);
+                float talpha = falpha;
 
-                if (srcNX < 0.0) { srcXF = -remainderX; }
-                if (srcNY < 0.0) { srcYF = -remainderY; }
-                if (srcNX > 1.0) { srcXF = (float) (w-1) + (1.0-remainderW); }
-                if (srcNY > 1.0) { srcYF = (float) (h-1) + (1.0-remainderH); }
+                // account for edges; make edge semi-transparent if partial pixel
+                if (srcNX < 0.0) { srcXF = 0.0; talpha = min(talpha, (float)(1.0-remainderX)); }
+                if (srcNY < 0.0) { srcYF = 0.0; talpha = min(talpha, (float)(1.0-remainderY)); }
+                if (srcNX > 1.0) { srcXF = (float) (w-1); talpha = min(talpha, remainderW); }
+                if (srcNY > 1.0) { srcYF = (float) (h-1); talpha = min(talpha, remainderH); }
 
                 if (dstX >= 0 && dstX < canvasW && dstY >= 0 && dstY < canvasH) {
                     int4 srcColor = getPixelF(pdata, srcXF, srcYF, h, w, colorDimensions, offset);
@@ -148,7 +150,7 @@ def clipsToImageGPU(width, height, flatPixelData, properties, colorDimensions, p
                     int destZValue = zvalues[destZIndex];
                     int destZAlpha = zvalues[destZIndex+1];
                     float dalpha = (float) destZAlpha / (float) 255.0;
-                    float talpha = (float) srcColor.w / (float) 255.0 * falpha;
+                    // float talpha = (float) srcColor.w / (float) 255.0 * falpha;
                     // r, g, b, a = x, y, z, w
                     // if alpha is greater than zero there's not already a pixel there with full opacity and higher zindex
                     if (talpha > 0.0 && !(zdindex < destZValue && dalpha >= 1.0)) {
