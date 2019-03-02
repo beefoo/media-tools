@@ -202,7 +202,8 @@ def fillImage(img, w, h):
         newW = h * vratio
     else:
         newH = w / vratio
-    resized = img.resize((roundInt(newW), roundInt(newH)))
+    # Lanczos = good for downsizing
+    resized = img.resize((roundInt(newW), roundInt(newH)), resample=Image.LANCZOS)
 
     # and then crop
     x = 0
