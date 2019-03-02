@@ -15,7 +15,7 @@ def clipsToImageGPU(width, height, flatPixelData, properties, colorDimensions, p
     precisionMultiplier = int(10 ** precision)
     pcount = len(properties[0])
     properties = properties.reshape(-1)
-    zvalues = np.zeros(width * height, dtype=np.int32)
+    zvalues = np.zeros(width * height * 2, dtype=np.int32)
     result = np.zeros(width * height * 3, dtype=np.uint8)
 
     # the kernel function
@@ -144,21 +144,36 @@ def clipsToImageGPU(width, height, flatPixelData, properties, colorDimensions, p
                 if (dstX >= 0 && dstX < canvasW && dstY >= 0 && dstY < canvasH) {
                     int4 srcColor = getPixelF(pdata, srcXF, srcYF, h, w, colorDimensions, offset);
                     int destIndex = dstY * canvasW * 3 + dstX * 3;
-                    int destZIndex = dstY * canvasW + dstX;
-                    int destZValue = zvalues[dstY * canvasW + dstX];
+                    int destZIndex = dstY * canvasW * 2 + dstX * 2;
+                    int destZValue = zvalues[destZIndex];
+                    int destZAlpha = zvalues[destZIndex+1];
+                    float dalpha = (float) destZAlpha / (float) 255.0;
+                    float talpha = (float) srcColor.w / (float) 255.0 * falpha;
                     // r, g, b, a = x, y, z, w
-                    // if alpha is greater than zero and z-index is lower than existing (if applicable)
-                    if (srcColor.w > 0 && (destZValue <= 0 || destZValue < zdindex)) {
-                        float talpha = (float) srcColor.w / (float) 255.0 * falpha;
-                        float invalpha = 1.0 - talpha;
+                    // if alpha is greater than zero there's not already a pixel there with full opacity and higher zindex
+                    if (talpha > 0.0 && !(zdindex < destZValue && dalpha >= 1.0)) {
+
+                        // there's already a pixel there; place it behind it using its alpha
+                        if (zdindex < destZValue) {
+                            talpha = (1.0 - dalpha) * talpha;
+                        }
+
                         // mix the existing color with new color
                         int dr = result[destIndex];
                         int dg = result[destIndex+1];
                         int db = result[destIndex+2];
-                        result[destIndex] = (int) round(((float) srcColor.x * talpha) + ((float) dr * invalpha));
-                        result[destIndex+1] = (int) round(((float) srcColor.y * talpha) + ((float) dg * invalpha));
-                        result[destIndex+2] = (int) round(((float) srcColor.z * talpha) + ((float) db * invalpha));
-                        zvalues[destZIndex] = zdindex;
+                        int4 destColor = (int4)(dr, dg, db, destZAlpha);
+                        int4 blendedColor = blendColors(srcColor, destColor, talpha);
+
+                        result[destIndex] = blendedColor.x;
+                        result[destIndex+1] = blendedColor.y;
+                        result[destIndex+2] = blendedColor.z;
+
+                        // assign new zindex if it's greater
+                        if (destZValue < zdindex) {
+                            zvalues[destZIndex] = zdindex;
+                            zvalues[destZIndex+1] = blendedColor.w;
+                        }
                     }
                 }
             }
