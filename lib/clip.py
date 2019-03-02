@@ -201,10 +201,16 @@ class Vector:
     def getY(self, ms=None, parent=None):
         return self.getPosDimension(1, ms, parent)
 
-    def isVisible(self, containerW, containerH, ms=None, props=None):
+    def isFullyVisible(self, containerW, containerH, ms=None, alphaCheck=True):
         x, y = self.getPos(ms)
         w, h = self.getSize(ms)
-        alpha = self.getAlpha(ms)
+        alpha = self.getAlpha(ms) if alphaCheck else 1.0
+        return x >= 0 and y >= 0 and (x+w) < containerW and (y+h) < containerH and alpha > 0
+
+    def isVisible(self, containerW, containerH, ms=None, alphaCheck=True):
+        x, y = self.getPos(ms)
+        w, h = self.getSize(ms)
+        alpha = self.getAlpha(ms) if alphaCheck else 1.0
         return (x+w) > 0 and (y+h) > 0 and x < containerW and y < containerH and alpha > 0
 
     def setAlpha(self, alpha):
@@ -336,6 +342,27 @@ class Clip:
         time = roundInt(self.start + remainder)
 
         return time
+
+    def getGridNeighbors(self, clips, gridW, gridH, dimCol="col", dimRow="row", isSorted=True):
+        col = self.props[dimCol]
+        row = self.props[dimRow]
+
+        if not isSorted:
+            clips = sorted(clips, key=lambda c: (c.props[dimRow], c.props[dimCol]))
+
+        neighborsIndices = [
+            (col, row-1), # N
+            (col+1, row), # E
+            (col, row+1), # S
+            (col-1, row)  # W
+        ]
+
+        neighbors = []
+        for xi, yi in neighborsIndices:
+            if xi >= 0 and yi >= 0 and xi < gridW and yi < gridH:
+                neighbors.append(clips[int(yi*gridW+xi)])
+
+        return neighbors
 
     def getNeighbors(self, clips, count, dim1="x", dim2="y", idKey="index", newKey="distance"):
         myId = self.props[idKey]

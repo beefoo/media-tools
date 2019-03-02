@@ -31,7 +31,11 @@ addVideoArgs(parser)
 parser.add_argument('-grid', dest="GRID", default="16x16", help="Size of grid")
 parser.add_argument('-grid1', dest="END_GRID", default="256x256", help="End size of grid")
 parser.add_argument('-beat', dest="BEAT_MS", default=4096, type=int, help="Duration of beat")
-
+parser.add_argument('-beat0', dest="MIN_BEAT_MS", default=8, type=int, help="Minimum duration of beat")
+parser.add_argument('-kfd', dest="KEYS_FOR_DISTANCE", default="tsne,tsne2", help="Keys for determining distance between clips")
+parser.add_argument('-cscale', dest="CLIP_SCALE_AMOUNT", default=1.2, type=float, help="Amount to scale clip when playing")
+parser.add_argument('-maxa', dest="MAX_AUDIO_CLIPS", default=8192, type=int, help="Maximum number of audio clips to play")
+parser.add_argument('-keep', dest="KEEP_FIRST_AUDIO_CLIPS", default=1024, type=int, help="Ensure the middle x audio files play")
 a = parser.parse_args()
 parseVideoArgs(a)
 makeDirectories([a.OUTPUT_FRAME, a.OUTPUT_FILE, a.CACHE_DIR])
@@ -40,6 +44,7 @@ makeDirectories([a.OUTPUT_FRAME, a.OUTPUT_FILE, a.CACHE_DIR])
 START_GRID_W, START_GRID_H = tuple([int(v) for v in a.GRID.strip().split("x")])
 END_GRID_W, END_GRID_H = tuple([int(v) for v in a.END_GRID.strip().split("x")])
 GRID_W, GRID_H = (max(START_GRID_W, END_GRID_W), max(START_GRID_H, END_GRID_H))
+DISTANCE_KEY_X, DISTANCE_KEY_Y = tuple([v for v in a.KEYS_FOR_DISTANCE.strip().split(",")])
 ZOOM_EASE = "cubicIn"
 
 fromScale = 1.0 * GRID_W / START_GRID_W
@@ -56,7 +61,25 @@ for i, s in enumerate(samples):
     samples[i]["audioDur"] = s["dur"]
     samples[i]["dur"] = s["dur"] if s["dur"] > a.MIN_CLIP_DUR else int(math.ceil(1.0 * a.MIN_CLIP_DUR / s["dur"]) * s["dur"])
     samples[i]["distanceFromCenter"] = distance(cCol, cRow, s["col"], s["row"])
+    samples[i]["pan"] = lerp((-1.0, 1.0), s["nx"])
+    samples[i]["fadeOut"] = getClipFadeDur(s["dur"], percentage=0.5, maxDur=-1),
+    samples[i]["fadeIn"] = getClipFadeDur(s["dur"])
+    samples[i]["reverb"] = a.REVERB
+    samples[i]["alpha"] = 0.0
+samples = addNormalizedValues(samples, "distanceFromCenter", "nDistanceFromCenter")
 samples = sorted(samples, key=lambda s: (s["distanceFromCenter"], -s["clarity"]))
+
+# limit the number of clips playing
+if sampleCount > a.MAX_AUDIO_CLIPS:
+    samples = limitAudioClips(samples, a.MAX_AUDIO_CLIPS, "nDistanceFromCenter", keepFirst=a.KEEP_FIRST_AUDIO_CLIPS, invert=True, seed=(a.RANDOM_SEED+3))
+    stepTime = logTime(stepTime, "Calculate which audio clips are playing")
+
+# show a viz of which frames are playing
+if a.DEBUG:
+    for i, s in enumerate(samples):
+        samples[i]["alpha"] = 1.0 if s["playAudio"] else 0.2
+    clipsToFrame({ "filename": a.OUTPUT_FRAME % "playTest", "width": a.WIDTH, "height": a.HEIGHT, "overwrite": True, "debug": True },
+        samplesToClips(samples), loadVidoPixelDataDebug(len(samples)))
 
 clips = samplesToClips(samples)
 stepTime = logTime(stepTime, "Samples to clips")
@@ -70,21 +93,98 @@ queuedIndices = [c.props["index"] for c in clips[:4]]
 queuedIndicesSet = set(queuedIndices)
 clips = sorted(clips, key=lambda c: c.props["index"])
 
+# initialize container scale
+container.vector.setTransform(scale=(fromScale, fromScale))
+container.vector.addKeyFrame("scale", 0, fromScale, "sin")
+
 ms = a.PAD_START
-
+ys = []
 while len(queuedIndices) > 0:
-    if len(queuedIndices) > 0:
 
-        # play the next clip in queue
+    # play the next clip in queue
+    queuedIndicesCount = len(queuedIndicesSet)
+    # ys.append(queuedIndicesCount)
 
-        # after playing, add the closest neighbor not played to queue
+    # determine volume and beat step based on number of clips in the queue
+    divide = max(1.0, math.sqrt(queuedIndicesCount / 4.0))
+    msStep = roundInt(1.0 * a.BEAT_MS * 2.0**(-divide))
+    # msStep = roundInt(1.0 * a.BEAT_MS / divide)
+    ys.append(msStep)
+    msStep = lim(msStep, (a.MIN_BEAT_MS, a.BEAT_MS))
+    nvolume = lim(1.0 / divide)
+    volume = lerp(a.VOLUME_RANGE, nvolume)
 
+    numberOfClipsToDequeue = floorInt(math.sqrt(queuedIndicesCount)) if queuedIndicesCount > 4 else 1
+    clipsToPlay = []
+    for i in range(numberOfClipsToDequeue):
+        nextIndex = queuedIndices.pop(0)
+        clip = clips[nextIndex]
+        clipsToPlay.append(clip)
         # remove from queue and put in played
+        queuedIndicesSet.remove(nextIndex)
+        playedIndicesSet.add(nextIndex)
 
-        pass # TODO
+    # for each clip to play
+    newScale = None
+    for clip in clipsToPlay:
+        # play clip
+        if clip.props["playAudio"]:
+            clip.queuePlay(ms, {
+                "dur": clip.props["audioDur"],
+                "volume": volume,
+                "fadeOut": clip.props["fadeOut"],
+                "fadeIn": clip.props["fadeIn"],
+                "pan": clip.props["pan"],
+                "reverb": clip.props["reverb"]
+            })
+        leftMs = roundInt(clip.dur * 0.25)
+        rightMs = clip.dur - leftMs
+        clip.queueTween(ms, leftMs, [
+            ("alpha", 0, a.ALPHA_RANGE[1], "sin"),
+            ("scale", 1.0, a.CLIP_SCALE_AMOUNT, "sin")
+        ])
+        clip.queueTween(ms+leftMs, rightMs, [
+            ("alpha", a.ALPHA_RANGE[1], a.ALPHA_RANGE[0], "sin"),
+            ("scale", a.CLIP_SCALE_AMOUNT, 1.0, "sin")
+        ])
 
-    break
+        # check to see if clip is fully visible
+        isClipFullyVisible = clip.vector.isFullyVisible(a.WIDTH, a.HEIGHT, alphaCheck=False)
+        # if not, scale the container out
+        if not isClipFullyVisible:
+            stepsFromCenter = ceilInt(max(abs(cCol-clip.props["col"]), abs(cRow-clip.props["row"])))
+            stepGridW = stepsFromCenter * 2
+            ngridW = norm(stepGridW, (START_GRID_W, END_GRID_W))
+            newScaleTest = lerp((fromScale, toScale), ngridW)
+            newScale = newScaleTest if newScale is None or newScaleTest < newScale else newScale
 
+        # after playing, add the neighbors not played or queued
+        neighbors = clip.getGridNeighbors(clips, GRID_W, GRID_H)
+        # sort neighbors by grid distance
+        neighbors = sorted(neighbors, key=lambda n: distance(clip.props[DISTANCE_KEY_X], clip.props[DISTANCE_KEY_Y], n.props[DISTANCE_KEY_X], n.props[DISTANCE_KEY_Y]))
+        for n in neighbors:
+            nindex = n.props["index"]
+            if nindex not in queuedIndicesSet and nindex not in playedIndicesSet:
+                queuedIndices.append(nindex)
+                queuedIndicesSet.add(nindex)
+
+    # scale container if necessary
+    if newScale is not None:
+        container.vector.setTransform(scale=(newScale, newScale))
+        container.vector.addKeyFrame("scale", ms, newScale, "sin")
+
+    # increment ms
+    ms += msStep
+
+# import matplotlib.pyplot as plt
+# plt.hist(ys, bins=200)
+# # plt.bar(np.arange(len(ys)), ys)
+# plt.show()
+# sys.exit()
+
+stepTime = logTime(stepTime, "Create plays/tweens")
+
+container.vector.setTransform(scale=(1.0, 1.0))
 # sort frames
 container.vector.sortFrames()
 for clip in clips:
