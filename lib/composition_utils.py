@@ -23,10 +23,10 @@ def addGridPositions(clips, cols, width, height, offsetX=0, offsetY=0, marginX=0
         clips[i]["ny"] = 1.0 * row / (rows-1)
     return clips
 
-def addPositionNoise(clips, noiseRange, randomSeed=3):
+def addPositionNoise(clips, noiseXRange, noiseYRange, randomSeed=3):
     for i, c in enumerate(clips):
-        clips[i]["x"] = clip["x"] + pseudoRandom(randomSeed+i*2, range=noiseRange)
-        clips[i]["y"] = clip["y"] + pseudoRandom(randomSeed+i*2+1, range=noiseRange)
+        clips[i]["x"] = c["x"] + pseudoRandom(randomSeed+i*2, range=noiseXRange)
+        clips[i]["y"] = c["y"] + pseudoRandom(randomSeed+i*2+1, range=noiseYRange)
     return clips
 
 def getDivisionIncrement(count):
@@ -83,8 +83,9 @@ def initGridComposition(a, gridW, gridH, stepTime=False):
     samples = sorted(samples, key=lambda s: (s["gridY"], s["gridX"]))
     samples = addIndices(samples)
     samples = prependAll(samples, ("filename", a.MEDIA_DIRECTORY))
-    samples = addGridPositions(samples, gridW, a.WIDTH, a.HEIGHT, marginX=a.CLIP_MARGIN, marginY=(a.CLIP_MARGIN*(1.0*a.HEIGHT/a.WIDTH)))
-    samples = addPositionNoise(samples, (-a.NOISE, a.NOISE), a.RANDOM_SEED+3)
+    aspectRatio = (1.0*a.HEIGHT/a.WIDTH)
+    samples = addGridPositions(samples, gridW, a.WIDTH, a.HEIGHT, marginX=a.CLIP_MARGIN, marginY=(a.CLIP_MARGIN*aspectRatio))
+    samples = addPositionNoise(samples, (-a.NOISE, a.NOISE), (-a.NOISE*aspectRatio, a.NOISE*aspectRatio), a.RANDOM_SEED+3)
 
     return (samples, sampleCount, container, sampler, stepTime)
 
@@ -150,7 +151,7 @@ def processComposition(a, clips, videoDurationMs, sampler=None, stepTime=False, 
         clipsPixelData = loadVideoPixelDataFromFrames(videoFrames, clips, a.WIDTH, a.HEIGHT, a.FPS, a.CACHE_DIR, a.CACHE_KEY, a.VERIFY_CACHE, cache=True, debug=a.DEBUG, precision=a.PRECISION)
         stepTime = logTime(stepTime, "Loaded pixel data")
 
-        processFrames(videoFrames, clips, clipsPixelData, threads=a.THREADS, precision=a.PRECISION))
+        processFrames(videoFrames, clips, clipsPixelData, threads=a.THREADS, precision=a.PRECISION)
         stepTime = logTime(stepTime, "Process video")
 
     if not a.AUDIO_ONLY:
