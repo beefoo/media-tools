@@ -106,7 +106,7 @@ def clipsToFrame(p, clips, pixelData, precision=3):
 def clipsToFrameGPU(clips, width, height, clipsPixelData, precision=3):
     offset = 0
     c = 3
-    maxScaleFactor = 8.0
+    maxScaleFactor = 2.0
     precisionMultiplier = int(10 ** precision)
 
     _x, _y, _w, _h, _alpha, _t, _z = (0, 1, 2, 3, 4, 5, 6)
