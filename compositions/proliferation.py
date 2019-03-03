@@ -33,7 +33,7 @@ parser.add_argument('-grid1', dest="END_GRID", default="256x256", help="End size
 parser.add_argument('-beat', dest="BEAT_MS", default=4096, type=int, help="Duration of beat")
 parser.add_argument('-beat0', dest="MIN_BEAT_MS", default=8, type=int, help="Minimum duration of beat")
 parser.add_argument('-kfd', dest="KEYS_FOR_DISTANCE", default="tsne,tsne2", help="Keys for determining distance between clips")
-parser.add_argument('-cscale', dest="CLIP_SCALE_AMOUNT", default=1.2, type=float, help="Amount to scale clip when playing")
+parser.add_argument('-cscale', dest="CLIP_SCALE_AMOUNT", default=1.1, type=float, help="Amount to scale clip when playing")
 parser.add_argument('-maxa', dest="MAX_AUDIO_CLIPS", default=8192, type=int, help="Maximum number of audio clips to play")
 parser.add_argument('-keep', dest="KEEP_FIRST_AUDIO_CLIPS", default=1024, type=int, help="Ensure the middle x audio files play")
 a = parser.parse_args()
@@ -45,7 +45,6 @@ START_GRID_W, START_GRID_H = tuple([int(v) for v in a.GRID.strip().split("x")])
 END_GRID_W, END_GRID_H = tuple([int(v) for v in a.END_GRID.strip().split("x")])
 GRID_W, GRID_H = (max(START_GRID_W, END_GRID_W), max(START_GRID_H, END_GRID_H))
 DISTANCE_KEY_X, DISTANCE_KEY_Y = tuple([v for v in a.KEYS_FOR_DISTANCE.strip().split(",")])
-ZOOM_EASE = "cubicIn"
 
 fromScale = 1.0 * GRID_W / START_GRID_W
 toScale = 1.0 * GRID_W / END_GRID_W
@@ -53,32 +52,9 @@ toScale = 1.0 * GRID_W / END_GRID_W
 # Get video data
 startTime = logTime()
 stepTime = startTime
-samples, sampleCount, container, sampler, stepTime = initGridComposition(a, GRID_W, GRID_H, stepTime)
+samples, sampleCount, container, sampler, stepTime, cCol, cRow = initGridComposition(a, GRID_W, GRID_H, stepTime)
 
-cCol, cRow = ((GRID_W-1) * 0.5, (GRID_H-1) * 0.5)
-for i, s in enumerate(samples):
-    # make clip longer if necessary
-    samples[i]["audioDur"] = s["dur"]
-    samples[i]["dur"] = s["dur"] if s["dur"] > a.MIN_CLIP_DUR else int(math.ceil(1.0 * a.MIN_CLIP_DUR / s["dur"]) * s["dur"])
-    samples[i]["distanceFromCenter"] = distance(cCol, cRow, s["col"], s["row"])
-    samples[i]["pan"] = lerp((-1.0, 1.0), s["nx"])
-    samples[i]["fadeOut"] = getClipFadeDur(s["dur"], percentage=0.5, maxDur=-1),
-    samples[i]["fadeIn"] = getClipFadeDur(s["dur"])
-    samples[i]["reverb"] = a.REVERB
-samples = addNormalizedValues(samples, "distanceFromCenter", "nDistanceFromCenter")
 samples = sorted(samples, key=lambda s: (s["distanceFromCenter"], -s["clarity"]))
-
-# limit the number of clips playing
-if sampleCount > a.MAX_AUDIO_CLIPS:
-    samples = limitAudioClips(samples, a.MAX_AUDIO_CLIPS, "nDistanceFromCenter", keepFirst=a.KEEP_FIRST_AUDIO_CLIPS, invert=True, seed=(a.RANDOM_SEED+3))
-    stepTime = logTime(stepTime, "Calculate which audio clips are playing")
-
-# show a viz of which frames are playing
-if a.DEBUG:
-    for i, s in enumerate(samples):
-        samples[i]["alpha"] = 1.0 if s["playAudio"] else 0.2
-    clipsToFrame({ "filename": a.OUTPUT_FRAME % "playTest", "width": a.WIDTH, "height": a.HEIGHT, "overwrite": True, "debug": True },
-        samplesToClips(samples), loadVidoPixelDataDebug(len(samples)))
 
 # set clip alpha to zero by default
 for i, s in enumerate(samples):
@@ -143,12 +119,12 @@ while len(queuedIndices) > 0:
         leftMs = roundInt(clip.dur * 0.25)
         rightMs = clip.dur - leftMs
         clip.queueTween(ms, leftMs, [
-            ("alpha", 0, a.ALPHA_RANGE[1], "sin"),
-            ("scale", 1.0, a.CLIP_SCALE_AMOUNT, "sin")
+            ("alpha", 0, a.ALPHA_RANGE[1], "sin")
+            # ("scale", 1.0, a.CLIP_SCALE_AMOUNT, "sin")
         ])
         clip.queueTween(ms+leftMs, rightMs, [
-            ("alpha", a.ALPHA_RANGE[1], a.ALPHA_RANGE[0], "sin"),
-            ("scale", a.CLIP_SCALE_AMOUNT, 1.0, "sin")
+            ("alpha", a.ALPHA_RANGE[1], a.ALPHA_RANGE[0], "sin")
+            # ("scale", a.CLIP_SCALE_AMOUNT, 1.0, "sin")
         ])
 
         # check to see if clip is fully visible

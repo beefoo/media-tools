@@ -51,16 +51,11 @@ ZOOM_EASE = "cubicInOut"
 # Get video data
 startTime = logTime()
 stepTime = startTime
-samples, sampleCount, container, sampler, stepTime = initGridComposition(a, GRID_W, GRID_H, stepTime)
+samples, sampleCount, container, sampler, stepTime, cCol, cRow = initGridComposition(a, GRID_W, GRID_H, stepTime)
 
-cCol, cRow = ((GRID_W-1) * 0.5, (GRID_H-1) * 0.5)
 for i, s in enumerate(samples):
     # play in order: center first, clockwise
-    samples[i]["distanceFromCenter"] = distance(cCol, cRow, s["col"], s["row"])
     samples[i]["angleFromCenter"] = angleBetween(cCol, cRow, s["col"], s["row"])
-    # make clip longer if necessary
-    samples[i]["audioDur"] = s["dur"]
-    samples[i]["dur"] = s["dur"] if s["dur"] > a.MIN_CLIP_DUR else int(math.ceil(1.0 * a.MIN_CLIP_DUR / s["dur"]) * s["dur"])
     # calculate translate distance
     translateDistance = min(s["width"], s["height"]) * a.TRANSLATE_AMOUNT
     samples[i]["translateAmount"] = translatePoint(0, 0, translateDistance, samples[i]["angleFromCenter"])
@@ -71,33 +66,15 @@ samples = sorted(samples, key=lambda s: (s["distanceFromCenter"], s["angleFromCe
 samples = addIndices(samples, "playOrder")
 samples = addNormalizedValues(samples, "playOrder", "nPlayOrder")
 samples = addNormalizedValues(samples, "power", "nPower")
-samples = addNormalizedValues(samples, "distanceFromCenter", "nDistanceFromCenter")
 
 # add audio clip properties
 for i, s in enumerate(samples):
-    audioDur = s["audioDur"]
     samples[i].update({
         "zindex": sampleCount-i,
-        "volume": lerp(a.VOLUME_RANGE, (1.0 - s["nDistanceFromCenter"]) * s["volumeMultiplier"]),
-        "fadeOut": getClipFadeDur(audioDur, percentage=0.5, maxDur=-1),
-        "fadeIn": getClipFadeDur(audioDur),
-        "pan": lerp((-1.0, 1.0), s["nx"]),
-        "reverb": a.REVERB
+        "volume": lerp(a.VOLUME_RANGE, (1.0 - s["nDistanceFromCenter"]) * s["volumeMultiplier"])
     })
 
 stepTime = logTime(stepTime, "Calculate clip properties")
-
-# limit the number of clips playing
-if sampleCount > a.MAX_AUDIO_CLIPS:
-    samples = limitAudioClips(samples, a.MAX_AUDIO_CLIPS, "nDistanceFromCenter", keepFirst=a.KEEP_FIRST_AUDIO_CLIPS, invert=True, seed=(a.RANDOM_SEED+2))
-    stepTime = logTime(stepTime, "Calculate which audio clips are playing")
-
-# show a viz of which frames are playing
-if a.DEBUG:
-    for i, s in enumerate(samples):
-        samples[i]["alpha"] = 1.0 if s["playAudio"] else 0.2
-    clipsToFrame({ "filename": a.OUTPUT_FRAME % "playTest", "width": a.WIDTH, "height": a.HEIGHT, "overwrite": True, "debug": True },
-        samplesToClips(samples), loadVidoPixelDataDebug(len(samples)))
 
 # start with everything with minimum alpha
 for i, s in enumerate(samples):

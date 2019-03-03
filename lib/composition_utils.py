@@ -88,7 +88,35 @@ def initGridComposition(a, gridW, gridH, stepTime=False):
     if a.NOISE > 0:
         samples = addPositionNoise(samples, (-a.NOISE, a.NOISE), (-a.NOISE*aspectRatio, a.NOISE*aspectRatio), a.RANDOM_SEED+3)
 
-    return (samples, sampleCount, container, sampler, stepTime)
+    cCol, cRow = ((gridW-1) * 0.5, (gridH-1) * 0.5)
+    for i, s in enumerate(samples):
+        # Add audio properties
+        # make clip longer if necessary
+        samples[i]["audioDur"] = s["dur"]
+        samples[i]["dur"] = s["dur"] if s["dur"] > a.MIN_CLIP_DUR else int(math.ceil(1.0 * a.MIN_CLIP_DUR / s["dur"]) * s["dur"])
+        samples[i]["pan"] = lerp((-1.0, 1.0), s["nx"])
+        samples[i]["fadeOut"] = getClipFadeDur(s["dur"], percentage=0.5, maxDur=-1),
+        samples[i]["fadeIn"] = getClipFadeDur(s["dur"])
+        samples[i]["reverb"] = a.REVERB
+        samples[i]["distanceFromCenter"] = distance(cCol, cRow, s["col"], s["row"])
+    samples = addNormalizedValues(samples, "distanceFromCenter", "nDistanceFromCenter")
+
+    # limit the number of clips playing
+    if sampleCount > a.MAX_AUDIO_CLIPS:
+        samples = limitAudioClips(samples, a.MAX_AUDIO_CLIPS, "nDistanceFromCenter", keepFirst=a.KEEP_FIRST_AUDIO_CLIPS, invert=True, seed=(a.RANDOM_SEED+3))
+        stepTime = logTime(stepTime, "Calculate which audio clips are playing")
+
+    # show a viz of which frames are playing
+    if a.DEBUG:
+        for i, s in enumerate(samples):
+            samples[i]["alpha"] = 1.0 if s["playAudio"] else 0.2
+        clipsToFrame({ "filename": a.OUTPUT_FRAME % "playTest", "width": a.WIDTH, "height": a.HEIGHT, "overwrite": True, "debug": True },
+            samplesToClips(samples), loadVidoPixelDataDebug(len(samples)))
+        # reset alpha
+        for i, s in enumerate(samples):
+            samples[i]["alpha"] = 1.0
+
+    return (samples, sampleCount, container, sampler, stepTime, cCol, cRow)
 
 def limitAudioClips(samples, maxAudioClips, keyName, invert=False, keepFirst=64, multiplier=10000, easing="quartOut", seed=3):
     indicesToKeep = []
