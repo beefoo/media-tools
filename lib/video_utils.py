@@ -106,6 +106,7 @@ def clipsToFrame(p, clips, pixelData, precision=3):
 def clipsToFrameGPU(clips, width, height, clipsPixelData, precision=3):
     offset = 0
     c = 3
+    maxScaleFactor = 8.0
     precisionMultiplier = int(10 ** precision)
 
     _x, _y, _w, _h, _alpha, _t, _z = (0, 1, 2, 3, 4, 5, 6)
@@ -122,6 +123,11 @@ def clipsToFrameGPU(clips, width, height, clipsPixelData, precision=3):
             indices.append(i)
             tn = 1.0 * clip[_t] / precisionMultiplier
             h, w, c = clipsPixelData[i][roundInt(tn * (frameCount-1))].shape
+            # we want to resample if scaled too much
+            scaleFactor = 1.0 * w / (1.0*clip[_w]/precisionMultiplier)
+            if scaleFactor > maxScaleFactor:
+                w = roundInt(1.0*clip[_w]/precisionMultiplier)
+                h = roundInt(1.0*clip[_h]/precisionMultiplier)
             pixelCount += int(h*w*c)
 
     validCount = len(indices)
@@ -136,6 +142,14 @@ def clipsToFrameGPU(clips, width, height, clipsPixelData, precision=3):
         tn = 1.0 * t / precisionMultiplier
         pixels = clipPixelData[roundInt(tn * (frameCount-1))]
         h, w, c = pixels.shape
+        # we want to resample if scaled too much; a hack; would like to do in GPU eventually
+        scaleFactor = 1.0 * w / (1.0*tw/precisionMultiplier)
+        if scaleFactor > maxScaleFactor:
+            w = roundInt(1.0*tw/precisionMultiplier)
+            h = roundInt(1.0*th/precisionMultiplier)
+            im = Image.fromarray(pixels, mode="RGB")
+            resized = im.resize((w, h), resample=Image.LANCZOS)
+            pixels = np.array(resized)
         # # not ideal, but don't feel like implementing blur/rotation in opencl; just use PIL's algorithm
         # if "rotation" in clip and clip["rotation"] % 360 > 0 or "blur" in clip and clip["blur"] > 0.0:
         #     im = Image.fromarray(pixels, mode="RGB")
