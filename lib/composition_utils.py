@@ -85,7 +85,8 @@ def initGridComposition(a, gridW, gridH, stepTime=False):
     samples = prependAll(samples, ("filename", a.MEDIA_DIRECTORY))
     aspectRatio = (1.0*a.HEIGHT/a.WIDTH)
     samples = addGridPositions(samples, gridW, a.WIDTH, a.HEIGHT, marginX=a.CLIP_MARGIN, marginY=(a.CLIP_MARGIN*aspectRatio))
-    samples = addPositionNoise(samples, (-a.NOISE, a.NOISE), (-a.NOISE*aspectRatio, a.NOISE*aspectRatio), a.RANDOM_SEED+3)
+    if a.NOISE > 0:
+        samples = addPositionNoise(samples, (-a.NOISE, a.NOISE), (-a.NOISE*aspectRatio, a.NOISE*aspectRatio), a.RANDOM_SEED+3)
 
     return (samples, sampleCount, container, sampler, stepTime)
 

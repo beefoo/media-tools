@@ -65,7 +65,6 @@ for i, s in enumerate(samples):
     samples[i]["fadeOut"] = getClipFadeDur(s["dur"], percentage=0.5, maxDur=-1),
     samples[i]["fadeIn"] = getClipFadeDur(s["dur"])
     samples[i]["reverb"] = a.REVERB
-    samples[i]["alpha"] = 0.0
 samples = addNormalizedValues(samples, "distanceFromCenter", "nDistanceFromCenter")
 samples = sorted(samples, key=lambda s: (s["distanceFromCenter"], -s["clarity"]))
 
@@ -80,6 +79,10 @@ if a.DEBUG:
         samples[i]["alpha"] = 1.0 if s["playAudio"] else 0.2
     clipsToFrame({ "filename": a.OUTPUT_FRAME % "playTest", "width": a.WIDTH, "height": a.HEIGHT, "overwrite": True, "debug": True },
         samplesToClips(samples), loadVidoPixelDataDebug(len(samples)))
+
+# set clip alpha to zero by default
+for i, s in enumerate(samples):
+    samples[i]["alpha"] = 0.0
 
 clips = samplesToClips(samples)
 stepTime = logTime(stepTime, "Samples to clips")

@@ -12,6 +12,11 @@ os.environ['PYOPENCL_COMPILER_OUTPUT'] = '1'
 
 def clipsToImageGPU(width, height, flatPixelData, properties, colorDimensions, precision):
     count = len(properties)
+
+    # blank image if no clip data
+    if count <= 0:
+        return np.zeros((height, width, 3), dtype=np.uint8)
+
     precisionMultiplier = int(10 ** precision)
     pcount = len(properties[0])
     properties = properties.reshape(-1)

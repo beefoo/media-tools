@@ -47,7 +47,7 @@ def addVideoArgs(parser):
     parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.3,0.6", help="Volume range")
     parser.add_argument('-alphar', dest="ALPHA_RANGE", default="0.33,1.0", help="Alpha range")
     parser.add_argument('-mcd', dest="MIN_CLIP_DUR", default=1500, type=int, help="Minumum clip duration")
-    parser.add_argument('-noise', dest="NOISE", default=0.1, type=float, help="Amount of pixel noise to add")
+    parser.add_argument('-noise', dest="NOISE", default=0.0, type=float, help="Amount of pixel noise to add")
 
 def alphaMask(im, mask):
     w, h = im.size
