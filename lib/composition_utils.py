@@ -102,19 +102,19 @@ def initGridComposition(a, gridW, gridH, stepTime=False):
     samples = addNormalizedValues(samples, "distanceFromCenter", "nDistanceFromCenter")
 
     # limit the number of clips playing
-    if sampleCount > a.MAX_AUDIO_CLIPS:
+    if sampleCount > a.MAX_AUDIO_CLIPS and a.MAX_AUDIO_CLIPS > 0:
         samples = limitAudioClips(samples, a.MAX_AUDIO_CLIPS, "nDistanceFromCenter", keepFirst=a.KEEP_FIRST_AUDIO_CLIPS, invert=True, seed=(a.RANDOM_SEED+3))
         stepTime = logTime(stepTime, "Calculate which audio clips are playing")
 
-    # show a viz of which frames are playing
-    if a.DEBUG:
-        for i, s in enumerate(samples):
-            samples[i]["alpha"] = 1.0 if s["playAudio"] else 0.2
-        clipsToFrame({ "filename": a.OUTPUT_FRAME % "playTest", "width": a.WIDTH, "height": a.HEIGHT, "overwrite": True, "debug": True },
-            samplesToClips(samples), loadVidoPixelDataDebug(len(samples)))
-        # reset alpha
-        for i, s in enumerate(samples):
-            samples[i]["alpha"] = 1.0
+        # show a viz of which frames are playing
+        if a.DEBUG:
+            for i, s in enumerate(samples):
+                samples[i]["alpha"] = 1.0 if s["playAudio"] else 0.2
+            clipsToFrame({ "filename": a.OUTPUT_FRAME % "playTest", "width": a.WIDTH, "height": a.HEIGHT, "overwrite": True, "debug": True },
+                samplesToClips(samples), loadVidoPixelDataDebug(len(samples)))
+            # reset alpha
+            for i, s in enumerate(samples):
+                samples[i]["alpha"] = 1.0
 
     return (samples, sampleCount, container, sampler, stepTime, cCol, cRow)
 
