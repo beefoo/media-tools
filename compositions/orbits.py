@@ -33,6 +33,7 @@ parser.add_argument('-grid1', dest="END_GRID", default="256x256", help="End size
 parser.add_argument('-beat', dest="BEAT_MS", default=1024, type=int, help="Duration of beat")
 parser.add_argument('-maxa', dest="MAX_AUDIO_CLIPS", default=-1, type=int, help="Maximum number of audio clips to play")
 parser.add_argument('-keep', dest="KEEP_FIRST_AUDIO_CLIPS", default=-1, type=int, help="Ensure the middle x audio files play")
+parser.add_argument('-bdivision', dest="BEAT_DIVISIONS", default=16, type=int, help="Number of times to divide each beat")
 a = parser.parse_args()
 parseVideoArgs(a)
 makeDirectories([a.OUTPUT_FRAME, a.OUTPUT_FILE, a.CACHE_DIR])
@@ -56,6 +57,18 @@ samples, sampleCount, container, sampler, stepTime, cCol, cRow = initGridComposi
 # set clip alpha to min by default
 for i, s in enumerate(samples):
     samples[i]["alpha"] = a.ALPHA_RANGE[0]
+    samples[i]["ring"] = ceilInt(max(abs(cCol-s["col"]), abs(cRow-s["row"])))
+
+for step in range(END_RINGS):
+    ring = step + 1
+    ringOffset = getOffset(a.BEAT_DIVISIONS, a.BEAT_DIVISIONS % step)
+    ringOffsetMs = roundInt(ringOffset * a.BEAT_MS)
+    ringStartMs = a.PAD_START + step * a.BEAT_MS + ringOffsetMs
+    ringSamples = [s for s in samples if s["ring"]==ring]
+    for j, s in enumerate(ringSamples):
+        sindex = s["index"]
+        samples[sindex]["rotateStartMs"] = ringStartMs
+        samples[sindex]["rotateDurMs"] = a.BEAT_MS
 
 clips = samplesToClips(samples)
 stepTime = logTime(stepTime, "Samples to clips")
@@ -65,7 +78,7 @@ for i, clip in enumerate(clips):
 
 # initialize container scale
 container.vector.setTransform(scale=(fromScale, fromScale))
-container.vector.addKeyFrame("scale", 0, fromScale, "sin")
+container.vector.addKeyFrame("scale", 0, fromScale)
 
 ms = a.PAD_START
 zoomStartMs = ms + a.BEAT_MS * START_RINGS
@@ -76,8 +89,12 @@ for step in range(zoomSteps):
     stepGridW = stepRing * 2
     stepZoomScale = 1.0 * GRID_W / stepGridW
     stepMs = zoomStartMs + step * a.BEAT_MS
-    container.vector.addKeyFrame("scale", stepMs, stepZoomScale, "sin")
+    ease = "sin" if step > 0 else "quintIn"
+    container.vector.addKeyFrame("scale", stepMs, stepZoomScale, ease)
     ms += a.BEAT_MS
+
+# container.vector.plotKeyframes("scale")
+# sys.exit()
 
 stepTime = logTime(stepTime, "Create plays/tweens")
 
@@ -87,4 +104,38 @@ container.vector.sortFrames()
 for clip in clips:
     clip.vector.sortFrames()
 
-processComposition(a, clips, ms, sampler, stepTime, startTime)
+def clipToNpArrOrbits(clip, ms, containerW, containerH, precision, parent):
+    precisionMultiplier = int(10 ** precision)
+    props = clip.toDict(ms, containerW, containerH, parent)
+    ring = props["ring"]
+    clipW = clip.props["width"]
+    clipH = clip.props["height"]
+    rotateStartMs = props["rotateStartMs"]
+    rotateDurMs = props["rotateDurMs"]
+
+    gridW = ceilInt(1.0 * containerW / clipW) # account for clip margin
+    gridH = ceilInt(1.0 * containerH / clipH)
+    clipW = 1.0 * containerW / gridW
+    clipH = 1.0 * containerH / gridH
+    ringGridW = ring * 2
+    ringGridH = ringGridW
+    ringGridX = (gridW-ringGridW)/2
+    ringGridY = (gridH-ringGridH)/2
+    ringClipCount = ringGridW * 2 + (ringGridH-2) * 2
+    ringWidth = clipW * ringGridW
+    ringHeight = clipH * ringGridH
+    ringX = (containerW-ringWidth) * 0.5
+    ringY = (containerH-ringHeight) * 0.5
+    ringIndex = 0
+
+    return np.array([
+        roundInt(props["x"] * precisionMultiplier),
+        roundInt(props["y"] * precisionMultiplier),
+        roundInt(props["width"] * precisionMultiplier),
+        roundInt(props["height"] * precisionMultiplier),
+        roundInt(props["alpha"] * precisionMultiplier),
+        roundInt(props["tn"] * precisionMultiplier),
+        roundInt(props["zindex"])
+    ], dtype=np.int32)
+
+processComposition(a, clips, ms, sampler, stepTime, startTime, customClipToArrFunction=clipToNpArrOrbits)

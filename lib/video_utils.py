@@ -81,7 +81,7 @@ def blurImage(im, radius):
         im = im.filter(ImageFilter.GaussianBlur(radius=radius))
     return im
 
-def clipsToFrame(p, clips, pixelData, precision=3):
+def clipsToFrame(p, clips, pixelData, precision=3, customClipToArrFunction=None):
     filename = p["filename"]
     width = p["width"]
     height = p["height"]
@@ -95,7 +95,7 @@ def clipsToFrame(p, clips, pixelData, precision=3):
     # frame already exists, read it directly
     if not fileExists:
         im = Image.new(mode="RGBA", size=(width, height), color=(0, 0, 0, 255))
-        clipArr = clipsToNpArr(clips, ms, width, height, precision)
+        clipArr = clipsToNpArr(clips, ms, width, height, precision, customClipToArrFunction=customClipToArrFunction)
         im = clipsToFrameGPU(clipArr, width, height, pixelData, precision)
         im = im.convert("RGB")
         im.save(filename)
@@ -529,20 +529,20 @@ def pasteImage(im, clipImg, x, y):
     im = Image.alpha_composite(im, stagingImg)
     return im
 
-def processFrames(params, clips, clipsPixelData, threads=1, verbose=True, precision=3):
+def processFrames(params, clips, clipsPixelData, threads=1, verbose=True, precision=3, customClipToArrFunction=None):
     count = len(params)
     print("Processing %s frames" % count)
     threads = getThreadCount(threads)
 
     if threads > 1:
         pool = ThreadPool(threads)
-        pclipsToFrame = partial(clipsToFrame, clips=clips, pixelData=clipsPixelData, precision=precision)
+        pclipsToFrame = partial(clipsToFrame, clips=clips, pixelData=clipsPixelData, precision=precision, customClipToArrFunction=customClipToArrFunction)
         results = pool.map(pclipsToFrame, params)
         pool.close()
         pool.join()
     else:
         for i, p in enumerate(params):
-            clipsToFrame(p, clips=clips, pixelData=clipsPixelData, precision=precision)
+            clipsToFrame(p, clips=clips, pixelData=clipsPixelData, precision=precision, customClipToArrFunction=customClipToArrFunction)
             if verbose:
                 printProgress(i+1, count)
 

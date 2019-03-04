@@ -133,7 +133,7 @@ def limitAudioClips(samples, maxAudioClips, keyName, invert=False, keepFirst=64,
         samples[i]["playAudio"] = (s["index"] in indicesToKeep)
     return samples
 
-def processComposition(a, clips, videoDurationMs, sampler=None, stepTime=False, startTime=False):
+def processComposition(a, clips, videoDurationMs, sampler=None, stepTime=False, startTime=False, customClipToArrFunction=None):
 
     # get audio sequence
     samplerClips = sampler.getClips() if sampler is not None else []
@@ -182,8 +182,7 @@ def processComposition(a, clips, videoDurationMs, sampler=None, stepTime=False, 
         clipsPixelData = loadVideoPixelDataFromFrames(videoFrames, clips, a.WIDTH, a.HEIGHT, a.FPS, a.CACHE_DIR, a.CACHE_KEY, a.VERIFY_CACHE, cache=True, debug=a.DEBUG, precision=a.PRECISION)
         stepTime = logTime(stepTime, "Loaded pixel data")
 
-        processFrames(videoFrames, clips, clipsPixelData, threads=a.THREADS, precision=a.PRECISION)
-        stepTime = logTime(stepTime, "Process video")
+        processFrames(videoFrames, clips, clipsPixelData, threads=a.THREADS, precision=a.PRECISION, customClipToArrFunction=customClipToArrFunction)
 
     if not a.AUDIO_ONLY:
         audioFile = a.AUDIO_OUTPUT_FILE if not a.VIDEO_ONLY and os.path.isfile(a.AUDIO_OUTPUT_FILE) else False

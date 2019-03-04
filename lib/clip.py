@@ -475,14 +475,17 @@ def clipToDict(p):
     ms, clip = p
     return clip.toDict(ms)
 
-def clipsToNpArr(clips, ms=None, containerW=None, containerH=None, precision=3):
+def clipsToNpArr(clips, ms=None, containerW=None, containerH=None, precision=3, customClipToArrFunction=None):
     # startTime = logTime()
     parentProps = clips[0].vector.parent.toDict(ms) if len(clips) > 0 and clips[0].vector.parent is not None else None
     clipCount = len(clips)
     propertyCount = 7
     arr = np.zeros((clipCount, propertyCount), dtype=np.int32)
     for i, clip in enumerate(clips):
-        arr[clip.props["index"]] = clip.toNpArr(ms, containerW, containerH, precision, parentProps)
+        if customClipToArrFunction is not None:
+            customClipToArrFunction(clip, ms, containerW, containerH, precision, parentProps)
+        else:
+            arr[clip.props["index"]] = clip.toNpArr(ms, containerW, containerH, precision, parentProps)
     # stepTime = logTime(startTime, "Step %s" % ms)
     return arr
 
