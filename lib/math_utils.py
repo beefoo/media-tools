@@ -44,29 +44,49 @@ def ceilToNearest(n, nearest):
 def distance(x1, y1, x2, y2):
     return math.hypot(x2 - x1, y2 - y1)
 
-def ease(n, easingFunction="sin"):
+def ease(n, easingFunction="sin", exp=6, invert=False):
+
+    if easingFunction.endswith("Invert"):
+        easingFunction = easingFunction[:-6]
+        invert = True
+
     if easingFunction == "sin":
-        return easeSinInOut(n)
+        n = easeSinInOut(n)
     elif easingFunction == "quadIn":
-        return n ** 2
+        n = n ** 2
     elif easingFunction == "quadOut":
-        return n * (2.0 - n)
+        n = n * (2.0 - n)
     elif easingFunction == "quadInOut":
-        return 2.0 * n * n if n < 0.5 else -1.0 + (4 - 2.0*n)*n
+        n = 2.0 * n * n if n < 0.5 else -1.0 + (4 - 2.0*n)*n
     elif easingFunction == "cubicIn":
-        return n ** 3
+        n = n ** 3
     elif easingFunction == "cubicOut":
-        return (n - 1.0)**3 + 1.0
+        n = (n - 1.0)**3 + 1.0
     elif easingFunction == "cubicInOut":
-        return 4.0 * (n ** 3) if n < 0.5 else (n-1.0)*(2*n-2)*(2*n-2)+1
+        n = 4.0 * (n ** 3) if n < 0.5 else (n-1.0)*(2*n-2)*(2*n-2)+1
     elif easingFunction == "quartIn":
-        return n ** 4
+        n = n ** 4
     elif easingFunction == "quartOut":
-        return 1.0 - (n - 1.0)**4
+        n = 1.0 - (n-1.0)**4
     elif easingFunction == "quartInOut":
-        return 8.0 * (n ** 4) if n < 0.5 else 1.0 - 8.0 * ((n-1.0) ** 4)
-    else:
-        return n
+        n = 8.0 * n**4 if n < 0.5 else 1.0 - 8.0 * (n-1.0)**4
+    elif easingFunction == "quintIn":
+        n = n ** 5
+    elif easingFunction == "quintOut":
+        n = 1.0 + (n - 1.0) ** 5
+    elif easingFunction == "quintInOut":
+        n = 16.0 * n**5 if n < 0.5 else 1.0 + 16.0 * (n-1.0)**5
+    elif easingFunction == "expIn":
+        n = n ** exp
+    elif easingFunction == "expOut":
+        n = 1.0 - (n-1.0)**exp if exp % 2 <= 0 else 1.0 + (n-1.0)**exp
+    elif easingFunction == "expInOut":
+        if exp % 2 <= 0:
+            n = 2**(exp-1) * n**exp if n < 0.5 else 1.0 - 2**(exp-1) * (n-1.0)**exp
+        else:
+            n = 2**(exp-1) * n**exp if n < 0.5 else 1.0 + 2**(exp-1) * (n-1.0)**exp
+
+    return n if invert is not True else 1.0-n
 
 def easeSinInOut(n):
     return (math.sin((n+1.5)*math.pi)+1.0) / 2.0
