@@ -30,7 +30,7 @@ parser = argparse.ArgumentParser()
 addVideoArgs(parser)
 parser.add_argument('-grid', dest="GRID", default="16x16", help="Size of grid")
 parser.add_argument('-grid1', dest="END_GRID", default="256x256", help="End size of grid")
-parser.add_argument('-beat', dest="BEAT_MS", default=4096, type=int, help="Duration of beat")
+parser.add_argument('-beat', dest="BEAT_MS", default=1024, type=int, help="Duration of beat")
 parser.add_argument('-beat0', dest="MIN_BEAT_MS", default=8, type=int, help="Minimum duration of beat")
 parser.add_argument('-kfd', dest="KEYS_FOR_DISTANCE", default="tsne,tsne2", help="Keys for determining distance between clips")
 parser.add_argument('-cscale', dest="CLIP_SCALE_AMOUNT", default=1.1, type=float, help="Amount to scale clip when playing")
@@ -78,6 +78,7 @@ container.vector.addKeyFrame("scale", 0, fromScale, "sin")
 
 ms = a.PAD_START
 ys = []
+currentScale = fromScale
 while len(queuedIndices) > 0:
 
     # play the next clip in queue
@@ -127,15 +128,10 @@ while len(queuedIndices) > 0:
             # ("scale", a.CLIP_SCALE_AMOUNT, 1.0, "sin")
         ])
 
-        # check to see if clip is fully visible
-        isClipFullyVisible = clip.vector.isFullyVisible(a.WIDTH, a.HEIGHT, alphaCheck=False)
-        # if not, scale the container out
-        if not isClipFullyVisible:
-            stepsFromCenter = ceilInt(max(abs(cCol-clip.props["col"]), abs(cRow-clip.props["row"])))
-            stepGridW = stepsFromCenter * 2
-            ngridW = norm(stepGridW, (START_GRID_W, END_GRID_W))
-            newScaleTest = lerp((fromScale, toScale), ngridW)
-            newScale = newScaleTest if newScale is None or newScaleTest < newScale else newScale
+        stepsFromCenter = ceilInt(max(abs(cCol-clip.props["col"]), abs(cRow-clip.props["row"])))
+        stepGridW = (stepsFromCenter+1) * 2
+        newScaleTest = max(1.0, 1.0 * GRID_W / stepGridW)
+        newScale = newScaleTest if newScale is None or newScaleTest < newScale else newScale
 
         # after playing, add the neighbors not played or queued
         neighbors = clip.getGridNeighbors(clips, GRID_W, GRID_H)
@@ -148,9 +144,10 @@ while len(queuedIndices) > 0:
                 queuedIndicesSet.add(nindex)
 
     # scale container if necessary
-    if newScale is not None:
+    if newScale is not None and newScale < currentScale:
         container.vector.setTransform(scale=(newScale, newScale))
         container.vector.addKeyFrame("scale", ms, newScale, "sin")
+        currentScale = newScale
 
     # increment ms
     ms += msStep

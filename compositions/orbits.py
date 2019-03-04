@@ -42,6 +42,9 @@ START_GRID_W, START_GRID_H = tuple([int(v) for v in a.GRID.strip().split("x")])
 END_GRID_W, END_GRID_H = tuple([int(v) for v in a.END_GRID.strip().split("x")])
 GRID_W, GRID_H = (max(START_GRID_W, END_GRID_W), max(START_GRID_H, END_GRID_H))
 
+START_RINGS = int(START_GRID_W / 2)
+END_RINGS = int(END_GRID_W / 2)
+
 fromScale = 1.0 * GRID_W / START_GRID_W
 toScale = 1.0 * GRID_W / END_GRID_W
 
@@ -65,6 +68,16 @@ container.vector.setTransform(scale=(fromScale, fromScale))
 container.vector.addKeyFrame("scale", 0, fromScale, "sin")
 
 ms = a.PAD_START
+zoomStartMs = ms + a.BEAT_MS * START_RINGS
+ms = zoomStartMs
+zoomSteps = END_RINGS-START_RINGS
+for step in range(zoomSteps):
+    stepRing = START_RINGS + step + 1
+    stepGridW = stepRing * 2
+    stepZoomScale = 1.0 * GRID_W / stepGridW
+    stepMs = zoomStartMs + step * a.BEAT_MS
+    container.vector.addKeyFrame("scale", stepMs, stepZoomScale, "sin")
+    ms += a.BEAT_MS
 
 stepTime = logTime(stepTime, "Create plays/tweens")
 
