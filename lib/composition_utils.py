@@ -149,6 +149,8 @@ def processComposition(a, clips, videoDurationMs, sampler=None, stepTime=False, 
     print("Audio time: %s" % formatSeconds(audioDurationMs/1000.0))
     print("Total time: %s" % formatSeconds(durationMs/1000.0))
 
+    # sys.exit()
+
     # adjust frames if audio is longer than video
     totalFrames = msToFrame(durationMs, a.FPS) if durationMs > videoDurationMs else msToFrame(videoDurationMs, a.FPS)
     print("Total frames: %s" % totalFrames)

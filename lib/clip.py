@@ -138,11 +138,9 @@ class Vector:
             # we just passed the current ms
             elif kf["ms"] > ms:
 
-                # we're before the first keyframe, lerp from the original value
+                # we're before the first keyframe, just take the first keyframe value
                 if i <= 0:
-                    fromValue = value
-                    toValue = kf["value"]
-                    value = lerpEase((fromValue, toValue), 1.0*ms/kf["ms"], kf["easing"])
+                    value = kf["value"]
                     break
 
                 # lerp between the current and previous keyframe
@@ -212,6 +210,30 @@ class Vector:
         w, h = self.getSize(ms)
         alpha = self.getAlpha(ms) if alphaCheck else 1.0
         return (x+w) > 0 and (y+h) > 0 and x < containerW and y < containerH and alpha > 0
+
+    def plotKeyframes(self, name, dimension=None, additionalPlots=[]):
+        import matplotlib.pyplot as plt
+        keyframes = [k for k in self.keyframes if k["name"]==name and k["dimension"]==dimension]
+        keyframes = sorted(keyframes, key=lambda k: k["ms"])
+        for xs, ys in additionalPlots:
+            plt.plot(xs, ys)
+        for i, kf in enumerate(keyframes):
+            if i < 1:
+                continue
+            prev = keyframes[i-1]
+            if prev["ms"] >= kf["ms"]:
+                continue
+            s0 = prev["ms"]/1000.0
+            s1 = kf["ms"]/1000.0
+            steps = roundInt((s1 - s0) * 100)
+            xs = np.linspace(s0, s1, steps)
+            ys = []
+            for j in range(steps):
+                n = 1.0 * j / (steps-1)
+                value = lerpEase((prev["value"], kf["value"]), n, kf["easing"])
+                ys.append(value)
+            plt.plot(xs, ys)
+        plt.show()
 
     def setAlpha(self, alpha):
         self.alpha = alpha
@@ -350,17 +372,15 @@ class Clip:
         if not isSorted:
             clips = sorted(clips, key=lambda c: (c.props[dimRow], c.props[dimCol]))
 
-        neighborsIndices = [
-            (col, row-1), # N
-            (col+1, row), # E
-            (col, row+1), # S
-            (col-1, row)  # W
-        ]
-
         neighbors = []
-        for xi, yi in neighborsIndices:
-            if xi >= 0 and yi >= 0 and xi < gridW and yi < gridH:
-                neighbors.append(clips[int(yi*gridW+xi)])
+        for i in range(3):
+            for j in range(3):
+                ncol = col+i-1
+                nrow = row+j-1
+                # exclude self, or out of bounds
+                if ncol==col and nrow==row or not (0 <= ncol < gridW) or not (0 <= nrow < gridH):
+                    continue
+                neighbors.append(clips[nrow*gridW+ncol])
 
         return neighbors
 

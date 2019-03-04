@@ -34,8 +34,9 @@ parser.add_argument('-beat', dest="BEAT_MS", default=1024, type=int, help="Durat
 parser.add_argument('-beat0', dest="MIN_BEAT_MS", default=8, type=int, help="Minimum duration of beat")
 parser.add_argument('-kfd', dest="KEYS_FOR_DISTANCE", default="tsne,tsne2", help="Keys for determining distance between clips")
 parser.add_argument('-cscale', dest="CLIP_SCALE_AMOUNT", default=1.1, type=float, help="Amount to scale clip when playing")
-parser.add_argument('-maxa', dest="MAX_AUDIO_CLIPS", default=8192, type=int, help="Maximum number of audio clips to play")
-parser.add_argument('-keep', dest="KEEP_FIRST_AUDIO_CLIPS", default=1024, type=int, help="Ensure the middle x audio files play")
+parser.add_argument('-maxa', dest="MAX_AUDIO_CLIPS", default=-1, type=int, help="Maximum number of audio clips to play")
+parser.add_argument('-keep', dest="KEEP_FIRST_AUDIO_CLIPS", default=-1, type=int, help="Ensure the middle x audio files play")
+parser.add_argument('-msc', dest="MAX_SIMULTANEOUS_CLIPS", default=8, type=int, help="Max number of clips to play at the same time")
 a = parser.parse_args()
 parseVideoArgs(a)
 makeDirectories([a.OUTPUT_FRAME, a.OUTPUT_FILE, a.CACHE_DIR])
@@ -68,28 +69,22 @@ for i, clip in enumerate(clips):
 
 # queue the middle four
 playedIndicesSet = set([])
-queuedIndices = [c.props["index"] for c in clips[:4]]
-queuedIndicesSet = set(queuedIndices)
+queuedIndices = [(c.props["index"], (0.0, 0.0)) for c in clips[:4]]
+queuedIndicesSet = set([i[0] for i in queuedIndices])
 clips = sorted(clips, key=lambda c: c.props["index"])
 
-# initialize container scale
-container.vector.setTransform(scale=(fromScale, fromScale))
-container.vector.addKeyFrame("scale", 0, fromScale, "sin")
-
 ms = a.PAD_START
-ys = []
+scaleXs = [ms]
+scaleYs = [fromScale]
 currentScale = fromScale
 while len(queuedIndices) > 0:
 
     # play the next clip in queue
     queuedIndicesCount = len(queuedIndicesSet)
-    # ys.append(queuedIndicesCount)
 
     # determine volume and beat step based on number of clips in the queue
     divide = max(1.0, math.sqrt(queuedIndicesCount / 4.0))
     msStep = roundInt(1.0 * a.BEAT_MS * 2.0**(-divide))
-    # msStep = roundInt(1.0 * a.BEAT_MS / divide)
-    ys.append(msStep)
     msStep = lim(msStep, (a.MIN_BEAT_MS, a.BEAT_MS))
     nvolume = lim(1.0 / divide)
     volume = lerp(a.VOLUME_RANGE, nvolume)
@@ -97,7 +92,9 @@ while len(queuedIndices) > 0:
     numberOfClipsToDequeue = floorInt(math.sqrt(queuedIndicesCount)) if queuedIndicesCount > 4 else 1
     clipsToPlay = []
     for i in range(numberOfClipsToDequeue):
-        nextIndex = queuedIndices.pop(0)
+        if len(queuedIndices) <= 0:
+            break
+        nextIndex, _ = queuedIndices.pop(0)
         clip = clips[nextIndex]
         clipsToPlay.append(clip)
         # remove from queue and put in played
@@ -106,12 +103,12 @@ while len(queuedIndices) > 0:
 
     # for each clip to play
     newScale = None
-    for clip in clipsToPlay:
+    for i, clip in enumerate(clipsToPlay):
         # play clip
-        if clip.props["playAudio"]:
+        if i < a.MAX_SIMULTANEOUS_CLIPS:
             clip.queuePlay(ms, {
                 "dur": clip.props["audioDur"],
-                "volume": volume,
+                "volume": volume * (0.9 ** i), # simulaneous clips at slightly different volume
                 "fadeOut": clip.props["fadeOut"],
                 "fadeIn": clip.props["fadeIn"],
                 "pan": clip.props["pan"],
@@ -140,27 +137,34 @@ while len(queuedIndices) > 0:
         for n in neighbors:
             nindex = n.props["index"]
             if nindex not in queuedIndicesSet and nindex not in playedIndicesSet:
-                queuedIndices.append(nindex)
+                sortValue = distance(clip.props[DISTANCE_KEY_X], clip.props[DISTANCE_KEY_Y], n.props[DISTANCE_KEY_X], n.props[DISTANCE_KEY_Y])
+                queuedIndices.append((nindex, (n.props["nDistanceFromCenter"], sortValue)))
                 queuedIndicesSet.add(nindex)
+
+    # sort indices by distance from clip that invoked it
+    queuedIndices = sorted(queuedIndices, key=lambda k: k[1])
 
     # scale container if necessary
     if newScale is not None and newScale < currentScale:
-        container.vector.setTransform(scale=(newScale, newScale))
-        container.vector.addKeyFrame("scale", ms, newScale, "sin")
         currentScale = newScale
+        scaleXs.append(ms)
+        scaleYs.append(currentScale)
 
     # increment ms
     ms += msStep
 
-# import matplotlib.pyplot as plt
-# plt.hist(ys, bins=200)
-# # plt.bar(np.arange(len(ys)), ys)
-# plt.show()
+# tween container zoom between first two keyframes
+container.queueTween(scaleXs[0], scaleXs[1]-scaleXs[0], ("scale", scaleYs[0], scaleYs[1], "expIn"))
+
+# tween container zoom from second to last keyframe
+container.queueTween(scaleXs[1], scaleXs[-1]-scaleXs[1], ("scale", scaleYs[1], scaleYs[-1], "expOut"))
+
+# See how well the data maps to the tweened data
+# container.vector.plotKeyframes("scale", additionalPlots=[([x/1000.0 for x in scaleXs], scaleYs)])
 # sys.exit()
 
 stepTime = logTime(stepTime, "Create plays/tweens")
 
-container.vector.setTransform(scale=(1.0, 1.0))
 # sort frames
 container.vector.sortFrames()
 for clip in clips:
