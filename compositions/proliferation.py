@@ -30,7 +30,7 @@ parser = argparse.ArgumentParser()
 addVideoArgs(parser)
 parser.add_argument('-grid', dest="GRID", default="16x16", help="Size of grid")
 parser.add_argument('-grid1', dest="END_GRID", default="256x256", help="End size of grid")
-parser.add_argument('-beat', dest="BEAT_MS", default=1024, type=int, help="Duration of beat")
+parser.add_argument('-beat', dest="BEAT_MS", default=4096, type=int, help="Duration of beat")
 parser.add_argument('-beat0', dest="MIN_BEAT_MS", default=8, type=int, help="Minimum duration of beat")
 parser.add_argument('-kfd', dest="KEYS_FOR_DISTANCE", default="tsne,tsne2", help="Keys for determining distance between clips")
 parser.add_argument('-cscale', dest="CLIP_SCALE_AMOUNT", default=1.1, type=float, help="Amount to scale clip when playing")
@@ -136,9 +136,20 @@ while len(queuedIndices) > 0:
         neighbors = sorted(neighbors, key=lambda n: distance(clip.props[DISTANCE_KEY_X], clip.props[DISTANCE_KEY_Y], n.props[DISTANCE_KEY_X], n.props[DISTANCE_KEY_Y]))
         for n in neighbors:
             nindex = n.props["index"]
-            if nindex not in queuedIndicesSet and nindex not in playedIndicesSet:
-                sortValue = distance(clip.props[DISTANCE_KEY_X], clip.props[DISTANCE_KEY_Y], n.props[DISTANCE_KEY_X], n.props[DISTANCE_KEY_Y])
-                # queuedIndices.append((nindex, (n.props["nDistanceFromCenter"], sortValue)))
+            # already played; skip
+            if nindex in playedIndicesSet:
+                continue
+            sortValue = distance(clip.props[DISTANCE_KEY_X], clip.props[DISTANCE_KEY_Y], n.props[DISTANCE_KEY_X], n.props[DISTANCE_KEY_Y])
+            # already queued, check if this distance is closer than current entry
+            if nindex in queuedIndicesSet:
+                for j, entry in enumerate(queuedIndices):
+                    entryIndex, entrySortValue = entry
+                    if entryIndex==nindex:
+                        if sortValue < entrySortValue:
+                            queuedIndices[j] = (entryIndex, sortValue)
+                        break
+            # otherwise, add to queue
+            else:
                 queuedIndices.append((nindex, sortValue))
                 queuedIndicesSet.add(nindex)
 
@@ -155,10 +166,10 @@ while len(queuedIndices) > 0:
     ms += msStep
 
 # tween container zoom between first two keyframes
-container.queueTween(scaleXs[0], scaleXs[1]-scaleXs[0], ("scale", scaleYs[0], scaleYs[1], "expIn"))
+container.queueTween(scaleXs[0], scaleXs[1]-scaleXs[0], ("scale", scaleYs[0], scaleYs[1], "cubicIn"))
 
 # tween container zoom from second to last keyframe
-container.queueTween(scaleXs[1], scaleXs[-1]-scaleXs[1], ("scale", scaleYs[1], scaleYs[-1], "expOut"))
+container.queueTween(scaleXs[1], scaleXs[-1]-scaleXs[1], ("scale", scaleYs[1], scaleYs[-1], "cubicOut"))
 
 # See how well the data maps to the tweened data
 # container.vector.plotKeyframes("scale", additionalPlots=[([x/1000.0 for x in scaleXs], scaleYs)])
