@@ -72,16 +72,16 @@ class Vector:
     def getBlur(self, ms=None):
         return self.getPropValue("blur", ms=ms)
 
-    def getHeight(self, ms=None, parent=None):
-        return self.getSizeDimension(1, ms, parent)
+    def getHeight(self, ms=None, parent=None, props=None):
+        return self.getSizeDimension(1, ms, parent, props)
 
     def getPos(self, ms=None):
         return (self.getX(ms), self.getY(ms))
 
-    def getPosDimension(self, i, ms=None, parent=None):
-        d = self.getPropValue("pos", i, ms)
+    def getPosDimension(self, i, ms=None, parent=None, props=None):
+        d = props["pos"][i] if props is not None and "pos" in props else self.getPropValue("pos", i, ms)
         # account for origin
-        length = self.getPropValue("size", i, ms)
+        length = props["size"][i] if props is not None and "size" in props else self.getPropValue("size", i, ms)
         origin = self.origin[i]
         d -= length * origin
         # account for scale
@@ -158,12 +158,12 @@ class Vector:
     def getProps(self):
         return self.getPropsAtTime(None)
 
-    def getPropsAtTime(self, ms, parent=None):
+    def getPropsAtTime(self, ms, parent=None, props=None):
         props = {
-            "x": self.getX(ms, parent),
-            "y": self.getY(ms, parent),
-            "width": self.getWidth(ms, parent),
-            "height": self.getHeight(ms, parent),
+            "x": self.getX(ms, parent, props),
+            "y": self.getY(ms, parent, props),
+            "width": self.getWidth(ms, parent, props),
+            "height": self.getHeight(ms, parent, props),
             "alpha": self.getAlpha(ms)
             # "rotation": self.getRotation(ms),
             # "blur": self.getBlur(ms)
@@ -182,22 +182,23 @@ class Vector:
     def getSize(self, ms=None):
         return (self.getWidth(ms), self.getHeight(ms))
 
-    def getSizeDimension(self, i, ms=None, parent=None):
-        d = self.getPropValue("size", i, ms) * self.getPropValue("scale", i, ms)
+    def getSizeDimension(self, i, ms=None, parent=None, props=None):
+        d = props["size"][i] if props is not None and "size" in props else self.getPropValue("size", i, ms)
+        d *= self.getPropValue("scale", i, ms)
         if parent is not None:
             d *= parent["scale"][i]
         elif self.parent is not None:
             d *= self.parent.getPropValue("scale", i, ms)
         return d
 
-    def getWidth(self, ms=None, parent=None):
-        return self.getSizeDimension(0, ms, parent)
+    def getWidth(self, ms=None, parent=None, props=None):
+        return self.getSizeDimension(0, ms, parent, props)
 
-    def getX(self, ms=None, parent=None):
-        return self.getPosDimension(0, ms, parent)
+    def getX(self, ms=None, parent=None, props=None):
+        return self.getPosDimension(0, ms, parent, props)
 
-    def getY(self, ms=None, parent=None):
-        return self.getPosDimension(1, ms, parent)
+    def getY(self, ms=None, parent=None, props=None):
+        return self.getPosDimension(1, ms, parent, props)
 
     def isFullyVisible(self, containerW, containerH, ms=None, alphaCheck=True):
         x, y = self.getPos(ms)
@@ -436,7 +437,7 @@ class Clip:
     def setVector(self, vector):
         self.vector = Vector() if vector is None else vector
 
-    def toDict(self, ms=None, containerW=None, containerH=None, parent=None):
+    def toDict(self, ms=None, containerW=None, containerH=None, parent=None, props=None):
         props = self.props.copy()
         t = self.getClipTime(ms)
         props.update({
@@ -444,7 +445,7 @@ class Clip:
             "tn": norm(t, (self.start, self.start+self.dur), limit=True)
         })
         props["zindex"] = self.props["zindex"] if "zindex" in props else self.props["index"]+1
-        props.update(self.vector.getPropsAtTime(ms, parent))
+        props.update(self.vector.getPropsAtTime(ms, parent, props))
         # update properties if not visible
         if containerW is not None and containerH is not None:
             isVisible = isClipVisible(props, containerW, containerH)
