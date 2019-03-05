@@ -69,7 +69,7 @@ for i, clip in enumerate(clips):
 
 # queue the middle four
 playedIndicesSet = set([])
-queuedIndices = [(c.props["index"], (0.0, 0.0)) for c in clips[:4]]
+queuedIndices = [(c.props["index"], 0.0) for c in clips[:4]]
 queuedIndicesSet = set([i[0] for i in queuedIndices])
 clips = sorted(clips, key=lambda c: c.props["index"])
 
@@ -138,7 +138,8 @@ while len(queuedIndices) > 0:
             nindex = n.props["index"]
             if nindex not in queuedIndicesSet and nindex not in playedIndicesSet:
                 sortValue = distance(clip.props[DISTANCE_KEY_X], clip.props[DISTANCE_KEY_Y], n.props[DISTANCE_KEY_X], n.props[DISTANCE_KEY_Y])
-                queuedIndices.append((nindex, (n.props["nDistanceFromCenter"], sortValue)))
+                # queuedIndices.append((nindex, (n.props["nDistanceFromCenter"], sortValue)))
+                queuedIndices.append((nindex, sortValue))
                 queuedIndicesSet.add(nindex)
 
     # sort indices by distance from clip that invoked it
