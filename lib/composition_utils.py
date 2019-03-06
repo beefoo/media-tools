@@ -95,9 +95,10 @@ def initGridComposition(a, stepTime=False):
             if offsetGridX <= s["gridX"] < (offsetGridX + maxGridW) and offsetGridY <= s["gridY"] < (offsetGridY+maxGridH):
                 subset.append(s)
         samples = subset[:]
+        sampleCount = len(samples)
         gridW = maxGridW
         gridH = maxGridH
-        print("Reduced grid to %s x %s = %s" % (maxGridW, maxGridH, formatNumber(len(samples))))
+        print("Reduced grid to %s x %s = %s" % (maxGridW, maxGridH, formatNumber(sampleCount)))
 
     # Sort by grid
     samples = sorted(samples, key=lambda s: (s["gridY"], s["gridX"]))

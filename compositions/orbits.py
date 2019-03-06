@@ -30,7 +30,7 @@ parser = argparse.ArgumentParser()
 addVideoArgs(parser)
 parser.add_argument('-grid', dest="GRID", default="256x256", help="Size of grid")
 parser.add_argument('-grid0', dest="START_GRID", default="32x32", help="Start size of grid")
-parser.add_argument('-grid1', dest="END_GRID", default="128x128", help="End size of grid")
+parser.add_argument('-grid1', dest="END_GRID", default="64x64", help="End size of grid")
 parser.add_argument('-beat', dest="BEAT_MS", default=1024, type=int, help="Duration of beat")
 parser.add_argument('-maxa', dest="MAX_AUDIO_CLIPS", default=-1, type=int, help="Maximum number of audio clips to play")
 parser.add_argument('-keep', dest="KEEP_FIRST_AUDIO_CLIPS", default=-1, type=int, help="Ensure the middle x audio files play")
@@ -65,7 +65,7 @@ def ringComparison(s):
 
 for step in range(END_RINGS):
     ring = step + 1
-    ringOffset = getOffset(a.BEAT_DIVISIONS, a.BEAT_DIVISIONS % step) if step > 0 else 0
+    ringOffset = getOffset(a.BEAT_DIVISIONS, step % a.BEAT_DIVISIONS)
     ringOffsetMs = roundInt(ringOffset * a.BEAT_MS)
     ringStartMs = a.PAD_START + step * a.BEAT_MS + ringOffsetMs
     ringSamples = [s for s in samples if s["ring"]==ring]
@@ -104,11 +104,14 @@ for step in range(zoomSteps):
 # pprint(list(zip(scaleXs, scaleYs)))
 # sys.exit()
 
-# tween container zoom between first two keyframes
-container.queueTween(scaleXs[0], scaleXs[1]-scaleXs[0], ("scale", scaleYs[0], scaleYs[1], "quintIn"))
+# # tween container zoom between first two keyframes
+# container.queueTween(scaleXs[0], scaleXs[2]-scaleXs[0], ("scale", scaleYs[0], scaleYs[2], "cubicIn"))
+#
+# # tween container zoom from second to last keyframe
+# container.queueTween(scaleXs[2], scaleXs[-1]-scaleXs[2], ("scale", scaleYs[2], scaleYs[-1], "cubicOut"))
 
-# tween container zoom from second to last keyframe
-container.queueTween(scaleXs[1], scaleXs[-1]-scaleXs[1], ("scale", scaleYs[1], scaleYs[-1], "quintOut"))
+tweenStartMs = roundInt(lerp((scaleXs[0], scaleXs[1]), 0.5))
+container.queueTween(tweenStartMs, scaleXs[-1]-tweenStartMs, ("scale", scaleYs[0], scaleYs[-1], "sin"))
 
 # See how well the data maps to the tweened data
 # container.vector.plotKeyframes("scale", additionalPlots=[([x/1000.0 for x in scaleXs], scaleYs)])
@@ -172,14 +175,15 @@ def clipToNpArrOrbits(clip, ms, containerW, containerH, precision, parent):
         if ringIndex >= ringCellCount:
             print("Error: ring index out of bounds (%s >= %s)" % (ringIndex, ringCellCount))
 
-        msRing = ms % ringDurMs # amount of time into the progress of the rotation
+        elapsedMs = ms - rotateStartMs
+        msRing = elapsedMs % ringDurMs # amount of time into the progress of the rotation
         nRingProgress = 1.0 * msRing / ringDurMs # normalized progress of rotation
         cellOffset = nRingProgress * ringCellCount
-        currentIndex = (ringIndex + cellOffset) % ringCellCount # current cell index in the ring
+        currentIndex = (1.0 * ringIndex + cellOffset) % ringCellCount # current cell index in the ring
 
         # lerp between two cell spaces
-        i0 = floor(currentIndex)
-        i1 = ceil(currentIndex)
+        i0 = floorInt(currentIndex)
+        i1 = ceilInt(currentIndex)
         lerpValue = currentIndex - i0
         lerpValue = ease(lerpValue, "cubicInOut")
         x0, y0 = getRingCellPos(i0, ringCellCount, ringX, ringY, cellW, cellH)
@@ -198,7 +202,7 @@ def clipToNpArrOrbits(clip, ms, containerW, containerH, precision, parent):
             alpha = lerp((alpha, 1.0), nalpha)
 
     precisionMultiplier = int(10 ** precision)
-    props = clip.toDict(ms, containerW, containerH, parent, props=ringProps)
+    props = clip.toDict(ms, containerW, containerH, parent, customProps=ringProps)
 
     return np.array([
         roundInt(props["x"] * precisionMultiplier),

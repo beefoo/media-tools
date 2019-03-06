@@ -72,16 +72,16 @@ class Vector:
     def getBlur(self, ms=None):
         return self.getPropValue("blur", ms=ms)
 
-    def getHeight(self, ms=None, parent=None, props=None):
-        return self.getSizeDimension(1, ms, parent, props)
+    def getHeight(self, ms=None, parent=None, customProps=None):
+        return self.getSizeDimension(1, ms, parent, customProps)
 
     def getPos(self, ms=None):
         return (self.getX(ms), self.getY(ms))
 
-    def getPosDimension(self, i, ms=None, parent=None, props=None):
-        d = props["pos"][i] if props is not None and "pos" in props else self.getPropValue("pos", i, ms)
+    def getPosDimension(self, i, ms=None, parent=None, customProps=None):
+        d = customProps["pos"][i] if customProps is not None and "pos" in customProps else self.getPropValue("pos", i, ms)
         # account for origin
-        length = props["size"][i] if props is not None and "size" in props else self.getPropValue("size", i, ms)
+        length = customProps["size"][i] if customProps is not None and "size" in customProps else self.getPropValue("size", i, ms)
         origin = self.origin[i]
         d -= length * origin
         # account for scale
@@ -158,12 +158,12 @@ class Vector:
     def getProps(self):
         return self.getPropsAtTime(None)
 
-    def getPropsAtTime(self, ms, parent=None, props=None):
+    def getPropsAtTime(self, ms, parent=None, customProps=None):
         props = {
-            "x": self.getX(ms, parent, props),
-            "y": self.getY(ms, parent, props),
-            "width": self.getWidth(ms, parent, props),
-            "height": self.getHeight(ms, parent, props),
+            "x": self.getX(ms, parent, customProps),
+            "y": self.getY(ms, parent, customProps),
+            "width": self.getWidth(ms, parent, customProps),
+            "height": self.getHeight(ms, parent, customProps),
             "alpha": self.getAlpha(ms)
             # "rotation": self.getRotation(ms),
             # "blur": self.getBlur(ms)
@@ -182,8 +182,8 @@ class Vector:
     def getSize(self, ms=None):
         return (self.getWidth(ms), self.getHeight(ms))
 
-    def getSizeDimension(self, i, ms=None, parent=None, props=None):
-        d = props["size"][i] if props is not None and "size" in props else self.getPropValue("size", i, ms)
+    def getSizeDimension(self, i, ms=None, parent=None, customProps=None):
+        d = customProps["size"][i] if customProps is not None and "size" in customProps else self.getPropValue("size", i, ms)
         d *= self.getPropValue("scale", i, ms)
         if parent is not None:
             d *= parent["scale"][i]
@@ -191,14 +191,14 @@ class Vector:
             d *= self.parent.getPropValue("scale", i, ms)
         return d
 
-    def getWidth(self, ms=None, parent=None, props=None):
-        return self.getSizeDimension(0, ms, parent, props)
+    def getWidth(self, ms=None, parent=None, customProps=None):
+        return self.getSizeDimension(0, ms, parent, customProps)
 
-    def getX(self, ms=None, parent=None, props=None):
-        return self.getPosDimension(0, ms, parent, props)
+    def getX(self, ms=None, parent=None, customProps=None):
+        return self.getPosDimension(0, ms, parent, customProps)
 
-    def getY(self, ms=None, parent=None, props=None):
-        return self.getPosDimension(1, ms, parent, props)
+    def getY(self, ms=None, parent=None, customProps=None):
+        return self.getPosDimension(1, ms, parent, customProps)
 
     def isFullyVisible(self, containerW, containerH, ms=None, alphaCheck=True):
         x, y = self.getPos(ms)
@@ -437,7 +437,7 @@ class Clip:
     def setVector(self, vector):
         self.vector = Vector() if vector is None else vector
 
-    def toDict(self, ms=None, containerW=None, containerH=None, parent=None, props=None):
+    def toDict(self, ms=None, containerW=None, containerH=None, parent=None, customProps=None):
         props = self.props.copy()
         t = self.getClipTime(ms)
         props.update({
@@ -445,7 +445,7 @@ class Clip:
             "tn": norm(t, (self.start, self.start+self.dur), limit=True)
         })
         props["zindex"] = self.props["zindex"] if "zindex" in props else self.props["index"]+1
-        props.update(self.vector.getPropsAtTime(ms, parent, props))
+        props.update(self.vector.getPropsAtTime(ms, parent, customProps))
         # update properties if not visible
         if containerW is not None and containerH is not None:
             isVisible = isClipVisible(props, containerW, containerH)
@@ -484,7 +484,7 @@ def clipsToNpArr(clips, ms=None, containerW=None, containerH=None, precision=3, 
     arr = np.zeros((clipCount, propertyCount), dtype=np.int32)
     for i, clip in enumerate(clips):
         if customClipToArrFunction is not None:
-            customClipToArrFunction(clip, ms, containerW, containerH, precision, parentProps)
+            arr[clip.props["index"]] = customClipToArrFunction(clip, ms, containerW, containerH, precision, parentProps)
         else:
             arr[clip.props["index"]] = clip.toNpArr(ms, containerW, containerH, precision, parentProps)
     # stepTime = logTime(startTime, "Step %s" % ms)
