@@ -53,7 +53,7 @@ toScale = 1.0 * gridW / endGridW
 # set clip alpha to min by default
 for i, s in enumerate(samples):
     samples[i]["alpha"] = a.ALPHA_RANGE[0]
-    samples[i]["ring"] = ceilInt(max(abs(cCol-s["col"]), abs(cRow-s["row"])))
+    samples[i]["ring"] = getRing(s["col"], s["row"], cCol, cRow)
 
 def ringComparison(s):
     x = s["col"]
@@ -85,8 +85,7 @@ for i, clip in enumerate(clips):
 # initialize container scale
 container.vector.addKeyFrame("scale", 0, fromScale)
 
-ms = a.PAD_START
-zoomStartMs = ms + a.BEAT_MS * START_RINGS
+zoomStartMs = a.PAD_START + a.BEAT_MS * START_RINGS
 ms = zoomStartMs
 zoomSteps = END_RINGS-START_RINGS
 scaleXs = [a.PAD_START]
@@ -117,13 +116,13 @@ container.queueTween(scaleXs[1], scaleXs[-1]-scaleXs[1], ("scale", scaleYs[1], s
 
 stepTime = logTime(stepTime, "Create plays/tweens")
 
-container.vector.setTransform(scale=(1.0, 1.0))
 # sort frames
 container.vector.sortFrames()
 for clip in clips:
     clip.vector.sortFrames()
 
 def getRingCellPos(index, count, ringX, ringY, cellW, cellH):
+    index = index % count
     x = ringX
     y = ringY
     quarter = int(count/4)

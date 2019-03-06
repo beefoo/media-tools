@@ -59,6 +59,9 @@ def getOffset(count, index):
             break
     return foundOffset
 
+def getRing(col, row, cCol, cRow):
+    return ceilInt(max(abs(cCol-col), abs(cRow-row)))
+
 def initGridComposition(a, stepTime=False):
     startGridW, startGridH = tuple([int(v) for v in a.START_GRID.strip().split("x")])
     endGridW, endGridH = tuple([int(v) for v in a.END_GRID.strip().split("x")])
