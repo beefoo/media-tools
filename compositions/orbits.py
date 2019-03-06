@@ -34,7 +34,7 @@ parser.add_argument('-grid1', dest="END_GRID", default="64x64", help="End size o
 parser.add_argument('-beat', dest="BEAT_MS", default=1024, type=int, help="Duration of beat")
 parser.add_argument('-maxa', dest="MAX_AUDIO_CLIPS", default=-1, type=int, help="Maximum number of audio clips to play")
 parser.add_argument('-keep', dest="KEEP_FIRST_AUDIO_CLIPS", default=-1, type=int, help="Ensure the middle x audio files play")
-parser.add_argument('-bdivision', dest="BEAT_DIVISIONS", default=16, type=int, help="Number of times to divide each beat")
+parser.add_argument('-bdivision', dest="BEAT_DIVISIONS", default=4, type=int, help="Number of times to divide each beat")
 a = parser.parse_args()
 parseVideoArgs(a)
 makeDirectories([a.OUTPUT_FRAME, a.OUTPUT_FILE, a.CACHE_DIR])
@@ -63,10 +63,12 @@ def ringComparison(s):
     else:
         return (1, -x, -y)
 
+subbeats = 2**a.BEAT_DIVISIONS
 for step in range(END_RINGS):
     ring = step + 1
-    ringOffset = getOffset(a.BEAT_DIVISIONS, step % a.BEAT_DIVISIONS)
+    ringOffset = getOffset(subbeats, step % subbeats)
     ringOffsetMs = roundInt(ringOffset * a.BEAT_MS)
+    print(ringOffsetMs)
     ringStartMs = a.PAD_START + step * a.BEAT_MS + ringOffsetMs
     ringSamples = [s for s in samples if s["ring"]==ring]
     ringSamples = sorted(ringSamples, key=ringComparison)

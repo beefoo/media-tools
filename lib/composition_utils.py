@@ -44,16 +44,13 @@ def getOffset(count, index):
     currentIndex = 0
     foundOffset = 0
     for i in range(divisions):
-        add = 1
-        offset = 0
-        if i > 0:
-            add = 2 ** (i-1)
-            offset = 2 ** (-i)
+        add = 2 ** i
+        offset = 2 ** (-(i+1))
         for j in range(add):
-            offset += offset * 2 * j
+            thisOffset = offset + offset * 2 * j
             currentIndex += 1
             if index == currentIndex:
-                foundOffset = offset
+                foundOffset = thisOffset
                 break
         if foundOffset > 0:
             break
