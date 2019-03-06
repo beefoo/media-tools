@@ -28,8 +28,9 @@ from lib.video_utils import *
 # input
 parser = argparse.ArgumentParser()
 addVideoArgs(parser)
-parser.add_argument('-grid', dest="GRID", default="32x32", help="Size of grid")
-parser.add_argument('-grid1', dest="END_GRID", default="256x256", help="End size of grid")
+parser.add_argument('-grid', dest="GRID", default="256x256", help="Size of grid")
+parser.add_argument('-grid0', dest="START_GRID", default="32x32", help="Start size of grid")
+parser.add_argument('-grid1', dest="END_GRID", default="128x128", help="End size of grid")
 parser.add_argument('-beat', dest="BEAT_MS", default=1024, type=int, help="Duration of beat")
 parser.add_argument('-maxa', dest="MAX_AUDIO_CLIPS", default=-1, type=int, help="Maximum number of audio clips to play")
 parser.add_argument('-keep', dest="KEEP_FIRST_AUDIO_CLIPS", default=-1, type=int, help="Ensure the middle x audio files play")
@@ -38,21 +39,16 @@ a = parser.parse_args()
 parseVideoArgs(a)
 makeDirectories([a.OUTPUT_FRAME, a.OUTPUT_FILE, a.CACHE_DIR])
 
-# parse arguments
-START_GRID_W, START_GRID_H = tuple([int(v) for v in a.GRID.strip().split("x")])
-END_GRID_W, END_GRID_H = tuple([int(v) for v in a.END_GRID.strip().split("x")])
-GRID_W, GRID_H = (max(START_GRID_W, END_GRID_W), max(START_GRID_H, END_GRID_H))
-
-START_RINGS = int(START_GRID_W / 2)
-END_RINGS = int(END_GRID_W / 2)
-
-fromScale = 1.0 * GRID_W / START_GRID_W
-toScale = 1.0 * GRID_W / END_GRID_W
-
 # Get video data
 startTime = logTime()
 stepTime = startTime
-samples, sampleCount, container, sampler, stepTime, cCol, cRow = initGridComposition(a, GRID_W, GRID_H, stepTime)
+samples, sampleCount, container, sampler, stepTime, cCol, cRow, gridW, gridH, startGridW, startGridH, endGridW, endGridH = initGridComposition(a, stepTime)
+
+START_RINGS = int(startGridW / 2)
+END_RINGS = int(endGridW / 2)
+
+fromScale = 1.0 * gridW / startGridW
+toScale = 1.0 * gridW / endGridW
 
 # set clip alpha to min by default
 for i, s in enumerate(samples):
@@ -98,7 +94,7 @@ scaleYs = [fromScale]
 for step in range(zoomSteps):
     stepRing = START_RINGS + step + 1
     stepGridW = stepRing * 2
-    stepZoomScale = 1.0 * GRID_W / stepGridW
+    stepZoomScale = 1.0 * gridW / stepGridW
     stepMs = zoomStartMs + step * a.BEAT_MS
     # ease = "sin" if step > 0 else "quintIn"
     # container.vector.addKeyFrame("scale", stepMs, stepZoomScale, ease)
@@ -147,6 +143,8 @@ def getRingCellPos(index, count, ringX, ringY, cellW, cellH):
 
 # custom clip to numpy array function to override default tweening logic
 def clipToNpArrOrbits(clip, ms, containerW, containerH, precision, parent):
+    global gridW
+    global gridH
     rotateStartMs = clip.props["rotateStartMs"]
     alpha = clip.props["alpha"]
     ringProps = None
@@ -159,8 +157,6 @@ def clipToNpArrOrbits(clip, ms, containerW, containerH, precision, parent):
         rotateDurMs = clip.props["rotateDurMs"]
         ringIndex = clip.props["ringIndex"]
 
-        gridW = GRID_W
-        gridH = GRID_H
         cellW = 1.0 * containerW / gridW
         cellH = 1.0 * containerH / gridH
         marginX = (cellW-clipW) * 0.5

@@ -31,6 +31,7 @@ addVideoArgs(parser)
 parser.add_argument('-translate', dest="TRANSLATE_AMOUNT", default=0.8, type=float, help="Amount to translate clip as a percentage of minimum dimension")
 parser.add_argument('-scale', dest="SCALE_AMOUNT", default=1.33, type=float, help="Amount to scale clip")
 parser.add_argument('-grid', dest="GRID", default="256x256", help="Size of grid")
+parser.add_argument('-grid0', dest="START_GRID", default="128x128", help="Start size of grid")
 parser.add_argument('-grid1', dest="END_GRID", default="32x32", help="End size of grid")
 parser.add_argument('-steps', dest="STEPS", default=16, type=int, help="Number of waves/beats")
 parser.add_argument('-wd', dest="WAVE_DUR", default=8000, type=int, help="Wave duration in milliseconds")
@@ -42,16 +43,13 @@ parseVideoArgs(a)
 makeDirectories([a.OUTPUT_FRAME, a.OUTPUT_FILE, a.CACHE_DIR])
 
 # parse arguments
-START_GRID_W, START_GRID_H = tuple([int(v) for v in a.GRID.strip().split("x")])
-END_GRID_W, END_GRID_H = tuple([int(v) for v in a.END_GRID.strip().split("x")])
-GRID_W, GRID_H = (max(START_GRID_W, END_GRID_W), max(START_GRID_H, END_GRID_H))
 ZOOM_DUR = a.STEPS * a.BEAT_DUR
 ZOOM_EASE = "cubicInOut"
 
 # Get video data
 startTime = logTime()
 stepTime = startTime
-samples, sampleCount, container, sampler, stepTime, cCol, cRow = initGridComposition(a, GRID_W, GRID_H, stepTime)
+samples, sampleCount, container, sampler, stepTime, cCol, cRow, gridW, gridH, startGridW, startGridH, endGridW, endGridH = initGridComposition(a, stepTime)
 
 for i, s in enumerate(samples):
     # play in order: center first, clockwise
@@ -87,8 +85,8 @@ for i, clip in enumerate(clips):
     clip.vector.setParent(container.vector)
 
 ms = a.PAD_START
-fromScale = 1.0 * GRID_W / START_GRID_W
-toScale = 1.0 * GRID_W / END_GRID_W
+fromScale = 1.0 * gridW / startGridW
+toScale = 1.0 * gridW / endGridW
 container.queueTween(ms, ZOOM_DUR, ("scale", fromScale, toScale, ZOOM_EASE))
 
 for step in range(a.STEPS):

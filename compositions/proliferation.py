@@ -28,8 +28,9 @@ from lib.video_utils import *
 # input
 parser = argparse.ArgumentParser()
 addVideoArgs(parser)
-parser.add_argument('-grid', dest="GRID", default="16x16", help="Size of grid")
-parser.add_argument('-grid1', dest="END_GRID", default="256x256", help="End size of grid")
+parser.add_argument('-grid', dest="GRID", default="256x256", help="Size of grid")
+parser.add_argument('-grid0', dest="START_GRID", default="16x16", help="Start size of grid")
+parser.add_argument('-grid1', dest="END_GRID", default="128x128", help="End size of grid")
 parser.add_argument('-beat', dest="BEAT_MS", default=4096, type=int, help="Duration of beat")
 parser.add_argument('-beat0', dest="MIN_BEAT_MS", default=8, type=int, help="Minimum duration of beat")
 parser.add_argument('-kfd', dest="KEYS_FOR_DISTANCE", default="tsne,tsne2", help="Keys for determining distance between clips")
@@ -42,18 +43,15 @@ parseVideoArgs(a)
 makeDirectories([a.OUTPUT_FRAME, a.OUTPUT_FILE, a.CACHE_DIR])
 
 # parse arguments
-START_GRID_W, START_GRID_H = tuple([int(v) for v in a.GRID.strip().split("x")])
-END_GRID_W, END_GRID_H = tuple([int(v) for v in a.END_GRID.strip().split("x")])
-GRID_W, GRID_H = (max(START_GRID_W, END_GRID_W), max(START_GRID_H, END_GRID_H))
 DISTANCE_KEY_X, DISTANCE_KEY_Y = tuple([v for v in a.KEYS_FOR_DISTANCE.strip().split(",")])
-
-fromScale = 1.0 * GRID_W / START_GRID_W
-toScale = 1.0 * GRID_W / END_GRID_W
 
 # Get video data
 startTime = logTime()
 stepTime = startTime
-samples, sampleCount, container, sampler, stepTime, cCol, cRow = initGridComposition(a, GRID_W, GRID_H, stepTime)
+samples, sampleCount, container, sampler, stepTime, cCol, cRow, gridW, gridH, startGridW, startGridH, endGridW, endGridH = initGridComposition(a, stepTime)
+
+fromScale = 1.0 * gridW / startGridW
+toScale = 1.0 * gridW / endGridW
 
 samples = sorted(samples, key=lambda s: (s["distanceFromCenter"], -s["clarity"]))
 
@@ -127,11 +125,11 @@ while len(queuedIndices) > 0:
 
         stepsFromCenter = ceilInt(max(abs(cCol-clip.props["col"]), abs(cRow-clip.props["row"])))
         stepGridW = (stepsFromCenter+1) * 2
-        newScaleTest = max(1.0, 1.0 * GRID_W / stepGridW)
+        newScaleTest = max(1.0, 1.0 * gridW / stepGridW)
         newScale = newScaleTest if newScale is None or newScaleTest < newScale else newScale
 
         # after playing, add the neighbors not played or queued
-        neighbors = clip.getGridNeighbors(clips, GRID_W, GRID_H)
+        neighbors = clip.getGridNeighbors(clips, gridW, gridH)
         # sort neighbors by grid distance
         neighbors = sorted(neighbors, key=lambda n: distance(clip.props[DISTANCE_KEY_X], clip.props[DISTANCE_KEY_Y], n.props[DISTANCE_KEY_X], n.props[DISTANCE_KEY_Y]))
         for n in neighbors:

@@ -59,7 +59,11 @@ def getOffset(count, index):
             break
     return foundOffset
 
-def initGridComposition(a, gridW, gridH, stepTime=False):
+def initGridComposition(a, stepTime=False):
+    startGridW, startGridH = tuple([int(v) for v in a.START_GRID.strip().split("x")])
+    endGridW, endGridH = tuple([int(v) for v in a.END_GRID.strip().split("x")])
+    gridW, gridH = tuple([int(v) for v in a.GRID.strip().split("x")])
+
     _, samples = readCsv(a.INPUT_FILE)
     stepTime = logTime(stepTime, "Read CSV")
     sampleCount = len(samples)
@@ -78,6 +82,19 @@ def initGridComposition(a, gridW, gridH, stepTime=False):
         print("Too many samples (%s), limiting to %s" % (sampleCount, gridCount))
         samples = samples[:gridCount]
         sampleCount = gridCount
+
+    # further reduce sample size if grid is larger than max grid in composition
+    maxGridW, maxGridH = (max(startGridW, endGridW), max(startGridH, endGridH))
+    offsetGridX, offsetGridY = (int((gridW-maxGridW)/2), int((gridH-maxGridH)/2))
+    if offsetGridX > 0 or offsetGridY > 0:
+        subset = []
+        for s in samples:
+            if offsetGridX <= s["gridX"] < (offsetGridX + maxGridW) and offsetGridY <= s["gridY"] < (offsetGridY+maxGridH):
+                subset.append(s)
+        samples = subset[:]
+        gridW = maxGridW
+        gridH = maxGridH
+        print("Reduced grid to %s x %s = %s" % (maxGridW, maxGridH, formatNumber(len(samples))))
 
     # Sort by grid
     samples = sorted(samples, key=lambda s: (s["gridY"], s["gridX"]))
@@ -116,7 +133,7 @@ def initGridComposition(a, gridW, gridH, stepTime=False):
             for i, s in enumerate(samples):
                 samples[i]["alpha"] = 1.0
 
-    return (samples, sampleCount, container, sampler, stepTime, cCol, cRow)
+    return (samples, sampleCount, container, sampler, stepTime, cCol, cRow, gridW, gridH, startGridW, startGridH, endGridW, endGridH)
 
 def limitAudioClips(samples, maxAudioClips, keyName, invert=False, keepFirst=64, multiplier=10000, easing="quartOut", seed=3):
     indicesToKeep = []
