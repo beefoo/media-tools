@@ -68,7 +68,6 @@ for step in range(END_RINGS):
     ring = step + 1
     ringOffset = getOffset(subbeats, step % subbeats)
     ringOffsetMs = roundInt(ringOffset * a.BEAT_MS)
-    print(ringOffsetMs)
     ringStartMs = a.PAD_START + step * a.BEAT_MS + ringOffsetMs
     ringSamples = [s for s in samples if s["ring"]==ring]
     ringSamples = sorted(ringSamples, key=ringComparison)
