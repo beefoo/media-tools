@@ -11,6 +11,8 @@ def addGridPositions(clips, cols, width, height, offsetX=0, offsetY=0, marginX=0
     rows = ceilInt(1.0 * len(clips) / cols)
     cellW = 1.0 * width / cols
     cellH = 1.0 * height / rows
+    marginX *= cellW
+    marginY *= cellW
     for i, c in enumerate(clips):
         row = int(i / cols)
         col = i % cols
@@ -103,7 +105,7 @@ def initGridComposition(a, stepTime=False):
     samples = addIndices(samples)
     samples = prependAll(samples, ("filename", a.MEDIA_DIRECTORY))
     aspectRatio = (1.0*a.HEIGHT/a.WIDTH)
-    samples = addGridPositions(samples, gridW, a.WIDTH, a.HEIGHT, marginX=a.CLIP_MARGIN, marginY=(a.CLIP_MARGIN*aspectRatio))
+    samples = addGridPositions(samples, gridW, a.WIDTH, a.HEIGHT, marginX=a.CLIP_MARGIN, marginY=a.CLIP_MARGIN)
     if a.NOISE > 0:
         samples = addPositionNoise(samples, (-a.NOISE, a.NOISE), (-a.NOISE*aspectRatio, a.NOISE*aspectRatio), a.RANDOM_SEED+3)
 
