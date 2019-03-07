@@ -76,6 +76,7 @@ for step in range(END_RINGS):
         samples[sindex]["ringIndex"] = j
         samples[sindex]["rotateStartMs"] = ringStartMs
         samples[sindex]["rotateDurMs"] = a.BEAT_MS
+        samples[sindex]["rotateEndMs"] = ringStartMs + a.BEAT_MS * (END_RINGS+1)
 
 clips = samplesToClips(samples)
 stepTime = logTime(stepTime, "Samples to clips")
@@ -87,7 +88,6 @@ for i, clip in enumerate(clips):
 container.vector.addKeyFrame("scale", 0, fromScale)
 
 zoomStartMs = a.PAD_START + a.BEAT_MS * START_RINGS
-ms = zoomStartMs
 zoomSteps = END_RINGS-START_RINGS
 scaleXs = [a.PAD_START]
 scaleYs = [fromScale]
@@ -100,7 +100,8 @@ for step in range(zoomSteps):
     # container.vector.addKeyFrame("scale", stepMs, stepZoomScale, ease)
     scaleXs.append(stepMs)
     scaleYs.append(stepZoomScale)
-    ms += a.BEAT_MS
+
+ms = max([s["rotateEndMs"] for s in samples]) + a.BEAT_MS
 
 # pprint(list(zip(scaleXs, scaleYs)))
 # sys.exit()
@@ -149,8 +150,16 @@ def clipToNpArrOrbits(clip, ms, containerW, containerH, precision, parent):
     global gridW
     global gridH
     rotateStartMs = clip.props["rotateStartMs"]
+    rotateEndMs = clip.props["rotateEndMs"]
     alpha = clip.props["alpha"]
     ringProps = None
+
+    # freeze when we're at the end
+    ended = False
+    _ms = ms
+    if ms > rotateEndMs:
+        ended = True
+        ms = rotateEndMs
 
     # only rotate if it's started already
     if ms >= rotateStartMs:
@@ -199,6 +208,14 @@ def clipToNpArrOrbits(clip, ms, containerW, containerH, precision, parent):
         if clipPlayMs < 0:
             clipPlayMs = ringDurMs + clipPlayMs
         if clipPlayMs <= msRing < (clipPlayMs+clipDur):
+            # fade out after we ended rotating
+            if ended:
+                elapsedAfterEnded = _ms - rotateEndMs
+                if elapsedAfterEnded < clipDur:
+                    msRing = (_ms - rotateStartMs) % ringDurMs
+                    msRing = lim(msRing, (clipPlayMs, clipPlayMs+clipDur))
+                else:
+                    msRing = clipPlayMs+clipDur
             nalpha = 1.0 - norm(msRing, (clipPlayMs, clipPlayMs+clipDur))
             alpha = lerp((alpha, 1.0), nalpha)
 
