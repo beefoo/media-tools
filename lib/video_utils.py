@@ -48,6 +48,8 @@ def addVideoArgs(parser):
     parser.add_argument('-alphar', dest="ALPHA_RANGE", default="0.33,1.0", help="Alpha range")
     parser.add_argument('-mcd', dest="MIN_CLIP_DUR", default=1500, type=int, help="Minumum clip duration")
     parser.add_argument('-noise', dest="NOISE", default=0.0, type=float, help="Amount of pixel noise to add")
+    parser.add_argument('-state0', dest="START_CLIP_STATES", default="", help="Path where starting clip states are")
+    parser.add_argument('-state1', dest="END_CLIP_STATES", default="", help="Path to output ending clip states")
 
 def alphaMask(im, mask):
     w, h = im.size
@@ -89,19 +91,23 @@ def clipsToFrame(p, clips, pixelData, precision=3, customClipToArrFunction=None)
     overwrite = p["overwrite"] if "overwrite" in p else False
     verbose = p["verbose"] if "verbose" in p else False
     debug = p["debug"] if "debug" in p else False
+    saveFrame = p["saveFrame"] if "saveFrame" in p else True
     im = None
     fileExists = os.path.isfile(filename) and not overwrite
+    clipArr = None
+
+    if not fileExists and saveFrame or not saveFrame:
+        clipArr = clipsToNpArr(clips, ms, width, height, precision, customClipToArrFunction=customClipToArrFunction)
 
     # frame already exists, read it directly
-    if not fileExists:
+    if not fileExists and saveFrame:
         im = Image.new(mode="RGBA", size=(width, height), color=(0, 0, 0, 255))
-        clipArr = clipsToNpArr(clips, ms, width, height, precision, customClipToArrFunction=customClipToArrFunction)
         im = clipsToFrameGPU(clipArr, width, height, pixelData, precision)
         im = im.convert("RGB")
         im.save(filename)
         print("Saved frame %s" % filename)
 
-    return True
+    return clipArr
 
 def clipsToFrameGPU(clips, width, height, clipsPixelData, precision=3):
     offset = 0
@@ -537,7 +543,7 @@ def processFrames(params, clips, clipsPixelData, threads=1, verbose=True, precis
     if threads > 1:
         pool = ThreadPool(threads)
         pclipsToFrame = partial(clipsToFrame, clips=clips, pixelData=clipsPixelData, precision=precision, customClipToArrFunction=customClipToArrFunction)
-        results = pool.map(pclipsToFrame, params)
+        pool.map(pclipsToFrame, params)
         pool.close()
         pool.join()
     else:

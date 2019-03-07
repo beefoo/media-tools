@@ -192,6 +192,13 @@ def processComposition(a, clips, videoDurationMs, sampler=None, stepTime=False, 
         })
     stepTime = logTime(stepTime, "Processed video frame sequence")
 
+    # output ending state
+    if len(a.END_CLIP_STATES) > 0:
+        lastFrameParam = videoFrames[-1].copy()
+        lastFrameParam.update({"saveFrame": False})
+        lastClipArr = clipsToFrame([lastFrameParam], clips, pixelData=None, precision=a.PRECISION, customClipToArrFunction=customClipToArrFunction)
+        saveCacheFile(a.END_CLIP_STATES, lastClipArr, overwrite=True)
+
     rebuildAudio = (not a.VIDEO_ONLY and (not os.path.isfile(a.AUDIO_OUTPUT_FILE) or a.OVERWRITE))
     rebuildVideo = (not a.AUDIO_ONLY and (len(videoFrames) > 0 and not os.path.isfile(videoFrames[-1]["filename"]) or a.OVERWRITE))
 

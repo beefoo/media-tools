@@ -6,23 +6,30 @@ from lib.math_utils import *
 import os
 import pickle
 
-def loadCacheFile(fn):
+def loadCacheFile(fn, compressed=True):
     loaded = False
     result = []
-    fn += ".bz2"
+    if compressed:
+        fn += ".bz2"
     if fn and os.path.isfile(fn):
         print("Loading cache file %s..." % fn)
-        with bz2.open(fn, "rb") as f:
+        f = bz2.open(fn, "rb") if compressed else open(fn, "rb")
+        if f:
             result = pickle.load(f)
             loaded = True
             print("Loaded cache file %s" % fn)
+        f.close()
     return (loaded, result)
 
-def saveCacheFile(fn, data, overwrite=False):
-    fn += ".bz2"
+def saveCacheFile(fn, data, overwrite=False, compressed=True):
+    if compressed:
+        fn += ".bz2"
     if not os.path.isfile(fn) or overwrite:
         print("Saving cache file %s..." % fn)
-        pickle.dump(data, bz2.open(fn, 'wb'))
+        if compressed:
+            pickle.dump(data, bz2.open(fn, 'wb'))
+        else:
+            pickle.dump(data, open(fn, 'wb'))
     else:
         print("Already exists %s" % fn)
     return True
