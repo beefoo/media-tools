@@ -149,6 +149,17 @@ def readJSON(filename):
             data = json.load(f)
     return data
 
+def removeFiles(listOrString):
+    filenames = listOrString
+    if not isinstance(listOrString, list) and "*" in listOrString:
+        filenames = glob.glob(listOrString)
+    elif not isinstance(listOrString, list):
+        filenames = [listOrString]
+    print("Removing %s files" % len(filenames))
+    for fn in filenames:
+        if os.path.isfile(fn):
+            os.remove(fn)
+
 def supportsEncoding():
     return sys.version_info >= (3, 0)
 

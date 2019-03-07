@@ -31,14 +31,12 @@ addVideoArgs(parser)
 parser.add_argument('-grid', dest="GRID", default="256x256", help="Size of grid")
 parser.add_argument('-grid0', dest="START_GRID", default="16x16", help="Start size of grid")
 parser.add_argument('-grid1', dest="END_GRID", default="128x128", help="End size of grid")
-parser.add_argument('-zdur', dest="ZOOM_DUR", default=60, type=int, help="Duration of zoom in seconds")
-parser.add_argument('-beat', dest="BEAT_MS", default=4096, type=int, help="Duration of beat")
-parser.add_argument('-beat0', dest="MIN_BEAT_MS", default=8, type=int, help="Minimum duration of beat")
+parser.add_argument('-zdur', dest="ZOOM_DUR", default=120, type=int, help="Duration of zoom in seconds")
 parser.add_argument('-kfd', dest="KEYS_FOR_DISTANCE", default="tsne,tsne2", help="Keys for determining distance between clips")
 parser.add_argument('-cscale', dest="CLIP_SCALE_AMOUNT", default=1.1, type=float, help="Amount to scale clip when playing")
 parser.add_argument('-maxa', dest="MAX_AUDIO_CLIPS", default=-1, type=int, help="Maximum number of audio clips to play")
 parser.add_argument('-keep', dest="KEEP_FIRST_AUDIO_CLIPS", default=-1, type=int, help="Ensure the middle x audio files play")
-parser.add_argument('-msc', dest="MAX_SIMULTANEOUS_CLIPS", default=32, type=int, help="Max number of clips to play at the same time")
+parser.add_argument('-msc', dest="MAX_SIMULTANEOUS_CLIPS", default=64, type=int, help="Max number of clips to play at the same time")
 a = parser.parse_args()
 parseVideoArgs(a)
 makeDirectories([a.OUTPUT_FRAME, a.OUTPUT_FILE, a.CACHE_DIR])
@@ -107,7 +105,7 @@ for step in range(END_RINGS):
     playIndices = [c.props["index"] for c in ringClips]
     if ringClipPlayCount > a.MAX_SIMULTANEOUS_CLIPS:
         ringClipPlayCount = a.MAX_SIMULTANEOUS_CLIPS
-        random.seed(a.RANDOM_SEED)
+        random.seed(a.RANDOM_SEED+step)
         random.shuffle(playIndices)
         playIndices = playIndices[:a.MAX_SIMULTANEOUS_CLIPS]
     playIndicesSet = set(playIndices)
@@ -141,8 +139,11 @@ for step in range(END_RINGS):
 ms = ms + ZOOM_DUR_MS
 
 # tween container zoom
-container.queueTween(scaleXs[0], scaleXs[1]-scaleXs[0], ("scale", scaleYs[0], scaleYs[1], "quadIn"))
-container.queueTween(scaleXs[1], scaleXs[-1]-scaleXs[1], ("scale", scaleYs[1], scaleYs[-1], "quartOut"))
+pivot = 0.5
+tweenPivotMs = lerp((scaleXs[0], scaleXs[1]), pivot)
+tweenPivotScale = lerp((scaleYs[0], scaleYs[1]), pivot)
+container.queueTween(scaleXs[0], tweenPivotMs-scaleXs[0], ("scale", scaleYs[0], tweenPivotScale, "quadIn"))
+container.queueTween(tweenPivotMs, scaleXs[-1]-tweenPivotMs, ("scale", tweenPivotScale, scaleYs[-1], "quartOut"))
 
 # See how well the data maps to the tweened data
 # container.vector.plotKeyframes("scale", additionalPlots=[([x/1000.0 for x in scaleXs], scaleYs)])

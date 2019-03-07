@@ -1,6 +1,7 @@
 
 from lib.audio_mixer import *
 from lib.clip import *
+from lib.io_utils import *
 from lib.math_utils import *
 from lib.sampler import *
 from lib.video_utils import *
@@ -199,7 +200,8 @@ def processComposition(a, clips, videoDurationMs, sampler=None, stepTime=False, 
     if rebuildVideo:
         clipsPixelData = loadVideoPixelDataFromFrames(videoFrames, clips, a.WIDTH, a.HEIGHT, a.FPS, a.CACHE_DIR, a.CACHE_KEY, a.VERIFY_CACHE, cache=True, debug=a.DEBUG, precision=a.PRECISION)
         stepTime = logTime(stepTime, "Loaded pixel data")
-
+        if a.OVERWRITE:
+            removeFiles(a.OUTPUT_FRAME % "*")
         processFrames(videoFrames, clips, clipsPixelData, threads=a.THREADS, precision=a.PRECISION, customClipToArrFunction=customClipToArrFunction)
 
     if not a.AUDIO_ONLY:
