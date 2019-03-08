@@ -116,7 +116,7 @@ def initGridComposition(a, stepTime=False):
         samples[i]["audioDur"] = s["dur"]
         samples[i]["dur"] = s["dur"] if s["dur"] > a.MIN_CLIP_DUR else int(math.ceil(1.0 * a.MIN_CLIP_DUR / s["dur"]) * s["dur"])
         samples[i]["pan"] = lerp((-1.0, 1.0), s["nx"])
-        samples[i]["fadeOut"] = getClipFadeDur(s["dur"], percentage=0.5, maxDur=-1),
+        samples[i]["fadeOut"] = getClipFadeDur(s["dur"], percentage=0.5, maxDur=-1)
         samples[i]["fadeIn"] = getClipFadeDur(s["dur"])
         samples[i]["reverb"] = a.REVERB
         samples[i]["distanceFromCenter"] = distance(cCol, cRow, s["col"], s["row"])
