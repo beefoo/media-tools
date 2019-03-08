@@ -164,8 +164,23 @@ def processComposition(a, clips, videoDurationMs, sampler=None, stepTime=False, 
     # plotAudioSequence(audioSequence)
     # sys.exit()
 
+    # account for excerpt
+    excerptStartMs = roundInt(a.EXCERPT_START * 1000) if a.EXCERPT_START >= 0 else False
+    excerptDurMs = roundInt(a.EXCERPT_DUR * 1000) if a.EXCERPT_DUR > 0 else False
+    excerpted = (excerptStartMs is not False and excerptDurMs is not False)
+    excerptEndMs = (excerptStartMs + excerptDurMs) if excerpted else False
+    excerptFrameStart = msToFrame(excerptStartMs, a.FPS) if excerpted else False
+    if excerpted:
+        audioSequence = [s for s in audioSequence if excerptStartMs <= s["ms"] <= excerptEndMs]
+
     audioDurationMs = getAudioSequenceDuration(audioSequence)
     durationMs = max(videoDurationMs, audioDurationMs) + a.PAD_END
+
+    if excerpted:
+        videoDurationMs = excerptDurMs
+        audioDurationMs = excerptDurMs
+        durationMs = excerptDurMs + a.PAD_END
+
     print("Video time: %s" % formatSeconds(videoDurationMs/1000.0))
     print("Audio time: %s" % formatSeconds(audioDurationMs/1000.0))
     print("Total time: %s" % formatSeconds(durationMs/1000.0))
@@ -182,6 +197,10 @@ def processComposition(a, clips, videoDurationMs, sampler=None, stepTime=False, 
     for f in range(totalFrames):
         frame = f + 1
         ms = frameToMs(frame, a.FPS)
+        if excerpted and (ms < excerptStartMs or ms > excerptEndMs):
+            continue
+        elif excerpted:
+            frame -= excerptFrameStart
         videoFrames.append({
             "filename": a.OUTPUT_FRAME % zeroPad(frame, totalFrames),
             "ms": ms,
@@ -193,7 +212,7 @@ def processComposition(a, clips, videoDurationMs, sampler=None, stepTime=False, 
     stepTime = logTime(stepTime, "Processed video frame sequence")
 
     # output ending state
-    if len(a.END_CLIP_STATES) > 0:
+    if len(a.END_CLIP_STATES) > 0 and not excerpted:
         lastFrameParam = videoFrames[-1].copy()
         lastFrameParam.update({"saveFrame": False})
         lastClipArr = clipsToFrame([lastFrameParam], clips, pixelData=None, precision=a.PRECISION, customClipToArrFunction=customClipToArrFunction)
