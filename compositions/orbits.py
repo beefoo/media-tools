@@ -84,6 +84,32 @@ stepTime = logTime(stepTime, "Samples to clips")
 for i, clip in enumerate(clips):
     clip.vector.setParent(container.vector)
 
+# queue clip plays
+for clip in clips:
+    rotateStartMs = clip.props["rotateStartMs"]
+    rotateEndMs = clip.props["rotateEndMs"]
+    rotateDurMs = clip.props["rotateDurMs"]
+    ringIndex = clip.props["ringIndex"]
+    ringGridW = clip.props["ring"] * 2
+    ringGridH = ringGridW
+    ringCellCount = ringGridW * 2 + (ringGridH-2) * 2
+    ringDurMs = rotateDurMs * ringCellCount
+    clipPlayMs = (0.375 * ringCellCount - ringIndex) * rotateDurMs
+    if clipPlayMs < 0:
+        clipPlayMs += ringDurMs
+
+    ms = rotateStartMs + clipPlayMs
+    while ms <= rotateEndMs:
+        clip.queuePlay(ms, {
+            "dur": clip.props["audioDur"],
+            "volume": lerp(a.VOLUME_RANGE, (1.0 - clip.props["nDistanceFromCenter"])),
+            "fadeOut": clip.props["fadeOut"],
+            "fadeIn": clip.props["fadeIn"],
+            "pan": 0,
+            "reverb": clip.props["reverb"]
+        })
+        ms += ringDurMs
+
 # initialize container scale
 container.vector.addKeyFrame("scale", 0, fromScale)
 
@@ -206,7 +232,7 @@ def clipToNpArrOrbits(clip, ms, containerW, containerH, precision, parent):
         clipDur = clip.dur
         clipPlayMs = (0.375 * ringCellCount - ringIndex) * rotateDurMs
         if clipPlayMs < 0:
-            clipPlayMs = ringDurMs + clipPlayMs
+            clipPlayMs += ringDurMs
         if clipPlayMs <= msRing < (clipPlayMs+clipDur):
             # fade out after we ended rotating
             if ended:
