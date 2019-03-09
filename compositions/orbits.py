@@ -37,6 +37,8 @@ parser.add_argument('-keep', dest="KEEP_FIRST_AUDIO_CLIPS", default=-1, type=int
 parser.add_argument('-bdivision', dest="BEAT_DIVISIONS", default=4, type=int, help="Number of times to divide each beat")
 a = parser.parse_args()
 parseVideoArgs(a)
+aa = vars(a)
+aa["VOLUME_RANGE"] = (0.6, 1.0)
 makeDirectories([a.OUTPUT_FRAME, a.OUTPUT_FILE, a.CACHE_DIR])
 
 # Get video data

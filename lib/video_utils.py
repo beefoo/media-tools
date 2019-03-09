@@ -382,8 +382,8 @@ def loadVideoPixelData(clips, fps, cacheDir="tmp/", width=None, height=None, ver
                         break
                     index = fileCacheData[0].index(t)
                     clipH, clipW, _ = fileCacheData[1][index].shape
-                    if roundInt(clip.props["width"]) > clipW:
-                        print("Clip width is too small (%s > %s) for %s at %s. Resetting cache data" % (clip.props["width"], clipW, cacheFn, t))
+                    if roundInt(clip.props["maxWidth"]) > clipW:
+                        print("Clip width is too small (%s > %s) for %s at %s. Resetting cache data" % (clip.props["maxWidth"], clipW, cacheFn, t))
                         loaded = False
                         break
                     # TODO: Add check for aspect ratio?
@@ -410,6 +410,8 @@ def loadVideoPixelData(clips, fps, cacheDir="tmp/", width=None, height=None, ver
                 ms = start
                 while ms < end:
                     fclip = clip.props.copy()
+                    fclip["width"] = fclip["maxWidth"]
+                    fclip["height"] = fclip["maxHeight"]
                     t = roundInt(ms)
                     ms += msStep
                     # already exists, check size
@@ -462,7 +464,7 @@ def loadVidoPixelDataDebug(clipCount):
         clipsPixelData[i, 0, 0, 0] = getRandomColor(i)
     return clipsPixelData
 
-def loadVideoPixelDataFromFrames(frames, clips, containerW, containerH, fps, cacheDir="tmp/", cacheKey="sample", verifyData=True, cache=True, debug=False, precision=3):
+def loadVideoPixelDataFromFrames(frames, clips, containerW, containerH, fps, cacheDir="tmp/", cacheKey="sample", verifyData=True, cache=True, debug=False, precision=3, customClipToArrFunction=None):
     frameCount = len(frames)
     clipCount = len(clips)
     precisionMultiplier = int(10 ** precision)
@@ -484,7 +486,7 @@ def loadVideoPixelDataFromFrames(frames, clips, containerW, containerH, fps, cac
         for i, frame in enumerate(frames):
             ms = frame["ms"]
             # frameClips = clipsToDictsGPU(clips, ms, container, precision)
-            frameClips = clipsToNpArr(clips, ms, containerW, containerH, precision)
+            frameClips = clipsToNpArr(clips, ms, containerW, containerH, precision, customClipToArrFunction)
             clipCompare[0] = clipWidthMaxes
             clipCompare[1] = frameClips[:,2] # just take the width (2)
             clipWidthMaxes = np.amax(clipCompare, axis=0)
@@ -506,8 +508,8 @@ def loadVideoPixelDataFromFrames(frames, clips, containerW, containerH, fps, cac
     for i, clip in enumerate(clips):
         width = 1.0 * clipWidthMaxes[clip.props["index"]] / precisionMultiplier
         height = width / clip.vector.aspectRatio
-        clip.setProp("width", width)
-        clip.setProp("height", height)
+        clip.setProp("maxWidth", width)
+        clip.setProp("maxHeight", height)
         # print("%s, %s" % (clip.props["width"], clip.props["height"]))
 
     clipsPixelData = loadVideoPixelData(clips, fps, cacheDir=cacheDir, verifyData=verifyData, cache=cache)
