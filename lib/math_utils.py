@@ -50,6 +50,10 @@ def ease(n, easingFunction="sin", exp=6, invert=False):
         easingFunction = easingFunction[:-6]
         invert = True
 
+    if "^" in easingFunction:
+        easingFunction, exp = easingFunction.split("^")
+        exp = int(exp)
+
     if easingFunction == "sin":
         n = easeSinInOut(n)
     elif easingFunction == "quadIn":
