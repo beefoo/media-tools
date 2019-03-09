@@ -35,6 +35,7 @@ parser.add_argument('-beat', dest="BEAT_MS", default=1024, type=int, help="Durat
 parser.add_argument('-maxa', dest="MAX_AUDIO_CLIPS", default=-1, type=int, help="Maximum number of audio clips to play")
 parser.add_argument('-keep', dest="KEEP_FIRST_AUDIO_CLIPS", default=-1, type=int, help="Ensure the middle x audio files play")
 parser.add_argument('-bdivision', dest="BEAT_DIVISIONS", default=4, type=int, help="Number of times to divide each beat")
+parser.add_argument('-roffset', dest="ROTATION_STEPS_OFFSET", default=4, type=int, help="Number of times to rotate before going to the next ring")
 a = parser.parse_args()
 parseVideoArgs(a)
 aa = vars(a)
@@ -48,6 +49,7 @@ samples, sampleCount, container, sampler, stepTime, cCol, cRow, gridW, gridH, st
 
 START_RINGS = int(startGridW / 2)
 END_RINGS = int(endGridW / 2)
+PLAY_OFFSET = 0.375 # play at the 3 o'clock spot, halfway between 0.25 and 0.5
 
 fromScale = 1.0 * gridW / startGridW
 toScale = 1.0 * gridW / endGridW
@@ -65,20 +67,30 @@ def ringComparison(s):
     else:
         return (1, -x, -y)
 
+def getRingCount(ring):
+    ringGridW = ring * 2
+    ringGridH = ringGridW
+    return ringGridW * 2 + (ringGridH-2) * 2
+
 subbeats = 2**a.BEAT_DIVISIONS
 for step in range(END_RINGS):
     ring = step + 1
     ringOffset = getOffset(subbeats, step % subbeats)
     ringOffsetMs = roundInt(ringOffset * a.BEAT_MS)
-    ringStartMs = a.PAD_START + step * a.BEAT_MS + ringOffsetMs
+    ringStartMs = a.PAD_START + (a.ROTATION_STEPS_OFFSET * a.BEAT_MS * step) + ringOffsetMs
     ringSamples = [s for s in samples if s["ring"]==ring]
     ringSamples = sorted(ringSamples, key=ringComparison)
+    rotationSteps = END_RINGS * a.ROTATION_STEPS_OFFSET
+    ringCellCount = getRingCount(ring)
+    if ringCellCount != len(ringSamples):
+        print("Error in ring cell count: %s != %s" % (ringCellCount, len(ringSamples)))
     for j, s in enumerate(ringSamples):
         sindex = s["index"]
         samples[sindex]["ringIndex"] = j
         samples[sindex]["rotateStartMs"] = ringStartMs
         samples[sindex]["rotateDurMs"] = a.BEAT_MS
-        samples[sindex]["rotateEndMs"] = ringStartMs + a.BEAT_MS * (END_RINGS+1)
+        samples[sindex]["rotateEndMs"] = ringStartMs + rotationSteps * a.BEAT_MS
+        samples[sindex]["ringIndexReversed"] = (j + int(rotationSteps/2)) % ringCellCount
 
 clips = samplesToClips(samples)
 stepTime = logTime(stepTime, "Samples to clips")
@@ -86,30 +98,44 @@ stepTime = logTime(stepTime, "Samples to clips")
 for i, clip in enumerate(clips):
     clip.vector.setParent(container.vector)
 
+def queuePlay(clip, ms, a):
+    clip.queuePlay(ms, {
+        "dur": clip.props["audioDur"],
+        "volume": lerp(a.VOLUME_RANGE, (1.0 - clip.props["nDistanceFromCenter"])),
+        "fadeOut": clip.props["fadeOut"],
+        "fadeIn": clip.props["fadeIn"],
+        "pan": 0,
+        "reverb": clip.props["reverb"]
+    })
+
+def getClipPlayMs(playOffset, ringCellCount, ringIndex, rotateDurMs, reversed=False):
+    if reversed:
+        return (((1.0-playOffset) * ringCellCount + ringIndex) % ringCellCount) * rotateDurMs
+    else:
+        return ((playOffset * ringCellCount - ringIndex) % ringCellCount) * rotateDurMs
+
 # queue clip plays
 for clip in clips:
     rotateStartMs = clip.props["rotateStartMs"]
     rotateEndMs = clip.props["rotateEndMs"]
+    rotateReverseMs = roundInt(lerp((rotateStartMs, rotateEndMs), 0.5))
     rotateDurMs = clip.props["rotateDurMs"]
     ringIndex = clip.props["ringIndex"]
-    ringGridW = clip.props["ring"] * 2
-    ringGridH = ringGridW
-    ringCellCount = ringGridW * 2 + (ringGridH-2) * 2
+    ringCellCount = getRingCount(clip.props["ring"])
     ringDurMs = rotateDurMs * ringCellCount
-    clipPlayMs = (0.375 * ringCellCount - ringIndex) * rotateDurMs
-    if clipPlayMs < 0:
-        clipPlayMs += ringDurMs
-
+    clipPlayMs = getClipPlayMs(PLAY_OFFSET, ringCellCount, ringIndex, rotateDurMs)
+    # play forward until we're half way
     ms = rotateStartMs + clipPlayMs
+    while ms <= rotateReverseMs:
+        queuePlay(clip, ms, a)
+        ms += ringDurMs
+
+    # now play in reverse
+    ringIndex = clip.props["ringIndexReversed"]
+    clipPlayMs = getClipPlayMs(PLAY_OFFSET, ringCellCount, ringIndex, rotateDurMs, reversed=True)
+    ms = rotateReverseMs + clipPlayMs
     while ms <= rotateEndMs:
-        clip.queuePlay(ms, {
-            "dur": clip.props["audioDur"],
-            "volume": lerp(a.VOLUME_RANGE, (1.0 - clip.props["nDistanceFromCenter"])),
-            "fadeOut": clip.props["fadeOut"],
-            "fadeIn": clip.props["fadeIn"],
-            "pan": 0,
-            "reverb": clip.props["reverb"]
-        })
+        queuePlay(clip, ms, a)
         ms += ringDurMs
 
 # initialize container scale
@@ -123,7 +149,7 @@ for step in range(zoomSteps):
     stepRing = START_RINGS + step + 1
     stepGridW = stepRing * 2
     stepZoomScale = 1.0 * gridW / stepGridW
-    stepMs = zoomStartMs + step * a.BEAT_MS
+    stepMs = zoomStartMs + step * a.ROTATION_STEPS_OFFSET * a.BEAT_MS
     # ease = "sin" if step > 0 else "quintIn"
     # container.vector.addKeyFrame("scale", stepMs, stepZoomScale, ease)
     scaleXs.append(stepMs)
@@ -134,14 +160,10 @@ ms = max([s["rotateEndMs"] for s in samples]) + a.BEAT_MS
 # pprint(list(zip(scaleXs, scaleYs)))
 # sys.exit()
 
-# # tween container zoom between first two keyframes
-# container.queueTween(scaleXs[0], scaleXs[2]-scaleXs[0], ("scale", scaleYs[0], scaleYs[2], "cubicIn"))
-#
-# # tween container zoom from second to last keyframe
-# container.queueTween(scaleXs[2], scaleXs[-1]-scaleXs[2], ("scale", scaleYs[2], scaleYs[-1], "cubicOut"))
-
-tweenStartMs = roundInt(lerp((scaleXs[0], scaleXs[1]), 0.5))
-container.queueTween(tweenStartMs, scaleXs[-1]-tweenStartMs, ("scale", scaleYs[0], scaleYs[-1], "sin"))
+pivot = 0.9
+tweenStartMs = roundInt(lerp((scaleXs[0], scaleXs[1]), pivot))
+container.queueTween(scaleXs[0], tweenStartMs-scaleXs[0], ("scale", scaleYs[0], scaleYs[1], "quadIn"))
+container.queueTween(tweenStartMs, scaleXs[-1]-tweenStartMs, ("scale", scaleYs[1], scaleYs[-1], "quadOut"))
 
 # See how well the data maps to the tweened data
 # container.vector.plotKeyframes("scale", additionalPlots=[([x/1000.0 for x in scaleXs], scaleYs)])
@@ -177,14 +199,22 @@ def getRingCellPos(index, count, ringX, ringY, cellW, cellH):
 def clipToNpArrOrbits(clip, ms, containerW, containerH, precision, parent):
     global gridW
     global gridH
+    global PLAY_OFFSET
+
     rotateStartMs = clip.props["rotateStartMs"]
     rotateEndMs = clip.props["rotateEndMs"]
+    rotateReverseMs = roundInt(lerp((rotateStartMs, rotateEndMs), 0.5))
     alpha = clip.props["alpha"]
     ringProps = None
 
-    # freeze when we're at the end
-    ended = False
+    ended = reversed = False
     _ms = ms
+
+    # reverse half way through
+    if ms > rotateReverseMs:
+        reversed = True
+
+    # freeze when we're at the end
     if ms > rotateEndMs:
         ended = True
         ms = rotateEndMs
@@ -195,7 +225,7 @@ def clipToNpArrOrbits(clip, ms, containerW, containerH, precision, parent):
         clipH = clip.props["height"]
         ring = clip.props["ring"]
         rotateDurMs = clip.props["rotateDurMs"]
-        ringIndex = clip.props["ringIndex"]
+        ringIndex = clip.props["ringIndex"] if not reversed else clip.props["ringIndexReversed"]
 
         cellW = 1.0 * containerW / gridW
         cellH = 1.0 * containerH / gridH
@@ -203,7 +233,7 @@ def clipToNpArrOrbits(clip, ms, containerW, containerH, precision, parent):
         marginY = (cellH-clipH) * 0.5
         ringGridW = ring * 2
         ringGridH = ringGridW
-        ringCellCount = ringGridW * 2 + (ringGridH-2) * 2
+        ringCellCount = getRingCount(ring)
         ringWidth = cellW * ringGridW
         ringHeight = cellH * ringGridH
         ringX = (containerW-ringWidth) * 0.5
@@ -213,10 +243,12 @@ def clipToNpArrOrbits(clip, ms, containerW, containerH, precision, parent):
         if ringIndex >= ringCellCount:
             print("Error: ring index out of bounds (%s >= %s)" % (ringIndex, ringCellCount))
 
-        elapsedMs = ms - rotateStartMs
+        elapsedMs = ms - rotateStartMs if not reversed else ms - rotateReverseMs
         msRing = elapsedMs % ringDurMs # amount of time into the progress of the rotation
         nRingProgress = 1.0 * msRing / ringDurMs # normalized progress of rotation
         cellOffset = nRingProgress * ringCellCount
+        if reversed:
+            cellOffset = -cellOffset
         currentIndex = (1.0 * ringIndex + cellOffset) % ringCellCount # current cell index in the ring
 
         # lerp between two cell spaces
@@ -232,15 +264,14 @@ def clipToNpArrOrbits(clip, ms, containerW, containerH, precision, parent):
 
         # determine alpha based on if clip is currently playing (when it crosses the 3-o'clock position)
         clipDur = clip.dur
-        clipPlayMs = (0.375 * ringCellCount - ringIndex) * rotateDurMs
-        if clipPlayMs < 0:
-            clipPlayMs += ringDurMs
+        clipPlayMs = getClipPlayMs(PLAY_OFFSET, ringCellCount, ringIndex, rotateDurMs, reversed=reversed)
+
         if clipPlayMs <= msRing < (clipPlayMs+clipDur):
             # fade out after we ended rotating
             if ended:
                 elapsedAfterEnded = _ms - rotateEndMs
                 if elapsedAfterEnded < clipDur:
-                    msRing = (_ms - rotateStartMs) % ringDurMs
+                    msRing = (_ms - rotateReverseMs) % ringDurMs
                     msRing = lim(msRing, (clipPlayMs, clipPlayMs+clipDur))
                 else:
                     msRing = clipPlayMs+clipDur

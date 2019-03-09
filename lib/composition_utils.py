@@ -235,6 +235,7 @@ def processComposition(a, clips, videoDurationMs, sampler=None, stepTime=False, 
 
     if not a.AUDIO_ONLY:
         audioFile = a.AUDIO_OUTPUT_FILE if not a.VIDEO_ONLY and os.path.isfile(a.AUDIO_OUTPUT_FILE) else False
-        compileFrames(a.OUTPUT_FRAME, a.FPS, a.OUTPUT_FILE, getZeroPadding(totalFrames), audioFile=audioFile)
+        quality = "medium" if a.DEBUG else "high"
+        compileFrames(a.OUTPUT_FRAME, a.FPS, a.OUTPUT_FILE, getZeroPadding(totalFrames), audioFile=audioFile, quality=quality)
 
     logTime(startTime, "Total execution time")
