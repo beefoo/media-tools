@@ -39,6 +39,8 @@ parser.add_argument('-keep', dest="KEEP_FIRST_AUDIO_CLIPS", default=-1, type=int
 parser.add_argument('-msc', dest="MAX_SIMULTANEOUS_CLIPS", default=64, type=int, help="Max number of clips to play at the same time")
 a = parser.parse_args()
 parseVideoArgs(a)
+aa = vars(a)
+aa["VOLUME_RANGE"] = (0.4, 1.0)
 makeDirectories([a.OUTPUT_FRAME, a.OUTPUT_FILE, a.CACHE_DIR])
 
 # parse arguments

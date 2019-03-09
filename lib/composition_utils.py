@@ -113,11 +113,12 @@ def initGridComposition(a, stepTime=False):
     for i, s in enumerate(samples):
         # Add audio properties
         # make clip longer if necessary
-        samples[i]["audioDur"] = s["dur"]
+        audioDur = s["dur"]
+        samples[i]["audioDur"] = audioDur
         samples[i]["dur"] = s["dur"] if s["dur"] > a.MIN_CLIP_DUR else int(math.ceil(1.0 * a.MIN_CLIP_DUR / s["dur"]) * s["dur"])
         samples[i]["pan"] = lerp((-1.0, 1.0), s["nx"])
-        samples[i]["fadeOut"] = getClipFadeDur(s["dur"], percentage=0.5, maxDur=-1)
-        samples[i]["fadeIn"] = getClipFadeDur(s["dur"])
+        samples[i]["fadeOut"] = getClipFadeDur(audioDur, percentage=0.5, maxDur=-1)
+        samples[i]["fadeIn"] = getClipFadeDur(audioDur)
         samples[i]["reverb"] = a.REVERB
         samples[i]["distanceFromCenter"] = distance(cCol, cRow, s["col"], s["row"])
     samples = addNormalizedValues(samples, "distanceFromCenter", "nDistanceFromCenter")
