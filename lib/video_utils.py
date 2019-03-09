@@ -177,19 +177,36 @@ def clipsToFrameGPU(clips, width, height, clipsPixelData, precision=3):
     pixels = clipsToImageGPU(width, height, pixelData, properties, c, precision)
     return Image.fromarray(pixels, mode="RGB")
 
-def compileFrames(infile, fps, outfile, padZeros, audioFile=None):
+def compileFrames(infile, fps, outfile, padZeros, audioFile=None, quality="high"):
     print("Compiling frames...")
     padStr = '%0'+str(padZeros)+'d'
+
+    # https://trac.ffmpeg.org/wiki/Encode/H.264
+    # presets: veryfast, faster, fast, medium, slow, slower, veryslow
+    #   slower = better quality
+    # crf: 0 is lossless, 23 is the default, and 51 is worst possible quality
+    #   17 or 18 to be visually lossless or nearly so
+    preset = "veryslow"
+    crf = "18"
+    if quality=="medium":
+        preset = "medium"
+        crf = "23"
+    elif quality=="low":
+        preset = "medium"
+        crf = "28"
+
     if audioFile:
         command = ['ffmpeg','-y',
                     '-framerate',str(fps)+'/1',
                     '-i',infile % padStr,
                     '-i',audioFile,
                     '-c:v','libx264',
+                    '-preset', preset,
+                    '-crf', crf,
                     '-r',str(fps),
                     '-pix_fmt','yuv420p',
                     '-c:a','aac',
-                    '-q:v','1',
+                    # '-q:v','1',
                     '-b:a', '192k',
                     '-shortest',
                     outfile]
@@ -198,9 +215,11 @@ def compileFrames(infile, fps, outfile, padZeros, audioFile=None):
                     '-framerate',str(fps)+'/1',
                     '-i',infile % padStr,
                     '-c:v','libx264',
+                    '-preset', preset,
+                    '-crf', crf,
                     '-r',str(fps),
                     '-pix_fmt','yuv420p',
-                    '-q:v','1',
+                    # '-q:v','1',
                     outfile]
     print(" ".join(command))
     finished = subprocess.check_call(command)
