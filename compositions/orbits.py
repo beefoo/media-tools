@@ -70,17 +70,22 @@ def getRingCount(ring):
     return ringGridW * 2 + (ringGridH-2) * 2
 
 subbeats = 2**a.BEAT_DIVISIONS
+ringStepOffsetMs = 0
+rotationSteps = END_RINGS * max(1, roundInt(a.ROTATION_STEPS_OFFSET/2))
+ringStarts = []
 for step in range(END_RINGS):
+    nstep = 1.0 * step / (END_RINGS-1)
     ring = step + 1
-    ringOffset = getOffset(subbeats, step % subbeats)
-    ringOffsetMs = roundInt(ringOffset * a.BEAT_MS)
-    ringStartMs = a.PAD_START + (a.ROTATION_STEPS_OFFSET * a.BEAT_MS * step) + ringOffsetMs
+    ringBeatOffset = getOffset(subbeats, step % subbeats)
+    ringBeatOffsetMs = roundInt(ringBeatOffset * a.BEAT_MS)
+    ringStartMs = a.PAD_START + ringStepOffsetMs + ringBeatOffsetMs
+    ringStepOffsetMs += roundInt(lerp((a.ROTATION_STEPS_OFFSET, 1.0), ease(nstep))) * a.BEAT_MS
     ringSamples = [s for s in samples if s["ring"]==ring]
     ringSamples = sorted(ringSamples, key=ringComparison)
-    rotationSteps = END_RINGS * a.ROTATION_STEPS_OFFSET
     ringCellCount = getRingCount(ring)
     if ringCellCount != len(ringSamples):
         print("Error in ring cell count: %s != %s" % (ringCellCount, len(ringSamples)))
+    ringStarts.append(ringStartMs)
     for j, s in enumerate(ringSamples):
         sindex = s["index"]
         samples[sindex]["ringIndex"] = j
@@ -126,7 +131,6 @@ for clip in clips:
     while ms <= rotateReverseMs:
         queuePlay(clip, ms, a)
         ms += ringDurMs
-
     # now play in reverse
     ringIndex = clip.props["ringIndexReversed"]
     clipPlayMs = getClipPlayMs(PLAY_OFFSET, ringCellCount, ringIndex, rotateDurMs, reversed=True)
@@ -136,7 +140,7 @@ for clip in clips:
         ms += ringDurMs
 
 # initialize container scale
-container.vector.addKeyFrame("scale", 0, fromScale)
+# container.vector.addKeyFrame("scale", 0, fromScale)
 
 zoomStartMs = a.PAD_START + a.BEAT_MS * START_RINGS
 zoomSteps = END_RINGS-START_RINGS
@@ -146,7 +150,7 @@ for step in range(zoomSteps):
     stepRing = START_RINGS + step + 1
     stepGridW = stepRing * 2
     stepZoomScale = 1.0 * gridW / stepGridW
-    stepMs = zoomStartMs + step * a.ROTATION_STEPS_OFFSET * a.BEAT_MS
+    stepMs = ringStarts[stepRing-1]
     # ease = "sin" if step > 0 else "quintIn"
     # container.vector.addKeyFrame("scale", stepMs, stepZoomScale, ease)
     scaleXs.append(stepMs)
@@ -157,10 +161,9 @@ ms = max([s["rotateEndMs"] for s in samples]) + a.BEAT_MS
 # pprint(list(zip(scaleXs, scaleYs)))
 # sys.exit()
 
-pivot = 0.9
+pivot = 0.833
 tweenStartMs = roundInt(lerp((scaleXs[0], scaleXs[1]), pivot))
-container.queueTween(scaleXs[0], tweenStartMs-scaleXs[0], ("scale", scaleYs[0], scaleYs[1], "quadIn"))
-container.queueTween(tweenStartMs, scaleXs[-1]-tweenStartMs, ("scale", scaleYs[1], scaleYs[-1], "quadOut"))
+container.queueTween(tweenStartMs, scaleXs[-1]-tweenStartMs, ("scale", scaleYs[0], scaleYs[-1], "quadInOut"))
 
 # See how well the data maps to the tweened data
 # container.vector.plotKeyframes("scale", additionalPlots=[([x/1000.0 for x in scaleXs], scaleYs)])
