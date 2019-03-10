@@ -276,7 +276,7 @@ def clipToNpArrOrbits(clip, ms, containerW, containerH, precision, parent):
             alpha = lerp((alpha, 1.0), nalpha)
 
     precisionMultiplier = int(10 ** precision)
-    props = clip.toDict(ms, containerW, containerH, parent, customProps=ringProps)
+    props = clip.toDict(_ms, containerW, containerH, parent, customProps=ringProps)
 
     return np.array([
         roundInt(props["x"] * precisionMultiplier),
