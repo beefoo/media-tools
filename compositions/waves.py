@@ -36,11 +36,11 @@ parser.add_argument('-grid1', dest="END_GRID", default="32x32", help="End size o
 parser.add_argument('-steps', dest="STEPS", default=16, type=int, help="Number of waves/beats")
 parser.add_argument('-wd', dest="WAVE_DUR", default=8000, type=int, help="Wave duration in milliseconds")
 parser.add_argument('-bd', dest="BEAT_DUR", default=6000, type=int, help="Beat duration in milliseconds")
-parser.add_argument('-maxa', dest="MAX_AUDIO_CLIPS", default=4096, type=int, help="Maximum number of audio clips to play")
-parser.add_argument('-keep', dest="KEEP_FIRST_AUDIO_CLIPS", default=256, type=int, help="Ensure the middle x audio files play")
 a = parser.parse_args()
 parseVideoArgs(a)
-makeDirectories([a.OUTPUT_FRAME, a.OUTPUT_FILE, a.CACHE_DIR])
+aa = vars(a)
+aa["MAX_AUDIO_CLIPS"] = 4096
+aa["KEEP_FIRST_AUDIO_CLIPS"] = 256
 
 # parse arguments
 ZOOM_DUR = a.STEPS * a.BEAT_DUR

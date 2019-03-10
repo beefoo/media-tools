@@ -50,6 +50,8 @@ def addVideoArgs(parser):
     parser.add_argument('-noise', dest="NOISE", default=0.0, type=float, help="Amount of pixel noise to add")
     parser.add_argument('-state0', dest="START_CLIP_STATES", default="", help="Path where starting clip states are")
     parser.add_argument('-state1', dest="END_CLIP_STATES", default="", help="Path to output ending clip states")
+    parser.add_argument('-maxa', dest="MAX_AUDIO_CLIPS", default=-1, type=int, help="Maximum number of audio clips to play")
+    parser.add_argument('-keep', dest="KEEP_FIRST_AUDIO_CLIPS", default=-1, type=int, help="Ensure the middle x audio files play")
 
 def alphaMask(im, mask):
     w, h = im.size
