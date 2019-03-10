@@ -31,9 +31,9 @@ addVideoArgs(parser)
 parser.add_argument('-grid', dest="GRID", default="256x256", help="Size of grid")
 parser.add_argument('-grid0', dest="START_GRID", default="128x128", help="Start size of grid")
 parser.add_argument('-grid1', dest="END_GRID", default="32x32", help="End size of grid")
-parser.add_argument('-maxcd', dest="MAX_COLUMN_DELTA", default=32, type=int, help="Max number of columns to move left and right")
+parser.add_argument('-maxcd', dest="MAX_COLUMN_DELTA", default=24, type=int, help="Max number of columns to move left and right")
 parser.add_argument('-waves', dest="WAVE_COUNT", default=16, type=int, help="Number of sine waves to do")
-parser.add_argument('-gridc', dest="GRID_CYCLES", default=2, type=int, help="Number of times to go through the full grid")
+parser.add_argument('-gridc', dest="GRID_CYCLES", default=16, type=int, help="Number of times to go through the full grid")
 parser.add_argument('-duration', dest="TARGET_DURATION", default=120, type=int, help="Target duration in seconds")
 a = parser.parse_args()
 parseVideoArgs(a)
@@ -79,11 +79,11 @@ stepTime = startTime
 samples, sampleCount, container, sampler, stepTime, cCol, cRow, gridW, gridH, startGridW, startGridH, endGridW, endGridH = initGridComposition(a, stepTime)
 
 # hack: make start and end the same; we are not zooming
-startGridW = endGridW
-startGridH = endGridH
-containerScale = 1.0 * gridW / startGridW
+visibleGridW = endGridW
+visibleGridH = endGridH
+containerScale = 1.0 * gridW / visibleGridW
 
-container.setTransform(scale=(containerScale, containerScale))
+container.vector.setTransform(scale=(containerScale, containerScale))
 
 # set clip alpha to min by default
 for i, s in enumerate(samples):
@@ -103,21 +103,21 @@ endMs = ms
 def clipToNpArrFalling(clip, ms, containerW, containerH, precision, parent):
     global startMs
     global endMs
-    global startGridW
-    global startGridH
+    global visibleGridW
+    global visibleGridH
     global gridW
     global gridH
     global a
 
-    alpha = clip.props["alpha"]
     cellW = 1.0 * containerW / gridW
-    ringProps = None
+    cellH = 1.0 * containerH / gridH
+    customProps = None
     nprogress = norm(ms, (startMs, endMs))
     firstHalf = (nprogress <= 0.5)
 
     # calculate how much we should move column from left to right along x-axis
     nx = norm(nprogress, (0, 0.5)) if firstHalf else norm(nprogress, (1.0, 0.5))
-    nwave = math.sqrt(nx / 12.0) * math.sin(a.WAVE_COUNT * 2.0 * math.pi * nx) if nx > 0 else 0
+    nwave = math.sqrt(nx / 16.0) * math.sin(a.WAVE_COUNT * 2.0 * math.pi * nx) if nx > 0 else 0
     if not firstHalf:
         nwave = -nwave
     waveColDelta = nwave * a.MAX_COLUMN_DELTA
@@ -125,24 +125,38 @@ def clipToNpArrFalling(clip, ms, containerW, containerH, precision, parent):
 
     # calculate how much we should move along the y-axis of grid
     ny = norm(nprogress, (0, 0.5)) if firstHalf else norm(nprogress, (1.0, 0.5))
-    ny = ease(ny, "cubicIn")
+    ny = ease(ny, "quadIn")
     halfGridCycles = a.GRID_CYCLES * 0.5
     ngrid = halfGridCycles * ny
     if not firstHalf:
         ngrid = halfGridCycles + halfGridCycles*(1.0-ny)
     nrow = (ngrid + 0.5) % 1
     yDelta = containerH * 0.5 - containerH * nrow
-    # TODO: account for ends
 
+    # offset the position
+    x = clip.props["x"] + xDelta
+    y = clip.props["y"] + yDelta
+
+    # wrap around x
+    totalWidth = (cellW * gridW)
+    if x < 0 or x > totalWidth:
+        x = x % totalWidth
+
+    # wrap around y
+    totalHeight = (cellH * gridH)
+    if y < 0 or y > totalHeight:
+        y = y % totalHeight
+
+    customProps = {"pos": [x, y]}
     precisionMultiplier = int(10 ** precision)
-    props = clip.toDict(ms, containerW, containerH, parent, customProps=ringProps)
+    props = clip.toDict(ms, containerW, containerH, parent, customProps=customProps)
 
     return np.array([
         roundInt(props["x"] * precisionMultiplier),
         roundInt(props["y"] * precisionMultiplier),
         roundInt(props["width"] * precisionMultiplier),
         roundInt(props["height"] * precisionMultiplier),
-        roundInt(alpha * precisionMultiplier),
+        roundInt(props["alpha"] * precisionMultiplier),
         roundInt(props["tn"] * precisionMultiplier),
         roundInt(props["zindex"])
     ], dtype=np.int32)
