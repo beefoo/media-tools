@@ -139,19 +139,20 @@ def getPosDelta(ms, containerW, containerH):
 
 def dequeueClips(ms, clips, queue):
     global a
-
     indices = list(queue.keys())
 
     for cindex in indices:
         frameMs, ndistance = queue[cindex][-1]
+        clip = clips[cindex]
+        thresholdMs = clip.dur * 2
         # we have passed this clip
-        if frameMs < ms:
+        if (ms - frameMs) > thresholdMs:
             ndistance, playMs = max(queue[cindex], key=itemgetter(0)) # get the loudest frame
-            clip = clips[cindex]
+
             lastPlayedMs = clip.getState("lastPlayedMs")
             # check to make sure we don't play if already playing
-            if lastPlayedMs is None or (playMs - lastPlayedMs) > clip.props["audioDur"]:
-                clip.queuePlay(ms, {
+            if lastPlayedMs is None or (playMs - lastPlayedMs) > thresholdMs:
+                clip.queuePlay(playMs, {
                     "dur": clip.props["audioDur"],
                     "volume": lerp(a.VOLUME_RANGE, ndistance),
                     "fadeOut": clip.props["fadeOut"],
@@ -160,24 +161,23 @@ def dequeueClips(ms, clips, queue):
                     "reverb": clip.props["reverb"],
                     "matchDb": clip.props["matchDb"]
                 })
-                clip.setState("lastPlayedMs", ms)
-                clip.queueTween(ms, clip.dur, ("alpha", a.ALPHA_RANGE[1], a.ALPHA_RANGE[0], "sin"))
-                ty = clip.props["height"] * a.TRANSLATE_AMOUNT
-                leftMs = roundInt(clip.dur * 0.2)
+                clip.setState("lastPlayedMs", playMs)
+                leftMs = max(10, roundInt(clip.dur * 0.1))
                 rightMs = clip.dur - leftMs
-                clip.queueTween(ms, leftMs, ("translateY", 0, ty, "sin"))
-                clip.queueTween(ms+leftMs, rightMs, ("translateY", ty, 0, "sin"))
+                ty = clip.props["height"] * a.TRANSLATE_AMOUNT
+                clip.queueTween(playMs, leftMs, [("alpha", a.ALPHA_RANGE[0], a.ALPHA_RANGE[1], "sin"), ("translateY", 0, ty, "sin")])
+                clip.queueTween(playMs+leftMs, rightMs, [("alpha", a.ALPHA_RANGE[1], a.ALPHA_RANGE[0], "sin"), ("translateY", ty, 0, "sin")])
             queue.pop(cindex, None)
 
     return queue
 
-def getNeighborClips(clips, frameCx, frameCy, radius):
+def getNeighborClips(clips, gridCx, gridCy, radius):
     global gridW
     global gridH
     global a
 
-    ccol = roundInt(frameCx)
-    crow = roundInt(frameCy)
+    ccol = roundInt(gridCx)
+    crow = roundInt(gridCy)
     iradius = roundInt(radius)
     halfRadius = roundInt(iradius/2)
 
@@ -192,10 +192,9 @@ def getNeighborClips(clips, frameCx, frameCy, radius):
             y = row % gridH
             i = y * gridW + x
             clip = clips[i]
-            distanceFromCenter = distance(x, y, frameCx, frameCy)
+            distanceFromCenter = distance(x, y, gridCx, gridCy)
             nDistanceFromCenter = 1.0 - 1.0 * distanceFromCenter / radius
-            clip.setState("nDistanceFromCenter", nDistanceFromCenter)
-            frameClips.append(clip)
+            frameClips.append((nDistanceFromCenter, clip))
 
     return frameClips
 
@@ -205,19 +204,24 @@ cx = a.WIDTH * 0.5
 cy = a.HEIGHT * 0.5
 radius = a.PLAY_RADIUS
 queue = {}
+xs = []
+ys = []
 for f in range(totalFrames):
     frame = f + 1
     frameMs = startMs + frameToMs(frame, a.FPS)
-    xDelta, yDelta = getPosDelta(ms, a.WIDTH, a.HEIGHT)
+    xDelta, yDelta = getPosDelta(frameMs, a.WIDTH, a.HEIGHT)
     frameCx, frameCy = (cx - xDelta, cy - yDelta) # this is the current "center"
     frameCx, frameCy = (frameCx % a.WIDTH, frameCy % a.HEIGHT) # wrap around
-    frameCx, frameCy = (1.0*frameCx/gridW, 1.0 * frameCy/gridH)
+    gridCx, gridCy = (1.0*frameCx/a.WIDTH*gridW, 1.0 * frameCy/a.HEIGHT*gridH)
 
-    frameClips = getNeighborClips(clips, frameCx, frameCy, radius)
-    for clip in frameClips:
+    # xs.append(gridCx)
+    # ys.append(gridCy)
+
+    frameClips = getNeighborClips(clips, gridCx, gridCy, radius)
+    for ndistance, clip in frameClips:
         cindex = clip.props["index"]
-        ndistance = clip.getState("nDistanceFromCenter")
         if ndistance > 0:
+            # clip.vector.addKeyFrame("alpha", frameMs, ndistance)
             entry = (ndistance, frameMs)
             if cindex in queue:
                 queue[cindex].append(entry)
@@ -225,8 +229,15 @@ for f in range(totalFrames):
                 queue[cindex] = [entry]
 
     queue = dequeueClips(frameMs, clips, queue)
-dequeueClips(endMs + frameToMs(1, a.FPS), clips, queue)
 
+# import matplotlib.pyplot as plt
+# ts = np.linspace(startMs/1000.0, endMs/1000.0, num=len(ys))
+# plt.scatter(ts, xs, 3)
+# plt.scatter(ts, ys, 3)
+# plt.show()
+# sys.exit()
+
+dequeueClips(endMs + frameToMs(1, a.FPS), clips, queue)
 
 # custom clip to numpy array function to override default tweening logic
 def clipToNpArrFalling(clip, ms, containerW, containerH, precision, parent):
