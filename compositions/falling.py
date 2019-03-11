@@ -165,8 +165,9 @@ def dequeueClips(ms, clips, queue):
                 leftMs = max(10, roundInt(clip.dur * 0.1))
                 rightMs = clip.dur - leftMs
                 ty = clip.props["height"] * a.TRANSLATE_AMOUNT
-                clip.queueTween(playMs, leftMs, [("alpha", a.ALPHA_RANGE[0], a.ALPHA_RANGE[1], "sin"), ("translateY", 0, ty, "sin")])
-                clip.queueTween(playMs+leftMs, rightMs, [("alpha", a.ALPHA_RANGE[1], a.ALPHA_RANGE[0], "sin"), ("translateY", ty, 0, "sin")])
+                alphaTo = lerp(a.ALPHA_RANGE, ndistance)
+                clip.queueTween(playMs, leftMs, [("alpha", a.ALPHA_RANGE[0], alphaTo, "sin"), ("translateY", 0, ty, "sin")])
+                clip.queueTween(playMs+leftMs, rightMs, [("alpha", alphaTo, a.ALPHA_RANGE[0], "sin"), ("translateY", ty, 0, "sin")])
             queue.pop(cindex, None)
 
     return queue
