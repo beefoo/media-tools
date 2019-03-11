@@ -36,7 +36,7 @@ parser.add_argument('-maxcd', dest="MAX_COLUMN_DELTA", default=24, type=int, hel
 parser.add_argument('-waves', dest="WAVE_COUNT", default=16, type=int, help="Number of sine waves to do")
 parser.add_argument('-gridc', dest="GRID_CYCLES", default=16, type=int, help="Number of times to go through the full grid")
 parser.add_argument('-duration', dest="TARGET_DURATION", default=120, type=int, help="Target duration in seconds")
-parser.add_argument('-translate', dest="TRANSLATE_AMOUNT", default=0.33, type=float, help="Amount to translate clip as a percentage of height"
+parser.add_argument('-translate', dest="TRANSLATE_AMOUNT", default=0.33, type=float, help="Amount to translate clip as a percentage of height")
 parser.add_argument('-prad', dest="PLAY_RADIUS", default=4.0, type=float, help="Radius of cells/clips to play at any given time")
 a = parser.parse_args()
 parseVideoArgs(a)
@@ -140,7 +140,9 @@ def getPosDelta(ms, containerW, containerH):
 def dequeueClips(ms, clips, queue):
     global a
 
-    for cindex in queue:
+    indices = list(queue.keys())
+
+    for cindex in indices:
         frameMs, ndistance = queue[cindex][-1]
         # we have passed this clip
         if frameMs < ms:
@@ -175,23 +177,26 @@ def getNeighborClips(clips, frameCx, frameCy, radius):
 
     ccol = roundInt(frameCx)
     crow = roundInt(frameCy)
-    halfRadius = roundInt(radius/2)
+    iradius = roundInt(radius)
+    halfRadius = roundInt(iradius/2)
 
-    cols = [c+ccol-halfRadius for c in range(radius)]
-    rows = [c+crow-halfRadius for c in range(radius)]
+    cols = [c+ccol-halfRadius for c in range(iradius)]
+    rows = [c+crow-halfRadius for c in range(iradius)]
 
+    frameClips = []
     for col in cols:
         for row in rows:
             # wrap around
-            x = col % a.WIDTH
-            y = row % a.HEIGHT
-            i = y * a.WIDTH + x
+            x = col % gridW
+            y = row % gridH
+            i = y * gridW + x
             clip = clips[i]
-            clipX = clip.props["x"] + clip.props["width"] * 0.5
-            clipY = clip.props["y"] + clip.props["height"] * 0.5
-            distanceFromCenter = distance(clipX, clipY, frameCx, frameCy)
+            distanceFromCenter = distance(x, y, frameCx, frameCy)
             nDistanceFromCenter = 1.0 - 1.0 * distanceFromCenter / radius
             clip.setState("nDistanceFromCenter", nDistanceFromCenter)
+            frameClips.append(clip)
+
+    return frameClips
 
 # determine when/which clips are playing
 totalFrames = msToFrame(endMs-startMs, a.FPS)
@@ -205,6 +210,7 @@ for f in range(totalFrames):
     xDelta, yDelta = getPosDelta(ms, a.WIDTH, a.HEIGHT)
     frameCx, frameCy = (cx - xDelta, cy - yDelta) # this is the current "center"
     frameCx, frameCy = (frameCx % a.WIDTH, frameCy % a.HEIGHT) # wrap around
+    frameCx, frameCy = (1.0*frameCx/gridW, 1.0 * frameCy/gridH)
 
     frameClips = getNeighborClips(clips, frameCx, frameCy, radius)
     for clip in frameClips:
