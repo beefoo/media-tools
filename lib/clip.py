@@ -398,6 +398,9 @@ class Clip:
 
         return neighbors
 
+    def getState(self, name):
+        return self.state[name] if name in self.state else None
+
     def queuePlay(self, ms, params={}):
         dur = params["dur"] if "dur" in params else self.dur
         self.plays.append((ms, ms+dur, params))

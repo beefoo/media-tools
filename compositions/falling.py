@@ -4,6 +4,7 @@ import argparse
 import inspect
 import math
 import numpy as np
+from operator import itemgetter
 import os
 from pprint import pprint
 import random
@@ -35,6 +36,8 @@ parser.add_argument('-maxcd', dest="MAX_COLUMN_DELTA", default=24, type=int, hel
 parser.add_argument('-waves', dest="WAVE_COUNT", default=16, type=int, help="Number of sine waves to do")
 parser.add_argument('-gridc', dest="GRID_CYCLES", default=16, type=int, help="Number of times to go through the full grid")
 parser.add_argument('-duration', dest="TARGET_DURATION", default=120, type=int, help="Target duration in seconds")
+parser.add_argument('-translate', dest="TRANSLATE_AMOUNT", default=0.33, type=float, help="Amount to translate clip as a percentage of height"
+parser.add_argument('-prad', dest="PLAY_RADIUS", default=4.0, type=float, help="Radius of cells/clips to play at any given time")
 a = parser.parse_args()
 parseVideoArgs(a)
 aa = vars(a)
@@ -99,8 +102,7 @@ startMs = a.PAD_START
 ms = startMs + TARGET_DURATION_MS
 endMs = ms
 
-# custom clip to numpy array function to override default tweening logic
-def clipToNpArrFalling(clip, ms, containerW, containerH, precision, parent):
+def getPosDelta(ms, containerW, containerH):
     global startMs
     global endMs
     global visibleGridW
@@ -111,7 +113,7 @@ def clipToNpArrFalling(clip, ms, containerW, containerH, precision, parent):
 
     cellW = 1.0 * containerW / gridW
     cellH = 1.0 * containerH / gridH
-    customProps = None
+
     nprogress = norm(ms, (startMs, endMs))
     firstHalf = (nprogress <= 0.5)
 
@@ -133,21 +135,110 @@ def clipToNpArrFalling(clip, ms, containerW, containerH, precision, parent):
     nrow = (ngrid + 0.5) % 1
     yDelta = containerH * 0.5 - containerH * nrow
 
-    # offset the position
-    x = clip.props["x"] + xDelta
-    y = clip.props["y"] + yDelta
+    return (xDelta, yDelta)
 
-    # wrap around x
-    totalWidth = (cellW * gridW)
-    if x < 0 or x > totalWidth:
-        x = x % totalWidth
+def dequeueClips(ms, clips, queue):
+    global a
 
-    # wrap around y
-    totalHeight = (cellH * gridH)
-    if y < 0 or y > totalHeight:
-        y = y % totalHeight
+    for cindex in queue:
+        frameMs, ndistance = queue[cindex][-1]
+        # we have passed this clip
+        if frameMs < ms:
+            ndistance, playMs = max(queue[cindex], key=itemgetter(0)) # get the loudest frame
+            clip = clips[cindex]
+            lastPlayedMs = clip.getState("lastPlayedMs")
+            # check to make sure we don't play if already playing
+            if lastPlayedMs is None or (playMs - lastPlayedMs) > clip.props["audioDur"]:
+                clip.queuePlay(ms, {
+                    "dur": clip.props["audioDur"],
+                    "volume": lerp(a.VOLUME_RANGE, ndistance),
+                    "fadeOut": clip.props["fadeOut"],
+                    "fadeIn": clip.props["fadeIn"],
+                    "pan": clip.props["pan"],
+                    "reverb": clip.props["reverb"],
+                    "matchDb": clip.props["matchDb"]
+                })
+                clip.queueTween(ms, clip.dur, ("alpha", a.ALPHA_RANGE[1], a.ALPHA_RANGE[0], "sin"))
+                ty = clip.props["height"] * a.TRANSLATE_AMOUNT
+                leftMs = roundInt(clip.dur * 0.2)
+                rightMs = clip.dur - leftMs
+                clip.queueTween(ms, leftMs, ("translateY", 0, ty, "sin"))
+                clip.queueTween(ms+leftMs, rightMs, ("translateY", ty, 0, "sin"))
+            queue.pop(cindex, None)
 
-    customProps = {"pos": [x, y]}
+    return queue
+
+def getNeighborClips(clips, frameCx, frameCy, radius):
+    global gridW
+    global gridH
+    global a
+
+    ccol = roundInt(frameCx)
+    crow = roundInt(frameCy)
+    halfRadius = roundInt(radius/2)
+
+    cols = [c+ccol-halfRadius for c in range(radius)]
+    rows = [c+crow-halfRadius for c in range(radius)]
+
+    for col in cols:
+        for row in rows:
+            # wrap around
+            x = col % a.WIDTH
+            y = row % a.HEIGHT
+            i = y * a.WIDTH + x
+            clip = clips[i]
+            clipX = clip.props["x"] + clip.props["width"] * 0.5
+            clipY = clip.props["y"] + clip.props["height"] * 0.5
+            distanceFromCenter = distance(clipX, clipY, frameCx, frameCy)
+            nDistanceFromCenter = 1.0 - 1.0 * distanceFromCenter / radius
+            clip.setState("nDistanceFromCenter", nDistanceFromCenter)
+
+# determine when/which clips are playing
+totalFrames = msToFrame(endMs-startMs, a.FPS)
+cx = a.WIDTH * 0.5
+cy = a.HEIGHT * 0.5
+radius = a.PLAY_RADIUS
+queue = {}
+for f in range(totalFrames):
+    frame = f + 1
+    frameMs = startMs + frameToMs(frame, a.FPS)
+    xDelta, yDelta = getPosDelta(ms, a.WIDTH, a.HEIGHT)
+    frameCx, frameCy = (cx - xDelta, cy - yDelta) # this is the current "center"
+    frameCx, frameCy = (frameCx % a.WIDTH, frameCy % a.HEIGHT) # wrap around
+
+    frameClips = getNeighborClips(clips, frameCx, frameCy, radius)
+    for clip in frameClips:
+        cindex = clip.props["index"]
+        ndistance = clip.getState("nDistanceFromCenter")
+        if ndistance > 0:
+            entry = (ndistance, frameMs)
+            if cindex in queue:
+                queue[cindex].append(entry)
+            else:
+                queue[cindex] = [entry]
+
+    queue = dequeueClips(frameMs, clips, queue)
+dequeueClips(endMs + frameToMs(1, a.FPS), clips, queue)
+
+
+# custom clip to numpy array function to override default tweening logic
+def clipToNpArrFalling(clip, ms, containerW, containerH, precision, parent):
+    global startMs
+    customProps = None
+
+    if ms >= startMs:
+        xDelta, yDelta = getPosDelta(ms, containerW, containerH)
+
+        # offset the position
+        x = clip.props["x"] + xDelta
+        y = clip.props["y"] + yDelta
+
+        # wrap around x and y
+        x = x % containerW
+        y = y % containerH
+
+        customProps = {"pos": [x, y]}
+
     precisionMultiplier = int(10 ** precision)
     props = clip.toDict(ms, containerW, containerH, parent, customProps=customProps)
 
@@ -161,4 +252,4 @@ def clipToNpArrFalling(clip, ms, containerW, containerH, precision, parent):
         roundInt(props["zindex"])
     ], dtype=np.int32)
 
-processComposition(a, clips, ms, sampler, stepTime, startTime, customClipToArrFunction=clipToNpArrFalling)
+processComposition(a, clips, endMs, sampler, stepTime, startTime, customClipToArrFunction=clipToNpArrFalling)
