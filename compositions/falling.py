@@ -33,10 +33,10 @@ parser.add_argument('-grid', dest="GRID", default="256x256", help="Size of grid"
 parser.add_argument('-grid0', dest="START_GRID", default="128x128", help="Start size of grid")
 parser.add_argument('-grid1', dest="END_GRID", default="32x32", help="End size of grid")
 parser.add_argument('-maxcd', dest="MAX_COLUMN_DELTA", default=16, type=int, help="Max number of columns to move left and right")
-parser.add_argument('-waves', dest="WAVE_COUNT", default=16, type=int, help="Number of sine waves to do")
+parser.add_argument('-waves', dest="WAVE_COUNT", default=8, type=int, help="Number of sine waves to do")
 parser.add_argument('-gridc', dest="GRID_CYCLES", default=8, type=int, help="Number of times to go through the full grid")
 parser.add_argument('-duration', dest="TARGET_DURATION", default=120, type=int, help="Target duration in seconds")
-parser.add_argument('-translate', dest="TRANSLATE_AMOUNT", default=0.33, type=float, help="Amount to translate clip as a percentage of height")
+parser.add_argument('-translate', dest="TRANSLATE_AMOUNT", default=0.1, type=float, help="Amount to translate clip as a percentage of height")
 parser.add_argument('-prad', dest="PLAY_RADIUS", default=4.0, type=float, help="Radius of cells/clips to play at any given time")
 a = parser.parse_args()
 parseVideoArgs(a)
@@ -142,7 +142,7 @@ def dequeueClips(ms, clips, queue):
     indices = list(queue.keys())
 
     for cindex in indices:
-        frameMs, ndistance = queue[cindex][-1]
+        ndistance, frameMs = queue[cindex][-1]
         clip = clips[cindex]
         thresholdMs = clip.dur * 2
         # we have passed this clip
@@ -179,7 +179,7 @@ def getNeighborClips(clips, gridCx, gridCy, radius):
 
     ccol = roundInt(gridCx)
     crow = roundInt(gridCy)
-    iradius = roundInt(radius)
+    iradius = roundInt(radius)+2
     halfRadius = roundInt(iradius/2)
 
     cols = [c+ccol-halfRadius for c in range(iradius)]
@@ -193,7 +193,7 @@ def getNeighborClips(clips, gridCx, gridCy, radius):
             y = row % gridH
             i = y * gridW + x
             clip = clips[i]
-            distanceFromCenter = distance(x, y, gridCx, gridCy)
+            distanceFromCenter = distance(col, row, gridCx, gridCy)
             nDistanceFromCenter = 1.0 - 1.0 * distanceFromCenter / radius
             frameClips.append((nDistanceFromCenter, clip))
 
@@ -243,9 +243,11 @@ dequeueClips(endMs + frameToMs(1, a.FPS), clips, queue)
 # custom clip to numpy array function to override default tweening logic
 def clipToNpArrFalling(clip, ms, containerW, containerH, precision, parent):
     global startMs
+    global endMs
+
     customProps = None
 
-    if ms >= startMs:
+    if startMs <= ms <= endMs:
         xDelta, yDelta = getPosDelta(ms, containerW, containerH)
 
         # offset the position
