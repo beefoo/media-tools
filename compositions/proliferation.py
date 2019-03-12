@@ -141,12 +141,12 @@ for step in range(END_RINGS):
     ms += ringDurMs
 
 # tween container zoom
-pivot = 0.5
+pivot = 0.55
 tweenPivotMs = lerp((scaleXs[0], scaleXs[1]), pivot)
 # tweenPivotScale = lerp((scaleYs[0], scaleYs[1]), pivot)
 # container.queueTween(scaleXs[0], tweenPivotMs-scaleXs[0], ("scale", scaleYs[0], tweenPivotScale, "expIn^9"))
 # container.queueTween(tweenPivotMs, scaleXs[-1]-tweenPivotMs, ("scale", tweenPivotScale, scaleYs[-1], "quadOut"))
-container.queueTween(tweenPivotMs, scaleXs[-1]-tweenPivotMs, ("scale", scaleYs[0], scaleYs[-1], "cubicInOut"))
+container.queueTween(tweenPivotMs, scaleXs[-1]-tweenPivotMs, ("scale", scaleYs[0], scaleYs[-1], "quadInOut"))
 
 # See how well the expected scale to the actual tweened scale
 # container.vector.plotKeyframes("scale", additionalPlots=[([x/1000.0 for x in scaleXs], scaleYs)])
