@@ -44,7 +44,7 @@ aa["KEEP_FIRST_AUDIO_CLIPS"] = 256
 
 # parse arguments
 ZOOM_DUR = a.STEPS * a.BEAT_DUR
-ZOOM_EASE = "cubicInOut"
+ZOOM_EASE = "quadInOut"
 
 # Get video data
 startTime = logTime()
