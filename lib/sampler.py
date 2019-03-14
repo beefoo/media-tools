@@ -1,5 +1,7 @@
 from lib.clip import *
+from lib.collection_utils import *
 from lib.math_utils import *
+from lib.io_utils import *
 
 class Sampler:
 
@@ -31,6 +33,8 @@ class Sampler:
         {"name": "tom", "style": "rock1", "files": ["lcd_sound_of_silver_tom_01.wav", "lcd_sound_of_silver_tom_02.wav"]},
         # rock stick
         {"name": "stick", "style": "rock1", "files": ["lcd_watch_the_tapes_stick_01.wav"]},
+        # philharmonia double bass
+        {"name": "double-bass", "style": "philharmonia", "files": "double-bass.csv"}
     ]
 
     def __init__(self, props={}):
@@ -41,6 +45,7 @@ class Sampler:
             "hat": "hiphop2",
             "tom": "rock1",
             "stick": "rock1",
+            "double-bass": "philharmonia",
             "clipParams": {
                 "fadeOut": 10,
                 "fadeIn": 10,
@@ -67,13 +72,18 @@ class Sampler:
             print("cannot find %s with style %s" % (name, style))
             return False
 
-        files = samples[0]["files"]
-        fileCount = len(files)
+        sampleMatch = samples[0]
+        files = sampleMatch["files"]
         fileDir = self.props["sampleDir"]
 
-        samples = [{
-            "filename": fileDir + f
-        } for f in files]
+        if not isinstance(object, (list,)):
+            _, samples = readCsv(a.INPUT_FILE)
+            samples = prependAll(samples, ("filename", fileDir + sampleMatch["name"] + "/"))
+
+        else:
+            samples = [{
+                "filename": fileDir + f
+            } for f in files]
 
         return samples
 
@@ -86,8 +96,12 @@ class Sampler:
         self.clips[(name, style)] = [Clip(s) for s in samples]
         return self.clips[(name, style)]
 
-    def queuePlay(self, ms, name, style="default", index=0, params={}):
+    def queuePlay(self, ms, name, style="default", index=0, params={}, where=None):
         clips = self.loadClips(name, style)
+
+        if where is not None:
+            clips = filterClips(clips, where)
+
         clipCount = len(clips)
 
         if clipCount > 0:

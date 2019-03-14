@@ -525,6 +525,16 @@ def clipsToSequence(clips):
             audioSequence.append(p)
     return audioSequence
 
+def filterClips(clips, filters):
+    clipProps = []
+    for i, clip in enumerate(clips):
+        props = clip.props.copy()
+        props["index"] = i
+        clipProps.append(props)
+    clipProps = filterWhere(clipProps, filters)
+    indices = set([c["index"] for c in clipProps])
+    return [c for i, c in enumerate(clips) if i in indices]
+
 def getClipFadeDur(clipDur, percentage=0.1, maxDur=100):
     dur = roundInt(clipDur * percentage)
     if maxDur > 0:

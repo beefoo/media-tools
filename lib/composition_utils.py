@@ -163,6 +163,14 @@ def processComposition(a, clips, videoDurationMs, sampler=None, stepTime=False, 
 
     # get audio sequence
     samplerClips = sampler.getClips() if sampler is not None else []
+
+    # kind of a hack: check to see if we're debugging sampler audio
+    if len(samplerClips) > 0 and a.DEBUG and a.AUDIO_ONLY and os.path.isfile(a.AUDIO_OUTPUT_FILE):
+        processSamplerClips(a, samplerClips)
+        stepTime = logTime(stepTime, "Processed audio clip sequence")
+        logTime(startTime, "Total execution time")
+        return True
+
     audioSequence = clipsToSequence(clips + samplerClips)
     stepTime = logTime(stepTime, "Processed audio clip sequence")
 
@@ -243,3 +251,11 @@ def processComposition(a, clips, videoDurationMs, sampler=None, stepTime=False, 
         compileFrames(a.OUTPUT_FRAME, a.FPS, a.OUTPUT_FILE, getZeroPadding(totalFrames), audioFile=audioFile, quality=quality)
 
     logTime(startTime, "Total execution time")
+
+def processSamplerClips(a, clips):
+    baseClip = Clip({"filename": a.AUDIO_OUTPUT_FILE})
+    parts = a.AUDIO_OUTPUT_FILE.split(".")
+    newFilename = ".".join(parts[:-1] + ["with","sampler"] + [parts[-1]])
+    baseClip.queuePlay(0)
+    audioSequence = clipsToSequence([baseClip] + clips)
+    mixAudio(audioSequence, baseClip.dur, newFilename)
