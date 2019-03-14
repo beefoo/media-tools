@@ -33,10 +33,10 @@ parser.add_argument('-grid', dest="GRID", default="256x256", help="Size of grid"
 parser.add_argument('-grid0', dest="START_GRID", default="128x128", help="Start size of grid")
 parser.add_argument('-grid1', dest="END_GRID", default="32x32", help="End size of grid")
 parser.add_argument('-maxcd', dest="MAX_COLUMN_DELTA", default=16, type=int, help="Max number of columns to move left and right")
-parser.add_argument('-waves', dest="WAVE_COUNT", default=8, type=int, help="Number of sine waves to do")
-parser.add_argument('-gridc', dest="GRID_CYCLES", default=8, type=int, help="Number of times to go through the full grid")
+parser.add_argument('-waves', dest="WAVE_COUNT", default=6, type=int, help="Number of sine waves to do")
+parser.add_argument('-gridc', dest="GRID_CYCLES", default=4, type=int, help="Number of times to go through the full grid")
 parser.add_argument('-duration', dest="TARGET_DURATION", default=120, type=int, help="Target duration in seconds")
-parser.add_argument('-translate', dest="TRANSLATE_AMOUNT", default=0.1, type=float, help="Amount to translate clip as a percentage of height")
+parser.add_argument('-translate', dest="TRANSLATE_AMOUNT", default=0.5, type=float, help="Amount to translate clip as a percentage of height")
 parser.add_argument('-prad', dest="PLAY_RADIUS", default=4.0, type=float, help="Radius of cells/clips to play at any given time")
 a = parser.parse_args()
 parseVideoArgs(a)
@@ -44,37 +44,6 @@ aa = vars(a)
 aa["VOLUME_RANGE"] = (0.4, 0.8)
 
 TARGET_DURATION_MS = roundInt(a.TARGET_DURATION * 1000)
-
-# xs = np.linspace(0, 1.0, num=1000)
-# ys = []
-# for nprogress in xs:
-#     firstHalf = nprogress <= 0.5
-#     x = norm(nprogress, (0, 0.5)) if firstHalf else norm(nprogress, (1.0, 0.5))
-#     nwave = math.sqrt(x / 12.0) * math.sin(a.WAVE_COUNT * 2.0 * math.pi * x) if x > 0 else 0
-#     if not firstHalf:
-#         nwave = -nwave
-#     waveColDelta = nwave * a.MAX_COLUMN_DELTA
-#     ys.append(waveColDelta)
-# import matplotlib.pyplot as plt
-# plt.plot(xs, ys)
-# plt.show()
-# sys.exit()
-
-# xs = np.linspace(0, 1.0, num=1000)
-# ys = []
-# for nprogress in xs:
-#     firstHalf = nprogress <= 0.5
-#     ny = norm(nprogress, (0, 0.5)) if firstHalf else norm(nprogress, (1.0, 0.5))
-#     ny = ease(ny, "cubicIn")
-#     halfGridCycles = a.GRID_CYCLES * 0.5
-#     ngrid = halfGridCycles * ny
-#     if not firstHalf:
-#         ngrid = halfGridCycles + halfGridCycles*(1.0-ny)
-#     ys.append(ngrid)
-# import matplotlib.pyplot as plt
-# plt.plot(xs, ys)
-# plt.show()
-# sys.exit()
 
 # Get video data
 startTime = logTime()
@@ -102,6 +71,9 @@ startMs = a.PAD_START
 ms = startMs + TARGET_DURATION_MS
 endMs = ms
 
+def getWave(nx, waveCount):
+    return math.sqrt(nx / 16.0) * math.sin(waveCount * 2.0 * math.pi * nx) if nx > 0 else 0
+
 def getPosDelta(ms, containerW, containerH):
     global startMs
     global endMs
@@ -119,7 +91,7 @@ def getPosDelta(ms, containerW, containerH):
 
     # calculate how much we should move column from left to right along x-axis
     nx = norm(nprogress, (0, 0.5)) if firstHalf else norm(nprogress, (1.0, 0.5))
-    nwave = math.sqrt(nx / 16.0) * math.sin(a.WAVE_COUNT * 2.0 * math.pi * nx) if nx > 0 else 0
+    nwave = getWave(nx, a.WAVE_COUNT)
     if not firstHalf:
         nwave = -nwave
     waveColDelta = nwave * a.MAX_COLUMN_DELTA
@@ -142,13 +114,13 @@ def dequeueClips(ms, clips, queue):
     indices = list(queue.keys())
 
     for cindex in indices:
-        ndistance, frameMs = queue[cindex][-1]
+        lastEntry = queue[cindex][-1]
+        frameMs = lastEntry[1]
         clip = clips[cindex]
         thresholdMs = clip.dur * 2
         # we have passed this clip
         if (ms - frameMs) > thresholdMs:
-            ndistance, playMs = max(queue[cindex], key=itemgetter(0)) # get the loudest frame
-
+            ndistance, playMs, xDelta, nprogress = max(queue[cindex], key=itemgetter(0)) # get the loudest frame
             lastPlayedMs = clip.getState("lastPlayedMs")
             # check to make sure we don't play if already playing
             if lastPlayedMs is None or (playMs - lastPlayedMs) > thresholdMs:
@@ -162,12 +134,19 @@ def dequeueClips(ms, clips, queue):
                     "matchDb": clip.props["matchDb"]
                 })
                 clip.setState("lastPlayedMs", playMs)
-                leftMs = max(10, roundInt(clip.dur * 0.1))
+                leftMs = max(10, roundInt(clip.dur * 0.5))
                 rightMs = clip.dur - leftMs
-                ty = clip.props["height"] * a.TRANSLATE_AMOUNT
+
+                speed = easeSinInOutBell(nprogress)
+                ty = clip.props["height"] * a.TRANSLATE_AMOUNT * speed * ndistance * 2
+
+                # offset this depending on the xoffset and y speed
+                xMultiplier = -1.0 * xDelta / clip.props["width"] * 0.5
+                tx = clip.props["height"] * a.TRANSLATE_AMOUNT * xMultiplier * speed * ndistance
+
                 alphaTo = lerp(a.ALPHA_RANGE, ndistance)
-                clip.queueTween(playMs, leftMs, [("alpha", a.ALPHA_RANGE[0], alphaTo, "sin"), ("translateY", 0, ty, "sin")])
-                clip.queueTween(playMs+leftMs, rightMs, [("alpha", alphaTo, a.ALPHA_RANGE[0], "sin"), ("translateY", ty, 0, "sin")])
+                clip.queueTween(playMs, leftMs, [("alpha", a.ALPHA_RANGE[0], alphaTo, "sin"), ("translateX", 0, tx, "sin"), ("translateY", 0, ty, "sin")])
+                clip.queueTween(playMs+leftMs, rightMs, [("alpha", alphaTo, a.ALPHA_RANGE[0], "sin"), ("translateX", tx, 0, "sin"), ("translateY", ty, 0, "sin")])
             queue.pop(cindex, None)
 
     return queue
@@ -210,20 +189,20 @@ ys = []
 for f in range(totalFrames):
     frame = f + 1
     frameMs = startMs + frameToMs(frame, a.FPS)
+    nprogress = norm(frameMs, (startMs, endMs))
     xDelta, yDelta = getPosDelta(frameMs, a.WIDTH, a.HEIGHT)
     frameCx, frameCy = (cx - xDelta, cy - yDelta) # this is the current "center"
     frameCx, frameCy = (frameCx % a.WIDTH, frameCy % a.HEIGHT) # wrap around
     gridCx, gridCy = (1.0*frameCx/a.WIDTH*gridW, 1.0 * frameCy/a.HEIGHT*gridH)
 
-    # xs.append(gridCx)
-    # ys.append(gridCy)
+    xs.append(xDelta)
+    ys.append(yDelta)
 
     frameClips = getNeighborClips(clips, gridCx, gridCy, radius)
     for ndistance, clip in frameClips:
         cindex = clip.props["index"]
         if ndistance > 0:
-            # clip.vector.addKeyFrame("alpha", frameMs, ndistance)
-            entry = (ndistance, frameMs)
+            entry = (ndistance, frameMs, xDelta, nprogress)
             if cindex in queue:
                 queue[cindex].append(entry)
             else:
@@ -231,14 +210,14 @@ for f in range(totalFrames):
 
     queue = dequeueClips(frameMs, clips, queue)
 
+dequeueClips(endMs + frameToMs(1, a.FPS), clips, queue)
+
 # import matplotlib.pyplot as plt
 # ts = np.linspace(startMs/1000.0, endMs/1000.0, num=len(ys))
 # plt.scatter(ts, xs, 3)
-# plt.scatter(ts, ys, 3)
+# # plt.scatter(ts, ys, 3)
 # plt.show()
 # sys.exit()
-
-dequeueClips(endMs + frameToMs(1, a.FPS), clips, queue)
 
 # custom clip to numpy array function to override default tweening logic
 def clipToNpArrFalling(clip, ms, containerW, containerH, precision, parent):
@@ -247,7 +226,7 @@ def clipToNpArrFalling(clip, ms, containerW, containerH, precision, parent):
 
     customProps = None
 
-    if startMs <= ms <= endMs:
+    if startMs <= ms < endMs:
         xDelta, yDelta = getPosDelta(ms, containerW, containerH)
 
         # offset the position
