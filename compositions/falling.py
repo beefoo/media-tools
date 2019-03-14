@@ -134,10 +134,11 @@ def dequeueClips(ms, clips, queue):
                     "maxDb": clip.props["maxDb"]
                 })
                 clip.setState("lastPlayedMs", playMs)
-                leftMs = max(10, roundInt(clip.dur * 0.5))
-                rightMs = clip.dur - leftMs
-
                 speed = easeSinInOutBell(nprogress)
+                clipDur = clip.dur * (1.0 + speed * 0.5)
+                leftMs = max(10, roundInt(clipDur * 0.5))
+                rightMs = clipDur - leftMs
+
                 ty = clip.props["height"] * a.TRANSLATE_AMOUNT * speed * ndistance * 2
 
                 # offset this depending on the xoffset and y speed
