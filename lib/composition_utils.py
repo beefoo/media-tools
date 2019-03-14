@@ -123,6 +123,7 @@ def initGridComposition(a, stepTime=False):
         samples[i]["fadeIn"] = getClipFadeDur(audioDur)
         samples[i]["reverb"] = a.REVERB
         samples[i]["matchDb"] = a.MATCH_DB
+        samples[i]["maxDb"] = a.MAX_DB
         samples[i]["distanceFromCenter"] = distance(cCol, cRow, s["col"], s["row"])
     samples = addNormalizedValues(samples, "distanceFromCenter", "nDistanceFromCenter")
 

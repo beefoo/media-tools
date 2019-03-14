@@ -42,6 +42,7 @@ def addVideoArgs(parser):
     parser.add_argument('-rvb', dest="REVERB", default=80, type=int, help="Reverberence (0-100)")
     parser.add_argument('-debug', dest="DEBUG", action="store_true", help="Debug mode?")
     parser.add_argument('-mdb', dest="MATCH_DB", default=-16, type=int, help="Match decibels, -9999 for none")
+    parser.add_argument('-maxdb', dest="MAX_DB", default=-16, type=int, help="Max decibels, -9999 for none")
     parser.add_argument('-precision', dest="PRECISION", default=3, type=int, help="Precision for position and size")
     parser.add_argument('-margin', dest="CLIP_MARGIN", default=0.06666666667, type=float, help="Margin between clips as a percentage of a clip's width")
     parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.3,0.6", help="Volume range")
@@ -547,6 +548,7 @@ def parseVideoArgs(args):
     d["MS_PER_FRAME"] = frameToMs(1, args.FPS, False)
     d["CACHE_VIDEO"] = args.CACHE_VIDEO
     d["MATCH_DB"] = args.MATCH_DB if args.MATCH_DB > -9999 else False
+    d["MAX_DB"] = args.MAX_DB if args.MAX_DB > -9999 else False
     d["VOLUME_RANGE"] = tuple([float(v) for v in args.VOLUME_RANGE.strip().split(",")])
     d["ALPHA_RANGE"] =  tuple([float(v) for v in args.ALPHA_RANGE.strip().split(",")])
 

@@ -336,6 +336,12 @@ def matchDb(audio, targetDb):
     deltaDb = targetDb - audio.dBFS
     return audio.apply_gain(deltaDb)
 
+def maxDb(audio, db):
+    deltaDb = db - audio.dBFS
+    if deltaDb < 0:
+        audio = audio.apply_gain(deltaDb)
+    return audio
+
 def msToFrame(ms, sr):
     return int(round(ms / 1000.0 * sr))
 

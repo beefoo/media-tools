@@ -127,7 +127,7 @@ for step in range(END_RINGS):
                 "fadeIn": clip.props["fadeIn"],
                 "pan": clip.props["pan"],
                 "reverb": clip.props["reverb"],
-                "matchDb": clip.props["matchDb"]
+                "maxDb": clip.props["maxDb"]
             })
         leftMs = roundInt(clip.dur * 0.2)
         rightMs = clip.dur - leftMs

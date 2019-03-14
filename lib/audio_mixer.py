@@ -22,6 +22,8 @@ def makeTrack(duration, instructions, segments, sfx=True, sampleWidth=2, sampleR
         audio = segment["audio"]
         if "matchDb" in i and i["matchDb"] is not False:
             audio = matchDb(audio, i["matchDb"])
+        if "maxDb" in i and i["maxDb"] is not False:
+            audio = maxDb(audio, i["maxDb"])
         if "reverse" in i and i["reverse"]:
             audio = audio.reverse()
         if "db" in i and i["db"] != 0.0:

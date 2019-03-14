@@ -108,7 +108,7 @@ def queuePlay(clip, ms, a):
         "fadeIn": clip.props["fadeIn"],
         "pan": 0,
         "reverb": clip.props["reverb"],
-        "matchDb": clip.props["matchDb"]
+        "maxDb": clip.props["maxDb"]
     })
 
 def getClipPlayMs(playOffset, ringCellCount, ringIndex, rotateDurMs, reversed=False):

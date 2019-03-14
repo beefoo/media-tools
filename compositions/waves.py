@@ -118,8 +118,8 @@ for step in range(a.STEPS):
                 "fadeOut": clip.props["fadeOut"],
                 "fadeIn": clip.props["fadeIn"],
                 "pan": clip.props["pan"],
-                "reverb": clip.props["reverb"]
-                # "matchDb": clip.props["matchDb"]
+                "reverb": clip.props["reverb"],
+                "maxDb": clip.props["maxDb"]
             })
 
         # move the clip outward then back inward, alpha up then down

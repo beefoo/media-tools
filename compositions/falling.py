@@ -131,7 +131,7 @@ def dequeueClips(ms, clips, queue):
                     "fadeIn": clip.props["fadeIn"],
                     "pan": clip.props["pan"],
                     "reverb": clip.props["reverb"],
-                    "matchDb": clip.props["matchDb"]
+                    "maxDb": clip.props["maxDb"]
                 })
                 clip.setState("lastPlayedMs", playMs)
                 leftMs = max(10, roundInt(clip.dur * 0.5))
