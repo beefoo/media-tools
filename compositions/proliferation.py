@@ -129,6 +129,11 @@ for step in range(END_RINGS):
                 "reverb": clip.props["reverb"],
                 "maxDb": clip.props["maxDb"]
             })
+            # play snare
+            # if ringClipMs >= a.BASE_STEP_MS/8:
+            #     sampler.queuePlay(clipMs + roundInt(ringClipMs/2.0), "snare", index=step+j, params={
+            #         "volume": 0.8
+            #     })
         leftMs = roundInt(clip.dur * 0.2)
         rightMs = clip.dur - leftMs
         clip.queueTween(clipMs, leftMs, [
