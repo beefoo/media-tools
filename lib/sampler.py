@@ -76,8 +76,8 @@ class Sampler:
         files = sampleMatch["files"]
         fileDir = self.props["sampleDir"]
 
-        if not isinstance(object, (list,)):
-            _, samples = readCsv(a.INPUT_FILE)
+        if not isinstance(files, (list,)):
+            _, samples = readCsv(fileDir + files)
             samples = prependAll(samples, ("filename", fileDir + sampleMatch["name"] + "/"))
 
         else:
