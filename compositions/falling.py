@@ -37,11 +37,11 @@ parser.add_argument('-waves', dest="WAVE_COUNT", default=6, type=int, help="Numb
 parser.add_argument('-gridc', dest="GRID_CYCLES", default=4, type=int, help="Number of times to go through the full grid")
 parser.add_argument('-duration', dest="TARGET_DURATION", default=120, type=int, help="Target duration in seconds")
 parser.add_argument('-translate', dest="TRANSLATE_AMOUNT", default=0.5, type=float, help="Amount to translate clip as a percentage of height")
-parser.add_argument('-prad', dest="PLAY_RADIUS", default=4.0, type=float, help="Radius of cells/clips to play at any given time")
+parser.add_argument('-prad', dest="PLAY_RADIUS", default=8.0, type=float, help="Radius of cells/clips to play at any given time")
 a = parser.parse_args()
 parseVideoArgs(a)
 aa = vars(a)
-aa["VOLUME_RANGE"] = (0.4, 0.8)
+aa["VOLUME_RANGE"] = (0.3, 0.6)
 
 TARGET_DURATION_MS = roundInt(a.TARGET_DURATION * 1000)
 
