@@ -14,13 +14,14 @@ parser.add_argument('-dir', dest="MEDIA_DIRECTORY", default="media/downloads/ia_
 parser.add_argument('-fk', dest="FILENAME_KEY", default="filename", help="Key to retrieve filename")
 parser.add_argument('-dk', dest="DURATION_KEY", default="duration", help="Key to save duration")
 parser.add_argument('-acc', dest="ACCURATE", default=1, type=int, help="Check duration accurately by opening it? (takes longer)")
-args = parser.parse_args()
+parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite existing non-zero durations?")
+a = parser.parse_args()
 
 # Parse arguments
-INPUT_FILE = args.INPUT_FILE
-MEDIA_DIRECTORY = args.MEDIA_DIRECTORY
-FILENAME_KEY = args.FILENAME_KEY
-ACCURATE = args.ACCURATE > 0
+INPUT_FILE = a.INPUT_FILE
+MEDIA_DIRECTORY = a.MEDIA_DIRECTORY
+FILENAME_KEY = a.FILENAME_KEY
+ACCURATE = a.ACCURATE > 0
 
 keysToAdd = ["duration", "hasAudio", "hasVideo"]
 
@@ -37,10 +38,10 @@ for key in keysToAdd:
 
 print("Getting file features...")
 for i, row in enumerate(rows):
-    duration = 0
-    hasAudio = 0
-    hasVideo = 0
-    if FILENAME_KEY in row and len(row[FILENAME_KEY]) > 0:
+    duration = row["duration"] if "duration" in row else 0
+    hasAudio = row["hasAudio"] if "hasAudio" in row else 0
+    hasVideo = row["hasVideo"] if "hasVideo" in row else 0
+    if FILENAME_KEY in row and len(row[FILENAME_KEY]) > 0 and (duration <= 0 or a.OVERWRITE):
         filepath = MEDIA_DIRECTORY + row[FILENAME_KEY]
         duration = getDurationFromFile(filepath, ACCURATE)
         types = getMediaTypes(filepath)
