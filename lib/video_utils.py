@@ -310,8 +310,11 @@ def getDurationFromFile(filename, accurate=False):
                 result = video.duration
                 video.reader.close()
                 del video
-            except IOError as e:
-                print("I/O error({0}): {1}".format(e.errno, e.strerror))
+            except UnicodeDecodeError:
+                print("Unicode decode error for %s" % filename)
+                result = 0
+            except IOError:
+                print("I/O error for %s" % filename)
                 result = 0
         else:
             command = ['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', filename]
@@ -331,7 +334,7 @@ def getMediaTypes(filename):
     if os.path.isfile(filename):
         command = ['ffprobe', '-loglevel', 'error', '-show_entries', 'stream=codec_type', '-of', 'csv=p=0', filename]
         # print(" ".join(command))
-        result = subprocess.check_output(command).splitlines()
+        result = [line.decode("utf-8") for line in subprocess.check_output(command).splitlines()]
     return result
 
 def getSolidPixels(color, width=100, height=100):

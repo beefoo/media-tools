@@ -193,7 +193,7 @@ def writeCsv(filename, arr, headings="auto", append=False, encoding="utf8"):
     canEncode = supportsEncoding()
     if not canEncode:
         mode += 'b'
-    f = open(filename, mode, encoding=encoding) if canEncode else open(filename, mode)
+    f = open(filename, mode, encoding=encoding, newline='') if canEncode else open(filename, mode)
     writer = csv.writer(f)
     if not append:
         writer.writerow(headings)
