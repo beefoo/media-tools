@@ -7,6 +7,8 @@ from lib.collection_utils import *
 from lib.math_utils import *
 import os
 from pprint import pprint
+import re
+import shutil
 import sys
 
 try:
@@ -20,6 +22,15 @@ try:
 except:
     print("reload operation not supported, skipping...")
 
+def downloadBinaryFile(url, filename, overwrite=False):
+    if os.path.isfile(filename) and not overwrite:
+        print("%s already exists." % filename)
+        return True
+    print("Downloading %s..." % url)
+    response = requests.get(url, stream=True)
+    with open(filename, 'wb') as f:
+        shutil.copyfileobj(response.raw, f)
+    del response
 
 def framesExist(filePattern, frameCount):
     padZeros = getZeroPadding(frameCount)
@@ -73,6 +84,15 @@ def getJSONFromURL(url):
     print("Downloading %s" % url)
     r = requests.get(url)
     return r.json()
+
+def getNestedValue(d, string):
+    parts = string.split(".")
+    value = None
+    for p in parts:
+        if p in d:
+            value = d[p]
+            d = value
+    return value
 
 def getZeroPadding(count):
     return len(str(count))
@@ -159,6 +179,9 @@ def removeFiles(listOrString):
     for fn in filenames:
         if os.path.isfile(fn):
             os.remove(fn)
+
+def replaceWhitespace(string, replaceWith=" "):
+    return re.sub('\s+', replaceWith, string).strip() if isinstance(string, str) else string
 
 def supportsEncoding():
     return sys.version_info >= (3, 0)
