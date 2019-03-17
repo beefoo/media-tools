@@ -98,9 +98,9 @@ for step in range(a.STEPS):
     container.vector.setTransform(scale=(currentScale, currentScale))
 
     # play kick
-    sampler.queuePlay(ms, "kick", index=step, params={
-        "volume": 1.5
-    })
+    # sampler.queuePlay(ms, "kick", index=step, params={
+    #     "volume": 1.5
+    # })
 
     visibleClips = [clip for clip in clips if clip.vector.isVisible(a.WIDTH, a.HEIGHT)]
     visibleClipCount = len(visibleClips)
@@ -109,12 +109,14 @@ for step in range(a.STEPS):
     for i, clip in enumerate(visibleClips):
         nprogress = 1.0 * i / visibleClipCount
         clipStartMs = ms + roundInt(a.WAVE_DUR * nprogress)
+        pivot = 0.1 # ease in the volume; clips at pivot are that loudest
+        volume = lerp((clip.props["volume"]*0.2, clip.props["volume"]), ease(nprogress/pivot)) if nprogress <= pivot else clip.props["volume"]
 
         # play clip
         if clip.props["playAudio"]:
             clip.queuePlay(clipStartMs, {
                 "dur": clip.props["audioDur"],
-                "volume": clip.props["volume"],
+                "volume": volume,
                 "fadeOut": clip.props["fadeOut"],
                 "fadeIn": clip.props["fadeIn"],
                 "pan": clip.props["pan"],
