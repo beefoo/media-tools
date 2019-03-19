@@ -70,7 +70,7 @@ def downloadMedia(row):
         return error
 
     filename = row["filename"]
-    encodedFilename = urllib.quote(filename)
+    encodedFilename = urllib.parse.quote(filename)
     url = "https://archive.org/download/%s/%s" % (id, encodedFilename)
     filepath = OUTPUT_DIR + filename
     if os.path.isfile(filepath) and not OVERWRITE:
