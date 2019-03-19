@@ -26,7 +26,7 @@ HEIGHT = 600
 EXCERPT_MS = 30000
 FPS = 30
 SIZES = [64, 32, 16, 8]
-FRAME_FILE = "tmp/resize_test/frame.%s.jpg"
+FRAME_FILE = "tmp/resize_test/frame.%s.png"
 OUTPUT_FILE = "output/resize_test.mp4"
 
 makeDirectories([FRAME_FILE, OUTPUT_FILE])

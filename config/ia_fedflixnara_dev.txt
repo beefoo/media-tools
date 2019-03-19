@@ -1,4 +1,0 @@
-file 'D:/Dropbox/landscapes/output/ia_fedflixnara_proliferation_2019-03-13.mp4'
-file 'D:/Dropbox/landscapes/output/ia_fedflixnara_waves_2019-03-17.mp4'
-file 'D:/Dropbox/landscapes/output/ia_fedflixnara_falling_2019-03-15.mp4'
-file 'D:/Dropbox/landscapes/output/ia_fedflixnara_orbits_2019-03-15.mp4'
