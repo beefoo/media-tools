@@ -80,8 +80,15 @@ def downloadMedia(row):
         makeDirectories(filepath)
     command = ['curl', '-O', '-L', url] # We need -L because the URL redirects
     print(" ".join(command))
-    finished = subprocess.check_call(command)
     basename = os.path.basename(encodedFilename)
+    try:
+        finished = subprocess.check_call(command)
+    except subprocess.CalledProcessError:
+        error = "CalledProcessError: could not properly download %s" % url
+        print(error)
+        if os.path.isfile(basename):
+            os.remove(basename)
+        return error
     size = os.path.getsize(basename)
     # Remove file if not downloaded properly
     if size < 43000:
@@ -92,6 +99,7 @@ def downloadMedia(row):
      # Move the file to the target location
     # os.rename(basename, filepath)
     shutil.move(basename, filepath)
+
     return None
 
 pool = ThreadPool(THREADS)
