@@ -45,7 +45,6 @@ def addVideoArgs(parser):
     parser.add_argument('-maxdb', dest="MAX_DB", default=-16, type=int, help="Max decibels, -9999 for none")
     parser.add_argument('-precision', dest="PRECISION", default=3, type=int, help="Precision for position and size")
     parser.add_argument('-margin', dest="CLIP_MARGIN", default=0.06666666667, type=float, help="Margin between clips as a percentage of a clip's width")
-    parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.3,0.6", help="Volume range")
     parser.add_argument('-alphar', dest="ALPHA_RANGE", default="0.33,1.0", help="Alpha range")
     parser.add_argument('-mcd', dest="MIN_CLIP_DUR", default=1500, type=int, help="Minumum clip duration")
     parser.add_argument('-noise', dest="NOISE", default=0.0, type=float, help="Amount of pixel noise to add")
