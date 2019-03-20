@@ -61,23 +61,22 @@ def alphaMask(im, mask):
         mask = mask.resize((w, h), PIL.Image.BICUBIC)
     return Image.composite(im, transparentImg, mask)
 
-def applyEffects(im, clip):
-    im = updateAlpha(im, getAlpha(clip))
-    angle = getRotation(clip)
-    blur = getValue(clip, "blur", 0)
-    mask = getValue(clip, "mask", None)
-    if mask:
+def applyEffects(im, x, y, rotation=0.0, blur=0.0, mask=None, colors=4):
+    im = im.convert("RGBA")
+    w, h = im.size
+    angle = rotation % 360.0
+    if mask is not None:
         im = alphaMask(im, mask)
-    x = clip["x"]
-    y = clip["y"]
     if angle > 0.0 or blur > 0.0:
-        cx, cy = getCenter(clip)
-        bx, by, bw, bh = bboxRotate(cx, cy, clip["width"], clip["height"], 45.0) # make the new box size as big as if it was rotated 45 degrees
+        cx, cy = (x + w * 0.5, y + h * 0.5)
+        bx, by, bw, bh = bboxRotate(cx, cy, w, h, 45.0) # make the new box size as big as if it was rotated 45 degrees
         im = resizeCanvas(im, roundInt(bw), roundInt(bh)) # resize canvas to account for expansion from rotation or blur
         im = rotateImage(im, angle)
         im = blurImage(im, blur)
         x = bx
         y = by
+    if colors == 3:
+        im = im.convert("RGB")
     return (im, x, y)
 
 def blurImage(im, radius):
@@ -111,13 +110,13 @@ def clipsToFrame(p, clips, pixelData, precision=3, customClipToArrFunction=None)
 
     return clipArr
 
-def clipsToFrameGPU(clips, width, height, clipsPixelData, precision=3):
+def clipsToFrameGPU(clips, width, height, clipsPixelData, precision=3, colors=3):
     offset = 0
-    c = 3
+    c = colors
     maxScaleFactor = 2.0
     precisionMultiplier = int(10 ** precision)
 
-    _x, _y, _w, _h, _alpha, _t, _z = (0, 1, 2, 3, 4, 5, 6)
+    _x, _y, _w, _h, _alpha, _t, _z, _rotation, _blur = (0, 1, 2, 3, 4, 5, 6, 7, 8)
 
     # filter out clips with no pixels, or zero [width, height, alpha]
     # keep track of how many pixels we'll need
@@ -130,7 +129,7 @@ def clipsToFrameGPU(clips, width, height, clipsPixelData, precision=3):
         if frameCount > 0 and clip[_w] > 0 and clip[_h] > 0 and clip[_alpha] > 0:
             indices.append(i)
             tn = 1.0 * clip[_t] / precisionMultiplier
-            h, w, c = clipsPixelData[i][roundInt(tn * (frameCount-1))].shape
+            h, w, _ = clipsPixelData[i][roundInt(tn * (frameCount-1))].shape
             # we want to resample if scaled too much
             scaleFactor = 1.0 * w / (1.0*clip[_w]/precisionMultiplier)
             if scaleFactor > maxScaleFactor:
@@ -146,18 +145,39 @@ def clipsToFrameGPU(clips, width, height, clipsPixelData, precision=3):
         clip = clips[clipIndex]
         clipPixelData = clipsPixelData[clipIndex]
         frameCount = len(clipPixelData)
+        # check for blur
+        blur = 0.0
+        if len(clip) > _blur:
+            blur = 1.0*clip[_blur]/precisionMultiplier
+            clip = clip[:_blur]
+        # check for rotation
+        rotation = 0.0
+        if len(clip) > _rotation:
+            rotation = 1.0*clip[_rotation]/precisionMultiplier
+            clip = clip[:_rotation]
         x, y, tw, th, alpha, t, zindex = tuple(clip)
         tn = 1.0 * t / precisionMultiplier
         pixels = clipPixelData[roundInt(tn * (frameCount-1))]
-        h, w, c = pixels.shape
-        # we want to resample if scaled too much; a hack; would like to do in GPU eventually
+        h, w, _ = pixels.shape
+        # we want to resample if scaled too much
         scaleFactor = 1.0 * w / (1.0*tw/precisionMultiplier)
-        if scaleFactor > maxScaleFactor:
-            w = roundInt(1.0*tw/precisionMultiplier)
-            h = roundInt(1.0*th/precisionMultiplier)
+        needsResize = (scaleFactor > maxScaleFactor)
+        if needsResize or blur > 0.0 or rotation % 360.0 > 0.0:
             im = Image.fromarray(pixels, mode="RGB")
-            resized = im.resize((w, h), resample=Image.LANCZOS)
-            pixels = np.array(resized)
+            rw = roundInt(1.0*tw/precisionMultiplier)
+            rh = roundInt(1.0*th/precisionMultiplier)
+            imW, imH = im.size
+            if imW != rw or imH != rh:
+                im = im.resize((rw, rh), resample=Image.LANCZOS)
+            if blur > 0.0 or rotation % 360.0 > 0.0:
+                im, newX, newY = applyEffects(im, 1.0*x/precisionMultiplier, 1.0*y/precisionMultiplier, rotation, blur, colors=c)
+                x = roundInt(newX * precisionMultiplier)
+                y = roundInt(newY * precisionMultiplier)
+                newW, newH = im.size
+                tw = roundInt(newW * precisionMultiplier)
+                th = roundInt(newH * precisionMultiplier)
+            pixels = np.array(im)
+            h, w, _ = pixels.shape
         # # not ideal, but don't feel like implementing blur/rotation in opencl; just use PIL's algorithm
         # if "rotation" in clip and clip["rotation"] % 360 > 0 or "blur" in clip and clip["blur"] > 0.0:
         #     im = Image.fromarray(pixels, mode="RGB")
