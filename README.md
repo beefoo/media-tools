@@ -14,7 +14,7 @@ Where `sort` can be one of: [tsne](https://lvdmaaten.github.io/tsne/) (spectral 
 
 Not all of these are required for individual scripts, but covers what's needed for most workflows.
 
-- [Python](https://www.python.org/) (I developed using 3.6, but should be compatible with 2.7+ and 3.5+)
+- [Python](https://www.python.org/) (I developed using 3.6, so 3.6+ is recommended and may not work with 2.7+)
 - [SciPy](https://www.scipy.org/) for math functions (probably already installed)
 
 ### Working with video
@@ -34,6 +34,7 @@ Not all of these are required for individual scripts, but covers what's needed f
 
 - [scikit-learn](https://scikit-learn.org/stable/) for statistics and machine learning features (e.g. TSNE, clustering, classification)
 - [Requests](http://docs.python-requests.org/en/master/) for making remote web requests for scraping metadata
+- [Curl](https://curl.haxx.se/) for binary downloads
 
 ## Large collection workflow
 
@@ -47,7 +48,7 @@ Download all movie metadata from Internet Archive that are in the [Fedflix colle
 python scrapers/internet_archive/download_metadata.py -query " collection:(FedFlix) AND mediatype:(movies) AND creator:(national archives and records administration)" -out "tmp/ia_fedflixnara.csv"
 ```
 
-By default, the above script will look for the largest .mp4 asset and associate it with the `filename` property. You can change this format by adding a flag, e.g. `-format .mp3`. If each record has multiple assets associated with it, add a flag `-multi 1` and each asset with the indicated format will be retrieved and saved as its own row (the record metadata will be the same, except for `filename`)
+By default, the above script will look for the largest .mp4 asset and associate it with the `filename` property. You can change this format by adding a flag, e.g. `-format .mp3`. If each record has multiple assets associated with it, add a flag `-multi` and each asset with the indicated format will be retrieved and saved as its own row (the record metadata will be the same, except for `filename`)
 
 ### 2. Asset download
 
@@ -69,7 +70,7 @@ Note that checking for an audio track doesn't guarantee to catch all silent film
 
 ### 4. Audio analysis
 
-Now we analyze each movie file's audio track for "samples." These essentially are clips of audio that have a distinct [onset](https://en.wikipedia.org/wiki/Onset_(audio)) and release. This could be thought of as a distinct sonic "pulse" or syllable in the case of speech. The `-features 1` flag adds an analysis step that looks for each sample's volume (`power`) and pitch (`hz` or frequency.) `note` and `octave` are added for convenience, and the `clarity` feature attempts to measure how distinct a particular note is (i.e. very clear harmonic bands.) Samples with high clarity values should be good candidates for musical notes.
+Now we analyze each movie file's audio track for "samples." These essentially are clips of audio that have a distinct [onset](https://en.wikipedia.org/wiki/Onset_(audio)) and release. This could be thought of as a distinct sonic "pulse" or syllable in the case of speech. The `-features` flag adds an analysis step that looks for each sample's volume (`power`) and pitch (`hz` or frequency.) `note` and `octave` are added for convenience, and the `clarity` feature attempts to measure how distinct a particular note is (i.e. very clear harmonic bands.) Samples with high clarity values should be good candidates for musical notes.
 
 ```
 python audio_to_samples.py -in "tmp/ia_fedflixnara.csv" -dir "tmp/downloads/ia_fedflixnara/" -out "tmp/sampledata/ia_fedflixnara/%s.csv" -features 1

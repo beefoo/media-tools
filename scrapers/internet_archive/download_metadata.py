@@ -23,10 +23,10 @@ parser.add_argument('-query', dest="QUERY", default="collection:(prelingerhomemo
 parser.add_argument('-keys', dest="RETURN_KEYS", default="date,description,identifier,item_size,publicdate,subject,title", help="List of keys to return")
 parser.add_argument('-sort', dest="SORT_BY", default="downloads desc", help="Sort string")
 parser.add_argument('-format', dest="FORMAT", default=".mp4", help="Derivative to retrieve")
-parser.add_argument('-multi', dest="MULTI_FORMAT", default=0, type=int, help="Download multiple istances of the same format?")
+parser.add_argument('-multi', dest="MULTI_FORMAT", action="store_true", help="Download multiple istances of the same format?")
 parser.add_argument('-rows', dest="ROWS", default=100, type=int, help="Rows per page")
 parser.add_argument('-out', dest="OUTPUT_FILE", default="tmp/internet_archive_metadata.csv", help="CSV output file")
-parser.add_argument('-overwrite', dest="OVERWRITE", default=0, type=int, help="Overwrite existing data?")
+parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite existing data?")
 args = parser.parse_args()
 
 # Parse arguments
@@ -34,10 +34,10 @@ QUERY = args.QUERY.strip().replace(" ", "+")
 RETURN_KEYS = args.RETURN_KEYS.strip().split(",")
 SORT_BY = args.SORT_BY.strip().replace(" ", "+")
 FORMAT = args.FORMAT if len(args.FORMAT) > 0 else False
-MULTI_FORMAT = args.MULTI_FORMAT > 0
+MULTI_FORMAT = args.MULTI_FORMAT
 ROWS = args.ROWS
 OUTPUT_FILE = args.OUTPUT_FILE
-OVERWRITE = args.OVERWRITE > 0
+OVERWRITE = args.OVERWRITE
 
 # Make sure output dirs exist
 makeDirectories(OUTPUT_FILE)

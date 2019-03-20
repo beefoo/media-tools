@@ -26,10 +26,10 @@ parser.add_argument('-samples', dest="SAMPLES", default=-1, type=int, help="Max 
 parser.add_argument('-min', dest="MIN_DUR", default=80, type=int, help="Minimum sample duration in ms")
 parser.add_argument('-max', dest="MAX_DUR", default=1000, type=int, help="Maximum sample duration in ms, -1 for no max")
 parser.add_argument('-out', dest="OUTPUT_FILE", default="tmp/samples.csv", help="CSV output file")
-parser.add_argument('-overwrite', dest="OVERWRITE", default=0, type=int, help="Overwrite existing data?")
+parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite existing data?")
 
 # arguments for managing large media sets
-parser.add_argument('-features', dest="FEATURES", default=0, type=int, help="Retrieve features?")
+parser.add_argument('-features', dest="FEATURES", action="store_true", help="Retrieve features?")
 parser.add_argument('-count', dest="COUNT", default=-1, type=int, help="Target total sample count, -1 for everything")
 parser.add_argument('-filter', dest="FILTER", default="", help="Query string to filter by")
 parser.add_argument('-sort', dest="SORT", default="", help="Query string to sort by")
@@ -43,10 +43,10 @@ SAMPLES = args.SAMPLES
 MIN_DUR = args.MIN_DUR
 MAX_DUR = args.MAX_DUR
 OUTPUT_FILE = args.OUTPUT_FILE
-OVERWRITE = args.OVERWRITE > 0
+OVERWRITE = args.OVERWRITE
 MULTIFILE_OUTPUT = ("%s" in OUTPUT_FILE)
 
-FEATURES = args.FEATURES > 0
+FEATURES = args.FEATURES
 COUNT = args.COUNT
 FILTER = args.FILTER
 SORT = args.SORT

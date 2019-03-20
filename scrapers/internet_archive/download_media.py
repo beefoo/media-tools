@@ -30,7 +30,7 @@ parser.add_argument('-id', dest="ID_KEY", default="identifier", help="Key to ret
 parser.add_argument('-limit', dest="LIMIT", default=-1, type=int, help="Limit downloads; -1 for no limit")
 parser.add_argument('-threads', dest="THREADS", default=2, type=int, help="Limit parallel downloads (limited to # of cores), -1 for max")
 parser.add_argument('-out', dest="OUTPUT_DIR", default="media/downloads/internet_archive/", help="Output directory")
-parser.add_argument('-overwrite', dest="OVERWRITE", default=0, type=int, help="Overwrite existing data?")
+parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite existing data?")
 args = parser.parse_args()
 
 # Parse arguments
@@ -39,7 +39,7 @@ ID_KEY = args.ID_KEY
 LIMIT = args.LIMIT
 THREADS = min(args.THREADS, multiprocessing.cpu_count()) if args.THREADS > 0 else multiprocessing.cpu_count()
 OUTPUT_DIR = args.OUTPUT_DIR.strip()
-OVERWRITE = args.OVERWRITE > 0
+OVERWRITE = args.OVERWRITE
 
 # Make sure output dirs exist
 makeDirectories(OUTPUT_DIR)
