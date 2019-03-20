@@ -68,8 +68,7 @@ def applyEffects(im, x, y, rotation=0.0, blur=0.0, mask=None, colors=4):
     if mask is not None:
         im = alphaMask(im, mask)
     if angle > 0.0 or blur > 0.0:
-        cx, cy = (x + w * 0.5, y + h * 0.5)
-        bx, by, bw, bh = bboxRotate(cx, cy, w, h, 45.0) # make the new box size as big as if it was rotated 45 degrees
+        bx, by, bw, bh = bboxRotate(x, y, w, h, 45.0) # make the new box size as big as if it was rotated 45 degrees
         im = resizeCanvas(im, roundInt(bw), roundInt(bh)) # resize canvas to account for expansion from rotation or blur
         im = rotateImage(im, angle)
         im = blurImage(im, blur)
@@ -84,7 +83,7 @@ def blurImage(im, radius):
         im = im.filter(ImageFilter.GaussianBlur(radius=radius))
     return im
 
-def clipsToFrame(p, clips, pixelData, precision=3, customClipToArrFunction=None):
+def clipsToFrame(p, clips, pixelData, precision=3, customClipToArrFunction=None, colors=3):
     filename = p["filename"]
     width = p["width"]
     height = p["height"]
@@ -103,7 +102,7 @@ def clipsToFrame(p, clips, pixelData, precision=3, customClipToArrFunction=None)
     # frame already exists, read it directly
     if not fileExists and saveFrame:
         im = Image.new(mode="RGBA", size=(width, height), color=(0, 0, 0, 255))
-        im = clipsToFrameGPU(clipArr, width, height, pixelData, precision)
+        im = clipsToFrameGPU(clipArr, width, height, pixelData, precision, colors)
         im = im.convert("RGB")
         im.save(filename)
         print("Saved frame %s" % filename)
@@ -116,25 +115,28 @@ def clipsToFrameGPU(clips, width, height, clipsPixelData, precision=3, colors=3)
     maxScaleFactor = 2.0
     precisionMultiplier = int(10 ** precision)
 
-    _x, _y, _w, _h, _alpha, _t, _z, _rotation, _blur = (0, 1, 2, 3, 4, 5, 6, 7, 8)
-
     # filter out clips with no pixels, or zero [width, height, alpha]
     # keep track of how many pixels we'll need
     indices = []
     pixelCount = 0
     for i in range(len(clips)):
-        clip = clips[i]
+        clip = clipArrToDict(clips[i], precision)
         frameCount = len(clipsPixelData[i])
         # only take clips that are visible
-        if frameCount > 0 and clip[_w] > 0 and clip[_h] > 0 and clip[_alpha] > 0:
+        if frameCount > 0 and clip["width"] > 0.0 and clip["height"] > 0.0 and clip["alpha"] > 0.0:
             indices.append(i)
-            tn = 1.0 * clip[_t] / precisionMultiplier
+            tn = clip["tn"]
             h, w, _ = clipsPixelData[i][roundInt(tn * (frameCount-1))].shape
             # we want to resample if scaled too much
-            scaleFactor = 1.0 * w / (1.0*clip[_w]/precisionMultiplier)
+            scaleFactor = 1.0 * w / clip["width"]
             if scaleFactor > maxScaleFactor:
-                w = roundInt(1.0*clip[_w]/precisionMultiplier)
-                h = roundInt(1.0*clip[_h]/precisionMultiplier)
+                w = roundInt(clip["width"])
+                h = roundInt(clip["height"])
+            # we need to resize if blurred or rotated
+            if clip["blur"] > 0.0 or clip["rotation"] % 360.0 > 0.0:
+                _x, _y, newW, newH = bboxRotate(0, 0, clip["width"], clip["height"], angle=45.0)
+                w = roundInt(newW)
+                h = roundInt(newH)
             pixelCount += int(h*w*c)
 
     validCount = len(indices)
@@ -142,54 +144,37 @@ def clipsToFrameGPU(clips, width, height, clipsPixelData, precision=3, colors=3)
     properties = np.zeros((validCount, propertyCount), dtype=np.int32)
     pixelData = np.zeros(pixelCount, dtype=np.uint8)
     for i, clipIndex in enumerate(indices):
-        clip = clips[clipIndex]
+        clipArr = clips[clipIndex]
+        x, y, tw, th, alpha, t, zindex = tuple(clipArr[:7])
+        clip = clipArrToDict(clipArr, precision)
         clipPixelData = clipsPixelData[clipIndex]
         frameCount = len(clipPixelData)
-        # check for blur
-        blur = 0.0
-        if len(clip) > _blur:
-            blur = 1.0*clip[_blur]/precisionMultiplier
-            clip = clip[:_blur]
-        # check for rotation
-        rotation = 0.0
-        if len(clip) > _rotation:
-            rotation = 1.0*clip[_rotation]/precisionMultiplier
-            clip = clip[:_rotation]
-        x, y, tw, th, alpha, t, zindex = tuple(clip)
-        tn = 1.0 * t / precisionMultiplier
+        tn = clip["tn"]
         pixels = clipPixelData[roundInt(tn * (frameCount-1))]
-        h, w, _ = pixels.shape
+        h, w, _c = pixels.shape
         # we want to resample if scaled too much
-        scaleFactor = 1.0 * w / (1.0*tw/precisionMultiplier)
-        needsResize = (scaleFactor > maxScaleFactor)
-        if needsResize or blur > 0.0 or rotation % 360.0 > 0.0:
+        scaleFactor = 1.0 * w / clip["width"]
+        if scaleFactor > maxScaleFactor or clip["blur"] > 0.0 or clip["rotation"] % 360.0 > 0.0:
             im = Image.fromarray(pixels, mode="RGB")
-            rw = roundInt(1.0*tw/precisionMultiplier)
-            rh = roundInt(1.0*th/precisionMultiplier)
+            rw = roundInt(clip["width"])
+            rh = roundInt(clip["height"])
             imW, imH = im.size
             if imW != rw or imH != rh:
                 im = im.resize((rw, rh), resample=Image.LANCZOS)
-            if blur > 0.0 or rotation % 360.0 > 0.0:
-                im, newX, newY = applyEffects(im, 1.0*x/precisionMultiplier, 1.0*y/precisionMultiplier, rotation, blur, colors=c)
+            if clip["blur"] > 0.0 or clip["rotation"] % 360.0 > 0.0:
+                im, newX, newY = applyEffects(im, clip["x"], clip["y"], clip["rotation"], clip["blur"], colors=c)
+                # x, y, tw, th changes if we rotate or blur
                 x = roundInt(newX * precisionMultiplier)
                 y = roundInt(newY * precisionMultiplier)
                 newW, newH = im.size
                 tw = roundInt(newW * precisionMultiplier)
                 th = roundInt(newH * precisionMultiplier)
             pixels = np.array(im)
-            h, w, _ = pixels.shape
-        # # not ideal, but don't feel like implementing blur/rotation in opencl; just use PIL's algorithm
-        # if "rotation" in clip and clip["rotation"] % 360 > 0 or "blur" in clip and clip["blur"] > 0.0:
-        #     im = Image.fromarray(pixels, mode="RGB")
-        #     im, x, y = applyEffects(im, clip)
-        #     pixels = np.array(im)
-        #     w0 = w
-        #     h0 = h
-        #     h, w, c = pixels.shape
-        #     tw = roundInt(1.0 * w / w0 * tw)
-        #     th = roundInt(1.0 * h / h0 * th)
-        # print("%s, %s, %s" % pixels.shape)
-        # print("%s, %s, %s, %s" % (x, y, tw, th))
+            h, w, _c = pixels.shape
+        # pixels are size 3, but need size 4
+        if c > _c:
+            pixels = np.resize(pixels, (h, w, c))
+            pixels[:,:,-1] = 255
         properties[i] = np.array([offset, x, y, w, h, tw, th, alpha, zindex])
         px0 = offset
         px1 = px0 + int(h*w*c)
@@ -582,20 +567,20 @@ def pasteImage(im, clipImg, x, y):
     im = Image.alpha_composite(im, stagingImg)
     return im
 
-def processFrames(params, clips, clipsPixelData, threads=1, verbose=True, precision=3, customClipToArrFunction=None):
+def processFrames(params, clips, clipsPixelData, threads=1, verbose=True, precision=3, customClipToArrFunction=None, colors=3):
     count = len(params)
     print("Processing %s frames" % count)
     threads = getThreadCount(threads)
 
     if threads > 1:
         pool = ThreadPool(threads)
-        pclipsToFrame = partial(clipsToFrame, clips=clips, pixelData=clipsPixelData, precision=precision, customClipToArrFunction=customClipToArrFunction)
+        pclipsToFrame = partial(clipsToFrame, clips=clips, pixelData=clipsPixelData, precision=precision, customClipToArrFunction=customClipToArrFunction, colors=colors)
         pool.map(pclipsToFrame, params)
         pool.close()
         pool.join()
     else:
         for i, p in enumerate(params):
-            clipsToFrame(p, clips=clips, pixelData=clipsPixelData, precision=precision, customClipToArrFunction=customClipToArrFunction)
+            clipsToFrame(p, clips=clips, pixelData=clipsPixelData, precision=precision, customClipToArrFunction=customClipToArrFunction, colors=colors)
             if verbose:
                 printProgress(i+1, count)
 

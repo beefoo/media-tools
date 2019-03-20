@@ -164,9 +164,9 @@ class Vector:
             "y": self.getY(ms, parent, customProps),
             "width": self.getWidth(ms, parent, customProps),
             "height": self.getHeight(ms, parent, customProps),
-            "alpha": self.getAlpha(ms)
-            # "rotation": self.getRotation(ms),
-            # "blur": self.getBlur(ms)
+            "alpha": self.getAlpha(ms),
+            "rotation": self.getRotation(ms),
+            "blur": self.getBlur(ms)
         }
         return props
 
@@ -465,15 +465,47 @@ class Clip:
     def toNpArr(self, ms=None, containerW=None, containerH=None, precision=3, parent=None):
         precisionMultiplier = int(10 ** precision)
         props = self.toDict(ms, containerW, containerH, parent)
-        return np.array([
+        arr = [
             roundInt(props["x"] * precisionMultiplier),
             roundInt(props["y"] * precisionMultiplier),
             roundInt(props["width"] * precisionMultiplier),
             roundInt(props["height"] * precisionMultiplier),
             roundInt(props["alpha"] * precisionMultiplier),
             roundInt(props["tn"] * precisionMultiplier),
-            roundInt(props["zindex"])
-        ], dtype=np.int32)
+            roundInt(props["zindex"]),
+            roundInt(props["rotation"] * precisionMultiplier),
+            roundInt(props["blur"] * precisionMultiplier)
+        ]
+        return np.array(arr, dtype=np.int32)
+
+def clipArrToDict(clipArr, precision=3):
+    precisionMultiplier = int(10 ** precision)
+    _x, _y, _w, _h, _alpha, _t, _z, _rotation, _blur = (0, 1, 2, 3, 4, 5, 6, 7, 8)
+
+    # check for blur
+    blur = 0.0
+    if len(clipArr) > _blur:
+        blur = 1.0*clipArr[_blur]/precisionMultiplier
+        clipArr = clipArr[:_blur]
+    # check for rotation
+    rotation = 0.0
+    if len(clipArr) > _rotation:
+        rotation = 1.0*clipArr[_rotation]/precisionMultiplier
+        clipArr = clipArr[:_rotation]
+
+    x, y, tw, th, alpha, t, zindex = tuple(clipArr)
+
+    return {
+        "x": 1.0 * x / precisionMultiplier,
+        "y": 1.0 * y / precisionMultiplier,
+        "width": 1.0 * tw / precisionMultiplier,
+        "height": 1.0 * th / precisionMultiplier,
+        "alpha": 1.0 * alpha / precisionMultiplier,
+        "tn": 1.0 * t / precisionMultiplier,
+        "zindex": zindex,
+        "rotation": rotation,
+        "blur": blur
+    }
 
 def clipToDict(p):
     ms, clip = p
@@ -483,7 +515,7 @@ def clipsToNpArr(clips, ms=None, containerW=None, containerH=None, precision=3, 
     # startTime = logTime()
     parentProps = clips[0].vector.parent.toDict(ms) if len(clips) > 0 and clips[0].vector.parent is not None else None
     clipCount = len(clips)
-    propertyCount = 7
+    propertyCount = 9
     arr = np.zeros((clipCount, propertyCount), dtype=np.int32)
     for i, clip in enumerate(clips):
         if customClipToArrFunction is not None:

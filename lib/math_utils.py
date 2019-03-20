@@ -21,7 +21,8 @@ def angleBetween(x1, y1, x2, y2):
     return math.degrees(math.atan2(deltaY, deltaX))
 
 # return the bounding box of a rotated rectangle
-def bboxRotate(cx, cy, w, h, angle):
+def bboxRotate(x, y, w, h, angle=45.0):
+    cx, cy = (x + w * 0.5, y + h * 0.5)
     distanceToCorner = distance(cx, cy, cx-w*0.5, cy-h*0.5)
     tlX, tlY = translatePoint(cx, cy, distanceToCorner, 225+angle) # top left corner
     trX, trY = translatePoint(cx, cy, distanceToCorner, 315+angle) # top right corner
