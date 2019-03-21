@@ -53,7 +53,7 @@ SORT = args.SORT
 
 # Audio config
 FFT = 2048
-HOP_LEN = FFT/4
+HOP_LEN = int(FFT/4)
 
 # Check if file exists already
 # if os.path.isfile(OUTPUT_FILE) and not OVERWRITE:

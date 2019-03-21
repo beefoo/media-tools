@@ -63,7 +63,7 @@ def getFilesFromString(a):
     fieldNames = []
     fromManifest = a.INPUT_FILE.endswith(".csv")
     if fromManifest:
-        fieldNames, files = readCsv(INPUT_FILE)
+        fieldNames, files = readCsv(a.INPUT_FILE)
     else:
         fieldNames = ["filename"]
         files = [{"filename": f} for f in getFilenames(a.INPUT_FILE)]
