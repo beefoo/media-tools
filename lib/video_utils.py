@@ -173,8 +173,8 @@ def clipsToFrameGPU(clips, width, height, clipsPixelData, precision=3, colors=3)
             h, w, _c = pixels.shape
         # pixels are size 3, but need size 4
         if c > _c:
-            pixels = np.resize(pixels, (h, w, c))
-            pixels[:,:,-1] = 255
+            fillVals = np.full((h, w, 1), 255, dtype='uint8')
+            pixels = np.concatenate((pixels, fillVals), axis=2)
         properties[i] = np.array([offset, x, y, w, h, tw, th, alpha, zindex])
         px0 = offset
         px1 = px0 + int(h*w*c)
