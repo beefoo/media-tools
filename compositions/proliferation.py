@@ -34,7 +34,7 @@ parser.add_argument('-grid1', dest="END_GRID", default="128x128", help="End size
 parser.add_argument('-bstep', dest="BASE_STEP_MS", default=4096, type=int, help="Base step in milliseconds")
 parser.add_argument('-kfd', dest="KEYS_FOR_DISTANCE", default="tsne,tsne2", help="Keys for determining distance between clips")
 parser.add_argument('-cscale', dest="CLIP_SCALE_AMOUNT", default=1.1, type=float, help="Amount to scale clip when playing")
-parser.add_argument('-mci', dest="MIN_CLIP_INTERVAL_MS", default=64, type=int, help="Minimum time between consecutive clips")
+parser.add_argument('-mci', dest="MIN_CLIP_INTERVAL_MS", default=16, type=int, help="Minimum time between consecutive clips")
 parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.4,1.0", help="Volume range")
 a = parser.parse_args()
 parseVideoArgs(a)
