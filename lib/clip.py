@@ -330,6 +330,7 @@ class Clip:
         self.start = defaults["start"]
         self.dur = defaults["dur"]
         self.plays = defaults["plays"]
+        self.endCompositionMs = None
 
         if self.dur <= 0 and self.filename is not None:
             self.dur = getDurationFromAudioFile(self.filename)
@@ -345,20 +346,33 @@ class Clip:
         if ms is None:
             return 0.0
 
+        endCompositionMs = self.endCompositionMs
         plays = [t for t in self.plays if t[0] <= ms <= t[1]]
         time = 0.0
         start = 0
 
         # check if we are playing this clip at this time
         if len(plays) > 0:
-            for p in plays:
-                start, end, params = p
+            start, end, params = plays[0]
 
         # otherwise, find the closest play
         elif len(self.plays) > 0:
             plays = sorted(self.plays, key=lambda p: abs(ms - lerp((p[0], p[1]), 0.5)))
             closestPlay = plays[0]
             start, end, params =  closestPlay
+
+            # assumes plays are sorted
+            firstPlay = self.plays[0]
+            lastPlay = self.plays[-1]
+
+            # if we are before the first play, play from the beginning to match the previous composition
+            if ms < firstPlay[0]:
+                start = 0
+
+            # if we are after the last play, line it up so that it lines up with the next composition
+            elif ms > lastPlay[1] and endCompositionMs is not None:
+                start = endCompositionMs
+
 
         msSincePlay = ms - start
         remainder = msSincePlay % self.dur
@@ -422,6 +436,9 @@ class Clip:
             if dur > 0:
                 self.vector.addKeyFrame(name, ms+dur, toValue, easing, sortFrames)
 
+    def setEndCompositionMs(self, ms):
+        self.endCompositionMs = ms
+
     def setFadeIn(self, fadeDur):
         self.fadeIn = fadeDur
 
@@ -439,6 +456,9 @@ class Clip:
 
     def setVector(self, vector):
         self.vector = Vector() if vector is None else vector
+
+    def sortPlays(self):
+        self.plays = sorted(self.plays, key=lambda p: p[0])
 
     def toDict(self, ms=None, containerW=None, containerH=None, parent=None, customProps=None):
         props = self.props.copy()

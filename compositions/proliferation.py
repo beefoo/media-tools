@@ -161,7 +161,5 @@ stepTime = logTime(stepTime, "Create plays/tweens")
 
 # sort frames
 container.vector.sortFrames()
-for clip in clips:
-    clip.vector.sortFrames()
 
 processComposition(a, clips, ms, sampler, stepTime, startTime)

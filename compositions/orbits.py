@@ -174,8 +174,6 @@ stepTime = logTime(stepTime, "Create plays/tweens")
 
 # sort frames
 container.vector.sortFrames()
-for clip in clips:
-    clip.vector.sortFrames()
 
 def getRingCellPos(index, count, ringX, ringY, cellW, cellH):
     index = index % count

@@ -198,6 +198,12 @@ def processComposition(a, clips, videoDurationMs, sampler=None, stepTime=False, 
     print("Audio time: %s" % formatSeconds(audioDurationMs/1000.0))
     print("Total time: %s" % formatSeconds(durationMs/1000.0))
 
+    # sort frames and plays
+    for clip in clips:
+        clip.vector.sortFrames()
+        clip.sortPlays()
+        clip.setEndCompositionMs(durationMs)
+
     # sys.exit()
 
     # adjust frames if audio is longer than video

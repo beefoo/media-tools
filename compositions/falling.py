@@ -213,6 +213,9 @@ for f in range(totalFrames):
 
 dequeueClips(endMs + frameToMs(1, a.FPS), clips, queue)
 
+# sort frames
+container.vector.sortFrames()
+
 # import matplotlib.pyplot as plt
 # ts = np.linspace(startMs/1000.0, endMs/1000.0, num=len(ys))
 # plt.scatter(ts, xs, 3)

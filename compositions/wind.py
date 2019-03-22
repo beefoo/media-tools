@@ -90,6 +90,9 @@ stepTime = logTime(stepTime, "Normalize data")
 
 ms = a.PAD_START + a.DURATION_MS + a.WIND_DURATION_MS
 
+# sort frames
+container.vector.sortFrames()
+
 # custom clip to numpy array function to override default tweening logic
 def clipToNpArrWind(clip, ms, containerW, containerH, precision, parent):
     customProps = None

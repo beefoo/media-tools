@@ -155,8 +155,6 @@ ms += max(0, a.WAVE_DUR-a.BEAT_DUR) # add the remainder from the wave
 
 # sort frames
 container.vector.sortFrames()
-for clip in clips:
-    clip.vector.sortFrames()
 
 # reset scale
 container.vector.setTransform(scale=(1.0, 1.0))
