@@ -287,7 +287,9 @@ def clipToNpArrOrbits(clip, ms, containerW, containerH, precision, parent):
         roundInt(props["height"] * precisionMultiplier),
         roundInt(alpha * precisionMultiplier),
         roundInt(props["tn"] * precisionMultiplier),
-        roundInt(props["zindex"])
+        roundInt(props["zindex"]),
+        roundInt(props["rotation"] * precisionMultiplier),
+        roundInt(props["blur"] * precisionMultiplier)
     ], dtype=np.int32)
 
 processComposition(a, clips, ms, sampler, stepTime, startTime, customClipToArrFunction=clipToNpArrOrbits)

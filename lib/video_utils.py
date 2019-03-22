@@ -48,8 +48,6 @@ def addVideoArgs(parser):
     parser.add_argument('-alphar', dest="ALPHA_RANGE", default="0.33,1.0", help="Alpha range")
     parser.add_argument('-mcd', dest="MIN_CLIP_DUR", default=1500, type=int, help="Minumum clip duration")
     parser.add_argument('-noise', dest="NOISE", default=0.0, type=float, help="Amount of pixel noise to add")
-    parser.add_argument('-state0', dest="START_CLIP_STATES", default="", help="Path where starting clip states are")
-    parser.add_argument('-state1', dest="END_CLIP_STATES", default="", help="Path to output ending clip states")
     parser.add_argument('-maxa', dest="MAX_AUDIO_CLIPS", default=-1, type=int, help="Maximum number of audio clips to play")
     parser.add_argument('-keep', dest="KEEP_FIRST_AUDIO_CLIPS", default=-1, type=int, help="Ensure the middle x audio files play")
 
@@ -83,7 +81,7 @@ def blurImage(im, radius):
         im = im.filter(ImageFilter.GaussianBlur(radius=radius))
     return im
 
-def clipsToFrame(p, clips, pixelData, precision=3, customClipToArrFunction=None, colors=3):
+def clipsToFrame(p, clips, pixelData, precision=3, customClipToArrFunction=None, colors=3, isSequential=False):
     filename = p["filename"]
     width = p["width"]
     height = p["height"]
@@ -96,7 +94,7 @@ def clipsToFrame(p, clips, pixelData, precision=3, customClipToArrFunction=None,
     fileExists = os.path.isfile(filename) and not overwrite
     clipArr = None
 
-    if not fileExists and saveFrame or not saveFrame:
+    if not fileExists and saveFrame or not saveFrame or isSequential:
         clipArr = clipsToNpArr(clips, ms, width, height, precision, customClipToArrFunction=customClipToArrFunction)
 
     # frame already exists, read it directly
@@ -567,20 +565,20 @@ def pasteImage(im, clipImg, x, y):
     im = Image.alpha_composite(im, stagingImg)
     return im
 
-def processFrames(params, clips, clipsPixelData, threads=1, verbose=True, precision=3, customClipToArrFunction=None, colors=3):
+def processFrames(params, clips, clipsPixelData, threads=1, verbose=True, precision=3, customClipToArrFunction=None, colors=3, isSequential=False):
     count = len(params)
     print("Processing %s frames" % count)
     threads = getThreadCount(threads)
 
-    if threads > 1:
+    if threads > 1 and not isSequential:
         pool = ThreadPool(threads)
-        pclipsToFrame = partial(clipsToFrame, clips=clips, pixelData=clipsPixelData, precision=precision, customClipToArrFunction=customClipToArrFunction, colors=colors)
+        pclipsToFrame = partial(clipsToFrame, clips=clips, pixelData=clipsPixelData, precision=precision, customClipToArrFunction=customClipToArrFunction, colors=colors, isSequential=isSequential)
         pool.map(pclipsToFrame, params)
         pool.close()
         pool.join()
     else:
         for i, p in enumerate(params):
-            clipsToFrame(p, clips=clips, pixelData=clipsPixelData, precision=precision, customClipToArrFunction=customClipToArrFunction, colors=colors)
+            clipsToFrame(p, clips=clips, pixelData=clipsPixelData, precision=precision, customClipToArrFunction=customClipToArrFunction, colors=colors, isSequential=isSequential)
             if verbose:
                 printProgress(i+1, count)
 
