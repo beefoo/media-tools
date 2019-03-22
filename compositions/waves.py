@@ -30,7 +30,7 @@ parser = argparse.ArgumentParser()
 addVideoArgs(parser)
 parser.add_argument('-translate', dest="TRANSLATE_AMOUNT", default=0.8, type=float, help="Amount to translate clip as a percentage of minimum dimension")
 parser.add_argument('-scale', dest="SCALE_AMOUNT", default=1.33, type=float, help="Amount to scale clip")
-parser.add_argument('-grid', dest="GRID", default="256x256", help="Size of grid")
+parser.add_argument('-grid', dest="GRID", default="128x128", help="Size of grid")
 parser.add_argument('-grid0', dest="START_GRID", default="128x128", help="Start size of grid")
 parser.add_argument('-grid1', dest="END_GRID", default="32x32", help="End size of grid")
 parser.add_argument('-steps', dest="STEPS", default=16, type=int, help="Number of waves/beats")
@@ -40,8 +40,8 @@ parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.3,0.6", help="Volum
 a = parser.parse_args()
 parseVideoArgs(a)
 aa = vars(a)
-aa["MAX_AUDIO_CLIPS"] = 4096
-aa["KEEP_FIRST_AUDIO_CLIPS"] = 256
+aa["MAX_AUDIO_CLIPS"] = 8192
+aa["KEEP_FIRST_AUDIO_CLIPS"] = 512
 
 # parse arguments
 ZOOM_DUR = a.STEPS * a.BEAT_DUR

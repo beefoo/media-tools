@@ -27,7 +27,7 @@ from lib.video_utils import *
 # input
 parser = argparse.ArgumentParser()
 addVideoArgs(parser)
-parser.add_argument('-grid', dest="GRID", default="256x256", help="Size of grid")
+parser.add_argument('-grid', dest="GRID", default="128x128", help="Size of grid")
 parser.add_argument('-grid0', dest="START_GRID", default="64x64", help="Start size of grid")
 parser.add_argument('-grid1', dest="END_GRID", default="128x128", help="End size of grid")
 parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.3,0.6", help="Volume range")
