@@ -9,7 +9,7 @@ import pickle
 def loadCacheFile(fn, compressed=True):
     loaded = False
     result = []
-    if compressed:
+    if compressed and not fn.endswith(".bz2"):
         fn += ".bz2"
     if fn and os.path.isfile(fn):
         print("Loading cache file %s..." % fn)
@@ -22,7 +22,7 @@ def loadCacheFile(fn, compressed=True):
     return (loaded, result)
 
 def saveCacheFile(fn, data, overwrite=False, compressed=True):
-    if compressed:
+    if compressed and not fn.endswith(".bz2"):
         fn += ".bz2"
     if not os.path.isfile(fn) or overwrite:
         print("Saving cache file %s..." % fn)
