@@ -35,7 +35,7 @@ parser.add_argument('-grid1', dest="END_GRID", default="128x128", help="End size
 parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.3,0.6", help="Volume range")
 parser.add_argument('-dur', dest="DURATION_MS", default=60000, type=int, help="Target duration in seconds")
 parser.add_argument('-dmax', dest="DATA_MAX", default=8.0, type=float, help="Intended data max (absolute range is typically around -20 to 20); lower this to move things faster")
-parser.add_argument('-smax', dest="SPEED_MAX", default=2.0, type=float, help="Most we should move a clip per frame in pixels; assumes 30fps; assumes 1920x1080px")
+parser.add_argument('-smax', dest="SPEED_MAX", default=0.5, type=float, help="Most we should move a clip per frame in pixels; assumes 30fps; assumes 1920x1080px")
 a = parser.parse_args()
 parseVideoArgs(a)
 aa = vars(a)
@@ -96,9 +96,10 @@ for i, clip in enumerate(clips):
     clip.setState("lastPlayedMs", 0)
     clip.setState("pos", (clip.props["x"], clip.props["y"]))
     clip.setState("rotation", 0)
-    lifeDuration = clip.dur * 16
+    lifeDuration = clip.dur * 4
     clip.setState("lifeDuration", lifeDuration)
     clip.setState("life", lifeDuration)
+    clip.setState("reset", False)
 
 # Write wind data to image
 # u = windData[0][:,:,0]
@@ -144,9 +145,12 @@ def clipToNpArrWind(clip, ms, containerW, containerH, precision, parent):
 
     frameMs = frameToMs(1, a.FPS)
     life = clip.getState("life")
+    reset = clip.getState("reset")
     lifeDuration = clip.getState("lifeDuration")
     alpha = clip.props["alpha"]
     alphaMultiplier = 0.0 if life < 0 else (1.0 * life / lifeDuration)
+    if reset:
+        alphaMultiplier = easeSinInOutBell(alphaMultiplier)
     alpha *= alphaMultiplier
     customProps = None
 
@@ -197,6 +201,7 @@ def clipToNpArrWind(clip, ms, containerW, containerH, precision, parent):
     if life <= 0 and ms < endMs-lifeDuration:
         life = lifeDuration
         clip.setState("pos", (clip.props["x"], clip.props["y"]))
+        clip.setState("reset", True)
     clip.setState("life", life)
 
     precisionMultiplier = int(10 ** precision)
