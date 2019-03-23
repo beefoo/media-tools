@@ -152,33 +152,6 @@ def dequeueClips(ms, clips, queue):
 
     return queue
 
-def getNeighborClips(clips, gridCx, gridCy, radius):
-    global gridW
-    global gridH
-    global a
-
-    ccol = roundInt(gridCx)
-    crow = roundInt(gridCy)
-    iradius = roundInt(radius)+2
-    halfRadius = roundInt(iradius/2)
-
-    cols = [c+ccol-halfRadius for c in range(iradius)]
-    rows = [c+crow-halfRadius for c in range(iradius)]
-
-    frameClips = []
-    for col in cols:
-        for row in rows:
-            # wrap around
-            x = col % gridW
-            y = row % gridH
-            i = y * gridW + x
-            clip = clips[i]
-            distanceFromCenter = distance(col, row, gridCx, gridCy)
-            nDistanceFromCenter = 1.0 - 1.0 * distanceFromCenter / radius
-            frameClips.append((nDistanceFromCenter, clip))
-
-    return frameClips
-
 # determine when/which clips are playing
 totalFrames = msToFrame(endMs-startMs, a.FPS)
 cx = a.WIDTH * 0.5
@@ -199,7 +172,7 @@ for f in range(totalFrames):
     xs.append(xDelta)
     ys.append(yDelta)
 
-    frameClips = getNeighborClips(clips, gridCx, gridCy, radius)
+    frameClips = getNeighborClips(clips, gridCx, gridCy, gridW, gridH, radius)
     for ndistance, clip in frameClips:
         cindex = clip.props["index"]
         if ndistance > 0:

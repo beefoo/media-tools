@@ -593,6 +593,29 @@ def getClipFadeDur(clipDur, percentage=0.1, maxDur=100):
         dur = min(dur, maxDur)
     return dur
 
+def getNeighborClips(clips, gridCx, gridCy, gridW, gridH, radius):
+    ccol = roundInt(gridCx)
+    crow = roundInt(gridCy)
+    iradius = roundInt(radius)+2
+    halfRadius = roundInt(iradius/2)
+
+    cols = [c+ccol-halfRadius for c in range(iradius)]
+    rows = [c+crow-halfRadius for c in range(iradius)]
+
+    frameClips = []
+    for col in cols:
+        for row in rows:
+            # wrap around
+            x = col % gridW
+            y = row % gridH
+            i = y * gridW + x
+            clip = clips[i]
+            distanceFromCenter = distance(col, row, gridCx, gridCy)
+            nDistanceFromCenter = 1.0 - 1.0 * distanceFromCenter / radius
+            frameClips.append((nDistanceFromCenter, clip))
+
+    return frameClips
+
 def samplesToClips(samples):
     clips = []
     for sample in samples:

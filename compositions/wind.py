@@ -28,20 +28,25 @@ from lib.video_utils import *
 # input
 parser = argparse.ArgumentParser()
 addVideoArgs(parser)
-parser.add_argument('-data', dest="WIND_DATA", default="data/wind/wnd10m.gdas.2004-01-01*.p.bz2", help="Wind data files")
+parser.add_argument('-data', dest="WIND_DATA", default="data/wind/wnd10m.gdas.2004-01-01-00.0.p.bz2", help="Wind data files")
 parser.add_argument('-grid', dest="GRID", default="128x128", help="Size of grid")
 parser.add_argument('-grid0', dest="START_GRID", default="64x64", help="Start size of grid")
 parser.add_argument('-grid1', dest="END_GRID", default="128x128", help="End size of grid")
 parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.3,0.6", help="Volume range")
-parser.add_argument('-dur', dest="DURATION_MS", default=60000, type=int, help="Target duration in seconds")
+parser.add_argument('-dur', dest="DURATION_MS", default=60000, type=int, help="Target duration in ms")
 parser.add_argument('-dmax', dest="DATA_MAX", default=8.0, type=float, help="Intended data max (absolute range is typically around -20 to 20); lower this to move things faster")
-parser.add_argument('-smax', dest="SPEED_MAX", default=0.5, type=float, help="Most we should move a clip per frame in pixels; assumes 30fps; assumes 1920x1080px")
+parser.add_argument('-smax', dest="SPEED_MAX", default=0.25, type=float, help="Most we should move a clip per frame in pixels; assumes 30fps; assumes 1920x1080px")
+parser.add_argument('-bcount', dest="BLOW_COUNT", default=8, type=int, help="Number of times to blow the wind")
+parser.add_argument('-bdur', dest="BLOW_DURATION", default=4000, type=int, help="Blow duration in ms")
+parser.add_argument('-bspeed', dest="BLOW_SPEED", default=1.0, type=float, help="Blow speed")
+parser.add_argument('-bradius', dest="BLOW_RADIUS", default=8.0, type=float, help="Blow radius")
 a = parser.parse_args()
 parseVideoArgs(a)
 aa = vars(a)
 # adjust speed max for this fps and resolution
 aa["SPEED_MAX"] = a.SPEED_MAX * (a.WIDTH / 1920.0) / (a.FPS / 30.0)
-aa["PAD_END"] = 12000
+aa["BLOW_SPEED"] = a.BLOW_SPEED * (a.WIDTH / 1920.0) / (a.FPS / 30.0)
+# aa["PAD_END"] = 12000
 aa["THREADS"] = 1 # enforce one thread since we need to process frames sequentially
 
 # Get video data
@@ -63,43 +68,24 @@ fromScale = 1.0 * gridW / startGridW
 toScale = 1.0 * gridW / endGridW
 container.queueTween(a.PAD_START, a.DURATION_MS, ("scale", fromScale, toScale, "cubicInOut"))
 
+_, windData = loadCacheFile(a.WIND_DATA)
 dataFiles = getFilenames(a.WIND_DATA)
-windData = []
-for fn in dataFiles:
-    _, d =loadCacheFile(fn)
-    windData.append(d)
 stepTime = logTime(stepTime, "Read data files")
-windDataCount = len(windData)
 windData = np.array(windData)
-print("Wind data shape = %s x %s x %s x %s" % windData.shape)
+print("Wind data shape = %s x %s x %s" % windData.shape)
 
 # windData /= np.max(np.abs(windData), axis=0)
-print("Wind data shape = %s x %s x %s x %s" % windData.shape)
 print("Wind range [%s, %s]" % (windData.min(), windData.max()))
-stepTime = logTime(stepTime, "Normalize data")
 
 # slice the data: take the middle half
-steps, h, w, uv = windData.shape
+h, w, uv = windData.shape
 percent = 0.5
 sw = roundInt(w * percent)
 sh = roundInt(sw / (1.0 * a.WIDTH / a.HEIGHT))
 sx = roundInt((w - sw) * 0.5)
 sy = roundInt((h - sh) * 0.5)
-slicedWindData = np.zeros((steps, sh, sw, uv), dtype=windData.dtype)
-for i in range(steps):
-    slicedWindData[i] = windData[i,sy:(sy+sh),sx:(sx+sw),:]
-windData = slicedWindData
-print("Wind data shape after slice = %s x %s x %s x %s" % windData.shape)
-
-# Initialize clip states
-for i, clip in enumerate(clips):
-    clip.setState("lastPlayedMs", 0)
-    clip.setState("pos", (clip.props["x"], clip.props["y"]))
-    clip.setState("rotation", 0)
-    lifeDuration = clip.dur * 4
-    clip.setState("lifeDuration", lifeDuration)
-    clip.setState("life", lifeDuration)
-    clip.setState("reset", False)
+windData = windData[sy:(sy+sh),sx:(sx+sw),:]
+print("Wind data shape after slice = %s x %s x %s" % windData.shape)
 
 # Write wind data to image
 # u = windData[0][:,:,0]
@@ -122,11 +108,69 @@ startMs = a.PAD_START
 ms = startMs + a.DURATION_MS
 endMs = ms
 
+# Initialize clip states
+for i, clip in enumerate(clips):
+    clip.setState("lastPlayedMs", 0)
+    clip.setState("pos", (clip.props["x"], clip.props["y"]))
+    clip.setState("rotation", 0)
+
+def getMovePositionWithWind(a, windData, x, y, speed):
+    dh, dw, _ = windData.shape
+    nx, ny = (1.0 * x / a.WIDTH, 1.0 * y / a.HEIGHT)
+    nx, ny = (lim(nx), lim(ny))
+    dcol, drow = (roundInt((dw-1) * nx), roundInt((dh-1) * ny))
+    u, v = tuple(windData[drow, dcol])
+    nu, nv = (u / a.DATA_MAX, v / a.DATA_MAX)
+    nu, nv = (lim(nu, (-1.0, 1.0)), lim(nv, (-1.0, 1.0)))
+    moveX, moveY = (nu * speed, nv * speed)
+    return (moveX, moveY)
+
+blowFrames = msToFrame(a.BLOW_DURATION, a.FPS)
+blowStartMs = startMs + a.BLOW_DURATION
+maxScale = max(fromScale, toScale)
+blowW = 1.0 * a.WIDTH / maxScale
+blowX0 = (a.WIDTH - blowW) * 0.5
+blowX1 = blowX0 + blowW
+blowH = 1.0 * a.HEIGHT / maxScale
+blowY0 = (a.HEIGHT - blowH) * 0.5
+blowY1 = blowY0 + blowH
+for blow in range(a.BLOW_COUNT):
+    # for each blow, choose a random starting point in the center of the grid
+    nrand = pseudoRandom(blow+7)
+    x = lerp((blowX0, blowX1), nrand)
+    y = lerp((blowY0, blowY1), nrand)
+    for frame in range(blowFrames):
+        frameMs = blowStartMs + frameToMs(frame, a.FPS)
+        moveX, moveY = getMovePositionWithWind(a, windData, x, y, a.BLOW_SPEED)
+        x += moveX
+        y += moveY
+        frameClips = getNeighborClips(clips, x, y, gridW, gridH, a.BLOW_RADIUS)
+        for ndistance, clip in frameClips:
+            # only play clips within radius
+            if ndistance <= 0:
+                continue
+            lastPlayedMs = clip.getState("lastPlayedMs")
+            # don't play if already playing
+            if (frameMs-lastPlayedMs) <= clip.dur:
+                continue
+            clip.queuePlay(frameMs, {
+                "dur": clip.props["audioDur"],
+                "volume": lerp(a.VOLUME_RANGE, ndistance),
+                "fadeOut": clip.props["fadeOut"],
+                "fadeIn": clip.props["fadeIn"],
+                "pan": clip.props["pan"],
+                "reverb": clip.props["reverb"],
+                "maxDb": clip.props["maxDb"]
+            })
+            alphaTo = lerp(a.ALPHA_RANGE, ndistance)
+            clipDur = clip.dur
+            leftMs = max(10, roundInt(clipDur * 0.5))
+            rightMs = clipDur - leftMs
+            clip.queueTween(frameMs, leftMs, ("alpha", a.ALPHA_RANGE[0], alphaTo, "sin"))
+            clip.queueTween(frameMs+leftMs, rightMs, ("alpha", alphaTo, a.ALPHA_RANGE[0], "sin"))
+
 # sort frames
 container.vector.sortFrames()
-
-stepData = None
-currentMs = -1
 
 # zero degrees = 3 o'clock (east), increasing clockwise
 def angleFromUV(u, v):
@@ -138,71 +182,50 @@ def clipToNpArrWind(clip, ms, containerW, containerH, precision, parent):
     global windData
     global startMs
     global endMs
-    global stepData
-    global currentMs
 
-    dsteps, dh, dw, _ = windData.shape
-
-    frameMs = frameToMs(1, a.FPS)
-    life = clip.getState("life")
-    reset = clip.getState("reset")
-    lifeDuration = clip.getState("lifeDuration")
-    alpha = clip.props["alpha"]
-    alphaMultiplier = 0.0 if life < 0 else (1.0 * life / lifeDuration)
-    if reset:
-        alphaMultiplier = easeSinInOutBell(alphaMultiplier)
-    alpha *= alphaMultiplier
     customProps = None
 
-    if alpha > 0:
+    if startMs <= ms < endMs:
+
         nprogress = norm(ms, (startMs, endMs))
-        fDataIndex = 1.0 * nprogress * (dsteps-1)
-        dataIndex0 = floorInt(fDataIndex)
-        dataIndex1 = ceilInt(fDataIndex)
-
-        # ensure we only do this once per frame and not for every clip per frame
-        if ms > currentMs or stepData is None:
-            currentMs = ms
-            # we're before the start
-            if nprogress < 0.0:
-                stepData = windData[0]
-            # we're after the end
-            elif nprogress > 1.0:
-                stepData = windData[-1]
-            # lerp data if we're in-between data frames
-            elif dataIndex1 > dataIndex0:
-                stepData = lerp((windData[dataIndex0], windData[dataIndex1]), nprogress)
-            else:
-                stepData = windData[dataIndex0]
-
         # increase in speed over time; fastest in the middle
-        globalSpeed = easeSinInOutBell(lim(nprogress))
+        globalSpeed = easeSinInOutBell(nprogress/0.5) if nprogress <= 0.5 else easeSinInOutBell((nprogress-0.5)/0.5)
+        # move back the other way in the 2nd half
+        direction = 1.0 if nprogress <= 0.5 else -1.0
+
+        # we changed direction and we were stuck
+        if direction < 0.0 and clip.getState("changedDirection") is None:
+            clip.setState("changedDirection", True)
+            lastValidPos = clip.getState("lastValidPos")
+            if lastValidPos is not None:
+                clip.setState("pos", lastValidPos)
 
         x, y = clip.getState("pos")
-        nx, ny = (1.0 * x / a.WIDTH, 1.0 * y / a.HEIGHT)
-        nx, ny = (lim(nx), lim(ny))
-        dcol, drow = (roundInt((dw-1) * nx), roundInt((dh-1) * ny))
-        u, v = tuple(stepData[drow, dcol])
-        nu, nv = (u / a.DATA_MAX, v / a.DATA_MAX)
-        nu, nv = (lim(nu, (-1.0, 1.0)), lim(nv, (-1.0, 1.0)))
-        moveX, moveY = (nu * a.SPEED_MAX * globalSpeed, nv * a.SPEED_MAX * globalSpeed)
+        moveX, moveY = getMovePositionWithWind(a, windData, x, y, a.SPEED_MAX * globalSpeed)
 
-        x += moveX
-        y += moveY
+        if direction > 0.0 and (abs(moveX) > 0.0 or abs(moveY) > 0.0):
+            clip.setState("lastValidPos", (x, y))
+
+        x += moveX * direction
+        y += moveY * direction
         clip.setState("pos", (x, y))
         customProps = {
             "pos": [x, y]
         }
 
-    if ms > startMs:
-        life -= frameMs
-
-    # reset life if died and we still have time for another full life
-    if life <= 0 and ms < endMs-lifeDuration:
-        life = lifeDuration
-        clip.setState("pos", (clip.props["x"], clip.props["y"]))
-        clip.setState("reset", True)
-    clip.setState("life", life)
+    # reset the position if necessary
+    elif ms >= endMs:
+        absoluteEndMs = endMs + a.PAD_END
+        nprogress = lim(norm(ms, (endMs, absoluteEndMs)))
+        nprogress = ease(nprogress)
+        x, y = clip.getState("pos")
+        x1, y1 = (clip.props["x"], clip.props["y"])
+        if x != x1 or y != y1:
+            x = lerp((x, x1), nprogress)
+            y = lerp((y, y1), nprogress)
+            customProps = {
+                "pos": [x, y]
+            }
 
     precisionMultiplier = int(10 ** precision)
     props = clip.toDict(ms, containerW, containerH, parent, customProps=customProps)
@@ -212,7 +235,7 @@ def clipToNpArrWind(clip, ms, containerW, containerH, precision, parent):
         roundInt(props["y"] * precisionMultiplier),
         roundInt(props["width"] * precisionMultiplier),
         roundInt(props["height"] * precisionMultiplier),
-        roundInt(alpha * precisionMultiplier),
+        roundInt(props["alpha"] * precisionMultiplier),
         roundInt(props["tn"] * precisionMultiplier),
         roundInt(props["zindex"]),
         roundInt(props["rotation"] * precisionMultiplier),
