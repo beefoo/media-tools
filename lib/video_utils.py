@@ -132,7 +132,7 @@ def clipsToFrameGPU(clips, width, height, clipsPixelData, precision=3, colors=3)
                 h = roundInt(clip["height"])
             # we need to resize if blurred or rotated
             if clip["blur"] > 0.0 or clip["rotation"] % 360.0 > 0.0:
-                _x, _y, newW, newH = bboxRotate(0, 0, clip["width"], clip["height"], angle=45.0)
+                _x, _y, newW, newH = bboxRotate(0, 0, roundInt(clip["width"]), roundInt(clip["height"]), angle=45.0)
                 w = roundInt(newW)
                 h = roundInt(newH)
             pixelCount += int(h*w*c)
@@ -153,12 +153,21 @@ def clipsToFrameGPU(clips, width, height, clipsPixelData, precision=3, colors=3)
         # we want to resample if scaled too much
         scaleFactor = 1.0 * w / clip["width"]
         if scaleFactor > maxScaleFactor or clip["blur"] > 0.0 or clip["rotation"] % 360.0 > 0.0:
-            im = Image.fromarray(pixels, mode="RGB")
             rw = roundInt(clip["width"])
             rh = roundInt(clip["height"])
-            imW, imH = im.size
-            if imW != rw or imH != rh:
-                im = im.resize((rw, rh), resample=Image.LANCZOS)
+            im = None
+            # assume we are debugging if single pixel
+            if h==1 and w==1:
+                newPixels = np.zeros((rh, rw, _c), dtype=np.uint8)
+                newPixels[:,:] = pixels[0,0]
+                im = Image.fromarray(newPixels, mode="RGB")
+            else:
+                im = Image.fromarray(pixels, mode="RGB")
+                imW, imH = im.size
+                if imW != rw or imH != rh:
+                    resampleType = Image.LANCZOS if imW > rw else Image.NEAREST
+                    im = im.resize((rw, rh), resample=resampleType)
+
             if clip["blur"] > 0.0 or clip["rotation"] % 360.0 > 0.0:
                 im, newX, newY = applyEffects(im, clip["x"], clip["y"], clip["rotation"], clip["blur"], colors=c)
                 # x, y, tw, th changes if we rotate or blur
