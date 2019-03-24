@@ -202,7 +202,6 @@ def processComposition(a, clips, videoDurationMs, sampler=None, stepTime=False, 
     for clip in clips:
         clip.vector.sortFrames()
         clip.sortPlays()
-        clip.setEndCompositionMs(durationMs)
 
     # sys.exit()
 

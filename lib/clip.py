@@ -330,7 +330,6 @@ class Clip:
         self.start = defaults["start"]
         self.dur = defaults["dur"]
         self.plays = defaults["plays"]
-        self.endCompositionMs = None
 
         if self.dur <= 0 and self.filename is not None:
             self.dur = getDurationFromAudioFile(self.filename)
@@ -346,7 +345,6 @@ class Clip:
         if ms is None:
             return 0.0
 
-        endCompositionMs = self.endCompositionMs
         plays = [t for t in self.plays if t[0] <= ms <= t[1]]
         time = 0.0
         start = 0
@@ -365,13 +363,13 @@ class Clip:
             firstPlay = self.plays[0]
             lastPlay = self.plays[-1]
 
-            # if we are before the first play, play from the beginning to match the previous composition
+            # if we are before the first play, randomize the beginning
             if ms < firstPlay[0]:
-                start = 0
+                start = pseudoRandom(self.props["index"]+firstPlay[0], range=(0, (self.dur-1)), isInt=True)
 
-            # if we are after the last play, line it up so that it lines up with the next composition
-            elif ms > lastPlay[1] and endCompositionMs is not None:
-                start = endCompositionMs
+            # if we are after the last play, randomize the ending
+            elif ms > lastPlay[1]:
+                start = pseudoRandom(self.props["index"]+lastPlay[1], range=(0, (self.dur-1)), isInt=True)
 
 
         msSincePlay = ms - start
@@ -435,9 +433,6 @@ class Clip:
             self.vector.addKeyFrame(name, ms, fromValue, easing, sortFrames)
             if dur > 0:
                 self.vector.addKeyFrame(name, ms+dur, toValue, easing, sortFrames)
-
-    def setEndCompositionMs(self, ms):
-        self.endCompositionMs = ms
 
     def setFadeIn(self, fadeDur):
         self.fadeIn = fadeDur
