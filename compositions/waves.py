@@ -41,7 +41,7 @@ a = parser.parse_args()
 parseVideoArgs(a)
 aa = vars(a)
 aa["MAX_AUDIO_CLIPS"] = 8192
-aa["KEEP_FIRST_AUDIO_CLIPS"] = 512
+aa["KEEP_FIRST_AUDIO_CLIPS"] = 256
 
 # parse arguments
 ZOOM_DUR = a.STEPS * a.BEAT_DUR
