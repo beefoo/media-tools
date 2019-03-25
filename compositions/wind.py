@@ -36,10 +36,11 @@ parser.add_argument('-grid1', dest="END_GRID", default="128x128", help="End size
 parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.3,0.6", help="Volume range")
 parser.add_argument('-dur', dest="DURATION_MS", default=60000, type=int, help="Target duration in ms")
 parser.add_argument('-dmax', dest="DATA_MAX", default=8.0, type=float, help="Intended data max (absolute range is typically around -20 to 20); lower this to move things faster")
-parser.add_argument('-smax', dest="SPEED_MAX", default=0.1, type=float, help="Most we should move a clip per frame in pixels; assumes 30fps; assumes 1920x1080px")
+parser.add_argument('-smax', dest="SPEED_MAX", default=0.5, type=float, help="Most we should move a clip per frame in pixels; assumes 30fps; assumes 1920x1080px")
+parser.add_argument('-mmax', dest="MOVE_MAX", default=20.0, type=float, help="Distance to move before resetting")
 parser.add_argument('-bcount', dest="BLOW_COUNT", default=8, type=int, help="Number of times to blow the wind")
 parser.add_argument('-bdur', dest="BLOW_DURATION", default=4000, type=int, help="Blow duration in ms")
-parser.add_argument('-bspeed', dest="BLOW_SPEED", default=0.8, type=float, help="Blow speed")
+parser.add_argument('-bspeed', dest="BLOW_SPEED", default=1.0, type=float, help="Blow speed")
 parser.add_argument('-bradius', dest="BLOW_RADIUS", default=8.0, type=float, help="Blow radius")
 parser.add_argument('-rstep', dest="ROTATION_STEP", default=0.1, type=float, help="Rotation step in degrees")
 a = parser.parse_args()
@@ -47,8 +48,9 @@ parseVideoArgs(a)
 aa = vars(a)
 # adjust speed max for this fps and resolution
 aa["SPEED_MAX"] = a.SPEED_MAX * (a.WIDTH / 1920.0) / (a.FPS / 30.0)
+aa["MOVE_MAX"] = a.MOVE_MAX * (a.WIDTH / 1920.0) / (a.FPS / 30.0)
 aa["BLOW_SPEED"] = a.BLOW_SPEED * (a.WIDTH / 1920.0) / (a.FPS / 30.0)
-# aa["PAD_END"] = 12000
+aa["PAD_END"] = 12000
 aa["THREADS"] = 1 # enforce one thread since we need to process frames sequentially
 
 # Get video data
@@ -114,6 +116,7 @@ endMs = ms
 for i, clip in enumerate(clips):
     clip.setState("pos", (clip.props["x"], clip.props["y"]))
     clip.setState("rotation", 0)
+    clip.setState("distanceTravelled", 0)
 
 def getMovePositionWithWind(a, windData, x, y, speed):
     dh, dw, _ = windData.shape
@@ -212,26 +215,32 @@ def clipToNpArrWind(clip, ms, containerW, containerH, precision, parent):
     customProps = None
     rotation = 0.0
 
+    alpha = clip.props["alpha"]
+
     if startMs <= ms < endMs:
 
         nprogress = norm(ms, (startMs, endMs))
         # increase in speed over time; fastest in the middle
-        globalSpeed = easeSinInOutBell(nprogress/0.5) if nprogress <= 0.5 else easeSinInOutBell((nprogress-0.5)/0.5)
-        # move back the other way in the 2nd half
-        direction = 1.0 if nprogress <= 0.5 else -1.0
-
-        # we changed direction and we were stuck
-        if direction < 0.0 and clip.getState("changedDirection") is None:
-            clip.setState("changedDirection", True)
-            lastValidPos = clip.getState("lastValidPos")
-            if lastValidPos is not None:
-                clip.setState("pos", lastValidPos)
-
+        globalSpeed = easeSinInOutBell(nprogress)
         x, y = clip.getState("pos")
+        distanceTravelled = clip.getState("distanceTravelled")
         u, v, moveX, moveY = getMovePositionWithWind(a, windData, x, y, a.SPEED_MAX * globalSpeed)
+        distanceTravelled += distance(0, 0, moveX, moveY)
+        # start to reduce alpha halway through max move distance
+        halfDistance = a.MOVE_MAX * 0.5
+        if distanceTravelled > halfDistance:
+            alpha *= ease(norm(distanceTravelled, (a.MOVE_MAX, halfDistance), limit=True))
+        clip.setState("distanceTravelled", distanceTravelled)
+
+        # fade in after reset
+        resetMs = clip.getState("resetMs")
+        if resetMs is not None:
+            timeSinceReset = ms - resetMs
+            if timeSinceReset < clip.dur:
+                alpha *= ease(1.0 * timeSinceReset / clip.dur)
+
+        # determine rotation from uv
         targetAngle = angleFromUV(u, v)
-        if direction < 0:
-            targetAngle = 0
         currentAngle = clip.getState("rotation")
         deltaAngle = targetAngle - currentAngle
         rotationDirection = 1.0 if deltaAngle >= 0 else -1.0
@@ -239,17 +248,22 @@ def clipToNpArrWind(clip, ms, containerW, containerH, precision, parent):
         rotation = currentAngle + deltaAngle
         clip.setState("rotation", rotation)
 
-        if direction > 0.0 and (abs(moveX) > 0.0 or abs(moveY) > 0.0):
-            clip.setState("lastValidPos", (x, y))
+        x += moveX
+        y += moveY
+        # reset if we reached max distance moved
+        if distanceTravelled >= a.MOVE_MAX:
+            clip.setState("pos", (clip.props["x"], clip.props["y"]))
+            clip.setState("resetMs", ms)
+            clip.setState("distanceTravelled", 0)
+        else:
+            clip.setState("pos", (x, y))
+        clip.setState("alpha", alpha)
 
-        x += moveX * direction
-        y += moveY * direction
-        clip.setState("pos", (x, y))
         customProps = {
             "pos": [x, y]
         }
 
-    # reset the position if necessary
+    # reset the position after active range
     elif ms >= endMs:
         absoluteEndMs = endMs + a.PAD_END
         nprogress = lim(norm(ms, (endMs, absoluteEndMs)))
@@ -257,6 +271,7 @@ def clipToNpArrWind(clip, ms, containerW, containerH, precision, parent):
         x, y = clip.getState("pos")
         x1, y1 = (clip.props["x"], clip.props["y"])
         rotation = lerp((clip.getState("rotation"), 0.0), nprogress)
+        alpha = lerp((clip.getState("alpha"), clip.props["alpha"]), nprogress)
         if x != x1 or y != y1:
             x = lerp((x, x1), nprogress)
             y = lerp((y, y1), nprogress)
@@ -267,12 +282,15 @@ def clipToNpArrWind(clip, ms, containerW, containerH, precision, parent):
     precisionMultiplier = int(10 ** precision)
     props = clip.toDict(ms, containerW, containerH, parent, customProps=customProps)
 
+    # alpha from keyframe should override frame alpha
+    alpha = props["alpha"] if props["alpha"] > clip.props["alpha"] else alpha
+
     return np.array([
         roundInt(props["x"] * precisionMultiplier),
         roundInt(props["y"] * precisionMultiplier),
         roundInt(props["width"] * precisionMultiplier),
         roundInt(props["height"] * precisionMultiplier),
-        roundInt(props["alpha"] * precisionMultiplier),
+        roundInt(alpha * precisionMultiplier),
         roundInt(props["tn"] * precisionMultiplier),
         roundInt(props["zindex"]),
         roundInt(rotation * precisionMultiplier),
