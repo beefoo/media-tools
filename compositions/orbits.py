@@ -195,7 +195,7 @@ def getRingCellPos(index, count, ringX, ringY, cellW, cellH):
     return (x, y)
 
 # custom clip to numpy array function to override default tweening logic
-def clipToNpArrOrbits(clip, ms, containerW, containerH, precision, parent):
+def clipToNpArrOrbits(clip, ms, containerW, containerH, precision, parent, globalArgs={}):
     global gridW
     global gridH
     global PLAY_OFFSET

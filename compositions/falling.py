@@ -197,7 +197,7 @@ container.vector.sortFrames()
 # sys.exit()
 
 # custom clip to numpy array function to override default tweening logic
-def clipToNpArrFalling(clip, ms, containerW, containerH, precision, parent):
+def clipToNpArrFalling(clip, ms, containerW, containerH, precision, parent, globalArgs={}):
     global startMs
     global endMs
 

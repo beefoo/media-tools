@@ -477,7 +477,7 @@ class Clip:
                 })
         return props
 
-    def toNpArr(self, ms=None, containerW=None, containerH=None, precision=3, parent=None):
+    def toNpArr(self, ms=None, containerW=None, containerH=None, precision=3, parent=None, globalArgs={}):
         precisionMultiplier = int(10 ** precision)
         props = self.toDict(ms, containerW, containerH, parent)
         arr = [
@@ -526,7 +526,7 @@ def clipToDict(p):
     ms, clip = p
     return clip.toDict(ms)
 
-def clipsToNpArr(clips, ms=None, containerW=None, containerH=None, precision=3, customClipToArrFunction=None):
+def clipsToNpArr(clips, ms=None, containerW=None, containerH=None, precision=3, customClipToArrFunction=None, globalArgs={}):
     # startTime = logTime()
     parentProps = clips[0].vector.parent.toDict(ms) if len(clips) > 0 and clips[0].vector.parent is not None else None
     clipCount = len(clips)
@@ -534,9 +534,9 @@ def clipsToNpArr(clips, ms=None, containerW=None, containerH=None, precision=3, 
     arr = np.zeros((clipCount, propertyCount), dtype=np.int32)
     for i, clip in enumerate(clips):
         if customClipToArrFunction is not None:
-            arr[clip.props["index"]] = customClipToArrFunction(clip, ms, containerW, containerH, precision, parentProps)
+            arr[clip.props["index"]] = customClipToArrFunction(clip, ms, containerW, containerH, precision, parentProps, globalArgs=globalArgs)
         else:
-            arr[clip.props["index"]] = clip.toNpArr(ms, containerW, containerH, precision, parentProps)
+            arr[clip.props["index"]] = clip.toNpArr(ms, containerW, containerH, precision, parentProps, globalArgs=globalArgs)
     # stepTime = logTime(startTime, "Step %s" % ms)
     return arr
 

@@ -242,7 +242,12 @@ def processComposition(a, clips, videoDurationMs, sampler=None, stepTime=False, 
         if a.OVERWRITE:
             removeFiles(a.OUTPUT_FRAME % "*")
         colors = 4 if containsAlphaClips else 3
-        processFrames(videoFrames, clips, clipsPixelData, threads=a.THREADS, precision=a.PRECISION, customClipToArrFunction=customClipToArrFunction, colors=colors, isSequential=isSequential)
+        globalArgs = {
+            "colors": colors,
+            "isSequential": isSequential,
+            "frameAlpha": a.FRAME_ALPHA
+        }
+        processFrames(videoFrames, clips, clipsPixelData, threads=a.THREADS, precision=a.PRECISION, customClipToArrFunction=customClipToArrFunction, globalArgs=globalArgs)
 
     if not a.AUDIO_ONLY:
         audioFile = a.AUDIO_OUTPUT_FILE if not a.VIDEO_ONLY and os.path.isfile(a.AUDIO_OUTPUT_FILE) else False

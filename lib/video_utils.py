@@ -50,6 +50,7 @@ def addVideoArgs(parser):
     parser.add_argument('-noise', dest="NOISE", default=0.0, type=float, help="Amount of pixel noise to add")
     parser.add_argument('-maxa', dest="MAX_AUDIO_CLIPS", default=-1, type=int, help="Maximum number of audio clips to play")
     parser.add_argument('-keep', dest="KEEP_FIRST_AUDIO_CLIPS", default=-1, type=int, help="Ensure the middle x audio files play")
+    parser.add_argument('-fa', dest="FRAME_ALPHA", default=1.0, type=float, help="For adding frame content on top of previous frames; must be 0 <= x < 1; lower number = slower fade of prev frames")
 
 def alphaMask(im, mask):
     w, h = im.size
@@ -81,35 +82,47 @@ def blurImage(im, radius):
         im = im.filter(ImageFilter.GaussianBlur(radius=radius))
     return im
 
-def clipsToFrame(p, clips, pixelData, precision=3, customClipToArrFunction=None, colors=3, isSequential=False):
+def clipsToFrame(p, clips, pixelData, precision=3, customClipToArrFunction=None, baseImage=None, globalArgs={}):
     filename = p["filename"]
     width = p["width"]
     height = p["height"]
-    ms = p["ms"] if "ms" in p else None
-    overwrite = p["overwrite"] if "overwrite" in p else False
-    verbose = p["verbose"] if "verbose" in p else False
-    debug = p["debug"] if "debug" in p else False
-    saveFrame = p["saveFrame"] if "saveFrame" in p else True
+
+    ms = getValue(p, "ms", 1.0)
+    overwrite = getValue(p, "overwrite", False)
+    verbose = getValue(p, "verbose", False)
+    debug = getValue(p, "debug",False)
+    saveFrame = getValue(p, "saveFrame", True)
+
+    frameAlpha = getValue(globalArgs, "frameAlpha", 1.0)
+
     im = None
     fileExists = os.path.isfile(filename) and not overwrite
     clipArr = None
 
     if not fileExists and saveFrame or not saveFrame or isSequential:
-        clipArr = clipsToNpArr(clips, ms, width, height, precision, customClipToArrFunction=customClipToArrFunction)
+        clipArr = clipsToNpArr(clips, ms, width, height, precision, customClipToArrFunction=customClipToArrFunction, globalArgs=globalArgs)
 
     # frame already exists, read it directly
     if not fileExists and saveFrame:
         im = Image.new(mode="RGBA", size=(width, height), color=(0, 0, 0, 255))
-        im = clipsToFrameGPU(clipArr, width, height, pixelData, precision, colors)
+        im = clipsToFrameGPU(clipArr, width, height, pixelData, precision, baseImage=baseImage, globalArgs=globalArgs)
         im = im.convert("RGB")
         im.save(filename)
         print("Saved frame %s" % filename)
 
-    return clipArr
+    returnValue = None
+    if 0.0 <= frameAlpha < 1.0:
+        if im is None:
+            im = Image.open(filename)
+        blackOverlay = Image.new(mode="RGB", size=im.size, color=(0, 0, 0))
+        im = Image.blend(im, blackOverlay, frameAlpha)
+        returnValue = im
 
-def clipsToFrameGPU(clips, width, height, clipsPixelData, precision=3, colors=3):
+    return returnValue
+
+def clipsToFrameGPU(clips, width, height, clipsPixelData, precision=3, baseImage=None, globalArgs={}):
+    c = globalArgs["colors"] if "colors" in globalArgs else 3
     offset = 0
-    c = colors
     maxScaleFactor = 2.0
     precisionMultiplier = int(10 ** precision)
 
@@ -188,7 +201,7 @@ def clipsToFrameGPU(clips, width, height, clipsPixelData, precision=3, colors=3)
         pixelData[px0:px1] = pixels.reshape(-1)
         offset += int(h*w*c)
 
-    pixels = clipsToImageGPU(width, height, pixelData, properties, c, precision)
+    pixels = clipsToImageGPU(width, height, pixelData, properties, c, precision, baseImage=baseImage)
     return Image.fromarray(pixels, mode="RGB")
 
 def compileFrames(infile, fps, outfile, padZeros, audioFile=None, quality="high"):
@@ -574,20 +587,28 @@ def pasteImage(im, clipImg, x, y):
     im = Image.alpha_composite(im, stagingImg)
     return im
 
-def processFrames(params, clips, clipsPixelData, threads=1, verbose=True, precision=3, customClipToArrFunction=None, colors=3, isSequential=False):
+def processFrames(params, clips, clipsPixelData, threads=1, precision=3, verbose=True, customClipToArrFunction=None, globalArgs={}):
     count = len(params)
     print("Processing %s frames" % count)
     threads = getThreadCount(threads)
 
+    frameAlpha = getValue(globalArgs, "frameAlpha", 1.0)
+    isSequential = getValue(globalArgs, "isSequential", False)
+    propagateFrames = (0.0 <= frameAlpha < 1.0)
+    if propagateFrames:
+        isSequential = True
+
     if threads > 1 and not isSequential:
         pool = ThreadPool(threads)
-        pclipsToFrame = partial(clipsToFrame, clips=clips, pixelData=clipsPixelData, precision=precision, customClipToArrFunction=customClipToArrFunction, colors=colors, isSequential=isSequential)
+        pclipsToFrame = partial(clipsToFrame, clips=clips, pixelData=clipsPixelData, precision=precision, customClipToArrFunction=customClipToArrFunction, globalArgs=globalArgs)
         pool.map(pclipsToFrame, params)
         pool.close()
         pool.join()
     else:
+        prevImage = None
         for i, p in enumerate(params):
-            clipsToFrame(p, clips=clips, pixelData=clipsPixelData, precision=precision, customClipToArrFunction=customClipToArrFunction, colors=colors, isSequential=isSequential)
+            baseImage = prevImage if propagateFrames else None
+            prevImage = clipsToFrame(p, clips=clips, pixelData=clipsPixelData, precision=precision, customClipToArrFunction=customClipToArrFunction, baseImage=baseImage, globalArgs=globalArgs)
             if verbose:
                 printProgress(i+1, count)
 
