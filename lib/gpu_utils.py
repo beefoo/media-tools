@@ -10,18 +10,22 @@ from lib.clip import *
 
 os.environ['PYOPENCL_COMPILER_OUTPUT'] = '1'
 
-def clipsToImageGPU(width, height, flatPixelData, properties, colorDimensions, precision):
+def clipsToImageGPU(width, height, flatPixelData, properties, colorDimensions, precision, baseImage=None, doAlpha=False):
     count = len(properties)
 
     # blank image if no clip data
-    if count <= 0:
+    if count <= 0 and baseImage is None:
         return np.zeros((height, width, 3), dtype=np.uint8)
+    # base image if exists
+    elif count <= 0:
+        return np.array(baseImage, dtype=np.uint8)
 
     precisionMultiplier = int(10 ** precision)
     pcount = len(properties[0])
     properties = properties.reshape(-1)
     zvalues = np.zeros(width * height * 2, dtype=np.int32)
-    result = np.zeros(width * height * 3, dtype=np.uint8)
+    result = np.zeros(width * height * 3, dtype=np.uint8) if baseImage is None else np.array(baseImage, dtype=np.uint8).reshape(-1)
+    doAlpha = 1 if doAlpha else 0
 
     # the kernel function
     srcCode = """
@@ -108,6 +112,7 @@ def clipsToImageGPU(width, height, flatPixelData, properties, colorDimensions, p
         int pcount = %d;
         int colorDimensions = %d;
         int precisionMultiplier = %d;
+        int doAlpha = %d;
         int offset = props[i*pcount];
         float xF = (float) props[i*pcount+1] / (float) precisionMultiplier;
         float yF = (float) props[i*pcount+2] / (float) precisionMultiplier;
@@ -156,20 +161,24 @@ def clipsToImageGPU(width, height, flatPixelData, properties, colorDimensions, p
                     float talpha = (float) srcColor.w / (float) 255.0 * falpha;
                     // r, g, b, a = x, y, z, w
                     // if alpha is greater than zero there's not already a pixel there with full opacity and higher zindex
-                    if (talpha > 0.0 && !(zdindex < destZValue && dalpha >= 1.0)) {
+                    if (talpha > 0.0 && !(doAlpha > 0 && zdindex < destZValue && dalpha >= 1.0) && !(doAlpha < 1 && zdindex < destZValue)) {
 
-                        // there's already a pixel there; place it behind it using its alpha
-                        if (zdindex < destZValue) {
-                            talpha = (1.0 - dalpha) * talpha;
+                        int4 destColor = (int4)(0, 0, 0, 255);
+
+                        // if we're doing alpha, we must blend with existing pixels
+                        if (doAlpha > 0) {
+                            // there's already a pixel there; place it behind it using its alpha
+                            if (zdindex < destZValue) {
+                                talpha = (1.0 - dalpha) * talpha;
+                            }
+                            // mix the existing color with new color if necessary
+                            int dr = result[destIndex];
+                            int dg = result[destIndex+1];
+                            int db = result[destIndex+2];
+                            destColor = (int4)(dr, dg, db, destZAlpha);
                         }
 
-                        // mix the existing color with new color
-                        int dr = result[destIndex];
-                        int dg = result[destIndex+1];
-                        int db = result[destIndex+2];
-                        int4 destColor = (int4)(dr, dg, db, destZAlpha);
                         int4 blendedColor = blendColors(srcColor, destColor, talpha);
-
                         result[destIndex] = blendedColor.x;
                         result[destIndex+1] = blendedColor.y;
                         result[destIndex+2] = blendedColor.z;
@@ -184,7 +193,7 @@ def clipsToImageGPU(width, height, flatPixelData, properties, colorDimensions, p
             }
         }
     }
-    """ % (width, height, pcount, colorDimensions, precisionMultiplier)
+    """ % (width, height, pcount, colorDimensions, precisionMultiplier, doAlpha)
 
     ctx, mf, queue, prg = loadGPUProgram(srcCode)
 
