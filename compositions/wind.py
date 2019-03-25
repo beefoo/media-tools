@@ -52,7 +52,7 @@ aa["MOVE_MAX"] = a.MOVE_MAX * (a.WIDTH / 1920.0) / (a.FPS / 30.0)
 aa["BLOW_SPEED"] = a.BLOW_SPEED * (a.WIDTH / 1920.0) / (a.FPS / 30.0)
 aa["PAD_END"] = 12000
 aa["THREADS"] = 1 # enforce one thread since we need to process frames sequentially
-aa["FRAME_ALPHA"] = 0.1
+aa["FRAME_ALPHA"] = 0.01
 
 # Get video data
 startTime = logTime()
@@ -217,7 +217,7 @@ def clipToNpArrWind(clip, ms, containerW, containerH, precision, parent, globalA
     customProps = None
     rotation = 0.0
 
-    alpha = clip.props["alpha"]
+    # alpha = clip.props["alpha"]
 
     if startMs <= ms < endMs:
 
@@ -230,17 +230,17 @@ def clipToNpArrWind(clip, ms, containerW, containerH, precision, parent, globalA
         distanceTravelled += distance(0, 0, moveX, moveY)
         # start to reduce alpha halway through max move distance
         moveMax = clip.getState("moveMax")
-        halfDistance = moveMax * 0.5
-        if distanceTravelled > halfDistance:
-            alpha *= ease(norm(distanceTravelled, (moveMax, halfDistance), limit=True))
+        # halfDistance = moveMax * 0.5
+        # if distanceTravelled > halfDistance:
+        #     alpha *= ease(norm(distanceTravelled, (moveMax, halfDistance), limit=True))
         clip.setState("distanceTravelled", distanceTravelled)
 
         # fade in after reset
-        resetMs = clip.getState("resetMs")
-        if resetMs is not None:
-            timeSinceReset = ms - resetMs
-            if timeSinceReset < clip.dur:
-                alpha *= ease(1.0 * timeSinceReset / clip.dur)
+        # resetMs = clip.getState("resetMs")
+        # if resetMs is not None:
+        #     timeSinceReset = ms - resetMs
+        #     if timeSinceReset < clip.dur:
+        #         alpha *= ease(1.0 * timeSinceReset / clip.dur)
 
         # determine rotation from uv
         targetAngle = angleFromUV(u, v)
@@ -262,7 +262,7 @@ def clipToNpArrWind(clip, ms, containerW, containerH, precision, parent, globalA
             clip.setState("moveMax", a.MOVE_MAX)
         else:
             clip.setState("pos", (x, y))
-        clip.setState("alpha", alpha)
+        # clip.setState("alpha", alpha)
 
         customProps = {
             "pos": [x, y]
@@ -276,7 +276,7 @@ def clipToNpArrWind(clip, ms, containerW, containerH, precision, parent, globalA
         x, y = clip.getState("pos")
         x1, y1 = (clip.props["x"], clip.props["y"])
         rotation = lerp((clip.getState("rotation"), 0.0), nprogress)
-        alpha = lerp((clip.getState("alpha"), clip.props["alpha"]), nprogress)
+        # alpha = lerp((clip.getState("alpha"), clip.props["alpha"]), nprogress)
         if x != x1 or y != y1:
             x = lerp((x, x1), nprogress)
             y = lerp((y, y1), nprogress)
@@ -288,14 +288,14 @@ def clipToNpArrWind(clip, ms, containerW, containerH, precision, parent, globalA
     props = clip.toDict(ms, containerW, containerH, parent, customProps=customProps)
 
     # alpha from keyframe should override frame alpha
-    alpha = props["alpha"] if props["alpha"] > clip.props["alpha"] else alpha
+    # alpha = props["alpha"] if props["alpha"] > clip.props["alpha"] else alpha
 
     return np.array([
         roundInt(props["x"] * precisionMultiplier),
         roundInt(props["y"] * precisionMultiplier),
         roundInt(props["width"] * precisionMultiplier),
         roundInt(props["height"] * precisionMultiplier),
-        roundInt(alpha * precisionMultiplier),
+        roundInt(props["alpha"] * precisionMultiplier),
         roundInt(props["tn"] * precisionMultiplier),
         roundInt(props["zindex"]),
         roundInt(rotation * precisionMultiplier),
