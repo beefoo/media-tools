@@ -94,6 +94,7 @@ def clipsToFrame(p, clips, pixelData, precision=3, customClipToArrFunction=None,
     saveFrame = getValue(p, "saveFrame", True)
 
     frameAlpha = getValue(globalArgs, "frameAlpha", 1.0)
+    isSequential = getValue(globalArgs, "isSequential", False)
 
     im = None
     fileExists = os.path.isfile(filename) and not overwrite
