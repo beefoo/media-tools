@@ -245,7 +245,8 @@ def processComposition(a, clips, videoDurationMs, sampler=None, stepTime=False, 
         globalArgs = {
             "colors": colors,
             "isSequential": isSequential,
-            "frameAlpha": a.FRAME_ALPHA
+            "frameAlpha": a.FRAME_ALPHA,
+            "blendClips": a.BLEND_CLIPS
         }
         processFrames(videoFrames, clips, clipsPixelData, threads=a.THREADS, precision=a.PRECISION, customClipToArrFunction=customClipToArrFunction, globalArgs=globalArgs)
 
