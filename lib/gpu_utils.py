@@ -11,7 +11,7 @@ from lib.clip import *
 os.environ['PYOPENCL_COMPILER_OUTPUT'] = '1'
 
 def clipsToImageGPU(width, height, flatPixelData, properties, colorDimensions, precision, baseImage=None):
-    count = len(properties)
+    count, pcount = properties.shape
 
     # blank image if no clip data
     if count <= 0 and baseImage is None:
@@ -21,7 +21,6 @@ def clipsToImageGPU(width, height, flatPixelData, properties, colorDimensions, p
         return np.array(baseImage, dtype=np.uint8)
 
     precisionMultiplier = int(10 ** precision)
-    pcount = len(properties[0])
     properties = properties.reshape(-1)
     zvalues = np.zeros(width * height * 2, dtype=np.int32)
     result = np.zeros(width * height * 3, dtype=np.uint8) if baseImage is None else np.array(baseImage, dtype=np.uint8).reshape(-1)
@@ -42,6 +41,15 @@ def clipsToImageGPU(width, height, flatPixelData, properties, colorDimensions, p
         int b = (int) round(((float) color1.z * amount) + ((float) color2.z * invAmount));
         int a = (int) round(((float) color1.w * amount) + ((float) color2.w * invAmount));
 
+        return (int4)(r, g, b, a);
+    }
+
+    static int4 setBrightness(int4 color, float brightness) {
+        // x, y, z, w = r, g, b, a
+        int r = (int) round((float) color.x * brightness);
+        int g = (int) round((float) color.y * brightness);
+        int b = (int) round((float) color.z * brightness);
+        int a = color.w; // retain alpha
         return (int4)(r, g, b, a);
     }
 
@@ -131,6 +139,7 @@ def clipsToImageGPU(width, height, flatPixelData, properties, colorDimensions, p
         float falpha = (float) props[i*pcount+7] / (float) precisionMultiplier;
         int alpha = (int)round(falpha*(float)255.0);
         int zdindex = props[i*pcount+8];
+        float fbrightness = (float) props[i*pcount+9] / (float) precisionMultiplier;
 
         for (int row=0; row<th; row++) {
             for (int col=0; col<tw; col++) {
@@ -151,6 +160,9 @@ def clipsToImageGPU(width, height, flatPixelData, properties, colorDimensions, p
 
                 if (dstX >= 0 && dstX < canvasW && dstY >= 0 && dstY < canvasH) {
                     int4 srcColor = getPixelF(pdata, srcXF, srcYF, h, w, colorDimensions, offset);
+                    if (fbrightness < 1.0) {
+                        srcColor = setBrightness(srcColor, fbrightness);
+                    }
                     int destIndex = dstY * canvasW * 3 + dstX * 3;
                     int destZIndex = dstY * canvasW * 2 + dstX * 2;
                     int destZValue = zvalues[destZIndex];

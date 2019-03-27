@@ -228,7 +228,8 @@ def clipToNpArrFalling(clip, ms, containerW, containerH, precision, parent, glob
         roundInt(props["tn"] * precisionMultiplier),
         roundInt(props["zindex"]),
         roundInt(props["rotation"] * precisionMultiplier),
-        roundInt(props["blur"] * precisionMultiplier)
+        roundInt(props["blur"] * precisionMultiplier),
+        roundInt(props["brightness"] * precisionMultiplier)
     ], dtype=np.int32)
 
 processComposition(a, clips, endMs, sampler, stepTime, startTime, customClipToArrFunction=clipToNpArrFalling)

@@ -20,7 +20,7 @@ class Vector:
             "x": 0.0, "y": 0.0, "z": 0.0, # position
             "origin": [0.0, 0.0], "transformOrigin": [0.5, 0.5],
             "rotation": 0.0, "scale": [1.0, 1.0], "translate": [0.0, 0.0, 0.0],
-            "alpha": 1.0, "blur": 0.0,
+            "alpha": 1.0, "blur": 0.0, "brightness": 1.0,
             "parent": None, "cache": False
         }
         defaults.update(props)
@@ -43,6 +43,7 @@ class Vector:
         self.setParent(defaults["parent"])
         self.setAlpha(defaults["alpha"])
         self.setBlur(defaults["blur"])
+        self.setBrightness(defaults["brightness"])
 
     def addKeyFrame(self, name, ms, value, easing="linear", sortFrames=False):
         keyframe = {"name": name, "ms": ms, "value": value, "dimension": None, "easing": easing}
@@ -71,6 +72,9 @@ class Vector:
 
     def getBlur(self, ms=None):
         return self.getPropValue("blur", ms=ms)
+
+    def getBrightness(self, ms=None):
+        return self.getPropValue("brightness", ms=ms)
 
     def getHeight(self, ms=None, parent=None, customProps=None):
         return self.getSizeDimension(1, ms, parent, customProps)
@@ -166,7 +170,8 @@ class Vector:
             "height": self.getHeight(ms, parent, customProps),
             "alpha": self.getAlpha(ms),
             "rotation": self.getRotation(ms),
-            "blur": self.getBlur(ms)
+            "blur": self.getBlur(ms),
+            "brightness": self.getBrightness(ms)
         }
         return props
 
@@ -242,6 +247,9 @@ class Vector:
     def setBlur(self, blur):
         self.blur = blur
 
+    def setBrightness(self, brightness):
+        self.brightness = brightness
+
     def setOrigin(self, origin):
         self.origin = origin
 
@@ -287,30 +295,11 @@ class Vector:
 
 class Clip:
 
-    # define the indices for gpu arrays
-    # clip properties
-    CLIP_PROPERTIES = {
-        "X": 0, "Y": 1, "WIDTH": 2, "HEIGHT": 3,
-        "ALPHA": 4, "Z": 5, "ORIGIN_X": 6, "ORIGIN_Y": 7,
-        "T_ORIGIN_X": 8, "T_ORIGIN_Y": 9, "DUR": 10, "INDEX": 11
-    }
-    # keyframe properties
-    KEYFRAME_PROPERTIES = {
-        "KF_MS": 0, "KF_PROPERTY": 1, "KF_DIMENSION": 2, "KF_VALUE": 3, "KF_EASING": 4
-    }
-    PROPERTY_NAMES = {
-        "pos": 1,
-        "translate": 2,
-        "scale": 3,
-        "alpha": 4
-    }
-    # easing properties
-    EASING_PROPERTIES = {
-        "linear": 1,
-        "sin": 2,
-        "cubicInOut": 3,
-        "quartInOut": 4
-    }
+    npProperties = [("x", "f"), ("y", "f"), ("width", "f"), ("height", "f"), ("alpha", "f"), ("tn", "f"), ("zindex", "i"), ("rotation", "f"), ("blur", "f"), ("brightness", "f")]
+
+    @staticmethod
+    def npPropertyCount():
+        return len(Clip.npProperties)
 
     def __init__(self, props={}):
         self.props = props
@@ -480,47 +469,20 @@ class Clip:
     def toNpArr(self, ms=None, containerW=None, containerH=None, precision=3, parent=None, globalArgs={}):
         precisionMultiplier = int(10 ** precision)
         props = self.toDict(ms, containerW, containerH, parent)
-        arr = [
-            roundInt(props["x"] * precisionMultiplier),
-            roundInt(props["y"] * precisionMultiplier),
-            roundInt(props["width"] * precisionMultiplier),
-            roundInt(props["height"] * precisionMultiplier),
-            roundInt(props["alpha"] * precisionMultiplier),
-            roundInt(props["tn"] * precisionMultiplier),
-            roundInt(props["zindex"]),
-            roundInt(props["rotation"] * precisionMultiplier),
-            roundInt(props["blur"] * precisionMultiplier)
-        ]
-        return np.array(arr, dtype=np.int32)
+        arr = np.zeros(self.npPropertyCount(), dtype=np.int32)
+        for i, p in enumerate(self.npProperties):
+            pkey, ptype = p
+            value = roundInt(props[pkey] * precisionMultiplier) if ptype == "f" else roundInt(props[pkey])
+            arr[i] = value
+        return arr
 
 def clipArrToDict(clipArr, precision=3):
     precisionMultiplier = int(10 ** precision)
-    _x, _y, _w, _h, _alpha, _t, _z, _rotation, _blur = (0, 1, 2, 3, 4, 5, 6, 7, 8)
-
-    # check for blur
-    blur = 0.0
-    if len(clipArr) > _blur:
-        blur = 1.0*clipArr[_blur]/precisionMultiplier
-        clipArr = clipArr[:_blur]
-    # check for rotation
-    rotation = 0.0
-    if len(clipArr) > _rotation:
-        rotation = 1.0*clipArr[_rotation]/precisionMultiplier
-        clipArr = clipArr[:_rotation]
-
-    x, y, tw, th, alpha, t, zindex = tuple(clipArr)
-
-    return {
-        "x": 1.0 * x / precisionMultiplier,
-        "y": 1.0 * y / precisionMultiplier,
-        "width": 1.0 * tw / precisionMultiplier,
-        "height": 1.0 * th / precisionMultiplier,
-        "alpha": 1.0 * alpha / precisionMultiplier,
-        "tn": 1.0 * t / precisionMultiplier,
-        "zindex": zindex,
-        "rotation": rotation,
-        "blur": blur
-    }
+    d = {}
+    for i, p in enumerate(Clip.npProperties):
+        pkey, ptype = p
+        d[pkey] = (1.0 * clipArr[i] / precisionMultiplier) if ptype == "f" else clipArr[i]
+    return d
 
 def clipToDict(p):
     ms, clip = p
@@ -530,7 +492,7 @@ def clipsToNpArr(clips, ms=None, containerW=None, containerH=None, precision=3, 
     # startTime = logTime()
     parentProps = clips[0].vector.parent.toDict(ms) if len(clips) > 0 and clips[0].vector.parent is not None else None
     clipCount = len(clips)
-    propertyCount = 9
+    propertyCount = Clip.npPropertyCount()
     arr = np.zeros((clipCount, propertyCount), dtype=np.int32)
     for i, clip in enumerate(clips):
         if customClipToArrFunction is not None:

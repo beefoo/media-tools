@@ -51,7 +51,8 @@ stepTime = startTime
 video = VideoFileClip(INPUT_FILE, audio=False)
 duration = video.duration
 timeStep = int(duration / (COUNT+1) * 1000)
-durationMs = min(timeStep, TARGET_DURATION)
+durationMs = min([timeStep, TARGET_DURATION])
+clipDurMs = min([timeStep, 1000, TARGET_DURATION])
 
 samples = []
 for i in range(COUNT):
@@ -63,7 +64,7 @@ for i in range(COUNT):
         "index": i,
         "filename": INPUT_FILE,
         "start": i*durationMs,
-        "dur": durationMs,
+        "dur": clipDurMs,
         "x": x,
         "y": y,
         "width": CLIP_W,
@@ -79,7 +80,7 @@ for i, clip in enumerate(clips):
     halfBlurDur = blurDur/2
     blurRadius = 2.0
     for j in range(rotations):
-        clip.queueTween(j*blurDur, halfBlurDur, [("blur", 0, blurRadius*(j+1), "sin")])
-        clip.queueTween(j*blurDur+halfBlurDur, halfBlurDur, [("blur", blurRadius*(j+1), 0, "sin")])
+        clip.queueTween(j*blurDur, halfBlurDur, [("blur", 0, blurRadius*(j+1), "sin"), ("brightness", 1.0, 0.5, "sin")])
+        clip.queueTween(j*blurDur+halfBlurDur, halfBlurDur, [("blur", blurRadius*(j+1), 0, "sin"), ("brightness", 0.5, 1.0, "sin")])
 
 processComposition(a, clips, durationMs, sampler=None, stepTime=stepTime, startTime=startTime, containsAlphaClips=True)

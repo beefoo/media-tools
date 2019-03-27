@@ -46,6 +46,7 @@ def addVideoArgs(parser):
     parser.add_argument('-precision', dest="PRECISION", default=3, type=int, help="Precision for position and size")
     parser.add_argument('-margin', dest="CLIP_MARGIN", default=0.06666666667, type=float, help="Margin between clips as a percentage of a clip's width")
     parser.add_argument('-alphar', dest="ALPHA_RANGE", default="0.33,1.0", help="Alpha range")
+    parser.add_argument('-brightr', dest="BRIGHTNESS_RANGE", default="0.33,1.0", help="Brightness range")
     parser.add_argument('-mcd', dest="MIN_CLIP_DUR", default=1500, type=int, help="Minumum clip duration")
     parser.add_argument('-noise', dest="NOISE", default=0.0, type=float, help="Amount of pixel noise to add")
     parser.add_argument('-maxa', dest="MAX_AUDIO_CLIPS", default=-1, type=int, help="Maximum number of audio clips to play")
@@ -152,12 +153,12 @@ def clipsToFrameGPU(clips, width, height, clipsPixelData, precision=3, baseImage
             pixelCount += int(h*w*c)
 
     validCount = len(indices)
-    propertyCount = 9
+    propertyCount = 10
     properties = np.zeros((validCount, propertyCount), dtype=np.int32)
     pixelData = np.zeros(pixelCount, dtype=np.uint8)
     for i, clipIndex in enumerate(indices):
         clipArr = clips[clipIndex]
-        x, y, tw, th, alpha, t, zindex = tuple(clipArr[:7])
+        x, y, tw, th, alpha, t, zindex, rotation, blur, brightness = tuple(clipArr)
         clip = clipArrToDict(clipArr, precision)
         clipPixelData = clipsPixelData[clipIndex]
         frameCount = len(clipPixelData)
@@ -196,7 +197,7 @@ def clipsToFrameGPU(clips, width, height, clipsPixelData, precision=3, baseImage
         if c > _c:
             fillVals = np.full((h, w, 1), 255, dtype='uint8')
             pixels = np.concatenate((pixels, fillVals), axis=2)
-        properties[i] = np.array([offset, x, y, w, h, tw, th, alpha, zindex])
+        properties[i] = np.array([offset, x, y, w, h, tw, th, alpha, zindex, brightness])
         px0 = offset
         px1 = px0 + int(h*w*c)
         pixelData[px0:px1] = pixels.reshape(-1)
