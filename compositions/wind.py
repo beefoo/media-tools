@@ -53,7 +53,6 @@ aa["BLOW_SPEED"] = a.BLOW_SPEED * (a.WIDTH / 1920.0) / (a.FPS / 30.0)
 aa["PAD_END"] = 12000
 aa["THREADS"] = 1 # enforce one thread since we need to process frames sequentially
 aa["FRAME_ALPHA"] = 0.01
-aa["BLEND_CLIPS"] = True
 
 # Get video data
 startTime = logTime()

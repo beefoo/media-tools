@@ -51,7 +51,6 @@ def addVideoArgs(parser):
     parser.add_argument('-maxa', dest="MAX_AUDIO_CLIPS", default=-1, type=int, help="Maximum number of audio clips to play")
     parser.add_argument('-keep', dest="KEEP_FIRST_AUDIO_CLIPS", default=-1, type=int, help="Ensure the middle x audio files play")
     parser.add_argument('-fa', dest="FRAME_ALPHA", default=1.0, type=float, help="For adding frame content on top of previous frames; must be 0 <= x < 1; lower number = slower fade of prev frames")
-    parser.add_argument('-blend', dest="BLEND_CLIPS", action="store_true", help="Blend clip colors if alpha?")
 
 def alphaMask(im, mask):
     w, h = im.size
@@ -124,7 +123,6 @@ def clipsToFrame(p, clips, pixelData, precision=3, customClipToArrFunction=None,
 
 def clipsToFrameGPU(clips, width, height, clipsPixelData, precision=3, baseImage=None, globalArgs={}):
     c = globalArgs["colors"] if "colors" in globalArgs else 3
-    blendClips = globalArgs["blendClips"] if "blendClips" in globalArgs else False
     offset = 0
     maxScaleFactor = 2.0
     precisionMultiplier = int(10 ** precision)
@@ -204,7 +202,7 @@ def clipsToFrameGPU(clips, width, height, clipsPixelData, precision=3, baseImage
         pixelData[px0:px1] = pixels.reshape(-1)
         offset += int(h*w*c)
 
-    pixels = clipsToImageGPU(width, height, pixelData, properties, c, precision, baseImage=baseImage, blendClips=blendClips)
+    pixels = clipsToImageGPU(width, height, pixelData, properties, c, precision, baseImage=baseImage)
     return Image.fromarray(pixels, mode="RGB")
 
 def compileFrames(infile, fps, outfile, padZeros, audioFile=None, quality="high"):
