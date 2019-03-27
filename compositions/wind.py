@@ -50,7 +50,7 @@ aa = vars(a)
 aa["SPEED_MAX"] = a.SPEED_MAX * (a.WIDTH / 1920.0) / (a.FPS / 30.0)
 aa["MOVE_MAX"] = a.MOVE_MAX * (a.WIDTH / 1920.0) / (a.FPS / 30.0)
 aa["BLOW_SPEED"] = a.BLOW_SPEED * (a.WIDTH / 1920.0) / (a.FPS / 30.0)
-aa["PAD_END"] = 12000
+aa["END_TRANSITION_MS"] = 12000
 aa["THREADS"] = 1 # enforce one thread since we need to process frames sequentially
 aa["FRAME_ALPHA"] = 0.01
 aa["ALPHA_RANGE"] = (1.0, 1.0)
@@ -114,6 +114,7 @@ print("Wind data shape after slice = %s x %s x %s" % windData.shape)
 startMs = a.PAD_START
 ms = startMs + a.DURATION_MS
 endMs = ms
+durationMs = endMs + a.END_TRANSITION_MS
 
 # Initialize clip states
 for i, clip in enumerate(clips):
@@ -218,6 +219,7 @@ def clipToNpArrWind(clip, ms, containerW, containerH, precision, parent, globalA
 
     customProps = None
     rotation = 0.0
+    transitionEndMs = endMs + a.END_TRANSITION_MS
 
     alpha = clip.props["alpha"]
 
@@ -271,9 +273,9 @@ def clipToNpArrWind(clip, ms, containerW, containerH, precision, parent, globalA
         }
 
     # reset the position after active range
-    elif ms >= endMs:
-        absoluteEndMs = endMs + a.PAD_END
-        nprogress = lim(norm(ms, (endMs, absoluteEndMs)))
+    elif endMs <= ms <= transitionEndMs:
+        transitionEndMs = endMs + a.END_TRANSITION_MS
+        nprogress = lim(norm(ms, (endMs, transitionEndMs)))
         nprogress = ease(nprogress)
         x, y = clip.getState("pos")
         x1, y1 = (clip.props["x"], clip.props["y"])
@@ -302,4 +304,4 @@ def clipToNpArrWind(clip, ms, containerW, containerH, precision, parent, globalA
         roundInt(props["brightness"] * precisionMultiplier)
     ], dtype=np.int32)
 
-processComposition(a, clips, ms, sampler, stepTime, startTime, customClipToArrFunction=clipToNpArrWind, containsAlphaClips=True, isSequential=True)
+processComposition(a, clips, durationMs, sampler, stepTime, startTime, customClipToArrFunction=clipToNpArrWind, containsAlphaClips=True, isSequential=True)
