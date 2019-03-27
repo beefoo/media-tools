@@ -167,6 +167,10 @@ def clipsToImageGPU(width, height, flatPixelData, properties, colorDimensions, p
                     int destZIndex = dstY * canvasW * 2 + dstX * 2;
                     int destZValue = zvalues[destZIndex];
                     int destZAlpha = zvalues[destZIndex+1];
+                    // nothing is there yet, give it full opacity
+                    if (destZIndex <= 0) {
+                        destZAlpha = 255;
+                    }
                     float dalpha = (float) destZAlpha / (float) 255.0;
                     float talpha = (float) srcColor.w / (float) 255.0 * falpha;
                     // r, g, b, a = x, y, z, w
