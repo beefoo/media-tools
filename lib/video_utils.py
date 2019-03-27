@@ -580,6 +580,7 @@ def parseVideoArgs(args):
     d["MAX_DB"] = args.MAX_DB if args.MAX_DB > -9999 else False
     d["VOLUME_RANGE"] = tuple([float(v) for v in args.VOLUME_RANGE.strip().split(",")])
     d["ALPHA_RANGE"] =  tuple([float(v) for v in args.ALPHA_RANGE.strip().split(",")])
+    d["BRIGHTNESS_RANGE"] =  tuple([float(v) for v in args.BRIGHTNESS_RANGE.strip().split(",")])
 
 def pasteImage(im, clipImg, x, y):
     width, height = im.size
