@@ -22,8 +22,9 @@ def clipsToImageGPU(width, height, flatPixelData, properties, colorDimensions, p
 
     precisionMultiplier = int(10 ** precision)
     properties = properties.reshape(-1)
-    zvalues = np.zeros(width * height * 2, dtype=np.int32)
+    zvalues = np.zeros(width * height, dtype=np.int32)
     result = np.zeros(width * height * 3, dtype=np.uint8) if baseImage is None else np.array(baseImage, dtype=np.uint8).reshape(-1)
+    baseImage = np.copy(result)
 
     # the kernel function
     srcCode = """
@@ -112,7 +113,7 @@ def clipsToImageGPU(width, height, flatPixelData, properties, colorDimensions, p
         return finalcolor;
     }
 
-    __kernel void makeImage(__global uchar *pdata, __global int *props, __global int *zvalues, __global uchar *result){
+    __kernel void makeImage(__global uchar *pdata, __global int *props, __global int *zvalues, __global uchar *baseImage, __global uchar *result){
         int canvasW = %d;
         int canvasH = %d;
         int i = get_global_id(0);
@@ -164,39 +165,25 @@ def clipsToImageGPU(width, height, flatPixelData, properties, colorDimensions, p
                         srcColor = setBrightness(srcColor, fbrightness);
                     }
                     int destIndex = dstY * canvasW * 3 + dstX * 3;
-                    int destZIndex = dstY * canvasW * 2 + dstX * 2;
+                    int destZIndex = dstY * canvasW + dstX;
                     int destZValue = zvalues[destZIndex];
-                    int destZAlpha = zvalues[destZIndex+1];
-                    // nothing is there yet, give it full opacity
-                    if (destZIndex <= 0) {
-                        destZAlpha = 255;
-                    }
-                    float dalpha = (float) destZAlpha / (float) 255.0;
                     float talpha = (float) srcColor.w / (float) 255.0 * falpha;
                     // r, g, b, a = x, y, z, w
                     // if alpha is greater than zero there's not already a pixel there with full opacity and higher zindex
-                    if (talpha > 0.0 && !(zdindex < destZValue && dalpha >= 1.0)) {
+                    if (talpha > 0.0 && zdindex > destZValue) {
 
-                        // there's already a pixel there; place it behind it using its alpha
-                        if (zdindex < destZValue) {
-                            talpha = (1.0 - dalpha) * talpha;
-                        }
-                        // mix the existing color with new color if necessary
-                        int dr = result[destIndex];
-                        int dg = result[destIndex+1];
-                        int db = result[destIndex+2];
-                        int4 destColor = (int4)(dr, dg, db, destZAlpha);
-
+                        // mix the base color with new color
+                        int dr = baseImage[destIndex];
+                        int dg = baseImage[destIndex+1];
+                        int db = baseImage[destIndex+2];
+                        int4 destColor = (int4)(dr, dg, db, 255);
                         int4 blendedColor = blendColors(srcColor, destColor, talpha);
                         result[destIndex] = blendedColor.x;
                         result[destIndex+1] = blendedColor.y;
                         result[destIndex+2] = blendedColor.z;
 
-                        // assign new zindex if it's greater
-                        if (destZValue < zdindex) {
-                            zvalues[destZIndex] = zdindex;
-                            zvalues[destZIndex+1] = blendedColor.w;
-                        }
+                        // assign new zindex since it's greater
+                        zvalues[destZIndex] = zdindex;
                     }
                 }
             }
@@ -209,8 +196,9 @@ def clipsToImageGPU(width, height, flatPixelData, properties, colorDimensions, p
     bufIn1 =  cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=flatPixelData)
     bufIn2 =  cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=properties)
     bufInZ = cl.Buffer(ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=zvalues)
+    bufInB =  cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=baseImage)
     bufOut = cl.Buffer(ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=result)
-    prg.makeImage(queue, (count, ), None , bufIn1, bufIn2, bufInZ, bufOut)
+    prg.makeImage(queue, (count, ), None , bufIn1, bufIn2, bufInZ, bufInB, bufOut)
 
     # Copy result
     cl.enqueue_copy(queue, result, bufOut)
