@@ -50,7 +50,9 @@ aa = vars(a)
 aa["SPEED_MAX"] = a.SPEED_MAX * (a.WIDTH / 1920.0) / (a.FPS / 30.0)
 aa["MOVE_MAX"] = a.MOVE_MAX * (a.WIDTH / 1920.0) / (a.FPS / 30.0)
 aa["BLOW_SPEED"] = a.BLOW_SPEED * (a.WIDTH / 1920.0) / (a.FPS / 30.0)
-aa["END_TRANSITION_MS"] = 12000
+aa["PAD_END"] = 12000
+aa["TRANSITION_END_MS"] = 8000
+aa["TRANSITION_END_STEP"] = 1.0 / (a.TRANSITION_END_MS / frameToMs(1.0, a.FPS))
 aa["THREADS"] = 1 # enforce one thread since we need to process frames sequentially
 aa["FRAME_ALPHA"] = 0.01
 aa["ALPHA_RANGE"] = (1.0, 1.0)
@@ -114,7 +116,7 @@ print("Wind data shape after slice = %s x %s x %s" % windData.shape)
 startMs = a.PAD_START
 ms = startMs + a.DURATION_MS
 endMs = ms
-durationMs = endMs + a.END_TRANSITION_MS
+durationMs = endMs
 
 # Initialize clip states
 for i, clip in enumerate(clips):
@@ -219,15 +221,13 @@ def clipToNpArrWind(clip, ms, containerW, containerH, precision, parent, globalA
 
     customProps = None
     rotation = 0.0
-    transitionEndMs = endMs + a.END_TRANSITION_MS
-
     alpha = clip.props["alpha"]
 
     if startMs <= ms < endMs:
 
         nprogress = norm(ms, (startMs, endMs))
         # increase in speed over time; fastest in the middle
-        globalSpeed = easeSinInOutBell(nprogress)
+        globalSpeed = ease(nprogress)
         x, y = clip.getState("pos")
         distanceTravelled = clip.getState("distanceTravelled")
         u, v, moveX, moveY = getMovePositionWithWind(a, windData, x, y, a.SPEED_MAX * globalSpeed)
@@ -268,22 +268,26 @@ def clipToNpArrWind(clip, ms, containerW, containerH, precision, parent, globalA
             clip.setState("pos", (x, y))
         clip.setState("alpha", alpha)
 
+        if abs(moveX) > 0 or abs(moveY) > 0:
+            clip.setState("lastMove", (moveX, moveY))
+
         customProps = {
             "pos": [x, y]
         }
 
     # reset the position after active range
-    elif endMs <= ms <= transitionEndMs:
-        transitionEndMs = endMs + a.END_TRANSITION_MS
-        nprogress = lim(norm(ms, (endMs, transitionEndMs)))
-        nprogress = ease(nprogress)
+    elif  ms >= endMs:
         x, y = clip.getState("pos")
-        x1, y1 = (clip.props["x"], clip.props["y"])
-        rotation = lerp((clip.getState("rotation"), 0.0), nprogress)
-        alpha = lerp((clip.getState("alpha"), clip.props["alpha"]), nprogress)
-        if x != x1 or y != y1:
-            x = lerp((x, x1), nprogress)
-            y = lerp((y, y1), nprogress)
+        moveX, moveY = clip.getState("lastMove")
+        alpha = clip.getState("alpha")
+        rotation = clip.getState("rotation")
+        if alpha > 0.0:
+            x += moveX
+            y += moveY
+            alpha -= a.TRANSITION_END_STEP
+            alpha = max(alpha, 0.0)
+            clip.setState("pos", (x, y))
+            clip.setState("alpha", alpha)
             customProps = {
                 "pos": [x, y]
             }
