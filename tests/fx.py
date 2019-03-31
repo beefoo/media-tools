@@ -20,13 +20,13 @@ sys.path.insert(0,parentdir)
 from lib.audio_utils import addFx
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-in', dest="INPUT_FILE", default="../media/downloads/vivaldi/01_-_Vivaldi_Spring_mvt_1_Allegro.mp3", help="Input file")
+parser.add_argument('-in', dest="INPUT_FILE", default="media/sample/chromatic_scale_piano_c4-b4.wav", help="Input file")
 parser.add_argument('-start', dest="CLIP_START", default=0, type=int, help="Clip start in ms")
-parser.add_argument('-dur', dest="CLIP_DUR", default=3100, type=int, help="Clip duration in ms")
+parser.add_argument('-dur', dest="CLIP_DUR", default=450, type=int, help="Clip duration in ms")
 parser.add_argument('-effect', dest="EFFECT", default="reverb", help="Effect name")
 parser.add_argument('-amounts', dest="AMOUNTS", default="20,40,60,80,100", help="Effect amounts")
-parser.add_argument('-pad', dest="PAD", default=1000, type=int, help="Amount to pad in ms")
-parser.add_argument('-out', dest="OUTPUT_FILE", default="../output/reverb_test.mp3", help="Output media file")
+parser.add_argument('-pad', dest="PAD", default=3000, type=int, help="Amount to pad in ms")
+parser.add_argument('-out', dest="OUTPUT_FILE", default="output/reverb_test.mp3", help="Output media file")
 args = parser.parse_args()
 
 # Parse arguments
@@ -55,7 +55,10 @@ audio.set_frame_rate(clip.frame_rate)
 audio += clip
 
 for amount in amounts:
-    audio += addFx(clip, [(effect, amount)], pad=pad)
+    if effect=="echo":
+        audio += addFx(clip, [(effect, (amount, 3))], pad=pad)
+    else:
+        audio += addFx(clip, [(effect, amount)], pad=pad)
     print("Processed %s %s" % (effect, amount))
 
 fformat = outputFile.split(".")[-1]

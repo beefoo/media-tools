@@ -34,7 +34,16 @@ def addFx(sound, effects, pad=3000, fade_in=100, fade_out=100):
         elif effect == "bass":
             chain.lowshelf(gain=value)
         elif effect == "echo":
-            chain.custom("echo 0.8 0.9 %s 0.3" % value)
+            echoStr = "echo 0.8 0.9"
+            amount = value
+            count = 1
+            # check if we have echo count indicated
+            if isinstance(value, tuple):
+                amount, count = value
+            for i in range(count):
+                # amount between 10 (robot) and 1000 (mountains)
+                echoStr += " %s 0.3" % amount
+            chain.custom(echoStr)
 
     # apply reverb effect
     fx = (chain)
