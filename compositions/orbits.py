@@ -51,9 +51,9 @@ PLAY_OFFSET = 0.375 # play at the 3 o'clock spot, halfway between 0.25 and 0.5
 fromScale = 1.0 * gridW / startGridW
 toScale = 1.0 * gridW / endGridW
 
-# set clip alpha to min by default
+# set clip brightness to min by default
 for i, s in enumerate(samples):
-    samples[i]["alpha"] = a.ALPHA_RANGE[0]
+    samples[i]["brightness"] = a.BRIGHTNESS_RANGE[0]
     samples[i]["ring"] = getRing(s["col"], s["row"], cCol, cRow)
 
 def ringComparison(s):
@@ -203,7 +203,7 @@ def clipToNpArrOrbits(clip, ms, containerW, containerH, precision, parent, globa
     rotateStartMs = clip.props["rotateStartMs"]
     rotateEndMs = clip.props["rotateEndMs"]
     rotateReverseMs = roundInt(lerp((rotateStartMs, rotateEndMs), 0.5))
-    alpha = clip.props["alpha"]
+    brightness = clip.props["brightness"]
     ringProps = None
 
     ended = reversed = False
@@ -261,7 +261,7 @@ def clipToNpArrOrbits(clip, ms, containerW, containerH, precision, parent, globa
         y = lerp((y0, y1), lerpValue) + marginY
         ringProps = {"pos": [x, y]}
 
-        # determine alpha based on if clip is currently playing (when it crosses the 3-o'clock position)
+        # determine brightness based on if clip is currently playing (when it crosses the 3-o'clock position)
         clipDur = clip.dur
         clipPlayMs = getClipPlayMs(PLAY_OFFSET, ringCellCount, ringIndex, rotateDurMs, reversed=reversed)
 
@@ -274,8 +274,8 @@ def clipToNpArrOrbits(clip, ms, containerW, containerH, precision, parent, globa
                     msRing = lim(msRing, (clipPlayMs, clipPlayMs+clipDur))
                 else:
                     msRing = clipPlayMs+clipDur
-            nalpha = 1.0 - norm(msRing, (clipPlayMs, clipPlayMs+clipDur))
-            alpha = lerp((alpha, 1.0), nalpha)
+            nbrightness = 1.0 - norm(msRing, (clipPlayMs, clipPlayMs+clipDur))
+            brightness = lerp((brightness, 1.0), nbrightness)
 
     precisionMultiplier = int(10 ** precision)
     props = clip.toDict(_ms, containerW, containerH, parent, customProps=ringProps)
@@ -285,12 +285,12 @@ def clipToNpArrOrbits(clip, ms, containerW, containerH, precision, parent, globa
         roundInt(props["y"] * precisionMultiplier),
         roundInt(props["width"] * precisionMultiplier),
         roundInt(props["height"] * precisionMultiplier),
-        roundInt(alpha * precisionMultiplier),
+        roundInt(props["alpha"] * precisionMultiplier),
         roundInt(props["tn"] * precisionMultiplier),
         roundInt(props["zindex"]),
         roundInt(props["rotation"] * precisionMultiplier),
         roundInt(props["blur"] * precisionMultiplier),
-        roundInt(props["brightness"] * precisionMultiplier)
+        roundInt(brightness * precisionMultiplier)
     ], dtype=np.int32)
 
 processComposition(a, clips, ms, sampler, stepTime, startTime, customClipToArrFunction=clipToNpArrOrbits)
