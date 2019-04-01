@@ -196,6 +196,21 @@ container.vector.sortFrames()
 def angleFromUV(u, v):
     return math.atan2(v, u) * 180.0 / math.pi
 
+# custom clip to numpy array function to override width/height calculation
+def clipToNpArrWindCalculation(clip, ms, containerW, containerH, precision, parent, globalArgs={}):
+    return np.array([
+        roundInt(props["x"] * precisionMultiplier),
+        roundInt(props["y"] * precisionMultiplier),
+        roundInt(props["width"] * precisionMultiplier),
+        roundInt(props["height"] * precisionMultiplier),
+        roundInt(alpha * precisionMultiplier),
+        roundInt(props["tn"] * precisionMultiplier),
+        roundInt(props["zindex"]),
+        roundInt(rotation * precisionMultiplier),
+        roundInt(props["blur"] * precisionMultiplier),
+        roundInt(props["brightness"] * precisionMultiplier)
+    ], dtype=np.int32)
+
 # custom clip to numpy array function to override default tweening logic
 def clipToNpArrWind(clip, ms, containerW, containerH, precision, parent, globalArgs={}):
     global a
@@ -292,4 +307,4 @@ def clipToNpArrWind(clip, ms, containerW, containerH, precision, parent, globalA
         roundInt(props["brightness"] * precisionMultiplier)
     ], dtype=np.int32)
 
-processComposition(a, clips, durationMs, sampler, stepTime, startTime, customClipToArrFunction=clipToNpArrWind, containsAlphaClips=True, isSequential=True)
+processComposition(a, clips, durationMs, sampler, stepTime, startTime, customClipToArrFunction=clipToNpArrWind, containsAlphaClips=True, isSequential=True, customClipToArrCalcFunction="default")

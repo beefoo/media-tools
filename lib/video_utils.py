@@ -515,7 +515,7 @@ def loadVidoPixelDataDebug(clipCount):
         clipsPixelData[i, 0, 0, 0] = getRandomColor(i)
     return clipsPixelData
 
-def loadVideoPixelDataFromFrames(frames, clips, containerW, containerH, fps, cacheDir="tmp/", cacheKey="sample", verifyData=True, cache=True, debug=False, precision=3, customClipToArrFunction=None):
+def loadVideoPixelDataFromFrames(frames, clips, containerW, containerH, fps, cacheDir="tmp/", cacheKey="sample", verifyData=True, cache=True, debug=False, precision=3, customClipToArrFunction=None, customClipToArrCalcFunction=None, globalArgs={}):
     frameCount = len(frames)
     clipCount = len(clips)
     precisionMultiplier = int(10 ** precision)
@@ -534,10 +534,16 @@ def loadVideoPixelDataFromFrames(frames, clips, containerW, containerH, fps, cac
         print("Calculating clip size/position from frame sequence...")
         clipWidthMaxes = np.zeros(clipCount, dtype=np.int32)
         clipCompare = np.zeros((2, clipCount), dtype=np.int32)
+        ccfunction = customClipToArrFunction
+        # override custom clip arr function for calcuation
+        if customClipToArrCalcFunction is "default":
+            ccfunction = None
+        elif customClipToArrCalcFunction is not None:
+            ccfunction = customClipToArrCalcFunction
         for i, frame in enumerate(frames):
             ms = frame["ms"]
             # frameClips = clipsToDictsGPU(clips, ms, container, precision)
-            frameClips = clipsToNpArr(clips, ms, containerW, containerH, precision, customClipToArrFunction)
+            frameClips = clipsToNpArr(clips, ms, containerW, containerH, precision, customClipToArrFunction=ccfunction, globalArgs=globalArgs)
             clipCompare[0] = clipWidthMaxes
             clipCompare[1] = frameClips[:,2] # just take the width (2)
             clipWidthMaxes = np.amax(clipCompare, axis=0)
