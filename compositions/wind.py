@@ -33,25 +33,24 @@ parser.add_argument('-data', dest="WIND_DATA", default="data/wind/wnd10m.gdas.20
 parser.add_argument('-grid', dest="GRID", default="128x128", help="Size of grid")
 parser.add_argument('-grid0', dest="START_GRID", default="64x64", help="Start size of grid")
 parser.add_argument('-grid1', dest="END_GRID", default="128x128", help="End size of grid")
-parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.3,0.6", help="Volume range")
+parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.2,0.8", help="Volume range")
 parser.add_argument('-dur', dest="DURATION_MS", default=60000, type=int, help="Target duration in ms")
 parser.add_argument('-dmax', dest="DATA_MAX", default=8.0, type=float, help="Intended data max (absolute range is typically around -20 to 20); lower this to move things faster")
 parser.add_argument('-smax', dest="SPEED_MAX", default=0.5, type=float, help="Most we should move a clip per frame in pixels; assumes 30fps; assumes 1920x1080px")
 parser.add_argument('-mmax', dest="MOVE_MAX", default=20.0, type=float, help="Distance to move before resetting")
-parser.add_argument('-bcount', dest="BLOW_COUNT", default=8, type=int, help="Number of times to blow the wind")
-parser.add_argument('-bdur', dest="BLOW_DURATION", default=4000, type=int, help="Blow duration in ms")
-parser.add_argument('-bspeed', dest="BLOW_SPEED", default=1.0, type=float, help="Blow speed")
-parser.add_argument('-bradius', dest="BLOW_RADIUS", default=8.0, type=float, help="Blow radius")
 parser.add_argument('-rstep', dest="ROTATION_STEP", default=0.1, type=float, help="Rotation step in degrees")
+parser.add_argument('-tend', dest="TRANSITION_END_MS", default=8000, type=int, help="How long the ending transition should be")
+parser.add_argument('-sort', dest="SORT_STRING", default="hz=asc=0.9&hz=desc=0.9&power=desc=0.5&clarity=desc", help="Query string for sorting samples")
+parser.add_argument('-pdur', dest="PULSE_MS", default=256, type=int, help="How long each pulse should be")
+parser.add_argument('-pcount', dest="PULSE_COUNT", default=16, type=int, help="Number of pulses per clip play")
+parser.add_argument('-pnotes', dest="PLAY_NOTES", default=4, type=int, help="Number of notes to alternate between")
 a = parser.parse_args()
 parseVideoArgs(a)
 aa = vars(a)
 # adjust speed max for this fps and resolution
 aa["SPEED_MAX"] = a.SPEED_MAX * (a.WIDTH / 1920.0) / (a.FPS / 30.0)
 aa["MOVE_MAX"] = a.MOVE_MAX * (a.WIDTH / 1920.0) / (a.FPS / 30.0)
-aa["BLOW_SPEED"] = a.BLOW_SPEED * (a.WIDTH / 1920.0) / (a.FPS / 30.0)
 aa["PAD_END"] = 12000
-aa["TRANSITION_END_MS"] = 8000
 aa["TRANSITION_END_STEP"] = 1.0 / (a.TRANSITION_END_MS / frameToMs(1.0, a.FPS))
 aa["THREADS"] = 1 # enforce one thread since we need to process frames sequentially
 aa["FRAME_ALPHA"] = 0.01
@@ -66,6 +65,17 @@ samples, sampleCount, container, sampler, stepTime, cCol, cRow, gridW, gridH, st
 for i, s in enumerate(samples):
     samples[i]["alpha"] = a.ALPHA_RANGE[0]
     samples[i]["brightness"] = a.BRIGHTNESS_RANGE[0]
+
+samplesGroupedByNote = groupList(samples, "note", sort=True)
+noteGroupCount = len(samplesGroupedByNote)
+if a.PLAY_NOTES > noteGroupCount:
+    print("Not enough notes: requested %s but have %s; reducing" % (a.PLAY_NOTES, noteGroupCount))
+    aa["PLAY_NOTES"] = noteGroupCount
+
+# within each group sort by clarity, filter by power and frequency
+for i, group in enumerate(samplesGroupedByNote):
+    samplesGroupedByNote[i]["items"] = sortByQueryString(group["items"], a.SORT_STRING)
+    samplesGroupedByNote[i]["currentIndex"] = 0
 
 clips = samplesToClips(samples)
 stepTime = logTime(stepTime, "Samples to clips")
@@ -114,9 +124,52 @@ print("Wind data shape after slice = %s x %s x %s" % windData.shape)
 # sys.exit()
 
 startMs = a.PAD_START
-ms = startMs + a.DURATION_MS
-endMs = ms
+endMs = startMs + a.DURATION_MS
 durationMs = endMs
+
+def playNextNoteClip(clips, groups, index, ms, dur, count, volumeStart, nsequenceStep):
+    group = groups[index]
+    currentIndex = group["currentIndex"]
+    gsamples = group["items"]
+    sample = gsamples[currentIndex]
+    currentIndex = 0 if currentIndex >= group["count"]-1 else currentIndex+1
+    groups[index]["currentIndex"] = currentIndex
+    clip = clips[sample["index"]]
+    reverb = lerp((60, 100), nsequenceStep)
+
+    for i in range(count):
+        nstep = 1.0 * i / count
+        clipPlayMs = ms + i * dur
+        volume = volumeStart - volumeStart*nstep
+        clipDur = min(clip.props["audioDur"], roundInt(dur/2))
+        clip.queuePlay(clipPlayMs, {
+            "dur": clipDur,
+            "volume": volume,
+            "fadeOut": getClipFadeDur(clipDur, percentage=0.2, maxDur=-1),
+            "fadeIn": getClipFadeDur(clipDur, percentage=0.1),
+            "pan": clip.props["pan"],
+            "reverb": reverb,
+            "maxDb": clip.props["maxDb"]
+        })
+        leftMs = roundInt(clipDur * 0.2)
+        rightMs = clipDur - leftMs
+        clip.queueTween(clipPlayMs, leftMs, [
+            ("brightness", a.BRIGHTNESS_RANGE[0], a.BRIGHTNESS_RANGE[1], "sin")
+        ])
+        clip.queueTween(clipPlayMs+leftMs, rightMs, [
+            ("brightness", a.BRIGHTNESS_RANGE[1], a.BRIGHTNESS_RANGE[0], "sin")
+        ])
+
+ms = startMs
+stepDurMs = a.PULSE_MS * a.PULSE_COUNT * 2
+currentNoteIndex = 0
+while ms < endMs:
+    nstep = norm(ms, (startMs, endMs))
+    playNextNoteClip(clips, samplesGroupedByNote, currentNoteIndex, ms, a.PULSE_MS*2, a.PULSE_COUNT, a.VOLUME_RANGE[1], nstep)
+    currentNoteIndex = 0 if currentNoteIndex >= a.PLAY_NOTES-1 else currentNoteIndex+1
+    playNextNoteClip(clips, samplesGroupedByNote, currentNoteIndex, ms+a.PULSE_MS, a.PULSE_MS*2, a.PULSE_COUNT, a.VOLUME_RANGE[1], nstep)
+    currentNoteIndex = 0 if currentNoteIndex >= a.PLAY_NOTES-1 else currentNoteIndex+1
+    ms += roundInt(stepDurMs * 0.5)
 
 # Initialize clip states
 for i, clip in enumerate(clips):
@@ -135,75 +188,6 @@ def getMovePositionWithWind(a, windData, x, y, speed):
     nu, nv = (lim(nu, (-1.0, 1.0)), lim(nv, (-1.0, 1.0)))
     moveX, moveY = (nu * speed, nv * speed)
     return (u, v, moveX, moveY)
-
-# def dequeueClips(ms, clips, queue):
-#     global a
-#     indices = list(queue.keys())
-#
-#     for cindex in indices:
-#         lastEntry = queue[cindex][-1]
-#         frameMs = lastEntry[1]
-#         clip = clips[cindex]
-#         thresholdMs = clip.dur * 2
-#         # we have passed this clip
-#         if (ms - frameMs) > thresholdMs:
-#             ndistance, playMs = max(queue[cindex], key=itemgetter(0)) # get the loudest frame
-#             lastPlayedMs = clip.getState("lastPlayedMs")
-#             # check to make sure we don't play if already playing
-#             if lastPlayedMs is None or (playMs - lastPlayedMs) > thresholdMs:
-#                 clip.queuePlay(playMs, {
-#                     "dur": clip.props["audioDur"],
-#                     "volume": lerp(a.VOLUME_RANGE, ndistance),
-#                     "fadeOut": clip.props["fadeOut"],
-#                     "fadeIn": clip.props["fadeIn"],
-#                     "pan": clip.props["pan"],
-#                     "reverb": clip.props["reverb"],
-#                     "maxDb": clip.props["maxDb"]
-#                 })
-#                 clip.setState("lastPlayedMs", playMs)
-#                 alphaTo = lerp(a.ALPHA_RANGE, ndistance)
-#                 clipDur = clip.dur * 2
-#                 leftMs = max(10, roundInt(clipDur * 0.5))
-#                 rightMs = clipDur - leftMs
-#                 clip.queueTween(frameMs, leftMs, ("alpha", a.ALPHA_RANGE[0], alphaTo, "sin"))
-#                 clip.queueTween(frameMs+leftMs, rightMs, ("alpha", alphaTo, a.ALPHA_RANGE[0], "sin"))
-#             queue.pop(cindex, None)
-#
-#     return queue
-#
-# blowFrames = msToFrame(a.BLOW_DURATION, a.FPS)
-# blowStartMs = startMs + a.BLOW_DURATION
-# maxScale = max(fromScale, toScale)
-# blowW = 1.0 * a.WIDTH / maxScale
-# blowX0 = (a.WIDTH - blowW) * 0.5
-# blowX1 = blowX0 + blowW
-# blowH = 1.0 * a.HEIGHT / maxScale
-# blowY0 = (a.HEIGHT - blowH) * 0.5
-# blowY1 = blowY0 + blowH
-# blowStepMs = roundInt(1.0 * a.DURATION_MS / (a.BLOW_COUNT+1))
-# queue = {}
-# for blow in range(a.BLOW_COUNT):
-#     # for each blow, choose a random starting point in the center of the grid
-#     nprogress = 1.0 * blow / (a.BLOW_COUNT-1)
-#     blowStartMs = a.BLOW_DURATION + blow * blowStepMs
-#     nrand = pseudoRandom(blow+7)
-#     x = lerp((blowX0, blowX1), nrand)
-#     y = lerp((blowY0, blowY1), nrand)
-#     for frame in range(blowFrames):
-#         frameMs = blowStartMs + frameToMs(frame, a.FPS)
-#         u, v, moveX, moveY = getMovePositionWithWind(a, windData, x, y, a.BLOW_SPEED)
-#         x += moveX
-#         y += moveY
-#         frameClips = getNeighborClips(clips, x, y, gridW, gridH, a.BLOW_RADIUS)
-#         for ndistance, clip in frameClips:
-#             cindex = clip.props["index"]
-#             if ndistance > 0:
-#                 entry = (ndistance, frameMs)
-#                 if cindex in queue:
-#                     queue[cindex].append(entry)
-#                 else:
-#                     queue[cindex] = [entry]
-#         queue = dequeueClips(frameMs, clips, queue)
 
 # sort frames
 container.vector.sortFrames()

@@ -1,4 +1,5 @@
 
+import collections
 import itertools
 from pprint import pprint
 from lib.math_utils import *
@@ -51,7 +52,11 @@ def filterWhere(arr, filters):
 
     return arr
 
-def groupList(arr, groupBy):
+def getCounts(arr, key):
+    counter = collections.Counter([v[key] for v in arr])
+    return counter.most_common()
+
+def groupList(arr, groupBy, sort=False, desc=True):
     groups = []
     arr = sorted(arr, key=lambda item: item[groupBy])
     for key, items in itertools.groupby(arr, lambda item: item[groupBy]):
@@ -60,6 +65,9 @@ def groupList(arr, groupBy):
         group["items"] = list(items)
         group["count"] = len(list(items))
         groups.append(group)
+    if sort:
+        reversed = desc
+        groups = sorted(groups, key=lambda k: k["count"], reverse=reversed)
     return groups
 
 def parseQueryString(str):
