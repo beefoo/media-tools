@@ -476,6 +476,14 @@ class Clip:
             arr[i] = value
         return arr
 
+def allClipStatesEqual(clips, key, value):
+    areEqual = True
+    for clip in clips:
+        if clip.getState(key)!=value:
+            areEqual = False
+            break
+    return areEqual
+
 def clipArrToDict(clipArr, precision=3):
     precisionMultiplier = int(10 ** precision)
     d = {}
@@ -549,6 +557,9 @@ def getClipFadeDur(clipDur, percentage=0.1, maxDur=100):
     if maxDur > 0:
         dur = min(dur, maxDur)
     return dur
+
+def getVisibleClipsAtTime(containerW, containerH, clips, ms):
+    return [clip for clip in clips if clip.vector.isVisible(containerW, containerH, ms, alphaCheck=False)]
 
 def getNeighborClips(clips, gridCx, gridCy, gridW, gridH, radius):
     ccol = roundInt(gridCx)

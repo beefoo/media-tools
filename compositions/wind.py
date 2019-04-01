@@ -40,10 +40,11 @@ parser.add_argument('-smax', dest="SPEED_MAX", default=0.5, type=float, help="Mo
 parser.add_argument('-mmax', dest="MOVE_MAX", default=20.0, type=float, help="Distance to move before resetting")
 parser.add_argument('-rstep', dest="ROTATION_STEP", default=0.1, type=float, help="Rotation step in degrees")
 parser.add_argument('-tend', dest="TRANSITION_END_MS", default=8000, type=int, help="How long the ending transition should be")
-parser.add_argument('-sort', dest="SORT_STRING", default="hz=asc=0.9&hz=desc=0.9&power=desc=0.5&clarity=desc", help="Query string for sorting samples")
+parser.add_argument('-sort', dest="SORT_STRING", default="power=desc=0.5&clarity=desc", help="Query string for sorting samples")
 parser.add_argument('-pdur', dest="PULSE_MS", default=256, type=int, help="How long each pulse should be")
+parser.add_argument('-msdur', dest="MIN_STEP_MS", default=1024, type=int, help="Minumum step between pulses")
 parser.add_argument('-pcount', dest="PULSE_COUNT", default=16, type=int, help="Number of pulses per clip play")
-parser.add_argument('-pnotes', dest="PLAY_NOTES", default=4, type=int, help="Number of notes to alternate between")
+parser.add_argument('-pnotes', dest="PLAY_NOTES", default=8, type=int, help="Number of notes to alternate between")
 a = parser.parse_args()
 parseVideoArgs(a)
 aa = vars(a)
@@ -127,15 +128,39 @@ startMs = a.PAD_START
 endMs = startMs + a.DURATION_MS
 durationMs = endMs
 
-def playNextNoteClip(clips, groups, index, ms, dur, count, volumeStart, nsequenceStep):
+def playNextNoteClip(a, clips, groups, index, ms, nsequenceStep):
     group = groups[index]
-    currentIndex = group["currentIndex"]
     gsamples = group["items"]
-    sample = gsamples[currentIndex]
-    currentIndex = 0 if currentIndex >= group["count"]-1 else currentIndex+1
-    groups[index]["currentIndex"] = currentIndex
-    clip = clips[sample["index"]]
+    gcount = len(gsamples)
+
+    # retrieve clips in group
+    groupIndices = set([s["index"] for s in gsamples])
+    groupClips = [clip for clip in clips if clip.props["index"] in groupIndices]
+
+    # reset group clips if all played
+    if allClipStatesEqual(groupClips, "played", True):
+        print("Resetting clips in group %s" % index)
+        updateClipStates(groupClips, ("played", None))
+
+    # find the next available clip
+    clip = None
+    for i in range(gcount):
+        sample = gsamples[i]
+        checkClip = clips[sample["index"]]
+        if checkClip.vector.isVisible(a.WIDTH, a.HEIGHT, ms, alphaCheck=False) and checkClip.getState("played") is None:
+            clip = checkClip
+            break
+
+    if clip is None:
+        print("No visible clip found for group %s at %s" % (index, formatSeconds(ms/1000.0)))
+        return
+
+    volumeStart = a.VOLUME_RANGE[1]
+    count = a.PULSE_COUNT
+    dur = a.PULSE_MS*2
     reverb = lerp((60, 100), nsequenceStep)
+
+    clip.setState("played", True)
 
     for i in range(count):
         nstep = 1.0 * i / count
@@ -162,14 +187,18 @@ def playNextNoteClip(clips, groups, index, ms, dur, count, volumeStart, nsequenc
 
 ms = startMs
 stepDurMs = a.PULSE_MS * a.PULSE_COUNT * 2
+offsetMs = a.PULSE_MS
 currentNoteIndex = 0
 while ms < endMs:
     nstep = norm(ms, (startMs, endMs))
-    playNextNoteClip(clips, samplesGroupedByNote, currentNoteIndex, ms, a.PULSE_MS*2, a.PULSE_COUNT, a.VOLUME_RANGE[1], nstep)
+    playNextNoteClip(a, clips, samplesGroupedByNote, currentNoteIndex, ms, nstep)
     currentNoteIndex = 0 if currentNoteIndex >= a.PLAY_NOTES-1 else currentNoteIndex+1
-    playNextNoteClip(clips, samplesGroupedByNote, currentNoteIndex, ms+a.PULSE_MS, a.PULSE_MS*2, a.PULSE_COUNT, a.VOLUME_RANGE[1], nstep)
+    playNextNoteClip(a, clips, samplesGroupedByNote, currentNoteIndex, ms+a.PULSE_MS, nstep)
     currentNoteIndex = 0 if currentNoteIndex >= a.PLAY_NOTES-1 else currentNoteIndex+1
-    ms += roundInt(stepDurMs * 0.5)
+    stepDurMs = max(a.MIN_STEP_MS, roundInt(stepDurMs * 0.5))
+    offsetMs = roundInt(offsetMs * 0.5)
+    offsetMs = a.PULSE_MS if offsetMs < 8 else offsetMs
+    ms += stepDurMs + offsetMs
 
 # Initialize clip states
 for i, clip in enumerate(clips):
