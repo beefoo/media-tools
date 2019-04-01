@@ -39,7 +39,7 @@ parser.add_argument('-dmax', dest="DATA_MAX", default=8.0, type=float, help="Int
 parser.add_argument('-smax', dest="SPEED_MAX", default=0.5, type=float, help="Most we should move a clip per frame in pixels; assumes 30fps; assumes 1920x1080px")
 parser.add_argument('-mmax', dest="MOVE_MAX", default=20.0, type=float, help="Distance to move before resetting")
 parser.add_argument('-rstep', dest="ROTATION_STEP", default=0.1, type=float, help="Rotation step in degrees")
-parser.add_argument('-tend', dest="TRANSITION_END_MS", default=8000, type=int, help="How long the ending transition should be")
+parser.add_argument('-tend', dest="TRANSITION_END_MS", default=12000, type=int, help="How long the ending transition should be")
 parser.add_argument('-sort', dest="SORT_STRING", default="power=desc=0.5&clarity=desc", help="Query string for sorting samples")
 parser.add_argument('-pdur', dest="PULSE_MS", default=256, type=int, help="How long each pulse should be")
 parser.add_argument('-msdur', dest="MIN_STEP_MS", default=64, type=int, help="Minumum step between pulses")
@@ -51,7 +51,7 @@ aa = vars(a)
 # adjust speed max for this fps and resolution
 aa["SPEED_MAX"] = a.SPEED_MAX * (a.WIDTH / 1920.0) / (a.FPS / 30.0)
 aa["MOVE_MAX"] = a.MOVE_MAX * (a.WIDTH / 1920.0) / (a.FPS / 30.0)
-aa["PAD_END"] = 12000
+aa["PAD_END"] = 16000
 aa["TRANSITION_END_STEP"] = 1.0 / (a.TRANSITION_END_MS / frameToMs(1.0, a.FPS))
 aa["THREADS"] = 1 # enforce one thread since we need to process frames sequentially
 aa["FRAME_ALPHA"] = 0.01
