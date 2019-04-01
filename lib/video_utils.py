@@ -178,19 +178,26 @@ def clipsToFrameGPU(clips, width, height, clipsPixelData, precision=3, baseImage
                 im = Image.fromarray(newPixels, mode="RGB")
             else:
                 im = Image.fromarray(pixels, mode="RGB")
-                imW, imH = im.size
-                if imW != rw or imH != rh:
-                    resampleType = Image.LANCZOS if imW > rw else Image.NEAREST
-                    im = im.resize((rw, rh), resample=resampleType)
 
+            # apply effects before resize for better quality
             if clip["blur"] > 0.0 or clip["rotation"] % 360.0 > 0.0:
-                im, newX, newY = applyEffects(im, clip["x"], clip["y"], clip["rotation"], clip["blur"], colors=c)
+                im, _x, _y = applyEffects(im, 0, 0, clip["rotation"], clip["blur"], colors=c)
+                # retrieve new coordinates based on target/resized size
+                newX, newY, newW, newH = bboxRotate(clip["x"], clip["y"], roundInt(clip["width"]), roundInt(clip["height"]), angle=45.0)
+                rw = roundInt(newW)
+                rh = roundInt(newH)
                 # x, y, tw, th changes if we rotate or blur
                 x = roundInt(newX * precisionMultiplier)
                 y = roundInt(newY * precisionMultiplier)
-                newW, newH = im.size
                 tw = roundInt(newW * precisionMultiplier)
                 th = roundInt(newH * precisionMultiplier)
+
+            # resize image
+            imW, imH = im.size
+            if imW != rw or imH != rh:
+                resampleType = Image.LANCZOS if imW > rw else Image.NEAREST
+                im = im.resize((rw, rh), resample=resampleType)
+
             pixels = np.array(im)
             h, w, _c = pixels.shape
         # pixels are size 3, but need size 4
