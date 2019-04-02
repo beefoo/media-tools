@@ -52,6 +52,7 @@ def addVideoArgs(parser):
     parser.add_argument('-maxa', dest="MAX_AUDIO_CLIPS", default=-1, type=int, help="Maximum number of audio clips to play")
     parser.add_argument('-keep', dest="KEEP_FIRST_AUDIO_CLIPS", default=-1, type=int, help="Ensure the middle x audio files play")
     parser.add_argument('-fa', dest="FRAME_ALPHA", default=1.0, type=float, help="For adding frame content on top of previous frames; must be 0 <= x < 1; lower number = slower fade of prev frames")
+    parser.add_argument('-rmode', dest="RESIZE_MODE", default="fill", help="Mode for resizing frames: fill, contain, or warp")
 
 def alphaMask(im, mask):
     w, h = im.size
@@ -261,6 +262,39 @@ def compileFrames(infile, fps, outfile, padZeros, audioFile=None, quality="high"
     finished = subprocess.check_call(command)
     print("Done.")
 
+def containImage(img, w, h, bgcolor=[0,0,0]):
+    vw, vh = img.size
+
+    if vw == w and vh == h:
+        return img
+
+    # create a base image
+    w = roundInt(w)
+    h = roundInt(h)
+    if img.mode=="RGBA" and len(bgcolor)==3:
+        bgcolor.append(0)
+    baseImg = Image.new(mode=img.mode, size=(w, h), color=tuple(bgcolor))
+
+    ratio = 1.0 * w / h
+    vratio = 1.0 * vw / vh
+
+    # first, resize video
+    newW = w
+    newH = h
+    pasteX = 0
+    pasteY = 0
+    if vratio > ratio:
+        newH = w / vratio
+        pasteY = roundInt((h-newH) * 0.5)
+    else:
+        newW = h * vratio
+        pasteX = roundInt((w-newW) * 0.5)
+
+    # Lanczos = good for downsizing
+    resized = img.resize((roundInt(newW), roundInt(newH)), resample=Image.LANCZOS)
+    baseImg.paste(resized, (pasteX, pasteY))
+    return baseImg
+
 def fillImage(img, w, h):
     vw, vh = img.size
 
@@ -376,7 +410,7 @@ def getSolidPixels(color, width=100, height=100):
     pixels[:,:] = color
     return pixels
 
-def getVideoClipImage(video, videoDur, clip, t=None):
+def getVideoClipImage(video, videoDur, clip, t=None, resizeMode="fill"):
     videoT = clip["t"] / 1000.0 if t is None else t / 1000.0
     cw = roundInt(clip["width"])
     ch = roundInt(clip["height"])
@@ -394,7 +428,7 @@ def getVideoClipImage(video, videoDur, clip, t=None):
         print("Could not read pixels for %s at time %s" % (video.filename, videoT))
         videoPixels = np.zeros((ch, cw, 3), dtype='uint8')
     clipImg = Image.fromarray(videoPixels, mode="RGB")
-    clipImg = fillImage(clipImg, cw, ch)
+    clipImg = resizeImage(clipImg, cw, ch, resizeMode)
     return clipImg
 
 def getRotation(clip):
@@ -405,7 +439,7 @@ def getRotation(clip):
 def hasAudio(filename):
     return ("audio" in getMediaTypes(filename))
 
-def loadVideoPixelData(clips, fps, cacheDir="tmp/", width=None, height=None, verifyData=True, cache=True):
+def loadVideoPixelData(clips, fps, cacheDir="tmp/", width=None, height=None, verifyData=True, cache=True, resizeMode="fill"):
     # load videos
     filenames = list(set([clip.props["filename"] for clip in clips]))
     fileCount = len(filenames)
@@ -479,7 +513,8 @@ def loadVideoPixelData(clips, fps, cacheDir="tmp/", width=None, height=None, ver
                         clipH, clipW, _ = clipPixels[existIndex].shape
                         if roundInt(fclip["width"]) <= clipW:
                             continue
-                    clipImg = getVideoClipImage(video, videoDur, fclip, t)
+                    clipResizeMode = getValue(clip.props, "resizeMode", resizeMode)
+                    clipImg = getVideoClipImage(video, videoDur, fclip, t, clipResizeMode)
                     if existIndex is not None:
                         clipPixels[existIndex] = np.array(clipImg, dtype=np.uint8)
                     else:
@@ -527,6 +562,7 @@ def loadVideoPixelDataFromFrames(frames, clips, containerW, containerH, fps, cac
     clipCount = len(clips)
     precisionMultiplier = int(10 ** precision)
     cacheFile = cacheKey + "_maxes.p"
+    resizeMode = getValue(globalArgs, "resizeMode", "fill")
 
     if debug:
         clipsPixelData = loadVidoPixelDataDebug(clipCount)
@@ -576,7 +612,7 @@ def loadVideoPixelDataFromFrames(frames, clips, containerW, containerH, fps, cac
         clip.setProp("maxHeight", height)
         # print("%s, %s" % (clip.props["width"], clip.props["height"]))
 
-    clipsPixelData = loadVideoPixelData(clips, fps, cacheDir=cacheDir, verifyData=verifyData, cache=cache)
+    clipsPixelData = loadVideoPixelData(clips, fps, cacheDir=cacheDir, verifyData=verifyData, cache=cache, resizeMode=resizeMode)
 
     return clipsPixelData
 
@@ -627,6 +663,14 @@ def processFrames(params, clips, clipsPixelData, threads=1, precision=3, verbose
             prevImage = clipsToFrame(p, clips=clips, pixelData=clipsPixelData, precision=precision, customClipToArrFunction=customClipToArrFunction, baseImage=baseImage, globalArgs=globalArgs)
             if verbose:
                 printProgress(i+1, count)
+
+def resizeImage(im, w, h, mode="fill"):
+    if mode=="warp":
+        return im.resize((roundInt(w), roundInt(h)), resample=Image.LANCZOS)
+    elif mode=="contain":
+        return containImage(img, w, h)
+    else:
+        return fillImage(img, w, h)
 
 def resizeCanvas(im, cw, ch):
     canvasImg = Image.new(mode="RGBA", size=(cw, ch), color=(0, 0, 0, 0))

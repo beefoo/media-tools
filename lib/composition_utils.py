@@ -241,7 +241,8 @@ def processComposition(a, clips, videoDurationMs, sampler=None, stepTime=False, 
         globalArgs = {
             "colors": colors,
             "isSequential": isSequential,
-            "frameAlpha": a.FRAME_ALPHA
+            "frameAlpha": a.FRAME_ALPHA,
+            "resizeMode": a.RESIZE_MODE
         }
         clipsPixelData = loadVideoPixelDataFromFrames(videoFrames, clips, a.WIDTH, a.HEIGHT, a.FPS, a.CACHE_DIR, a.CACHE_KEY, a.VERIFY_CACHE, cache=True, debug=a.DEBUG, precision=a.PRECISION, customClipToArrFunction=customClipToArrFunction, customClipToArrCalcFunction=customClipToArrCalcFunction, globalArgs=globalArgs)
         stepTime = logTime(stepTime, "Loaded pixel data")
