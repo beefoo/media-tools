@@ -262,7 +262,8 @@ def compileFrames(infile, fps, outfile, padZeros, audioFile=None, quality="high"
     finished = subprocess.check_call(command)
     print("Done.")
 
-def containImage(img, w, h, bgcolor=[0,0,0]):
+def containImage(img, w, h, resampleType="default", bgcolor=[0,0,0]):
+    resampleType = Image.LANCZOS if resampleType=="default" else resampleType
     vw, vh = img.size
 
     if vw == w and vh == h:
@@ -291,12 +292,13 @@ def containImage(img, w, h, bgcolor=[0,0,0]):
         pasteX = roundInt((w-newW) * 0.5)
 
     # Lanczos = good for downsizing
-    resized = img.resize((roundInt(newW), roundInt(newH)), resample=Image.LANCZOS)
+    resized = img.resize((roundInt(newW), roundInt(newH)), resample=resampleType)
     baseImg.paste(resized, (pasteX, pasteY))
     return baseImg
 
-def fillImage(img, w, h):
+def fillImage(img, w, h, resampleType="default"):
     vw, vh = img.size
+    resampleType = Image.LANCZOS if resampleType=="default" else resampleType
 
     if vw == w and vh == h:
         return img
@@ -312,7 +314,7 @@ def fillImage(img, w, h):
     else:
         newH = w / vratio
     # Lanczos = good for downsizing
-    resized = img.resize((roundInt(newW), roundInt(newH)), resample=Image.LANCZOS)
+    resized = img.resize((roundInt(newW), roundInt(newH)), resample=resampleType)
 
     # and then crop
     x = 0
@@ -410,7 +412,7 @@ def getSolidPixels(color, width=100, height=100):
     pixels[:,:] = color
     return pixels
 
-def getVideoClipImage(video, videoDur, clip, t=None, resizeMode="fill"):
+def getVideoClipImage(video, videoDur, clip, t=None, resizeMode="fill", resampleType="default"):
     videoT = clip["t"] / 1000.0 if t is None else t / 1000.0
     cw = roundInt(clip["width"])
     ch = roundInt(clip["height"])
@@ -428,7 +430,7 @@ def getVideoClipImage(video, videoDur, clip, t=None, resizeMode="fill"):
         print("Could not read pixels for %s at time %s" % (video.filename, videoT))
         videoPixels = np.zeros((ch, cw, 3), dtype='uint8')
     clipImg = Image.fromarray(videoPixels, mode="RGB")
-    clipImg = resizeImage(clipImg, cw, ch, resizeMode)
+    clipImg = resizeImage(clipImg, cw, ch, resizeMode, resampleType)
     return clipImg
 
 def getRotation(clip):
@@ -664,13 +666,14 @@ def processFrames(params, clips, clipsPixelData, threads=1, precision=3, verbose
             if verbose:
                 printProgress(i+1, count)
 
-def resizeImage(im, w, h, mode="fill"):
+def resizeImage(im, w, h, mode="fill", resampleType="default"):
+    resampleType = Image.LANCZOS if resampleType=="default" else resampleType
     if mode=="warp":
-        return im.resize((roundInt(w), roundInt(h)), resample=Image.LANCZOS)
+        return im.resize((roundInt(w), roundInt(h)), resample=resampleType)
     elif mode=="contain":
-        return containImage(img, w, h)
+        return containImage(img, w, h, resampleType=resampleType)
     else:
-        return fillImage(img, w, h)
+        return fillImage(img, w, h, resampleType=resampleType)
 
 def resizeCanvas(im, cw, ch):
     canvasImg = Image.new(mode="RGBA", size=(cw, ch), color=(0, 0, 0, 0))
