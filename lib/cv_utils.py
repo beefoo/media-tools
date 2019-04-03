@@ -5,6 +5,7 @@ from multiprocessing import Pool
 from multiprocessing.dummy import Pool as ThreadPool
 import numpy as np
 from PIL import Image
+import sys
 
 from lib.math_utils import *
 from lib.processing_utils import *
@@ -12,21 +13,23 @@ from lib.video_utils import *
 
 # Given a sample, shorten or make longer based on "scene detection",
 # i.e. don't allow sample to go to the next scene and thus create a blinking effect
-def analyzeAndAdjustVideoFileSamples(p, startKey, durKey, minDur, targetDur, frameW, frameH, fps, threads=1, overwrite=False, verbose=True, threshold=30.0):
+def analyzeAndAdjustVideoFileSamples(p, startKey, durKey, minDur, targetDur, varDur, frameW, frameH, fps, threads=1, overwrite=False, verbose=True, threshold=30.0):
     samples = p["samples"]
-    fn = p["filename"]
+    fp = p["filepath"]
+    fileIndex = p["fileIndex"]
 
-    video = VideoFileClip(fn, audio=False)
+    video = VideoFileClip(fp, audio=False)
     videoDur = video.duration
     msStep = frameToMs(1, fps, False)
 
     if verbose:
-        print("Reading %s with %s samples" % (fn, len(samples)))
+        print("Reading %s with %s samples" % (fp, len(samples)))
 
     for i, s in enumerate(samples):
         start = s["start"]
         dur = s["dur"] if s["dur"] > targetDur else int(math.ceil(1.0 * targetDur / s["dur"]) * s["dur"])
-        end = start + dur
+        variance = pseudoRandom(fileIndex + i, range=(0, varDur), isInt=True)
+        end = start + dur + variance
         ms = start
         prev = None
         runningDur = 0
@@ -80,13 +83,14 @@ def analyzeAndAdjustVideoFileSamples(p, startKey, durKey, minDur, targetDur, fra
 
     return samples
 
-def analyzeAndAdjustVideoSamples(samples, startKey, durKey, minDur, targetDur, frameW, frameH, fps, threads=1, overwrite=False):
-    # find unique filenames
-    ufilenames = list(set([s["filename"] for s in samples]))
+def analyzeAndAdjustVideoSamples(samples, startKey, durKey, minDur, targetDur, varDur, frameW, frameH, fps, threads=1, overwrite=False):
+    # find unique filepaths
+    ufilepaths = list(set([s["filepath"] for s in samples]))
     files = [{
-        "samples": [s for s in samples if s["filename"]==fn],
-        "filename": fn
-    } for fn in ufilenames]
+        "samples": [s for s in samples if s["filepath"]==fp],
+        "filepath": fp,
+        "fileIndex": i
+    } for i, fp in enumerate(ufilepaths)]
     fileCount = len(files)
     print("%s unique files" % fileCount)
 
@@ -94,13 +98,13 @@ def analyzeAndAdjustVideoSamples(samples, startKey, durKey, minDur, targetDur, f
     threads = getThreadCount(threads)
     if threads > 1:
         pool = ThreadPool(threads)
-        partialDef = partial(analyzeAndAdjustVideoFileSamples, startKey, durKey, minDur, targetDur, frameW, frameH, fps, threads, overwrite)
+        partialDef = partial(analyzeAndAdjustVideoFileSamples, startKey, durKey, minDur, targetDur, varDur, frameW, frameH, fps, threads, overwrite)
         usamples = pool.map(partialDef, files)
         usamples = [item for sublist in usamples for item in sublist]
         pool.close()
         pool.join()
     else:
         for i, p in enumerate(files):
-            usamples += analyzeAndAdjustVideoFileSamples(p, startKey, durKey, minDur, targetDur, frameW, frameH, fps, threads, overwrite)
+            usamples += analyzeAndAdjustVideoFileSamples(p, startKey, durKey, minDur, targetDur, varDur, frameW, frameH, fps, threads, overwrite)
             printProgress(i+1, fileCount)
     return usamples

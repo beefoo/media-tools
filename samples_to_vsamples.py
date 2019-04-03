@@ -21,7 +21,8 @@ parser.add_argument('-out', dest="OUTPUT_FILE", default="", help="CSV output fil
 parser.add_argument('-sname', dest="START_NAME", default="vstart", help="Name of the new start column")
 parser.add_argument('-dname', dest="DUR_NAME", default="vdur", help="Name of the new duration column")
 parser.add_argument('-mdur', dest="MIN_DUR", default=100, type=int, help="Minimum duration for video sample")
-parser.add_argument('-tdur', dest="TARGET_DUR", default=1500, type=int, help="Target duration for video sample")
+parser.add_argument('-tdur', dest="TARGET_DUR", default=1200, type=int, help="Target duration for video sample")
+parser.add_argument('-vdur', dest="VAR_DUR", default=400, type=int, help="Amount of variance we should diff from the duration to reduce uniformity")
 parser.add_argument('-fps', dest="FPS", default=30, type=int, help="FPS for analyzing video")
 parser.add_argument('-width', dest="FRAME_WIDTH", default=320, type=int, help="Frame width for analysis")
 parser.add_argument('-height', dest="FRAME_HEIGHT", default=240, type=int, help="Frame height for analysis")
@@ -36,7 +37,7 @@ OUTPUT_FILE = a.OUTPUT_FILE if len(a.OUTPUT_FILE) > 0 else a.INPUT_FILE
 fieldNames, samples = readCsv(a.INPUT_FILE)
 sampleCount = len(samples)
 samples = addIndices(samples, keyName="index")
-samples = prependAll(samples, ("filename", a.MEDIA_DIRECTORY))
+samples = prependAll(samples, ("filename", a.MEDIA_DIRECTORY, "filepath"))
 
 # add fields
 for field in FIELDS_TO_ADD:
@@ -46,7 +47,7 @@ for field in FIELDS_TO_ADD:
 # Make sure output dirs exist
 makeDirectories(OUTPUT_FILE)
 
-samples = analyzeAndAdjustVideoSamples(samples, a.START_NAME, a.DUR_NAME, a.MIN_DUR, a.TARGET_DUR, a.FRAME_WIDTH, a.FRAME_HEIGHT, a.FPS, a.THREADS, a.OVERWRITE)
+samples = analyzeAndAdjustVideoSamples(samples, a.START_NAME, a.DUR_NAME, a.MIN_DUR, a.TARGET_DUR, a.VAR_DUR, a.FRAME_WIDTH, a.FRAME_HEIGHT, a.FPS, a.THREADS, a.OVERWRITE)
 samples = sorted(samples, key=lambda s: s["index"])
 
 writeCsv(OUTPUT_FILE, samples, headings=fieldNames)

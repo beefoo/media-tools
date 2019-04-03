@@ -104,8 +104,13 @@ def prependAll(arr, prepends):
 
     for i, item in enumerate(arr):
         for p in prepends:
-            key, value = p
-            arr[i][key] = value + item[key]
+            newKey = None
+            if len(p) == 3:
+                key, value, newKey = p
+            else:
+                key, value = p
+                newKey = key
+            arr[i][newKey] = value + item[key]
 
     return arr
 
