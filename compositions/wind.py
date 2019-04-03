@@ -42,7 +42,7 @@ parser.add_argument('-rstep', dest="ROTATION_STEP", default=0.1, type=float, hel
 parser.add_argument('-tend', dest="TRANSITION_END_MS", default=12000, type=int, help="How long the ending transition should be")
 parser.add_argument('-sort', dest="SORT_STRING", default="power=desc=0.5&clarity=desc", help="Query string for sorting samples")
 parser.add_argument('-pdur', dest="PULSE_MS", default=256, type=int, help="How long each pulse should be")
-parser.add_argument('-msdur', dest="MIN_STEP_MS", default=64, type=int, help="Minumum step between pulses")
+parser.add_argument('-msdur', dest="MIN_STEP_MS", default=512, type=int, help="Minumum step between pulses")
 parser.add_argument('-pcount', dest="PULSE_COUNT", default=32, type=int, help="Number of pulses per clip play")
 parser.add_argument('-pnotes', dest="PLAY_NOTES", default=8, type=int, help="Number of notes to alternate between")
 a = parser.parse_args()
@@ -187,6 +187,7 @@ def playNextNoteClip(a, clips, groups, index, ms, nsequenceStep):
 
 ms = startMs
 stepDurMs = a.PULSE_MS * a.PULSE_COUNT * 2
+offsetMs = a.PULSE_MS
 currentNoteIndex = 0
 while ms < endMs:
     nstep = norm(ms, (startMs, endMs))
@@ -195,7 +196,9 @@ while ms < endMs:
     playNextNoteClip(a, clips, samplesGroupedByNote, currentNoteIndex, ms+a.PULSE_MS, nstep)
     currentNoteIndex = 0 if currentNoteIndex >= a.PLAY_NOTES-1 else currentNoteIndex+1
     stepDurMs = max(a.MIN_STEP_MS, roundInt(stepDurMs * 0.25))
-    ms += stepDurMs
+    ms += stepDurMs + offsetMs
+    offsetMs = roundInt(offsetMs * 0.5)
+    offsetMs = a.PULSE_MS if offsetMs < 32 else offsetMs
 
 # Initialize clip states
 for i, clip in enumerate(clips):
