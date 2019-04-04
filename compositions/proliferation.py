@@ -56,9 +56,9 @@ END_RINGS = int(endGridW / 2)
 
 # samples = sorted(samples, key=lambda s: (s["distanceFromCenter"], -s["clarity"]))
 
-# set clip alpha to zero by default
+# set clip brightness to zero by default
 for i, s in enumerate(samples):
-    samples[i]["alpha"] = 0.0
+    samples[i]["brightness"] = 0.0
     samples[i]["ring"] = getRing(s["col"], s["row"], cCol, cRow)
 
 # determine the point to compare all clips to for similarity
@@ -138,10 +138,10 @@ for step in range(END_RINGS):
         leftMs = roundInt(clip.dur * 0.2)
         rightMs = clip.dur - leftMs
         clip.queueTween(clipMs, leftMs, [
-            ("alpha", 0, a.ALPHA_RANGE[1], "sin")
+            ("brightness", 0, a.BRIGHTNESS_RANGE[1], "sin")
         ])
         clip.queueTween(clipMs+leftMs, rightMs, [
-            ("alpha", a.ALPHA_RANGE[1], a.ALPHA_RANGE[0], "sin")
+            ("brightness", a.BRIGHTNESS_RANGE[1], a.BRIGHTNESS_RANGE[0], "sin")
         ])
 
     ms += ringDurMs
