@@ -51,11 +51,11 @@ elif sampleCount < GRID_COUNT:
 # prep values
 for i, s in enumerate(samples):
     for p in PROPS:
-        value = float(s[p])
+        value = s[p]
         if p == "hz":
             value = math.log(value)
         value *= 1000.0
-        samples[i]["_"+p] = roundInt(value)
+        samples[i]["_"+p] = value
 
 xy = [[s["_"+PROP1], s["_"+PROP2]] for s in samples]
 # pprint(xy)
