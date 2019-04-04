@@ -186,7 +186,7 @@ def parseFloat(string):
 def parseNumber(string, alwaysFloat=False):
     try:
         num = float(string)
-        if "." not in str(string) and not alwaysFloat:
+        if "." not in str(string) and "e" not in str(string) and not alwaysFloat:
             num = int(string)
         return num
     except ValueError:

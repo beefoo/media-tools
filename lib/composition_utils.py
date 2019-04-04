@@ -6,6 +6,7 @@ from lib.math_utils import *
 from lib.sampler import *
 from lib.video_utils import *
 import math
+from pprint import pprint
 
 def addGridPositions(clips, cols, width, height, offsetX=0, offsetY=0, marginX=0, marginY=0):
     rows = ceilInt(1.0 * len(clips) / cols)
