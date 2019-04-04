@@ -116,6 +116,7 @@ for step in range(a.STEPS):
         # play clip
         if clip.props["playAudio"]:
             clip.queuePlay(clipStartMs, {
+                "start": clip.props["audioStart"],
                 "dur": clip.props["audioDur"],
                 "volume": volume,
                 "fadeOut": clip.props["fadeOut"],

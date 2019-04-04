@@ -116,8 +116,10 @@ def initGridComposition(a, stepTime=False):
         # Add audio properties
         # make clip longer if necessary
         audioDur = s["dur"]
+        samples[i]["audioStart"] = s["start"]
         samples[i]["audioDur"] = audioDur
-        samples[i]["dur"] = s["dur"] if s["dur"] > a.MIN_CLIP_DUR else int(math.ceil(1.0 * a.MIN_CLIP_DUR / s["dur"]) * s["dur"])
+        samples[i]["start"] = s["vstart"] if "vstart" in s else s["start"]
+        samples[i]["dur"] = s["vdur"] if "vdur" in s else s["dur"]
         samples[i]["pan"] = lerp((-1.0, 1.0), s["nx"])
         samples[i]["fadeOut"] = getClipFadeDur(audioDur, percentage=0.5, maxDur=-1)
         samples[i]["fadeIn"] = getClipFadeDur(audioDur)

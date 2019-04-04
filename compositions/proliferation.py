@@ -121,6 +121,7 @@ for step in range(END_RINGS):
         clipMs = roundInt(ringStartMs + j * ringClipMs)
         if clip.props["index"] in playIndicesSet:
             clip.queuePlay(clipMs, {
+                "start": clip.props["audioStart"],
                 "dur": clip.props["audioDur"],
                 "volume": volume,
                 "fadeOut": clip.props["fadeOut"],

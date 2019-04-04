@@ -125,6 +125,7 @@ def dequeueClips(ms, clips, queue):
             # check to make sure we don't play if already playing
             if lastPlayedMs is None or (playMs - lastPlayedMs) > thresholdMs:
                 clip.queuePlay(playMs, {
+                    "start": clip.props["audioStart"],
                     "dur": clip.props["audioDur"],
                     "volume": lerp(a.VOLUME_RANGE, ndistance),
                     "fadeOut": clip.props["fadeOut"],

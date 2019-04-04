@@ -168,6 +168,7 @@ def playNextNoteClip(a, clips, groups, index, ms, nsequenceStep):
         clipPlayMs = ms + i * dur
         clipDur = min(clip.props["audioDur"], roundInt(dur/2))
         clip.queuePlay(clipPlayMs, {
+            "start": clip.props["audioStart"],
             "dur": clipDur,
             "volume": volume,
             "fadeOut": getClipFadeDur(clipDur, percentage=0.2, maxDur=-1),

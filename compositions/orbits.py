@@ -102,6 +102,7 @@ for i, clip in enumerate(clips):
 
 def queuePlay(clip, ms, a):
     clip.queuePlay(ms, {
+        "start": clip.props["audioStart"],
         "dur": clip.props["audioDur"],
         "volume": lerp(a.VOLUME_RANGE, (1.0 - clip.props["nDistanceFromCenter"])),
         "fadeOut": clip.props["fadeOut"],
