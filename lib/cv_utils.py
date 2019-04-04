@@ -98,7 +98,7 @@ def analyzeAndAdjustVideoSamples(samples, startKey, durKey, minDur, targetDur, v
     threads = getThreadCount(threads)
     if threads > 1:
         pool = ThreadPool(threads)
-        partialDef = partial(analyzeAndAdjustVideoFileSamples, startKey, durKey, minDur, targetDur, varDur, frameW, frameH, fps, threads, overwrite)
+        partialDef = partial(analyzeAndAdjustVideoFileSamples, startKey=startKey, durKey=durKey, minDur=minDur, targetDur=targetDur, varDur=varDur, frameW=frameW, frameH=frameH, fps=fps, threads=threads, overwrite=overwrite)
         usamples = pool.map(partialDef, files)
         usamples = [item for sublist in usamples for item in sublist]
         pool.close()
