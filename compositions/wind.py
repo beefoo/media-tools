@@ -41,8 +41,8 @@ parser.add_argument('-mmax', dest="MOVE_MAX", default=20.0, type=float, help="Di
 parser.add_argument('-rstep', dest="ROTATION_STEP", default=0.1, type=float, help="Rotation step in degrees")
 parser.add_argument('-tend', dest="TRANSITION_END_MS", default=12000, type=int, help="How long the ending transition should be")
 parser.add_argument('-sort', dest="SORT_STRING", default="power=desc=0.5&clarity=desc", help="Query string for sorting samples")
-parser.add_argument('-pdur', dest="PULSE_MS", default=256, type=int, help="How long each pulse should be")
-parser.add_argument('-msdur', dest="MIN_STEP_MS", default=512, type=int, help="Minumum step between pulses")
+parser.add_argument('-pdur', dest="PULSE_MS", default=512, type=int, help="How long each pulse should be")
+parser.add_argument('-msdur', dest="MIN_STEP_MS", default=1024, type=int, help="Minumum step between pulses")
 parser.add_argument('-pcount', dest="PULSE_COUNT", default=32, type=int, help="Number of pulses per clip play")
 parser.add_argument('-pnotes', dest="PLAY_NOTES", default=8, type=int, help="Number of notes to alternate between")
 a = parser.parse_args()
@@ -177,6 +177,7 @@ def playNextNoteClip(a, clips, groups, index, ms, nsequenceStep):
             "reverb": reverb,
             "maxDb": clip.props["maxDb"]
         })
+        clipDur = max(clip.props["audioDur"], roundInt(dur/2))
         leftMs = roundInt(clipDur * 0.2)
         rightMs = clipDur - leftMs
         clip.queueTween(clipPlayMs, leftMs, [
@@ -199,7 +200,7 @@ while ms < endMs:
     stepDurMs = max(a.MIN_STEP_MS, roundInt(stepDurMs * 0.25))
     ms += stepDurMs + offsetMs
     offsetMs = roundInt(offsetMs * 0.5)
-    offsetMs = a.PULSE_MS if offsetMs < 32 else offsetMs
+    offsetMs = a.PULSE_MS if offsetMs < 64 else offsetMs
 
 # Initialize clip states
 for i, clip in enumerate(clips):
