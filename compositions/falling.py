@@ -57,9 +57,9 @@ containerScale = 1.0 * gridW / visibleGridW
 
 container.vector.setTransform(scale=(containerScale, containerScale))
 
-# set clip alpha to min by default
+# set clip brightness to min by default
 for i, s in enumerate(samples):
-    samples[i]["alpha"] = a.ALPHA_RANGE[0]
+    samples[i]["brightness"] = a.BRIGHTNESS_RANGE[0]
 
 clips = samplesToClips(samples)
 stepTime = logTime(stepTime, "Samples to clips")
@@ -146,9 +146,9 @@ def dequeueClips(ms, clips, queue):
                 xMultiplier = -1.0 * xDelta / clip.props["width"] * 0.5
                 tx = clip.props["height"] * a.TRANSLATE_AMOUNT * xMultiplier * speed * ndistance
 
-                alphaTo = lerp(a.ALPHA_RANGE, ndistance)
-                clip.queueTween(playMs, leftMs, [("alpha", a.ALPHA_RANGE[0], alphaTo, "sin"), ("translateX", 0, tx, "sin"), ("translateY", 0, ty, "sin")])
-                clip.queueTween(playMs+leftMs, rightMs, [("alpha", alphaTo, a.ALPHA_RANGE[0], "sin"), ("translateX", tx, 0, "sin"), ("translateY", ty, 0, "sin")])
+                brightnessTo = lerp(a.BRIGHTNESS_RANGE, ndistance)
+                clip.queueTween(playMs, leftMs, [("brightness", a.BRIGHTNESS_RANGE[0], brightnessTo, "sin"), ("translateX", 0, tx, "sin"), ("translateY", 0, ty, "sin")])
+                clip.queueTween(playMs+leftMs, rightMs, [("brightness", brightnessTo, a.BRIGHTNESS_RANGE[0], "sin"), ("translateX", tx, 0, "sin"), ("translateY", ty, 0, "sin")])
             queue.pop(cindex, None)
 
     return queue

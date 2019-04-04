@@ -75,9 +75,9 @@ for i, s in enumerate(samples):
 
 stepTime = logTime(stepTime, "Calculate clip properties")
 
-# start with everything with minimum alpha
+# start with everything with minimum brightness
 for i, s in enumerate(samples):
-    samples[i]["alpha"] = a.ALPHA_RANGE[0]
+    samples[i]["brightness"] = a.BRIGHTNESS_RANGE[0]
 
 clips = samplesToClips(samples)
 stepTime = logTime(stepTime, "Samples to clips")
@@ -126,9 +126,9 @@ for step in range(a.STEPS):
                 "maxDb": clip.props["maxDb"]
             })
 
-        # move the clip outward then back inward, alpha up then down
-        alphaFrom = lerp(a.ALPHA_RANGE, ease(1.0 - clip.props["nDistanceFromCenter"]))
-        alphaTo = a.ALPHA_RANGE[0]
+        # move the clip outward then back inward, brightness up then down
+        brightnessFrom = lerp(a.BRIGHTNESS_RANGE, ease(1.0 - clip.props["nDistanceFromCenter"]))
+        brightnessTo = a.BRIGHTNESS_RANGE[0]
         renderDur = clip.props["dur"]
         halfLeft = int(renderDur / 2)
         halfRight = (renderDur - halfLeft) * 2
@@ -136,13 +136,13 @@ for step in range(a.STEPS):
         clip.queueTween(clipStartMs, halfLeft, [
             ("translateX", 0, tx, "sin"),
             ("translateY", 0, ty, "sin"),
-            ("alpha", alphaTo, alphaFrom, "sin"),
+            ("brightness", brightnessTo, brightnessFrom, "sin"),
             ("scale", 1.0, a.SCALE_AMOUNT, "sin")
         ])
         clip.queueTween(clipStartMs+halfLeft, halfRight, [
             ("translateX", tx, 0, "sin"),
             ("translateY", ty, 0, "sin"),
-            ("alpha", alphaFrom, alphaTo, "sin"),
+            ("brightness", brightnessFrom, brightnessTo, "sin"),
             ("scale", a.SCALE_AMOUNT, 1.0, "sin")
         ])
 
