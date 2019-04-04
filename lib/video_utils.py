@@ -671,9 +671,9 @@ def resizeImage(im, w, h, mode="fill", resampleType="default"):
     if mode=="warp":
         return im.resize((roundInt(w), roundInt(h)), resample=resampleType)
     elif mode=="contain":
-        return containImage(img, w, h, resampleType=resampleType)
+        return containImage(im, w, h, resampleType=resampleType)
     else:
-        return fillImage(img, w, h, resampleType=resampleType)
+        return fillImage(im, w, h, resampleType=resampleType)
 
 def resizeCanvas(im, cw, ch):
     canvasImg = Image.new(mode="RGBA", size=(cw, ch), color=(0, 0, 0, 0))
