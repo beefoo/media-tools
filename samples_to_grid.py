@@ -51,13 +51,15 @@ elif sampleCount < GRID_COUNT:
 # prep values
 for i, s in enumerate(samples):
     for p in PROPS:
-        value = s[p]
+        value = float(s[p])
         if p == "hz":
             value = math.log(value)
-        value *= 1000
-        samples[i]["_"+p] = value
+        value *= 1000.0
+        samples[i]["_"+p] = roundInt(value)
 
 xy = [[s["_"+PROP1], s["_"+PROP2]] for s in samples]
+# pprint(xy)
+# sys.exit()
 xy = np.array(xy)
 
 print("Determining grid assignment...")
