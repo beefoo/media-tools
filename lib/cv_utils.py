@@ -5,6 +5,7 @@ from multiprocessing import Pool
 from multiprocessing.dummy import Pool as ThreadPool
 import numpy as np
 from PIL import Image
+from scipy import stats
 import sys
 
 from lib.math_utils import *
@@ -13,7 +14,8 @@ from lib.video_utils import *
 
 # Given a sample, shorten or make longer based on "scene detection",
 # i.e. don't allow sample to go to the next scene and thus create a blinking effect
-def analyzeAndAdjustVideoFileSamples(p, startKey, durKey, minDur, targetDur, varDur, frameW, frameH, fps, threads=1, overwrite=False, verbose=True, threshold=30.0):
+# threshold is the z-score of the deltas of the mean(h, s, v): https://en.wikipedia.org/wiki/Standard_score
+def analyzeAndAdjustVideoFileSamples(p, startKey, durKey, minDur, targetDur, varDur, frameW, frameH, fps, threads=1, overwrite=False, verbose=True, hsvThreshold=7.0, zThreshold=3.0):
     samples = p["samples"]
     fp = p["filepath"]
     fileIndex = p["fileIndex"]
@@ -30,13 +32,11 @@ def analyzeAndAdjustVideoFileSamples(p, startKey, durKey, minDur, targetDur, var
         dur = s["dur"] if s["dur"] > targetDur else int(math.ceil(1.0 * targetDur / s["dur"]) * s["dur"])
         variance = pseudoRandom(fileIndex + i, range=(0, varDur), isInt=True)
         end = start + dur + variance
+
         ms = start
         prev = None
-        runningDur = 0
-        newStart = start
-        newEnd = end
-        bestStart = None
-        bestEnd = None
+        ys = []
+        xs = []
         while ms < end:
             t = roundInt(ms)
             im = getVideoClipImage(video, videoDur, {"width": frameW, "height": frameH}, t, resizeMode="warp", resampleType=Image.NEAREST)
@@ -46,32 +46,49 @@ def analyzeAndAdjustVideoFileSamples(p, startKey, durKey, minDur, targetDur, var
             meanHSV = np.mean(meanHSV) # then get the mean of those three values
             if prev is not None:
                 delta = abs(meanHSV-prev)
-                # we've reached the beginning of a new scene
-                if delta >= threshold:
-                    prevMs = ms-msStep
-                    # sample is not long enough; make this the beginning instead
-                    if runningDur < minDur:
-                        print("Short break")
-                        # keep track of the longest in case we find no good matches
-                        if bestStart is None or (prevMs-newStart) > (bestEnd-bestStart):
-                            bestStart = newStart
-                            bestEnd = prevMs
-                        runningDur = 0
-                        newStart = ms
-                    # otherwise, we have a valid end; break now
-                    else:
-                        print("Valid break")
-                        newEnd = prevMs
-                        break
+                ys.append(delta)
+                xs.append(ms)
             prev = meanHSV
             ms += msStep
-            runningDur += msStep
 
+        newStart = start
+        newEnd = end
+        bestStart = None
+        bestEnd = None
+        zscores = np.abs(stats.zscore(ys))
+        runningDur = 0
+        for ms, delta, zscore in zip(xs, ys, zscores):
+            # we've reached the beginning of a new scene
+            if zscore >= zThreshold and delta > hsvThreshold:
+                prevMs = ms-msStep
+                # sample is not long enough; make this the beginning instead
+                if runningDur < minDur:
+                    print("Short break")
+                    # keep track of the longest in case we find no good matches
+                    if bestStart is None or (prevMs-newStart) > (bestEnd-bestStart):
+                        bestStart = newStart
+                        bestEnd = prevMs
+                    runningDur = 0
+                    newStart = ms
+                # otherwise, we have a valid end; break now
+                else:
+                    print("Valid break")
+                    newEnd = prevMs
+                    break
+            runningDur += msStep
         # in the case we cannot find any samples long enough, take the longest one
         if bestStart is not None and (bestEnd-bestStart) > (newEnd-newStart):
             print("No valid breaks")
             newStart = bestStart
             newEnd = bestEnd
+
+        # from matplotlib import pyplot as plt
+        # xs = np.array(xs) / 1000.0
+        # ys = zscores
+        # plt.scatter(xs, ys, s=4)
+        # plt.axvline(x=newStart/1000.0, color="r")
+        # plt.axvline(x=newEnd/1000.0, color="g")
+        # plt.show()
 
         samples[i][startKey] = roundInt(newStart)
         samples[i][durKey] = roundInt(newEnd-newStart)
