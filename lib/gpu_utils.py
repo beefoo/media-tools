@@ -205,6 +205,64 @@ def clipsToImageGPU(width, height, flatPixelData, properties, colorDimensions, p
     result = result.reshape(height, width, 3)
     return result
 
+def clipsToImageGPULite(width, height, flatPixelData, properties):
+    count, pcount = properties.shape
+    properties = properties.reshape(-1)
+    result = np.zeros(width * height * 3, dtype=np.uint8)
+
+    # the kernel function
+    srcCode = """
+    int4 getPixel(__global uchar *pdata, int x, int y, int h, int w, int dim, int offset);
+    int4 getPixel(__global uchar *pdata, int x, int y, int h, int w, int dim, int offset) {
+        if (x < 0 || y < 0 || x >= w || y >= h) {
+            return (int4)(0, 0, 0, 0);
+        }
+        int index = y * w * dim + x * dim + offset;
+        int r = pdata[index];
+        int g = pdata[index+1];
+        int b = pdata[index+2];
+        return (int4)(r, g, b, 0);
+    }
+
+    __kernel void makeImageLite(__global uchar *pdata, __global int *props, __global uchar *result){
+        int canvasW = %d;
+        int canvasH = %d;
+        int i = get_global_id(0);
+        int pcount = %d;
+        int colorDimensions = 3;
+        int offset = props[i*pcount];
+        int x = props[i*pcount+1];
+        int y = props[i*pcount+2];
+        int w = props[i*pcount+3];
+        int h = props[i*pcount+4];
+        for (int row=0; row<h; row++) {
+            for (int col=0; col<w; col++) {
+                int dstX = col + x;
+                int dstY = row + y;
+                if (dstX >= 0 && dstX < canvasW && dstY >= 0 && dstY < canvasH) {
+                    int4 srcColor = getPixel(pdata, col, row, h, w, colorDimensions, offset);
+                    int destIndex = dstY * canvasW * 3 + dstX * 3;
+                    result[destIndex] = srcColor.x;
+                    result[destIndex+1] = srcColor.y;
+                    result[destIndex+2] = srcColor.z;
+                }
+            }
+        }
+    }
+    """ % (width, height, pcount)
+
+    ctx, mf, queue, prg = loadGPUProgram(srcCode)
+
+    bufIn1 =  cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=flatPixelData)
+    bufIn2 =  cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=properties)
+    bufOut = cl.Buffer(ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=result)
+    prg.makeImageLite(queue, (count, ), None , bufIn1, bufIn2, bufOut)
+
+    # Copy result
+    cl.enqueue_copy(queue, result, bufOut)
+    result = result.reshape(height, width, 3)
+    return result
+
 def loadGPUProgram(srcCode):
     # Get platforms, both CPU and GPU
     plat = cl.get_platforms()
