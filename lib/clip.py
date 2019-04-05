@@ -363,8 +363,15 @@ class Clip:
 
         msSincePlay = ms - start
         remainder = msSincePlay % self.dur
-        time = roundInt(self.start + remainder)
 
+        # play forward and backward
+        if msSincePlay > self.dur:
+            dremainder = msSincePlay % int(self.dur*2)
+            # go backwards the 2nd half
+            if dremainder > self.dur:
+                remainder = max(0, self.dur - 1 - remainder)
+
+        time = roundInt(self.start + remainder)
         return time
 
     def getGridNeighbors(self, clips, gridW, gridH, dimCol="col", dimRow="row", isSorted=True):
