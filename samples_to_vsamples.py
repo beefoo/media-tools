@@ -20,7 +20,7 @@ parser.add_argument('-dir', dest="MEDIA_DIRECTORY", default="media/sample/", hel
 parser.add_argument('-out', dest="OUTPUT_FILE", default="", help="CSV output file; leave blank if we should update input file")
 parser.add_argument('-sname', dest="START_NAME", default="vstart", help="Name of the new start column")
 parser.add_argument('-dname', dest="DUR_NAME", default="vdur", help="Name of the new duration column")
-parser.add_argument('-mdur', dest="MIN_DUR", default=100, type=int, help="Minimum duration for video sample")
+parser.add_argument('-mdur', dest="MIN_DUR", default=256, type=int, help="Minimum duration for video sample")
 parser.add_argument('-tdur', dest="TARGET_DUR", default=1200, type=int, help="Target duration for video sample")
 parser.add_argument('-vdur', dest="VAR_DUR", default=400, type=int, help="Amount of variance we should diff from the duration to reduce uniformity")
 parser.add_argument('-fps', dest="FPS", default=30, type=int, help="FPS for analyzing video")
