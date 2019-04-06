@@ -248,6 +248,14 @@ def clipToNpArrWind(clip, ms, containerW, containerH, precision, parent, globalA
         x, y = clip.getState("pos")
         distanceTravelled = clip.getState("distanceTravelled")
         u, v, moveX, moveY = getMovePositionWithWind(a, windData, x, y, a.SPEED_MAX * globalSpeed)
+        mag = math.sqrt(u*u+v*v)
+        # this clip is moving too slow and is in danger of getting stuck and/or clustering together
+        if mag <= a.MIN_MAGNITUDE:
+            moveMax = clip.getState("moveMax")
+            percent = 1.0 * mag / a.DATA_MAX
+            moveMax = min(moveMax, a.MOVE_MAX * percent)
+            moveMax = max(moveMax, 1.0)
+            clip.setState("moveMax", moveMax)
         distanceTravelled += distance(0, 0, moveX, moveY)
         # start to reduce alpha halway through max move distance
         moveMax = clip.getState("moveMax")
