@@ -36,7 +36,6 @@ parser.add_argument('-grid1', dest="END_GRID", default="32x32", help="End size o
 parser.add_argument('-steps', dest="STEPS", default=16, type=int, help="Number of waves/beats")
 parser.add_argument('-wd', dest="WAVE_DUR", default=8000, type=int, help="Wave duration in milliseconds")
 parser.add_argument('-bd', dest="BEAT_DUR", default=6000, type=int, help="Beat duration in milliseconds")
-parser.add_argument('-mcdur', dest="MIN_CLIP_DUR", default=1000, type=int, help="Wave duration in milliseconds")
 parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.3,0.6", help="Volume range")
 a = parser.parse_args()
 parseVideoArgs(a)
@@ -130,7 +129,7 @@ for step in range(a.STEPS):
         # move the clip outward then back inward, brightness up then down
         brightnessFrom = lerp(a.BRIGHTNESS_RANGE, ease(1.0 - clip.props["nDistanceFromCenter"]))
         brightnessTo = a.BRIGHTNESS_RANGE[0]
-        renderDur = max(clip.props["dur"], clip.props["audioDur"], a.MIN_CLIP_DUR + pseudoRandom(i, range=(0, 500), isInt=True))
+        renderDur = clip.props["renderDur"]
         halfLeft = int(renderDur / 2)
         halfRight = (renderDur - halfLeft) * 2
         tx, ty = clip.props["translateAmount"]

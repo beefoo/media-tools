@@ -117,7 +117,7 @@ def dequeueClips(ms, clips, queue):
         lastEntry = queue[cindex][-1]
         frameMs = lastEntry[1]
         clip = clips[cindex]
-        thresholdMs = clip.dur * 2
+        thresholdMs = clip.props["renderDur"] * 2
         # we have passed this clip
         if (ms - frameMs) > thresholdMs:
             ndistance, playMs, xDelta, nprogress = max(queue[cindex], key=itemgetter(0)) # get the loudest frame
@@ -136,7 +136,7 @@ def dequeueClips(ms, clips, queue):
                 })
                 clip.setState("lastPlayedMs", playMs)
                 speed = easeSinInOutBell(nprogress)
-                clipDur = clip.dur * (1.0 + speed * 0.5)
+                clipDur = clip.props["renderDur"] * (1.0 + speed * 0.5)
                 leftMs = max(10, roundInt(clipDur * 0.5))
                 rightMs = clipDur - leftMs
 

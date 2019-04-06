@@ -263,7 +263,7 @@ def clipToNpArrOrbits(clip, ms, containerW, containerH, precision, parent, globa
         ringProps = {"pos": [x, y]}
 
         # determine brightness based on if clip is currently playing (when it crosses the 3-o'clock position)
-        clipDur = clip.dur
+        clipDur = clip.props["renderDur"]
         clipPlayMs = getClipPlayMs(PLAY_OFFSET, ringCellCount, ringIndex, rotateDurMs, reversed=reversed)
 
         if clipPlayMs <= msRing < (clipPlayMs+clipDur):

@@ -135,8 +135,8 @@ for step in range(END_RINGS):
             #     sampler.queuePlay(clipMs + roundInt(ringClipMs/2.0), "snare", index=step+j, params={
             #         "volume": 0.8
             #     })
-        leftMs = roundInt(clip.dur * 0.2)
-        rightMs = clip.dur - leftMs
+        leftMs = roundInt(clip.props["renderDur"] * 0.2)
+        rightMs = clip.props["renderDur"] - leftMs
         clip.queueTween(clipMs, leftMs, [
             ("brightness", 0, a.BRIGHTNESS_RANGE[1], "sin")
         ])

@@ -128,6 +128,7 @@ def initGridComposition(a, stepTime=False):
         samples[i]["matchDb"] = a.MATCH_DB
         samples[i]["maxDb"] = a.MAX_DB
         samples[i]["distanceFromCenter"] = distance(cCol, cRow, s["col"], s["row"])
+        samples[i]["renderDur"] = max(audioDur, samples[i]["dur"], a.MIN_CLIP_DUR + pseudoRandom(i, range=(0, 500), isInt=True))
     samples = addNormalizedValues(samples, "distanceFromCenter", "nDistanceFromCenter")
 
     # limit the number of clips playing
