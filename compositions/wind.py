@@ -38,6 +38,7 @@ parser.add_argument('-dur', dest="DURATION_MS", default=60000, type=int, help="T
 parser.add_argument('-dmax', dest="DATA_MAX", default=8.0, type=float, help="Intended data max (absolute range is typically around -20 to 20); lower this to move things faster")
 parser.add_argument('-smax', dest="SPEED_MAX", default=0.5, type=float, help="Most we should move a clip per frame in pixels; assumes 30fps; assumes 1920x1080px")
 parser.add_argument('-mmax', dest="MOVE_MAX", default=20.0, type=float, help="Distance to move before resetting")
+parser.add_argument('-mmag', dest="MIN_MAGNITUDE", default=4.0, type=float, help="Magnitudes below this value will be considered 'stuck' and reset more quickly")
 parser.add_argument('-rstep', dest="ROTATION_STEP", default=0.1, type=float, help="Rotation step in degrees")
 parser.add_argument('-tend', dest="TRANSITION_END_MS", default=12000, type=int, help="How long the ending transition should be")
 parser.add_argument('-sort', dest="SORT_STRING", default="power=desc=0.5&clarity=desc", help="Query string for sorting samples")
@@ -97,30 +98,37 @@ print("Wind data shape = %s x %s x %s" % windData.shape)
 # windData /= np.max(np.abs(windData), axis=0)
 print("Wind range [%s, %s]" % (windData.min(), windData.max()))
 
-# slice the data: take the middle half
+# slice the data given bounds
 h, w, uv = windData.shape
-percent = 0.5
-sw = roundInt(w * percent)
-sh = roundInt(sw / (1.0 * a.WIDTH / a.HEIGHT))
-sx = roundInt((w - sw) * 0.5)
-sy = roundInt((h - sh) * 0.5)
-windData = windData[sy:(sy+sh),sx:(sx+sw),:]
+nxBound0 = 0.53
+nyBound0 = 0.47
+nxBound1 = nxBound0 + 0.214
+nyBound1 = nyBound0 + 0.214
+sx0 = roundInt(1.0 * nxBound0 * (w-1))
+sx1 = roundInt(1.0 * nxBound1 * (w-1))
+sy0 = roundInt(1.0 * nyBound0 * (h-1))
+sy1 = roundInt(1.0 * nyBound1 * (h-1))
+windData = windData[sy0:sy1,sx0:sx1,:]
 print("Wind data shape after slice = %s x %s x %s" % windData.shape)
 
-# Write wind data to image
-# u = windData[0][:,:,0]
-# v = windData[0][:,:,1]
+# # Write wind data to image
+# u = windData[:,:,0]
+# v = windData[:,:,1]
 # mag = np.sqrt(u * u + v * v)
-# mag /= np.max(mag, axis=0)
-# mag = mag * 255.0
-# pixels = mag.astype(np.uint8)
+# # mag[mag > 4] = 0.0 # optional filter out value
+# nmag = mag / np.max(mag, axis=0)
+# nmag = nmag * 255.0
+# pixels = nmag.astype(np.uint8)
 # from PIL import Image
 # im = Image.fromarray(pixels, mode="L")
 # im.save("output/wind_debug.png")
-
-# plot data
+# # sys.exit()
+#
+# # plot data
 # from matplotlib import pyplot as plt
-# plt.hist(windData.reshape(-1), bins=100)
+# # plt.hist(np.abs(windData).reshape(-1), bins=100)
+# # plt.hist(windData.reshape(-1), bins=100)
+# plt.hist(mag.reshape(-1), bins=100)
 # plt.show()
 # sys.exit()
 
@@ -171,7 +179,7 @@ for beat in range(beats):
                 "reverb": reverb,
                 "matchDb": clip.props["matchDb"]
             })
-            clipDur = max(clip.props["audioDur"], clip.dur)
+            clipDur = clip.props["renderDur"]
             leftMs = roundInt(clipDur * 0.2)
             rightMs = clipDur - leftMs
             clip.queueTween(ms, leftMs, [
