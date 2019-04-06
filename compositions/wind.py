@@ -33,7 +33,7 @@ parser.add_argument('-data', dest="WIND_DATA", default="data/wind/wnd10m.gdas.20
 parser.add_argument('-grid', dest="GRID", default="128x128", help="Size of grid")
 parser.add_argument('-grid0', dest="START_GRID", default="64x64", help="Start size of grid")
 parser.add_argument('-grid1', dest="END_GRID", default="128x128", help="End size of grid")
-parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.1,0.8", help="Volume range")
+parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.3,0.8", help="Volume range")
 parser.add_argument('-dur', dest="DURATION_MS", default=60000, type=int, help="Target duration in ms")
 parser.add_argument('-dmax', dest="DATA_MAX", default=8.0, type=float, help="Intended data max (absolute range is typically around -20 to 20); lower this to move things faster")
 parser.add_argument('-smax', dest="SPEED_MAX", default=0.5, type=float, help="Most we should move a clip per frame in pixels; assumes 30fps; assumes 1920x1080px")
@@ -41,9 +41,9 @@ parser.add_argument('-mmax', dest="MOVE_MAX", default=20.0, type=float, help="Di
 parser.add_argument('-rstep', dest="ROTATION_STEP", default=0.1, type=float, help="Rotation step in degrees")
 parser.add_argument('-tend', dest="TRANSITION_END_MS", default=12000, type=int, help="How long the ending transition should be")
 parser.add_argument('-sort', dest="SORT_STRING", default="power=desc=0.5&clarity=desc", help="Query string for sorting samples")
-parser.add_argument('-pdur', dest="PULSE_MS", default=512, type=int, help="How long each pulse should be")
-parser.add_argument('-msdur', dest="MIN_STEP_MS", default=1024, type=int, help="Minumum step between pulses")
-parser.add_argument('-pcount', dest="PULSE_COUNT", default=32, type=int, help="Number of pulses per clip play")
+parser.add_argument('-beat', dest="BEAT_MS", default=4096, type=int, help="Beat duration")
+parser.add_argument('-pcount', dest="PULSE_COUNT", default=4, type=int, help="Number of pulses per note")
+parser.add_argument('-msdur', dest="MIN_STEP_MS", default=8, type=int, help="Minumum step between pulses")
 parser.add_argument('-pnotes', dest="PLAY_NOTES", default=8, type=int, help="Number of notes to alternate between")
 a = parser.parse_args()
 parseVideoArgs(a)
@@ -124,83 +124,62 @@ print("Wind data shape after slice = %s x %s x %s" % windData.shape)
 # plt.show()
 # sys.exit()
 
+# choose notes
+noteClips = []
+for i in range(a.PLAY_NOTES):
+    noteSamples = samplesGroupedByNote[i]["items"]
+    foundClip = False
+    for sample in noteSamples:
+        clip = clips[sample["index"]]
+        # check to see if clip is visible in the beginning frame
+        if clip.vector.isVisible(a.WIDTH, a.HEIGHT, 0, alphaCheck=False):
+            noteClips.append(clip)
+            foundClip = True
+            break
+    if not foundClip:
+        print("Error: Could not find visible clip in %s group" % samplesGroupedByNote[i]["note"])
+        sys.exit()
+
 startMs = a.PAD_START
 endMs = startMs + a.DURATION_MS
 durationMs = endMs
-
-def playNextNoteClip(a, clips, groups, index, ms, nsequenceStep):
-    group = groups[index]
-    gsamples = group["items"]
-    gcount = len(gsamples)
-
-    # retrieve clips in group
-    groupIndices = set([s["index"] for s in gsamples])
-    groupClips = [clip for clip in clips if clip.props["index"] in groupIndices]
-
-    # reset group clips if all played
-    if allClipStatesEqual(groupClips, "played", True):
-        print("Resetting clips in group %s" % index)
-        updateClipStates(groupClips, ("played", None))
-
-    # find the next available clip
-    clip = None
-    for i in range(gcount):
-        sample = gsamples[i]
-        checkClip = clips[sample["index"]]
-        if checkClip.vector.isVisible(a.WIDTH, a.HEIGHT, ms, alphaCheck=False) and checkClip.getState("played") is None:
-            clip = checkClip
-            break
-
-    if clip is None:
-        print("No visible clip found for group %s at %s" % (index, formatSeconds(ms/1000.0)))
-        return
-
-    count = a.PULSE_COUNT
-    dur = a.PULSE_MS*2
-    reverb = lerp((60, 100), nsequenceStep)
-
-    clip.setState("played", True)
-
-    for i in range(count):
-        nstep = 1.0 * i / (count-1)
-        nstep = easeSinInOutBell(nstep)
-        volume = lerp(a.VOLUME_RANGE, nstep)
-        clipPlayMs = ms + i * dur
-        clipDur = min(clip.props["audioDur"], roundInt(dur/2))
-        clip.queuePlay(clipPlayMs, {
-            "start": clip.props["audioStart"],
-            "dur": clipDur,
-            "volume": volume,
-            "fadeOut": getClipFadeDur(clipDur, percentage=0.2, maxDur=-1),
-            "fadeIn": getClipFadeDur(clipDur, percentage=0.1),
-            "pan": clip.props["pan"],
-            "reverb": reverb,
-            "maxDb": clip.props["maxDb"]
-        })
-        clipDur = max(clip.props["audioDur"], roundInt(dur/2))
-        leftMs = roundInt(clipDur * 0.2)
-        rightMs = clipDur - leftMs
-        clip.queueTween(clipPlayMs, leftMs, [
-            ("brightness", a.BRIGHTNESS_RANGE[0], a.BRIGHTNESS_RANGE[1], "sin")
-        ])
-        clip.queueTween(clipPlayMs+leftMs, rightMs, [
-            ("brightness", a.BRIGHTNESS_RANGE[1], a.BRIGHTNESS_RANGE[0], "sin")
-        ])
-
-ms = startMs
-stepDurMs = a.PULSE_MS * a.PULSE_COUNT * 2
-offsetMs = a.PULSE_MS
-currentNoteIndex = 0
-while ms < endMs:
-    nstep = norm(ms, (startMs, endMs))
-    playNextNoteClip(a, clips, samplesGroupedByNote, currentNoteIndex, ms, nstep)
-    currentNoteIndex = 0 if currentNoteIndex >= a.PLAY_NOTES-1 else currentNoteIndex+1
-    playNextNoteClip(a, clips, samplesGroupedByNote, currentNoteIndex, ms+a.PULSE_MS, nstep)
-    currentNoteIndex = 0 if currentNoteIndex >= a.PLAY_NOTES-1 else currentNoteIndex+1
-    stepDurMs = max(a.MIN_STEP_MS, roundInt(stepDurMs * 0.25))
-    ms += stepDurMs + offsetMs
-    offsetMs = roundInt(offsetMs * 0.5)
-    offsetMs = a.PULSE_MS if offsetMs < 64 else offsetMs
+targetSteps = floorInt(math.log2((1.0 * a.BEAT_MS / 2 / a.PULSE_COUNT) / a.MIN_STEP_MS)) # number of steps it takes to get from MIN_STEP_MS to MAX PULSE_MS if we double each step
+beats = floorInt(1.0 * a.DURATION_MS / a.BEAT_MS)
+for beat in range(beats):
+    beatOffsetMs = startMs + beat * a.BEAT_MS
+    nprogress = 1.0 * beat / (beats-1)
+    nprogress = min(1.0, nprogress * 2) # reach full pulse halfway through
+    step = roundInt(targetSteps * nprogress)
+    pulseDur = a.MIN_STEP_MS * (2 ** step)
+    for note in range(a.PLAY_NOTES):
+        clip = noteClips[note]
+        noteOffsetMs = roundInt(1.0 * a.BEAT_MS / a.PLAY_NOTES * note)
+        for pulse in range(a.PULSE_COUNT):
+            npulse = 1.0 * pulse / (a.PULSE_COUNT-1)
+            pulseOffsetMs = pulse * pulseDur
+            ms = beatOffsetMs + noteOffsetMs + pulseOffsetMs
+            volume = lerp(a.VOLUME_RANGE, 1.0-npulse)
+            volume = min(volume, lerp(a.VOLUME_RANGE, nprogress))
+            reverb = lerp((50, 100), nprogress)
+            clip.queuePlay(ms, {
+                "start": clip.props["audioStart"],
+                "dur": clip.props["audioDur"],
+                "volume": volume,
+                "fadeOut": clip.props["fadeOut"],
+                "fadeIn": clip.props["fadeIn"],
+                "pan": clip.props["pan"],
+                "reverb": reverb,
+                "matchDb": clip.props["matchDb"]
+            })
+            clipDur = max(clip.props["audioDur"], clip.dur)
+            leftMs = roundInt(clipDur * 0.2)
+            rightMs = clipDur - leftMs
+            clip.queueTween(ms, leftMs, [
+                ("brightness", a.BRIGHTNESS_RANGE[0], a.BRIGHTNESS_RANGE[1], "sin")
+            ])
+            clip.queueTween(ms+leftMs, rightMs, [
+                ("brightness", a.BRIGHTNESS_RANGE[1], a.BRIGHTNESS_RANGE[0], "sin")
+            ])
 
 # Initialize clip states
 for i, clip in enumerate(clips):
