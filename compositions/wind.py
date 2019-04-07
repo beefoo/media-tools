@@ -41,11 +41,10 @@ parser.add_argument('-mmax', dest="MOVE_MAX", default=20.0, type=float, help="Di
 parser.add_argument('-mmag', dest="MIN_MAGNITUDE", default=4.0, type=float, help="Magnitudes below this value will be considered 'stuck' and reset more quickly")
 parser.add_argument('-rstep', dest="ROTATION_STEP", default=0.1, type=float, help="Rotation step in degrees")
 parser.add_argument('-tend', dest="TRANSITION_END_MS", default=12000, type=int, help="How long the ending transition should be")
-parser.add_argument('-sort', dest="SORT_STRING", default="power=desc=0.5&clarity=desc", help="Query string for sorting samples")
-parser.add_argument('-beat', dest="BEAT_MS", default=4096, type=int, help="Beat duration")
-parser.add_argument('-pcount', dest="PULSE_COUNT", default=4, type=int, help="Number of pulses per note")
-parser.add_argument('-msdur', dest="MIN_STEP_MS", default=8, type=int, help="Minumum step between pulses")
-parser.add_argument('-pnotes', dest="PLAY_NOTES", default=8, type=int, help="Number of notes to alternate between")
+parser.add_argument('-beat', dest="BEAT_MS", default=2048, type=int, help="Beat duration")
+parser.add_argument('-ivar', dest="INITIAL_VARIANCE_MS", default=512, type=int, help="Variance for initial play state of clip")
+parser.add_argument('-pvar', dest="PHASE_VARIANCE_MS", default=512, type=int, help="Variance for initial play state of clip")
+parser.add_argument('-pevery', dest="PLAY_EVERY", default=32, type=int, help="Play every x clip")
 a = parser.parse_args()
 parseVideoArgs(a)
 aa = vars(a)
@@ -67,17 +66,6 @@ samples, sampleCount, container, sampler, stepTime, cCol, cRow, gridW, gridH, st
 for i, s in enumerate(samples):
     samples[i]["alpha"] = a.ALPHA_RANGE[0]
     samples[i]["brightness"] = a.BRIGHTNESS_RANGE[0]
-
-samplesGroupedByNote = groupList(samples, "note", sort=True)
-noteGroupCount = len(samplesGroupedByNote)
-if a.PLAY_NOTES > noteGroupCount:
-    print("Not enough notes: requested %s but have %s; reducing" % (a.PLAY_NOTES, noteGroupCount))
-    aa["PLAY_NOTES"] = noteGroupCount
-
-# within each group sort by clarity, filter by power and frequency
-for i, group in enumerate(samplesGroupedByNote):
-    samplesGroupedByNote[i]["items"] = sortByQueryString(group["items"], a.SORT_STRING)
-    samplesGroupedByNote[i]["currentIndex"] = 0
 
 clips = samplesToClips(samples)
 stepTime = logTime(stepTime, "Samples to clips")
@@ -132,55 +120,44 @@ print("Wind data shape after slice = %s x %s x %s" % windData.shape)
 # plt.show()
 # sys.exit()
 
-# choose notes
-noteClips = []
-for i in range(a.PLAY_NOTES):
-    noteSamples = samplesGroupedByNote[i]["items"]
-    foundClip = False
-    for sample in noteSamples:
-        clip = clips[sample["index"]]
-        # check to see if clip is visible in the beginning frame
-        if clip.vector.isVisible(a.WIDTH, a.HEIGHT, 0, alphaCheck=False):
-            noteClips.append(clip)
-            foundClip = True
-            break
-    if not foundClip:
-        print("Error: Could not find visible clip in %s group" % samplesGroupedByNote[i]["note"])
-        sys.exit()
+# determine which clips will be playing
+playClips = [c for c in clips if c.props["index"] % a.PLAY_EVERY == 0]
+# assign random variance
+for i, clip in enumerate(playClips):
+    varianceMs = pseudoRandom(i+1, (0, a.INITIAL_VARIANCE_MS), isInt=True)
+    clip.setState("varianceMs", varianceMs)
+    phaseVarianceMs = pseudoRandom(i+1, (0, a.PHASE_VARIANCE_MS), isInt=True)
+    clip.setState("phaseVarianceMs", phaseVarianceMs)
+    volumeMultiplier = pseudoRandom(i+1, (0.5, 1.0))
+    clip.setState("volumeMultiplier", volumeMultiplier)
 
 startMs = a.PAD_START
 endMs = startMs + a.DURATION_MS
 durationMs = endMs
-targetSteps = floorInt(math.log2((1.0 * a.BEAT_MS / 2 / a.PULSE_COUNT) / a.MIN_STEP_MS)) # number of steps it takes to get from MIN_STEP_MS to MAX PULSE_MS if we double each step
 beats = floorInt(1.0 * a.DURATION_MS / a.BEAT_MS)
 for beat in range(beats):
     beatOffsetMs = startMs + beat * a.BEAT_MS
     nprogress = 1.0 * beat / (beats-1)
-    nprogress = min(1.0, nprogress * 2) # reach full pulse halfway through
-    step = roundInt(targetSteps * nprogress)
-    pulseDur = a.MIN_STEP_MS * (2 ** step)
-    for note in range(a.PLAY_NOTES):
-        clip = noteClips[note]
-        noteOffsetMs = roundInt(1.0 * a.BEAT_MS / a.PLAY_NOTES * note)
-        for pulse in range(a.PULSE_COUNT):
-            npulse = 1.0 * pulse / (a.PULSE_COUNT-1)
-            pulseOffsetMs = pulse * pulseDur
-            ms = beatOffsetMs + noteOffsetMs + pulseOffsetMs
-            volume = lerp(a.VOLUME_RANGE, 1.0-npulse)
-            volume = min(volume, lerp(a.VOLUME_RANGE, nprogress))
+    for clip in playClips:
+        clipOffsetMs = clip.getState("varianceMs") + clip.getState("phaseVarianceMs") * beat
+        ms = beatOffsetMs + clipOffsetMs
+        # check to see if clip is visible
+        if clip.vector.isVisible(a.WIDTH, a.HEIGHT, ms, alphaCheck=False) and ms < a.DURATION_MS:
+            volume = lerp(a.VOLUME_RANGE, nprogress) * clip.getState("volumeMultiplier")
             reverb = lerp((50, 100), nprogress)
+            audioDur = clip.props["audioDur"]
             clip.queuePlay(ms, {
                 "start": clip.props["audioStart"],
-                "dur": clip.props["audioDur"],
+                "dur": audioDur,
                 "volume": volume,
-                "fadeOut": clip.props["fadeOut"],
-                "fadeIn": clip.props["fadeIn"],
+                "fadeOut": roundInt(audioDur * 0.5),
+                "fadeIn": roundInt(audioDur * 0.5),
                 "pan": clip.props["pan"],
                 "reverb": reverb,
                 "matchDb": clip.props["matchDb"]
             })
             clipDur = clip.props["renderDur"]
-            leftMs = roundInt(clipDur * 0.2)
+            leftMs = roundInt(clipDur * 0.5)
             rightMs = clipDur - leftMs
             clip.queueTween(ms, leftMs, [
                 ("brightness", a.BRIGHTNESS_RANGE[0], a.BRIGHTNESS_RANGE[1], "sin")
@@ -194,7 +171,9 @@ for i, clip in enumerate(clips):
     clip.setState("pos", (clip.props["x"], clip.props["y"]))
     clip.setState("rotation", 0)
     clip.setState("distanceTravelled", 0)
-    clip.setState("moveMax", a.MOVE_MAX + a.MOVE_MAX * pseudoRandom(i+1))
+    moveMax = a.MOVE_MAX + a.MOVE_MAX * pseudoRandom(i+1)
+    clip.setState("originalMoveMax", moveMax)
+    clip.setState("moveMax", moveMax)
 
 def getMovePositionWithWind(a, windData, x, y, speed):
     dh, dw, _ = windData.shape
@@ -253,7 +232,7 @@ def clipToNpArrWind(clip, ms, containerW, containerH, precision, parent, globalA
         if mag <= a.MIN_MAGNITUDE:
             moveMax = clip.getState("moveMax")
             percent = 1.0 * mag / a.DATA_MAX
-            moveMax = min(moveMax, a.MOVE_MAX * percent)
+            moveMax = min(moveMax, clip.getState("originalMoveMax") * percent)
             moveMax = max(moveMax, 1.0)
             clip.setState("moveMax", moveMax)
         distanceTravelled += distance(0, 0, moveX, moveY)
