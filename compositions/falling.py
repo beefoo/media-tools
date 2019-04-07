@@ -39,6 +39,7 @@ parser.add_argument('-duration', dest="TARGET_DURATION", default=120, type=int, 
 parser.add_argument('-translate', dest="TRANSLATE_AMOUNT", default=0.5, type=float, help="Amount to translate clip as a percentage of height")
 parser.add_argument('-prad', dest="PLAY_RADIUS", default=8.0, type=float, help="Radius of cells/clips to play at any given time")
 parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.3,0.6", help="Volume range")
+parser.add_argument('-dpdur', dest="DELAY_PLAY_MS", default=1000, type=int, help="Don't play the first x ms of moving")
 a = parser.parse_args()
 parseVideoArgs(a)
 aa = vars(a)
@@ -124,31 +125,32 @@ def dequeueClips(ms, clips, queue):
             lastPlayedMs = clip.getState("lastPlayedMs")
             # check to make sure we don't play if already playing
             if lastPlayedMs is None or (playMs - lastPlayedMs) > thresholdMs:
-                clip.queuePlay(playMs, {
-                    "start": clip.props["audioStart"],
-                    "dur": clip.props["audioDur"],
-                    "volume": lerp(a.VOLUME_RANGE, ndistance),
-                    "fadeOut": clip.props["fadeOut"],
-                    "fadeIn": clip.props["fadeIn"],
-                    "pan": clip.props["pan"],
-                    "reverb": clip.props["reverb"],
-                    "maxDb": clip.props["maxDb"]
-                })
                 clip.setState("lastPlayedMs", playMs)
-                speed = easeSinInOutBell(nprogress)
-                clipDur = clip.props["renderDur"] * (1.0 + speed * 0.5)
-                leftMs = max(10, roundInt(clipDur * 0.5))
-                rightMs = clipDur - leftMs
+                # don't play the initial clips
+                if playMs > (a.PAD_START + a.DELAY_PLAY_MS):
+                    clip.queuePlay(playMs, {
+                        "start": clip.props["audioStart"],
+                        "dur": clip.props["audioDur"],
+                        "volume": lerp(a.VOLUME_RANGE, ndistance),
+                        "fadeOut": clip.props["fadeOut"],
+                        "fadeIn": clip.props["fadeIn"],
+                        "pan": clip.props["pan"],
+                        "reverb": clip.props["reverb"],
+                        "maxDb": clip.props["maxDb"]
+                    })
+                    speed = easeSinInOutBell(nprogress)
+                    clipDur = clip.props["renderDur"] * (1.0 + speed * 0.5)
+                    leftMs = max(10, roundInt(clipDur * 0.5))
+                    rightMs = clipDur - leftMs
 
-                ty = clip.props["height"] * a.TRANSLATE_AMOUNT * speed * ndistance * 2
+                    # offset this depending on the xoffset and y speed
+                    ty = clip.props["height"] * a.TRANSLATE_AMOUNT * speed * ndistance * 2
+                    xMultiplier = -1.0 * xDelta / clip.props["width"] * 0.5
+                    tx = clip.props["height"] * a.TRANSLATE_AMOUNT * xMultiplier * speed * ndistance
 
-                # offset this depending on the xoffset and y speed
-                xMultiplier = -1.0 * xDelta / clip.props["width"] * 0.5
-                tx = clip.props["height"] * a.TRANSLATE_AMOUNT * xMultiplier * speed * ndistance
-
-                brightnessTo = lerp(a.BRIGHTNESS_RANGE, ndistance)
-                clip.queueTween(playMs, leftMs, [("brightness", a.BRIGHTNESS_RANGE[0], brightnessTo, "sin"), ("translateX", 0, tx, "sin"), ("translateY", 0, ty, "sin")])
-                clip.queueTween(playMs+leftMs, rightMs, [("brightness", brightnessTo, a.BRIGHTNESS_RANGE[0], "sin"), ("translateX", tx, 0, "sin"), ("translateY", ty, 0, "sin")])
+                    brightnessTo = lerp(a.BRIGHTNESS_RANGE, ndistance)
+                    clip.queueTween(playMs, leftMs, [("brightness", a.BRIGHTNESS_RANGE[0], brightnessTo, "sin"), ("translateX", 0, tx, "sin"), ("translateY", 0, ty, "sin")])
+                    clip.queueTween(playMs+leftMs, rightMs, [("brightness", brightnessTo, a.BRIGHTNESS_RANGE[0], "sin"), ("translateX", tx, 0, "sin"), ("translateY", ty, 0, "sin")])
             queue.pop(cindex, None)
 
     return queue
