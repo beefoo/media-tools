@@ -7,6 +7,7 @@ import csv
 from lib.audio_utils import *
 from lib.io_utils import *
 from lib.math_utils import *
+from lib.processing_utils import *
 import librosa
 from matplotlib import pyplot as plt
 from multiprocessing import Pool
@@ -31,6 +32,7 @@ parser.add_argument('-rate', dest="LEARNING_RATE", default=150, type=int, help="
 parser.add_argument('-angle', dest="ANGLE", default=0.1, type=float, help="Angle: increase to make faster, decrease to make more accurate")
 parser.add_argument('-plot', dest="PLOT", default=0, type=int, help="Show plot?")
 parser.add_argument('-cache', dest="CACHE_FILE", default="", help="Cache file")
+parser.add_argument('-threads', dest="THREADS", default=4, type=int, help="Number of threads")
 args = parser.parse_args()
 
 # Parse arguments
@@ -115,7 +117,8 @@ else:
     # files = files[:1]
     # for fn in files:
     #     doTSNE(fn)
-    pool = ThreadPool()
+    threads = getThreadCount(args.THREADS)
+    pool = ThreadPool(threads)
     data = pool.map(doTSNE, params)
     pool.close()
     pool.join()
