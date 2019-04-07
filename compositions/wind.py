@@ -43,14 +43,15 @@ parser.add_argument('-rstep', dest="ROTATION_STEP", default=0.1, type=float, hel
 parser.add_argument('-tend', dest="TRANSITION_END_MS", default=12000, type=int, help="How long the ending transition should be")
 parser.add_argument('-beat', dest="BEAT_MS", default=2048, type=int, help="Beat duration")
 parser.add_argument('-ivar', dest="INITIAL_VARIANCE_MS", default=512, type=int, help="Variance for initial play state of clip")
-parser.add_argument('-pvar', dest="PHASE_VARIANCE_MS", default=512, type=int, help="Variance for initial play state of clip")
-parser.add_argument('-pevery', dest="PLAY_EVERY", default=32, type=int, help="Play every x clip")
+parser.add_argument('-pmmax', dest="PLAY_MOVE_MAX", default=300.0, type=float, help="Distance for playing clips to move before resetting")
+parser.add_argument('-pcols', dest="PLAY_COLS", default=4, type=int, help="Number of columns to play")
 a = parser.parse_args()
 parseVideoArgs(a)
 aa = vars(a)
 # adjust speed max for this fps and resolution
 aa["SPEED_MAX"] = a.SPEED_MAX * (a.WIDTH / 1920.0) / (a.FPS / 30.0)
 aa["MOVE_MAX"] = a.MOVE_MAX * (a.WIDTH / 1920.0) / (a.FPS / 30.0)
+aa["PLAY_MOVE_MAX"] = a.PLAY_MOVE_MAX * (a.WIDTH / 1920.0) / (a.FPS / 30.0)
 aa["PAD_END"] = 16000
 aa["TRANSITION_END_STEP"] = 1.0 / (a.TRANSITION_END_MS / frameToMs(1.0, a.FPS))
 aa["THREADS"] = 1 # enforce one thread since we need to process frames sequentially
@@ -166,14 +167,20 @@ for beat in range(beats):
                 ("brightness", a.BRIGHTNESS_RANGE[1], a.BRIGHTNESS_RANGE[0], "sin")
             ])
 
-# Initialize clip states
-for i, clip in enumerate(clips):
-    clip.setState("pos", (clip.props["x"], clip.props["y"]))
-    clip.setState("rotation", 0)
-    clip.setState("distanceTravelled", 0)
-    moveMax = a.MOVE_MAX + a.MOVE_MAX * pseudoRandom(i+1)
-    clip.setState("originalMoveMax", moveMax)
-    clip.setState("moveMax", moveMax)
+def resetClips(clips):
+    # Initialize clip states
+    for i, clip in enumerate(clips):
+        clip.setState("pos", (clip.props["x"], clip.props["y"]))
+        clip.setState("rotation", 0)
+        clip.setState("distanceTravelled", 0)
+        moveMax = a.MOVE_MAX + a.MOVE_MAX * pseudoRandom(i+1)
+        clip.setState("originalMoveMax", moveMax)
+        clip.setState("moveMax", moveMax)
+
+resetClips(clips)
+
+# sort frames
+container.vector.sortFrames()
 
 def getMovePositionWithWind(a, windData, x, y, speed):
     dh, dw, _ = windData.shape
@@ -186,41 +193,17 @@ def getMovePositionWithWind(a, windData, x, y, speed):
     moveX, moveY = (nu * speed, nv * speed)
     return (u, v, moveX, moveY)
 
-# sort frames
-container.vector.sortFrames()
-
 # zero degrees = 3 o'clock (east), increasing positive counter clockwise, decreasing negative clockwise
 def angleFromUV(u, v):
     return math.atan2(v, u) * 180.0 / math.pi
 
-# custom clip to numpy array function to override width/height calculation
-def clipToNpArrWindCalculation(clip, ms, containerW, containerH, precision, parent, globalArgs={}):
-    return np.array([
-        roundInt(props["x"] * precisionMultiplier),
-        roundInt(props["y"] * precisionMultiplier),
-        roundInt(props["width"] * precisionMultiplier),
-        roundInt(props["height"] * precisionMultiplier),
-        roundInt(alpha * precisionMultiplier),
-        roundInt(props["tn"] * precisionMultiplier),
-        roundInt(props["zindex"]),
-        roundInt(rotation * precisionMultiplier),
-        roundInt(props["blur"] * precisionMultiplier),
-        roundInt(props["brightness"] * precisionMultiplier)
-    ], dtype=np.int32)
-
-# custom clip to numpy array function to override default tweening logic
-def clipToNpArrWind(clip, ms, containerW, containerH, precision, parent, globalArgs={}):
-    global a
-    global windData
-    global startMs
-    global endMs
-
-    customProps = None
+def clipPositionAtTime(a, clip, ms, windData, startMs, endMs):
+    x = None
+    y = None
     rotation = 0.0
     alpha = clip.props["alpha"]
 
     if startMs <= ms < endMs:
-
         nprogress = norm(ms, (startMs, endMs))
         # increase in speed over time; fastest in the middle
         globalSpeed = ease(nprogress)
@@ -275,10 +258,6 @@ def clipToNpArrWind(clip, ms, containerW, containerH, precision, parent, globalA
         if abs(moveX) > 0 or abs(moveY) > 0:
             clip.setState("lastMove", (moveX, moveY))
 
-        customProps = {
-            "pos": [x, y]
-        }
-
     # reset the position after active range
     elif  ms >= endMs:
         x, y = clip.getState("pos")
@@ -292,9 +271,40 @@ def clipToNpArrWind(clip, ms, containerW, containerH, precision, parent, globalA
             alpha = max(alpha, 0.0)
             clip.setState("pos", (x, y))
             clip.setState("alpha", alpha)
-            customProps = {
-                "pos": [x, y]
-            }
+
+    return x, y, alpha, rotation
+
+# custom clip to numpy array function to override width/height calculation
+def clipToNpArrWindCalculation(clip, ms, containerW, containerH, precision, parent, globalArgs={}):
+    return np.array([
+        roundInt(props["x"] * precisionMultiplier),
+        roundInt(props["y"] * precisionMultiplier),
+        roundInt(props["width"] * precisionMultiplier),
+        roundInt(props["height"] * precisionMultiplier),
+        roundInt(alpha * precisionMultiplier),
+        roundInt(props["tn"] * precisionMultiplier),
+        roundInt(props["zindex"]),
+        roundInt(rotation * precisionMultiplier),
+        roundInt(props["blur"] * precisionMultiplier),
+        roundInt(props["brightness"] * precisionMultiplier)
+    ], dtype=np.int32)
+
+
+
+# custom clip to numpy array function to override default tweening logic
+def clipToNpArrWind(clip, ms, containerW, containerH, precision, parent, globalArgs={}):
+    global a
+    global windData
+    global startMs
+    global endMs
+
+    customProps = None
+    _x, _y, alpha, rotation = clipPositionAtTime(a, clip, ms, windData, startMs, endMs)
+
+    if _x is not None and _y is not None:
+        customProps = {
+            "pos": [_x, _y]
+        }
 
     precisionMultiplier = int(10 ** precision)
     props = clip.toDict(ms, containerW, containerH, parent, customProps=customProps)
