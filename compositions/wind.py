@@ -34,6 +34,8 @@ parser.add_argument('-grid', dest="GRID", default="128x128", help="Size of grid"
 parser.add_argument('-grid0', dest="START_GRID", default="64x64", help="Start size of grid")
 parser.add_argument('-grid1', dest="END_GRID", default="128x128", help="End size of grid")
 parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.3,0.8", help="Volume range")
+parser.add_argument('-rvbr', dest="REVERB_RANGE", default="60,100", help="Reverb range")
+parser.add_argument('-strr', dest="STRETCH_RANGE", default="1.0,8.0", help="Volume range")
 parser.add_argument('-dur', dest="DURATION_MS", default=60000, type=int, help="Target duration in ms")
 parser.add_argument('-dmax', dest="DATA_MAX", default=8.0, type=float, help="Intended data max (absolute range is typically around -20 to 20); lower this to move things faster")
 parser.add_argument('-smax', dest="SPEED_MAX", default=0.5, type=float, help="Most we should move a clip per frame in pixels; assumes 30fps; assumes 1920x1080px")
@@ -42,7 +44,7 @@ parser.add_argument('-mmag', dest="MIN_MAGNITUDE", default=4.0, type=float, help
 parser.add_argument('-rstep', dest="ROTATION_STEP", default=0.1, type=float, help="Rotation step in degrees")
 parser.add_argument('-tend', dest="TRANSITION_END_MS", default=12000, type=int, help="How long the ending transition should be")
 parser.add_argument('-beat', dest="BEAT_MS", default=2048, type=int, help="Beat duration")
-parser.add_argument('-ivar', dest="INITIAL_VARIANCE_MS", default=512, type=int, help="Variance for initial play state of clip")
+parser.add_argument('-ivar', dest="INITIAL_VARIANCE_MS", default=256, type=int, help="Variance for initial play state of clip")
 parser.add_argument('-pmmax', dest="PLAY_MOVE_MAX", default=300.0, type=float, help="Distance for playing clips to move before resetting")
 parser.add_argument('-pcols', dest="PLAY_COLS", default=4, type=int, help="Number of columns to play")
 a = parser.parse_args()
@@ -57,6 +59,8 @@ aa["TRANSITION_END_STEP"] = 1.0 / (a.TRANSITION_END_MS / frameToMs(1.0, a.FPS))
 aa["THREADS"] = 1 # enforce one thread since we need to process frames sequentially
 aa["FRAME_ALPHA"] = 0.01
 aa["ALPHA_RANGE"] = (1.0, 1.0)
+aa["REVERB_RANGE"] = tuple([int(v) for v in a.REVERB_RANGE.strip().split(",")])
+aa["STRETCH_RANGE"] = tuple([float(v) for v in a.STRETCH_RANGE.strip().split(",")])
 
 # Get video data
 startTime = logTime()
@@ -122,65 +126,29 @@ print("Wind data shape after slice = %s x %s x %s" % windData.shape)
 # sys.exit()
 
 # determine which clips will be playing
-playClips = [c for c in clips if c.props["index"] % a.PLAY_EVERY == 0]
+gridCols = min(startGridW, endGridW)
+col0 = roundInt((gridW - gridCols) * 0.5)
+playCols = set([roundInt(1.0*gridCols/(a.PLAY_COLS+1)*(i+1)+col0) for i in range(a.PLAY_COLS)])
+playClips = [c for c in clips if clip.props["col"] in playCols]
 # assign random variance
 for i, clip in enumerate(playClips):
     varianceMs = pseudoRandom(i+1, (0, a.INITIAL_VARIANCE_MS), isInt=True)
     clip.setState("varianceMs", varianceMs)
-    phaseVarianceMs = pseudoRandom(i+1, (0, a.PHASE_VARIANCE_MS), isInt=True)
-    clip.setState("phaseVarianceMs", phaseVarianceMs)
-    volumeMultiplier = pseudoRandom(i+1, (0.5, 1.0))
-    clip.setState("volumeMultiplier", volumeMultiplier)
-
-startMs = a.PAD_START
-endMs = startMs + a.DURATION_MS
-durationMs = endMs
-beats = floorInt(1.0 * a.DURATION_MS / a.BEAT_MS)
-for beat in range(beats):
-    beatOffsetMs = startMs + beat * a.BEAT_MS
-    nprogress = 1.0 * beat / (beats-1)
-    for clip in playClips:
-        clipOffsetMs = clip.getState("varianceMs") + clip.getState("phaseVarianceMs") * beat
-        ms = beatOffsetMs + clipOffsetMs
-        # check to see if clip is visible
-        if clip.vector.isVisible(a.WIDTH, a.HEIGHT, ms, alphaCheck=False) and ms < a.DURATION_MS:
-            volume = lerp(a.VOLUME_RANGE, nprogress) * clip.getState("volumeMultiplier")
-            reverb = lerp((50, 100), nprogress)
-            audioDur = clip.props["audioDur"]
-            clip.queuePlay(ms, {
-                "start": clip.props["audioStart"],
-                "dur": audioDur,
-                "volume": volume,
-                "fadeOut": roundInt(audioDur * 0.5),
-                "fadeIn": roundInt(audioDur * 0.5),
-                "pan": clip.props["pan"],
-                "reverb": reverb,
-                "matchDb": clip.props["matchDb"]
-            })
-            clipDur = clip.props["renderDur"]
-            leftMs = roundInt(clipDur * 0.5)
-            rightMs = clipDur - leftMs
-            clip.queueTween(ms, leftMs, [
-                ("brightness", a.BRIGHTNESS_RANGE[0], a.BRIGHTNESS_RANGE[1], "sin")
-            ])
-            clip.queueTween(ms+leftMs, rightMs, [
-                ("brightness", a.BRIGHTNESS_RANGE[1], a.BRIGHTNESS_RANGE[0], "sin")
-            ])
+    clip.setState("isPlayable", (clip.props["col"] in playCols))
 
 def resetClips(clips):
     # Initialize clip states
     for i, clip in enumerate(clips):
         clip.setState("pos", (clip.props["x"], clip.props["y"]))
+        clip.setState("alpha", clip.props["alpha"])
         clip.setState("rotation", 0)
         clip.setState("distanceTravelled", 0)
         moveMax = a.MOVE_MAX + a.MOVE_MAX * pseudoRandom(i+1)
+        if clip.getState("isPlayable"):
+            moveMax = a.PLAY_MOVE_MAX + a.PLAY_MOVE_MAX * pseudoRandom(i+1)
         clip.setState("originalMoveMax", moveMax)
         clip.setState("moveMax", moveMax)
-
-resetClips(clips)
-
-# sort frames
-container.vector.sortFrames()
+        clip.setState("resetMs", None)
 
 def getMovePositionWithWind(a, windData, x, y, speed):
     dh, dw, _ = windData.shape
@@ -274,6 +242,63 @@ def clipPositionAtTime(a, clip, ms, windData, startMs, endMs):
 
     return x, y, alpha, rotation
 
+resetClips(clips)
+
+startMs = a.PAD_START
+endMs = startMs + a.DURATION_MS
+durationMs = endMs
+
+totalFrames = msToFrame(a.DURATION_MS, a.FPS)
+currentBeat = -1
+for f in range(totalFrames):
+    frame = f + 1
+    frameMs = frameToMs(frame, a.FPS)
+    frameBeat = floorInt(frameMs / a.BEAT_MS)
+    nprogress = 1.0 * f / (totalFrames-1)
+    # New beat, reset clips
+    isNewBeat = False
+    if currentBeat != frameBeat:
+        isNewBeat = True
+        currentBeat = frameBeat
+    ms = startMs + frameMs
+    for clip in playClips:
+        x, y, alpha, rotation = clipPositionAtTime(a, clip, ms, windData, startMs, endMs)
+        # keep track of position if this is a new beat
+        if isNewBeat:
+            clip.setState("frameX", x)
+            clip.setState("frameY", y)
+    if isNewBeat:
+        xs = [clip.getState("frameX") for c in playClips]
+        xRange = (min(xs), max(xs))
+        for clip in playClips:
+            if clip.vector.isVisible(a.WIDTH, a.HEIGHT, ms):
+                clipMs = roundInt(ms + clip.getState("varianceMs") + norm(clip.getState("frameX"), xRange) * a.BEAT_MS)
+                clip.queuePlay(clipMs, {
+                    "start": clip.props["audioStart"],
+                    "dur": clip.props["audioDur"],
+                    "volume": lerp(a.VOLUME_RANGE, 1.0-clip.props["nDistanceFromCenter"]),
+                    "fadeOut": clip.props["fadeOut"],
+                    "fadeIn": clip.props["fadeIn"],
+                    "pan": clip.props["pan"],
+                    "reverb": lerp(a.REVERB_RANGE, nprogress),
+                    "matchDb": clip.props["matchDb"],
+                    "stretch": lerp(a.STRETCH_RANGE, ease(nprogress, "quartIn"))
+                })
+                leftMs = roundInt(clip.props["renderDur"] * 0.2)
+                rightMs = clip.props["renderDur"] - leftMs
+                clip.queueTween(clipMs, leftMs, [
+                    ("brightness", 0, a.BRIGHTNESS_RANGE[1], "sin")
+                ])
+                clip.queueTween(clipMs+leftMs, rightMs, [
+                    ("brightness", a.BRIGHTNESS_RANGE[1], a.BRIGHTNESS_RANGE[0], "sin")
+                ])
+
+# reset the clips that we played
+resetClips(playClips)
+
+# sort frames
+container.vector.sortFrames()
+
 # custom clip to numpy array function to override width/height calculation
 def clipToNpArrWindCalculation(clip, ms, containerW, containerH, precision, parent, globalArgs={}):
     return np.array([
@@ -288,8 +313,6 @@ def clipToNpArrWindCalculation(clip, ms, containerW, containerH, precision, pare
         roundInt(props["blur"] * precisionMultiplier),
         roundInt(props["brightness"] * precisionMultiplier)
     ], dtype=np.int32)
-
-
 
 # custom clip to numpy array function to override default tweening logic
 def clipToNpArrWind(clip, ms, containerW, containerH, precision, parent, globalArgs={}):
