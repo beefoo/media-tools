@@ -58,12 +58,14 @@ def getCounts(arr, key):
 
 def groupList(arr, groupBy, sort=False, desc=True):
     groups = []
-    arr = sorted(arr, key=lambda item: item[groupBy])
-    for key, items in itertools.groupby(arr, lambda item: item[groupBy]):
+    arr = sorted(arr, key=itemgetter(groupBy))
+    for key, items in itertools.groupby(arr, key=itemgetter(groupBy)):
         group = {}
+        litems = list(items)
+        count = len(litems)
         group[groupBy] = key
-        group["items"] = list(items)
-        group["count"] = len(list(items))
+        group["items"] = litems
+        group["count"] = count
         groups.append(group)
     if sort:
         reversed = desc
