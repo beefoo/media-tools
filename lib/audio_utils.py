@@ -530,7 +530,7 @@ def stretchSound(sound, amount=2.0, fade_out=0.8):
     samples = samples.astype(np.int16)
     samples = samples * (1.0/32768.0)
     if channels > 1:
-        samples = samples.reshape(channels, len(samples)/channels, order='F')
+        samples = samples.reshape(channels, roundInt(1.0*len(samples)/channels), order='F')
     newData = paulStretch(frame_rate, samples, amount)
     newData = array.array(sound.array_type, newData)
     newSound = sound._spawn(newData)

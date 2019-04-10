@@ -22,6 +22,7 @@ from lib.collection_utils import *
 from lib.composition_utils import *
 from lib.io_utils import *
 from lib.math_utils import *
+from lib.processing_utils import *
 from lib.sampler import *
 from lib.statistics_utils import *
 from lib.video_utils import *
@@ -103,6 +104,7 @@ sy0 = roundInt(1.0 * nyBound0 * (h-1))
 sy1 = roundInt(1.0 * nyBound1 * (h-1))
 windData = windData[sy0:sy1,sx0:sx1,:]
 print("Wind data shape after slice = %s x %s x %s" % windData.shape)
+stepTime = logTime(stepTime, "Read wind data")
 
 # # Write wind data to image
 # u = windData[:,:,0]
@@ -129,7 +131,7 @@ print("Wind data shape after slice = %s x %s x %s" % windData.shape)
 gridCols = min(startGridW, endGridW)
 col0 = roundInt((gridW - gridCols) * 0.5)
 playCols = set([roundInt(1.0*gridCols/(a.PLAY_COLS+1)*(i+1)+col0) for i in range(a.PLAY_COLS)])
-playClips = [c for c in clips if clip.props["col"] in playCols]
+playClips = [c for c in clips if c.props["col"] in playCols]
 # assign random variance
 for i, clip in enumerate(playClips):
     varianceMs = pseudoRandom(i+1, (0, a.INITIAL_VARIANCE_MS), isInt=True)
@@ -248,12 +250,13 @@ startMs = a.PAD_START
 endMs = startMs + a.DURATION_MS
 durationMs = endMs
 
+print("Calculating audio sequence...")
 totalFrames = msToFrame(a.DURATION_MS, a.FPS)
 currentBeat = -1
 for f in range(totalFrames):
     frame = f + 1
     frameMs = frameToMs(frame, a.FPS)
-    frameBeat = floorInt(frameMs / a.BEAT_MS)
+    frameBeat = floorInt(1.0 * frameMs / a.BEAT_MS)
     nprogress = 1.0 * f / (totalFrames-1)
     # New beat, reset clips
     isNewBeat = False
@@ -264,14 +267,14 @@ for f in range(totalFrames):
     for clip in playClips:
         x, y, alpha, rotation = clipPositionAtTime(a, clip, ms, windData, startMs, endMs)
         # keep track of position if this is a new beat
-        if isNewBeat:
+        if isNewBeat and x is not None and y is not None:
             clip.setState("frameX", x)
             clip.setState("frameY", y)
     if isNewBeat:
         xs = [clip.getState("frameX") for c in playClips]
         xRange = (min(xs), max(xs))
         for clip in playClips:
-            if clip.vector.isVisible(a.WIDTH, a.HEIGHT, ms):
+            if clip.vector.isVisible(a.WIDTH, a.HEIGHT, ms) and clip.getState("frameX") is not None:
                 clipMs = roundInt(ms + clip.getState("varianceMs") + norm(clip.getState("frameX"), xRange) * a.BEAT_MS)
                 clip.queuePlay(clipMs, {
                     "start": clip.props["audioStart"],
@@ -292,6 +295,8 @@ for f in range(totalFrames):
                 clip.queueTween(clipMs+leftMs, rightMs, [
                     ("brightness", a.BRIGHTNESS_RANGE[1], a.BRIGHTNESS_RANGE[0], "sin")
                 ])
+    printProgress(frame, totalFrames)
+stepTime = logTime(stepTime, "Determine audio sequence")
 
 # reset the clips that we played
 resetClips(playClips)
