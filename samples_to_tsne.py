@@ -27,7 +27,7 @@ parser.add_argument('-in', dest="INPUT_FILE", default="tmp/samples.csv", help="I
 parser.add_argument('-dir', dest="AUDIO_DIRECTORY", default="media/sample/", help="Input file")
 parser.add_argument('-out', dest="OUTPUT_FILE", default="", help="CSV output file; leave blank if we should update input file")
 parser.add_argument('-append', dest="APPEND", default=1, type=int, help="Append to existing data?")
-parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite existing data?")
+parser.add_argument('-overwrite', dest="OVERWRITE", default=0, type=int, help="Overwrite existing data?")
 parser.add_argument('-components', dest="COMPONENTS", default=1, type=int, help="Number of components (1, 2, or 3)")
 parser.add_argument('-rate', dest="LEARNING_RATE", default=150, type=int, help="Learning rate: increase if too dense, decrease if too uniform")
 parser.add_argument('-angle', dest="ANGLE", default=0.1, type=float, help="Angle: increase to make faster, decrease to make more accurate")
@@ -43,7 +43,7 @@ INPUT_FILE = args.INPUT_FILE
 AUDIO_DIRECTORY = args.AUDIO_DIRECTORY
 OUTPUT_FILE = args.OUTPUT_FILE if len(args.OUTPUT_FILE) > 0 else INPUT_FILE
 APPEND = args.APPEND > 0
-OVERWRITE = args.OVERWRITE
+OVERWRITE = args.OVERWRITE > 0
 COMPONENTS = args.COMPONENTS
 LEARNING_RATE = args.LEARNING_RATE
 ANGLE = args.ANGLE

@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+# python3 sort_audio.py -overwrite 1 -pyv python3 -in media/sample/LivingSt1958.mp4
+
 import argparse
 import os
 import subprocess
@@ -13,6 +15,7 @@ parser.add_argument('-uid', dest="UID", default="auto", help="ID used for creati
 parser.add_argument('-out', dest="OUTPUT_FILE", default="output/%s.mp3", help="ID used for creating temporary and output files")
 parser.add_argument('-overwrite', dest="OVERWRITE", default="0", help="Overwrite existing data?")
 parser.add_argument('-plot', dest="PLOT", default="0", help="Plot features?")
+parser.add_argument('-pyv', dest="PYTHON_NAME", default="python", help="Name of python command")
 parser.add_argument('-steps', dest="STEPS", default=3, type=int, help="How many steps to complete (1-3)")
 args = parser.parse_args()
 
@@ -23,6 +26,7 @@ OVERWRITE = args.OVERWRITE
 OUTPUT_FILE = args.OUTPUT_FILE
 PLOT = args.PLOT
 STEPS = args.STEPS
+PYTHON_NAME = args.PYTHON_NAME
 TMP_DIR = "tmp/"
 
 # name temporary files after the input file(s)
@@ -38,7 +42,7 @@ if "%s" in OUTPUT_FILE:
 
 # Create samples
 samplePath = TMP_DIR + UID + "_samples.csv"
-command = ['python', '-W', 'ignore', 'audio_to_samples.py', '-in', INPUT_FILES, '-out', samplePath, '-overwrite', OVERWRITE]
+command = [PYTHON_NAME, '-W', 'ignore', 'audio_to_samples.py', '-in', INPUT_FILES, '-out', samplePath, '-overwrite', OVERWRITE]
 print("------")
 print(" ".join(command))
 finished = subprocess.check_call(command)
@@ -49,7 +53,7 @@ if STEPS <= 1:
 dir = os.path.dirname(INPUT_FILES) + "/"
 featurePath = samplePath # simply append features to sample path
 featureScript = "samples_to_tsne.py" if "tsne" in SORT_BY else "samples_to_features.py"
-command = ['python', '-W', 'ignore', featureScript, '-in', samplePath, '-dir', dir, '-out', featurePath, '-plot', PLOT, '-overwrite', OVERWRITE]
+command = [PYTHON_NAME, '-W', 'ignore', featureScript, '-in', samplePath, '-dir', dir, '-out', featurePath, '-plot', PLOT, '-overwrite', OVERWRITE]
 print("------")
 print(" ".join(command))
 finished = subprocess.check_call(command)
@@ -57,7 +61,7 @@ if STEPS <= 2:
     sys.exit()
 
 # Compile features into media file
-command = ['python', '-W', 'ignore', "features_to_audio.py", '-in', featurePath, '-dir', dir, '-sort', SORT_BY, '-out', OUTPUT_FILE]
+command = [PYTHON_NAME, '-W', 'ignore', "features_to_audio.py", '-in', featurePath, '-dir', dir, '-sort', SORT_BY, '-out', OUTPUT_FILE]
 print("------")
 print(" ".join(command))
 finished = subprocess.check_call(command)

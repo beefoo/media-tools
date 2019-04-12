@@ -26,7 +26,7 @@ parser.add_argument('-samples', dest="SAMPLES", default=-1, type=int, help="Max 
 parser.add_argument('-min', dest="MIN_DUR", default=80, type=int, help="Minimum sample duration in ms")
 parser.add_argument('-max', dest="MAX_DUR", default=1000, type=int, help="Maximum sample duration in ms, -1 for no max")
 parser.add_argument('-out', dest="OUTPUT_FILE", default="tmp/samples.csv", help="CSV output file")
-parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite existing data?")
+parser.add_argument('-overwrite', dest="OVERWRITE", default=0, type=int, help="Overwrite existing data?")
 
 # arguments for managing large media sets
 parser.add_argument('-features', dest="FEATURES", action="store_true", help="Retrieve features?")

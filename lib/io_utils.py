@@ -72,8 +72,6 @@ def getFilesFromString(a):
     # Filter out files with no filename, duration, or audio
     if fromManifest:
         files = prependAll(files, ("filename", a.MEDIA_DIRECTORY))
-    else:
-        files = [{"filename": f} for f in files]
 
     return (fieldNames, files, fileCount)
 
