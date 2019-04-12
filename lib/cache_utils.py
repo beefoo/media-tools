@@ -21,6 +21,13 @@ def loadCacheFile(fn, compressed=True):
         f.close()
     return (loaded, result)
 
+def removeCacheFile(fn, compressed=True):
+    if compressed and not fn.endswith(".bz2"):
+        fn += ".bz2"
+    if os.path.isfile(fn):
+        os.remove(fn)
+        print("Removed %s" % fn)
+
 def saveCacheFile(fn, data, overwrite=False, compressed=True):
     if compressed and not fn.endswith(".bz2"):
         fn += ".bz2"

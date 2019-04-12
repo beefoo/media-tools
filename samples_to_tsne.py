@@ -5,6 +5,7 @@
 import argparse
 import csv
 from lib.audio_utils import *
+from lib.cache_utils import *
 from lib.io_utils import *
 from lib.math_utils import *
 from lib.processing_utils import *
@@ -30,8 +31,10 @@ parser.add_argument('-overwrite', dest="OVERWRITE", default=0, type=int, help="O
 parser.add_argument('-components', dest="COMPONENTS", default=1, type=int, help="Number of components (1, 2, or 3)")
 parser.add_argument('-rate', dest="LEARNING_RATE", default=150, type=int, help="Learning rate: increase if too dense, decrease if too uniform")
 parser.add_argument('-angle', dest="ANGLE", default=0.1, type=float, help="Angle: increase to make faster, decrease to make more accurate")
+parser.add_argument('-prefix', dest="PREFIX", default="tsne", help="Prefix for the key names for output")
 parser.add_argument('-plot', dest="PLOT", default=0, type=int, help="Show plot?")
 parser.add_argument('-cache', dest="CACHE_FILE", default="", help="Cache file")
+parser.add_argument('-rcache', dest="REMOVE_CACHE", action="store_true", help="Remove cache file after finished?")
 parser.add_argument('-threads', dest="THREADS", default=4, type=int, help="Number of threads")
 args = parser.parse_args()
 
@@ -51,7 +54,7 @@ JOBS = 4
 
 # TSNE config
 VERBOSITY = 2
-DIMS = ["tsne", "tsne2", "tsne3"]
+DIMS = [args.PREFIX, args.PREFIX+"2", args.PREFIX+"3"]
 FEATURES_TO_ADD = DIMS[:COMPONENTS]
 
 # Read files
@@ -109,11 +112,13 @@ def doTSNE(p):
 
     return featureVectors
 
-if CACHE_FILE and os.path.isfile(CACHE_FILE):
-    featureVectors = pickle.load(open(CACHE_FILE, 'rb'))
-    print("Read %s vectors from file" % len(featureVectors))
+loaded = False
+featureVectors = []
 
-else:
+if CACHE_FILE:
+    loaded, featureVectors = loadCacheFile(CACHE_FILE)
+
+if not loaded:
     # files = files[:1]
     # for fn in files:
     #     doTSNE(fn)
@@ -130,7 +135,7 @@ else:
     data = [d for d in data if True not in np.isnan(d["featureVector"])]
     featureVectors = [d["featureVector"] for d in data]
     if CACHE_FILE:
-        pickle.dump(featureVectors, open(CACHE_FILE, 'wb'))
+        saveCacheFile(CACHE_FILE, featureVectors, overwrite=True)
 
 featureVectors = np.array(featureVectors)
 tsne = TSNE(n_components=COMPONENTS, learning_rate=LEARNING_RATE, verbose=VERBOSITY, angle=ANGLE, n_jobs=JOBS)
@@ -161,8 +166,8 @@ for i, d in enumerate(rows):
 
 writeCsv(OUTPUT_FILE, rows, headings=headings)
 
-if CACHE_FILE and os.path.isfile(CACHE_FILE):
-    os.remove(CACHE_FILE)
+if CACHE_FILE and args.REMOVE_CACHE:
+    removeCacheFile(CACHE_FILE)
 
 if PLOT and 1 <= COMPONENTS <= 2:
     plt.figure(figsize = (10,10))
