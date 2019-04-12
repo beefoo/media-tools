@@ -102,7 +102,7 @@ def makeDirectories(filenames):
         filenames = [filenames]
     for filename in filenames:
         dirname = os.path.dirname(filename)
-        if not os.path.exists(dirname):
+        if len(dirname) > 0 and not os.path.exists(dirname):
             os.makedirs(dirname)
 
 def parseHeadings(arr, headings):
