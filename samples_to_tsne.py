@@ -71,12 +71,14 @@ if APPEND and set(FEATURES_TO_ADD).issubset(set(fieldNames)) and not OVERWRITE:
     sys.exit()
 
 for i, row in enumerate(rows):
+    rows[i]["index"] = i
     rows[i]["path"] = AUDIO_DIRECTORY + row["filename"]
 
 # Make sure output dirs exist
 makeDirectories(OUTPUT_FILE)
 
 # find unique filepaths
+print("Matching samples to files...")
 filepaths = list(set([row["path"] for row in rows]))
 params = [{
     "samples": [row for row in rows if row["path"]==fp],
@@ -99,6 +101,7 @@ def doTSNE(p):
     for sample in samples:
         featureVector = getFeatureVector(y, sr, sample["start"], sample["dur"])
         featureVectors.append({
+            "index": sample["index"],
             "filename": sample["filename"],
             "start": sample["start"],
             "dur": sample["dur"],
@@ -106,11 +109,12 @@ def doTSNE(p):
         })
 
         progress += 1
-        sys.stdout.write('\r')
-        sys.stdout.write("%s%%" % round(1.0*progress/rowCount*100,1))
-        sys.stdout.flush()
+        printProgress(progress, rowCount)
 
     return featureVectors
+
+# doTSNE(params[0])
+# sys.exit()
 
 loaded = False
 featureVectors = []
@@ -119,9 +123,7 @@ if CACHE_FILE:
     loaded, featureVectors = loadCacheFile(CACHE_FILE)
 
 if not loaded:
-    # files = files[:1]
-    # for fn in files:
-    #     doTSNE(fn)
+    print("No cache, rebuilding features...")
     threads = getThreadCount(args.THREADS)
     pool = ThreadPool(threads)
     data = pool.map(doTSNE, params)
@@ -131,17 +133,17 @@ if not loaded:
 
     # flatten data
     data = [item for sublist in data for item in sublist]
-    len0 = len(data)
-    # remove invalid vectors
-    data = [d for d in data if True not in np.isnan(d["featureVector"])]
-    len1 = len(data)
+
+    # replace NaN in feature vectors
+    for i, d in enumerate(data):
+        if True in np.isnan(d["featureVector"]):
+            print("Warning: index %s contains NaN in feature vector" % i)
+            data[i]["featureVector"] = np.nan_to_num(d["featureVector"])
+
+    data = sorted(data, key=lambda d: d["index"])
     featureVectors = [d["featureVector"] for d in data]
     if CACHE_FILE:
         saveCacheFile(CACHE_FILE, featureVectors, overwrite=True)
-
-    if len0 > len1:
-        print("Warning %s entries with invalid feature vectors" % (len0-len1))
-        sys.exit()
 
 featureVectors = np.array(featureVectors)
 tsne = TSNE(n_components=COMPONENTS, learning_rate=LEARNING_RATE, verbose=VERBOSITY, angle=ANGLE, n_jobs=JOBS)
@@ -154,15 +156,6 @@ modelNorm = []
 for i in range(COMPONENTS):
     if DIMS[i] not in headings:
         headings.append(DIMS[i])
-    # # normalize model between 0 and 1
-    # if COMPONENTS > 1:
-    #     values = model[:,i]
-    # else:
-    #     values = model[:]
-    # minValue = np.min(values)
-    # maxValue = np.max(values)
-    # valuesNorm = (values - minValue) / (maxValue - minValue)
-    # modelNorm.append(valuesNorm)
 
 # Add results to data
 for i, d in enumerate(rows):
