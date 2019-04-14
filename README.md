@@ -62,7 +62,7 @@ python scrapers/internet_archive/download_media.py -in "tmp/ia_fedflixnara.csv" 
 
 ### 3. File features
 
-Then retrieve the file features: video duration, has audio track, has video track. By default, it opens the file to get an accurate duration. You can speed this up by just looking at the metadata (less accurate) by adding flag `-acc 0`.
+Then retrieve the file features: video duration, has audio track, has video track. By default, it opens the file to get an accurate duration. You can speed this up by just looking at the metadata (less accurate) by adding flag `-fast`.
 
 ```
 python get_file_features.py -in "tmp/ia_fedflixnara.csv" -dir "tmp/downloads/ia_fedflixnara/"
@@ -75,7 +75,7 @@ Note that checking for an audio track doesn't guarantee to catch all silent film
 Now we analyze each movie file's audio track for "samples." These essentially are clips of audio that have a distinct [onset](https://en.wikipedia.org/wiki/Onset_(audio)) and release. This could be thought of as a distinct sonic "pulse" or syllable in the case of speech. The `-features` flag adds an analysis step that looks for each sample's volume (`power`) and pitch (`hz` or frequency.) `note` and `octave` are added for convenience, and the `clarity` feature attempts to measure how distinct a particular note is (i.e. very clear harmonic bands.) Samples with high clarity values should be good candidates for musical notes.
 
 ```
-python audio_to_samples.py -in "tmp/ia_fedflixnara.csv" -dir "tmp/downloads/ia_fedflixnara/" -out "tmp/sampledata/ia_fedflixnara/%s.csv" -features 1
+python audio_to_samples.py -in "tmp/ia_fedflixnara.csv" -dir "tmp/downloads/ia_fedflixnara/" -out "tmp/sampledata/ia_fedflixnara/%s.csv" -features
 ```
 
 The above command will save _all_ samples to .csv files, where each media file will have one .csv file with its respective sample data. This will take a long time for large collections.

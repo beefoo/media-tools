@@ -13,7 +13,7 @@ parser.add_argument('-in', dest="INPUT_FILE", default="tmp/ia_politicaladarchive
 parser.add_argument('-dir', dest="MEDIA_DIRECTORY", default="media/downloads/ia_politicaladarchive/", help="Input dir")
 parser.add_argument('-fk', dest="FILENAME_KEY", default="filename", help="Key to retrieve filename")
 parser.add_argument('-dk', dest="DURATION_KEY", default="duration", help="Key to save duration")
-parser.add_argument('-acc', dest="ACCURATE", default=1, type=int, help="Check duration accurately by opening it? (takes longer)")
+parser.add_argument('-fast', dest="FAST_NOT_ACCURATE", action="store_true", help="Check duration accurately by opening it? (takes longer)")
 parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite existing non-zero durations?")
 a = parser.parse_args()
 
@@ -21,7 +21,7 @@ a = parser.parse_args()
 INPUT_FILE = a.INPUT_FILE
 MEDIA_DIRECTORY = a.MEDIA_DIRECTORY
 FILENAME_KEY = a.FILENAME_KEY
-ACCURATE = a.ACCURATE > 0
+ACCURATE = (not a.FAST_NOT_ACCURATE)
 
 keysToAdd = ["duration", "hasAudio", "hasVideo"]
 

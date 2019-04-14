@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# python3 sort_audio.py -overwrite 1 -pyv python3 -in media/sample/LivingSt1958.mp4
+# python3 sort_audio.py -overwrite -pyv python3 -in media/sample/LivingSt1958.mp4
 
 import argparse
 import os
@@ -13,8 +13,8 @@ parser.add_argument('-in', dest="INPUT_FILES", default="media/sample/bird.wav", 
 parser.add_argument('-sort', dest="SORT_BY", default="tsne=asc", help="What to sort by: tsne, hz, power, dur, clarity")
 parser.add_argument('-uid', dest="UID", default="auto", help="ID used for creating temporary and output files")
 parser.add_argument('-out', dest="OUTPUT_FILE", default="output/%s.mp3", help="ID used for creating temporary and output files")
-parser.add_argument('-overwrite', dest="OVERWRITE", default="0", help="Overwrite existing data?")
-parser.add_argument('-plot', dest="PLOT", default="0", help="Plot features?")
+parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite existing data?")
+parser.add_argument('-plot', dest="PLOT", action="store_true", help="Plot features?")
 parser.add_argument('-pyv', dest="PYTHON_NAME", default="python", help="Name of python command")
 parser.add_argument('-steps', dest="STEPS", default=3, type=int, help="How many steps to complete (1-3)")
 args = parser.parse_args()
@@ -42,7 +42,9 @@ if "%s" in OUTPUT_FILE:
 
 # Create samples
 samplePath = TMP_DIR + UID + "_samples.csv"
-command = [PYTHON_NAME, '-W', 'ignore', 'audio_to_samples.py', '-in', INPUT_FILES, '-out', samplePath, '-overwrite', OVERWRITE]
+command = [PYTHON_NAME, '-W', 'ignore', 'audio_to_samples.py', '-in', INPUT_FILES, '-out', samplePath]
+if OVERWRITE:
+    command.append('-overwrite')
 print("------")
 print(" ".join(command))
 finished = subprocess.check_call(command)
@@ -53,7 +55,11 @@ if STEPS <= 1:
 dir = os.path.dirname(INPUT_FILES) + "/"
 featurePath = samplePath # simply append features to sample path
 featureScript = "samples_to_tsne.py" if "tsne" in SORT_BY else "samples_to_features.py"
-command = [PYTHON_NAME, '-W', 'ignore', featureScript, '-in', samplePath, '-dir', dir, '-out', featurePath, '-plot', PLOT, '-overwrite', OVERWRITE]
+command = [PYTHON_NAME, '-W', 'ignore', featureScript, '-in', samplePath, '-dir', dir, '-out', featurePath]
+if OVERWRITE:
+    command.append('-overwrite')
+if PLOT:
+    command.append('-plot')
 print("------")
 print(" ".join(command))
 finished = subprocess.check_call(command)
