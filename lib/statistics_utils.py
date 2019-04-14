@@ -12,9 +12,14 @@ def addClustersToList(arr, keyX, keyY, nClusters=8, outKey="cluster"):
         arr[i][outKey] = y_kmeans[i]
     return arr, centers
 
-def getKMeansClusters(xy, nClusters=8):
+def getKMeansClusters(xy, nClusters=8, nRuns=20, randomState=8, nJobs=1):
     xy = np.array(xy)
-    kmeans = KMeans(n_clusters=nClusters)
+    kmeans = KMeans(
+        n_clusters=nClusters,
+        n_init=nRuns,
+        random_state=randomState, # make results deterministic
+        n_jobs=nJobs
+    )
     kmeans.fit(xy)
     y_kmeans = kmeans.predict(xy)
     centers = kmeans.cluster_centers_

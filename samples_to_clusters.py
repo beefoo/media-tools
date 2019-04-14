@@ -19,8 +19,10 @@ parser.add_argument('-props', dest="PROPS", default="tsne,tsne2", help="X and Y 
 parser.add_argument('-sort', dest="SORT", default="clarity=desc=0.5&power=desc", help="Query string to sort by")
 parser.add_argument('-lim', dest="LIMIT", default=-1, type=int, help="Target total sample count, -1 for everything")
 parser.add_argument('-clusters', dest="CLUSTERS", default=8, type=int, help="Number of clusters?")
-parser.add_argument('-plot', dest="PLOT", default=0, type=int, help="Plot the result?")
-parser.add_argument('-write', dest="WRITE_TO_FILE", default=0, type=int, help="Write the result to file?")
+parser.add_argument('-plot', dest="PLOT", action="store_true", help="Plot the result?")
+parser.add_argument('-threads', dest="THREADS", default=4, type=int, help="Number of parallel jobs")
+parser.add_argument('-runs', dest="RUNS", default=20, type=int, help="Number of times to run k-means to determine best centroids")
+parser.add_argument('-write', dest="WRITE_TO_FILE", action="store_true", help="Write the result to file?")
 args = parser.parse_args()
 
 # Parse arguments
@@ -29,8 +31,10 @@ PROP1, PROP2 = tuple([p for p in args.PROPS.strip().split(",")])
 SORT = args.SORT
 LIMIT = args.LIMIT
 CLUSTERS = args.CLUSTERS
-PLOT = args.PLOT > 0
-WRITE_TO_FILE = args.WRITE_TO_FILE > 0
+PLOT = args.PLOT
+THREADS = args.THREADS
+RUNS = args.RUNS
+WRITE_TO_FILE = args.WRITE_TO_FILE
 
 # Read files
 fieldNames, samples = readCsv(INPUT_FILE)
@@ -44,7 +48,7 @@ if LIMIT > 0 and len(samples) > LIMIT:
 
 print("Performing k-means clustering...")
 xy = [(s[PROP1], s[PROP2]) for s in samples]
-y_kmeans, centers = getKMeansClusters(xy, nClusters=CLUSTERS)
+y_kmeans, centers = getKMeansClusters(xy, nClusters=CLUSTERS, nRuns=RUNS, nJobs=THREADS)
 print("Done.")
 
 # Write to file
@@ -61,6 +65,6 @@ if PLOT:
     from matplotlib import pyplot as plt
     xy = np.array(xy)
     plt.figure(figsize = (10,10))
-    plt.scatter(xy[:, 0], xy[:, 1], c=y_kmeans, s=10, cmap='viridis')
-    plt.scatter(centers[:, 0], centers[:, 1], c='red', s=60)
+    plt.scatter(xy[:, 0], xy[:, 1], c=y_kmeans, s=4, cmap='viridis')
+    plt.scatter(centers[:, 0], centers[:, 1], c='red', s=6)
     plt.show()
