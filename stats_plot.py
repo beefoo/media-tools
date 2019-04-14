@@ -6,6 +6,7 @@ import argparse
 import inspect
 import math
 from matplotlib import pyplot as plt
+import numpy as np
 import os
 from pprint import pprint
 import sys
@@ -26,11 +27,14 @@ args = parser.parse_args()
 
 # Parse arguments
 INPUT_FILE = args.INPUT_FILE
-PROP1, PROP2 = tuple([p for p in args.PROPS.strip().split(",")])
+PROPS = [p for p in args.PROPS.strip().split(",")]
 SORT = args.SORT
 LIMIT = args.LIMIT
 HIGHLIGHT = args.HIGHLIGHT
 LOG = args.LOG
+
+PROP1 = PROPS[0]
+PROP2 = PROPS[1] if len(PROPS) > 1 else None
 
 # Read files
 fieldNames, rows = readCsv(INPUT_FILE)
@@ -47,11 +51,20 @@ def log(value, base=1):
         base = math.e
     return math.log(value, base) if value > 0 else value
 
-x = [row[PROP1] for row in rows]
-y = [row[PROP2] for row in rows]
-if LOG > 0:
-    x = [log(row[PROP1], LOG) for row in rows]
-    y = [log(row[PROP2], LOG) for row in rows]
+x = []
+y = []
+if PROP2 is not None:
+    x = [row[PROP1] for row in rows]
+    y = [row[PROP2] for row in rows]
+    if LOG > 0:
+        x = [log(row[PROP1], LOG) for row in rows]
+        y = [log(row[PROP2], LOG) for row in rows]
+else:
+    y = [row[PROP1] for row in rows]
+    if LOG > 0:
+        y = [log(row[PROP1], LOG) for row in rows]
+    y = sorted(y)
+    x = np.linspace(0.0, 1.0, len(y))
 
 plt.figure(figsize = (10,10))
 if len(HIGHLIGHT) > 0:
