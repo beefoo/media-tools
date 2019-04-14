@@ -19,7 +19,7 @@ parser.add_argument('-dir', dest="AUDIO_DIRECTORY", default="media/sample/", hel
 parser.add_argument('-sort', dest="SORT", default="hz=asc", help="Sort string")
 parser.add_argument('-lim', dest="LIMIT", default=4096, type=int, help="Limit number of clips; -1 if all")
 parser.add_argument('-lsort', dest="LIMIT_SORT", default="power=desc=0.8&clarity=desc", help="Sort string if/before reducing clip size")
-parser.add_argument('-overlap', dest="OVERLAP", default=256, type=int, help="Overlap clips in milliseconds")
+parser.add_argument('-overlap', dest="OVERLAP", default=128, type=int, help="Overlap clips in milliseconds")
 parser.add_argument('-overlapp', dest="OVERLAP_PERCENT", default=0.5, type=float, help="Overlap clips in percentage of clip duration")
 parser.add_argument('-left', dest="PAD_LEFT", default=500, type=int, help="Pad left in milliseconds")
 parser.add_argument('-right', dest="PAD_RIGHT", default=2000, type=int, help="Pad right in milliseconds")
