@@ -31,7 +31,7 @@ addVideoArgs(parser)
 parser.add_argument('-grid', dest="GRID", default="128x128", help="Size of grid")
 parser.add_argument('-grid0', dest="START_GRID", default="128x128", help="Start size of grid")
 parser.add_argument('-grid1', dest="END_GRID", default="128x128", help="End size of grid")
-parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.4,1.0", help="Volume range")
+parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.2,6.0", help="Volume range")
 parser.add_argument('-lim', dest="LIMIT", default=4096, type=int, help="Limit number of clips; -1 if all")
 parser.add_argument('-lsort', dest="LIMIT_SORT", default="power=desc=0.8&clarity=desc", help="Sort string if/before reducing clip size")
 parser.add_argument('-props', dest="PROPS", default="tsne,tsne2", help="X and Y properties")
@@ -135,5 +135,8 @@ for i in range(count):
         ms += delta
         clips.append(clip)
 stepTime = logTime(stepTime, "Created sequence")
+
+for i, c in enumrate(clips):
+    c.setProp("index", i)
 
 processComposition(a, clips, ms, sampler, stepTime, startTime)
