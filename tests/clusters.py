@@ -76,7 +76,7 @@ for i, s in enumerate(samples):
     samples[i]["y"] = lerp((SIZE*0.5, a.HEIGHT-SIZE*0.5), s["ny"])
     samples[i]["width"] = SIZE
     samples[i]["height"] = SIZE
-    samples[i]["brightness"] = a.BRIGHTNESS_RANGE[0]
+    samples[i]["alpha"] = 0.0
 
 xRange = (xy[:,0].min(), xy[:,0].max())
 yRange = (xy[:,1].min(), xy[:,1].max())
@@ -95,7 +95,20 @@ for i, c in enumerate(clusters):
     csamples = sorted(c["items"], key=lambda s: s["stsne"])
     clusters[i]["std"] = np.std([distance(cx, cy, s["x"], s["y"]) for s in csamples])
     clusters[i]["medianHz"] = np.median([s["hz"] for s in csamples])
-    clusters[i]["clips"] = samplesToClips(csamples)
+    cclips = samplesToClips(csamples)
+    # assign start times
+    ms = 0
+    ccount = len(cclips)
+    for j, c in enumerate(cclips):
+        nclip = 1.0 * j / (ccount-1)
+        c.setState("volume", lerp(a.VOLUME_RANGE, easeSinInOutBell(nclip)))
+        c.setState("startMs", ms)
+        delta = min(a.OVERLAP, roundInt(c.props["audioDur"] * a.OVERLAP_PERCENT))
+        if nclip >= 1.0:
+            delta = c.props["audioDur"]
+        ms += delta
+    clusters[i]["clips"] = cclips
+    clusters[i]["dur"] = ms
 stepTime = logTime(stepTime, "Samples to clips")
 
 # choose clusters
@@ -106,20 +119,25 @@ clusters = sortBy(clusters, [
 clusters = sorted(clusters, key=lambda c: c["medianHz"])
 count = len(clusters)
 
+baseImage = clipsToFrame({
+        "filename": False,
+        "width": a.WIDTH,
+        "height": a.HEIGHT
+    },
+    samplesToClips(samples),
+    loadVidoPixelDataDebug(clipCount=len(samples)))
+
 clips = []
 ms = a.PAD_START
 for i in range(count):
-    # alternate between lower and higher hz
-    cluster = clusters.pop(-1) if i % 2 > 0 else clusters.pop(0)
-    ccount = len(cluster["clips"])
-    cdur = 0
+    # cluster = clusters.pop(-1) if i % 2 > 0 else clusters.pop(0) # alternate between lower and higher hz
+    cluster = clusters[i]
     for j, clip in enumerate(cluster["clips"]):
-        nclip = 1.0 * j / (ccount-1)
-        volume = lerp(a.VOLUME_RANGE, easeSinInOutBell(nclip))
-        clip.queuePlay(ms, {
+        clipMs = ms + clip.getState("startMs")
+        clip.queuePlay(clipMs, {
             "start": clip.props["audioStart"],
             "dur": clip.props["audioDur"],
-            "volume": volume,
+            "volume": clip.getState("volume"),
             "fadeOut": clip.props["fadeOut"],
             "fadeIn": clip.props["fadeIn"],
             "pan": 0.0,
@@ -128,21 +146,22 @@ for i in range(count):
         })
         leftMs = roundInt(clip.props["renderDur"] * 0.2)
         rightMs = clip.props["renderDur"] - leftMs
-        clip.queueTween(ms, leftMs, [
-            ("brightness", 0, a.BRIGHTNESS_RANGE[1], "sin")
+        clip.queueTween(clipMs, leftMs, [
+            ("alpha", 0.0, 1.0, "sin")
         ])
-        clip.queueTween(ms+leftMs, rightMs, [
-            ("brightness", a.BRIGHTNESS_RANGE[1], a.BRIGHTNESS_RANGE[0], "sin")
+        clip.queueTween(clipMs+leftMs, rightMs, [
+            ("alpha", 1.0, 0.0, "sin")
         ])
-        delta = min(a.OVERLAP, roundInt(clip.props["audioDur"] * a.OVERLAP_PERCENT))
-        ms += delta
         clips.append(clip)
-        cdur += delta
     if i < (count-1):
-        ms -= roundInt(cdur * a.CLUSTER_OVERLAP_PERCENT)
+        nextCluster = clusters[i+1]
+        cdur = min(cluster["dur"], nextCluster["dur"])
+        ms = ms + cluster["dur"] - roundInt(cdur * a.CLUSTER_OVERLAP_PERCENT)
+    else:
+        ms += cluster["dur"]
 stepTime = logTime(stepTime, "Created sequence")
 
 for i, c in enumerate(clips):
     c.setProp("index", i)
 
-processComposition(a, clips, ms, sampler, stepTime, startTime)
+processComposition(a, clips, ms, sampler, stepTime, startTime, baseImage=baseImage)
