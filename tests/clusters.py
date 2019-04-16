@@ -31,7 +31,7 @@ addVideoArgs(parser)
 parser.add_argument('-grid', dest="GRID", default="128x128", help="Size of grid")
 parser.add_argument('-grid0', dest="START_GRID", default="128x128", help="Start size of grid")
 parser.add_argument('-grid1', dest="END_GRID", default="128x128", help="End size of grid")
-parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.1,6.0", help="Volume range")
+parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.1,0.6", help="Volume range")
 parser.add_argument('-lim', dest="LIMIT", default=4096, type=int, help="Limit number of clips; -1 if all")
 parser.add_argument('-lsort', dest="LIMIT_SORT", default="power=desc=0.8&clarity=desc", help="Sort string if/before reducing clip size")
 parser.add_argument('-props', dest="PROPS", default="tsne,tsne2", help="X and Y properties")
@@ -46,10 +46,11 @@ parseVideoArgs(a)
 aa = vars(a)
 aa["OUTPUT_FRAME"] = "tmp/cluster_frames/frame.%s.png"
 aa["OUTPUT_FILE"] = "output/cluster_test.mp4"
+aa["AUDIO_OUTPUT_FILE"] = "output/cluster_test.mp3"
 aa["CACHE_DIR"] = "tmp/cluster_cache/"
 aa["CACHE_KEY"] = "cluster_test"
 aa["DEBUG"] = True
-aa["OVERWRITE"] = True
+# aa["OVERWRITE"] = True
 
 PROP1, PROP2 = tuple([p for p in a.PROPS.strip().split(",")])
 SIZE = 4
