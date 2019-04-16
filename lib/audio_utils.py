@@ -78,22 +78,22 @@ def analyzeAudio(fn, start=0, dur=250, findSamples=False):
 def applyAudioProperties(audio, props, sfx=True, fxPad=3000):
     p = props
     if "matchDb" in p and p["matchDb"] > -9999:
-        audio = matchDb(audio, i["matchDb"])
+        audio = matchDb(audio, p["matchDb"])
     if "maxDb" in p and p["maxDb"] > -9999:
-        audio = maxDb(audio, i["maxDb"])
+        audio = maxDb(audio, p["maxDb"])
     if "reverse" in p and p["reverse"]:
         audio = audio.reverse()
     if "db" in p and p["db"] != 0.0:
-        audio = audio.apply_gain(i["db"])
+        audio = audio.apply_gain(p["db"])
     if "pan" in p and p["pan"] != 0.0:
-        audio = audio.pan(i["pan"])
+        audio = audio.pan(p["pan"])
     if "fadeIn" in p and p["fadeIn"] > 0:
-        audio = audio.fade_in(i["fadeIn"])
+        audio = audio.fade_in(p["fadeIn"])
     if "fadeOut" in p and p["fadeOut"] > 0:
-        audio = audio.fade_out(i["fadeOut"])
+        audio = audio.fade_out(p["fadeOut"])
     if sfx:
         if "stretch" in p and p["stretch"] > 1.0:
-            audio = stretchSound(audio, i["stretch"])
+            audio = stretchSound(audio, p["stretch"])
         effects = []
         for effect in ["reverb", "distortion", "highpass", "lowpass"]:
             if effect in p and p[effect] > 0:
