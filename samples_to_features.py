@@ -5,6 +5,7 @@ import csv
 from lib.audio_utils import *
 from lib.io_utils import *
 from lib.math_utils import *
+from lib.processing_utils import *
 import librosa
 from matplotlib import pyplot as plt
 from multiprocessing import Pool
@@ -17,20 +18,22 @@ import sys
 # input
 parser = argparse.ArgumentParser()
 parser.add_argument('-in', dest="INPUT_FILE", default="tmp/samples.csv", help="Input file")
-parser.add_argument('-dir', dest="AUDIO_DIRECTORY", default="media/sample/", help="Input file")
+parser.add_argument('-dir', dest="MEDIA_DIRECTORY", default="media/sample/", help="Input file")
 parser.add_argument('-out', dest="OUTPUT_FILE", default="tmp/samples_features.csv", help="CSV output file")
 parser.add_argument('-append', dest="APPEND", default=1, type=int, help="Append to existing data?")
-parser.add_argument('-overwrite', dest="OVERWRITE", default=0, type=int, help="Overwrite existing data?")
-parser.add_argument('-plot', dest="PLOT", default=0, type=int, help="Show plot?")
+parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite existing data?")
+parser.add_argument('-plot', dest="PLOT", action="store_true", help="Show plot?")
+parser.add_argument('-threads', dest="THREADS", default=4, type=int, help="Number of threads")
 args = parser.parse_args()
 
 # Parse arguments
 INPUT_FILE = args.INPUT_FILE
-AUDIO_DIRECTORY = args.AUDIO_DIRECTORY
+MEDIA_DIRECTORY = args.MEDIA_DIRECTORY
 OUTPUT_FILE = args.OUTPUT_FILE
 APPEND = args.APPEND > 0
-OVERWRITE = args.OVERWRITE > 0
-PLOT = args.PLOT > 0
+OVERWRITE = args.OVERWRITE
+PLOT = args.PLOT
+THREADS = args.THREADS
 
 FEATURES_TO_ADD = ["power", "hz", "clarity", "note", "octave"]
 
@@ -50,7 +53,7 @@ if APPEND and set(FEATURES_TO_ADD).issubset(set(fieldNames)) and not OVERWRITE:
     sys.exit()
 
 for i, row in enumerate(rows):
-    rows[i]["path"] = AUDIO_DIRECTORY + row["filename"]
+    rows[i]["path"] = MEDIA_DIRECTORY + row["filename"]
 
 # Make sure output dirs exist
 makeDirectories(OUTPUT_FILE)
@@ -73,7 +76,8 @@ def samplesToFeatures(p):
 # for p in params:
 #     samplesToFeatures(p)
 # sys.exit(1)
-pool = ThreadPool()
+threads = getThreadCount(THREADS)
+pool = ThreadPool(threads)
 data = pool.map(samplesToFeatures, params)
 pool.close()
 pool.join()
