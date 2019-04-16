@@ -92,29 +92,34 @@ def clipsToFrame(p, clips, pixelData, precision=3, customClipToArrFunction=None,
     ms = getValue(p, "ms", 1.0)
     overwrite = getValue(p, "overwrite", False)
     verbose = getValue(p, "verbose", False)
-    debug = getValue(p, "debug",False)
-    saveFrame = getValue(p, "saveFrame", True)
+    debug = getValue(p, "debug", False)
+    saveFrame = getValue(p, "saveFrame", filename)
 
-    frameAlpha = getValue(globalArgs, "frameAlpha", 1.0)
+    frameAlpha = getValue(globalArgs, "frameAlpha", None)
     isSequential = getValue(globalArgs, "isSequential", False)
 
     im = None
-    fileExists = os.path.isfile(filename) and not overwrite
+    fileExists = filename and os.path.isfile(filename) and not overwrite
     clipArr = None
+    returnValue = None
 
     if not fileExists and saveFrame or not saveFrame or isSequential:
         clipArr = clipsToNpArr(clips, ms, width, height, precision, customClipToArrFunction=customClipToArrFunction, globalArgs=globalArgs)
 
-    # frame already exists, read it directly
-    if not fileExists and saveFrame:
+    # frame does not exist, create frame image
+    if not fileExists:
         im = Image.new(mode="RGBA", size=(width, height), color=(0, 0, 0, 255))
         im = clipsToFrameGPU(clipArr, width, height, pixelData, precision, baseImage=baseImage, globalArgs=globalArgs)
         im = im.convert("RGB")
-        im.save(filename)
-        print("Saved frame %s" % filename)
+        # save if necessary
+        if saveFrame:
+            im.save(filename)
+            print("Saved frame %s" % filename)
+        if frameAlpha is None:
+            returnValue = im
 
-    returnValue = None
-    if 0.0 <= frameAlpha < 1.0:
+    # frame has alpha, so darken for next frame
+    if frameAlpha is not None and 0.0 <= frameAlpha < 1.0:
         if im is None:
             im = Image.open(filename)
         blackOverlay = Image.new(mode="RGB", size=im.size, color=(0, 0, 0))
@@ -648,20 +653,21 @@ def processFrames(params, clips, clipsPixelData, threads=1, precision=3, verbose
 
     frameAlpha = getValue(globalArgs, "frameAlpha", 1.0)
     isSequential = getValue(globalArgs, "isSequential", False)
+    baseImage = getValue(globalArgs, "baseImage", None)
     propagateFrames = (0.0 <= frameAlpha < 1.0)
     if propagateFrames:
         isSequential = True
 
     if threads > 1 and not isSequential:
         pool = ThreadPool(threads)
-        pclipsToFrame = partial(clipsToFrame, clips=clips, pixelData=clipsPixelData, precision=precision, customClipToArrFunction=customClipToArrFunction, globalArgs=globalArgs)
+        pclipsToFrame = partial(clipsToFrame, clips=clips, pixelData=clipsPixelData, precision=precision, customClipToArrFunction=customClipToArrFunction, baseImage=baseImage, globalArgs=globalArgs)
         pool.map(pclipsToFrame, params)
         pool.close()
         pool.join()
     else:
         prevImage = None
         for i, p in enumerate(params):
-            baseImage = prevImage if propagateFrames else None
+            baseImage = prevImage if propagateFrames else baseImage
             prevImage = clipsToFrame(p, clips=clips, pixelData=clipsPixelData, precision=precision, customClipToArrFunction=customClipToArrFunction, baseImage=baseImage, globalArgs=globalArgs)
             if verbose:
                 printProgress(i+1, count)
