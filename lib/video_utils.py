@@ -632,8 +632,6 @@ def parseVideoArgs(args):
     d["AUDIO_OUTPUT_FILE"] = args.OUTPUT_FILE.replace(".mp4", ".mp3")
     d["MS_PER_FRAME"] = frameToMs(1, args.FPS, False)
     d["CACHE_VIDEO"] = args.CACHE_VIDEO
-    d["MATCH_DB"] = args.MATCH_DB if args.MATCH_DB > -9999 else False
-    d["MAX_DB"] = args.MAX_DB if args.MAX_DB > -9999 else False
     d["VOLUME_RANGE"] = tuple([float(v) for v in args.VOLUME_RANGE.strip().split(",")])
     d["ALPHA_RANGE"] =  tuple([float(v) for v in args.ALPHA_RANGE.strip().split(",")])
     d["BRIGHTNESS_RANGE"] =  tuple([float(v) for v in args.BRIGHTNESS_RANGE.strip().split(",")])

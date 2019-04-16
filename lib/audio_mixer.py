@@ -20,36 +20,14 @@ def makeTrack(duration, instructions, segments, sfx=True, sampleWidth=2, sampleR
     for index, i in enumerate(instructions):
         segment = [s for s in segments if s["id"]==(i["start"], i["dur"])].pop()
         audio = segment["audio"]
-        if "matchDb" in i and i["matchDb"] is not False:
-            audio = matchDb(audio, i["matchDb"])
-        if "maxDb" in i and i["maxDb"] is not False:
-            audio = maxDb(audio, i["maxDb"])
-        if "reverse" in i and i["reverse"]:
-            audio = audio.reverse()
-        if "db" in i and i["db"] != 0.0:
-            audio = audio.apply_gain(i["db"])
-        if "pan" in i and i["pan"] != 0.0:
-            audio = audio.pan(i["pan"])
-        if "fadeIn" in i and i["fadeIn"] > 0:
-            audio = audio.fade_in(i["fadeIn"])
-        if "fadeOut" in i and i["fadeOut"] > 0:
-            audio = audio.fade_out(i["fadeOut"])
-        if sfx:
-            if "stretch" in i and i["stretch"] > 1.0:
-                audio = stretchSound(audio, i["stretch"])
-            effects = []
-            for effect in ["reverb", "distortion", "highpass", "lowpass"]:
-                if effect in i and i[effect] > 0:
-                    effects.append((effect, i[effect]))
-            if len(effects) > 0:
-                audio = addFx(audio, effects, pad=fxPad)
+        audio = applyAudioProperties(audio, i, sfx, fxPad)
         baseAudio = baseAudio.overlay(audio, position=i["ms"])
         sys.stdout.write('\r')
         sys.stdout.write("%s%%" % round(1.0*(index+1)/instructionCount*100,1))
         sys.stdout.flush()
     return baseAudio
 
-def mixAudio(instructions, duration, outfilename, sfx=True, sampleWidth=2, sampleRate=44100, channels=2, clipFadeIn=10, clipFadeOut=10, fxPad=3000):
+def mixAudio(instructions, duration, outfilename, sfx=True, sampleWidth=2, sampleRate=44100, channels=2, fxPad=3000):
     # remove instructions with no volume
     instructions = [i for i in instructions if "volume" not in i or i["volume"] > 0]
     audioFiles = list(set([i["filename"] for i in instructions]))
@@ -71,24 +49,11 @@ def mixAudio(instructions, duration, outfilename, sfx=True, sampleWidth=2, sampl
     print("Adding tracks...")
     for i, af in enumerate(audioFiles):
         filename = af["filename"]
-        audiofilename = getAudioFile(filename)
         audioFiles[i]["index"] = i
+
         # load audio file
-        fformat = audiofilename.split(".")[-1].lower()
-        audio = AudioSegment.from_file(audiofilename, format=fformat)
+        audio = getAudio(filename, sampleWidth, sampleRate, channels)
         audioDurationMs = len(audio)
-        # convert to stereo
-        if audio.channels != channels:
-            print("Warning: channels changed to %s from %s in %s" % (channels, audio.channels, filename))
-            audio = audio.set_channels(channels)
-        # convert sample width
-        if audio.sample_width != sampleWidth:
-            print("Warning: sample width changed to %s from %s in %s" % (sampleWidth, audio.sample_width, filename))
-            audio = audio.set_sample_width(sampleWidth)
-        # convert sample rate
-        if audio.frame_rate != sampleRate:
-            print("Warning: frame rate changed to %s from %s in %s" % (sampleRate, audio.frame_rate, filename))
-            audio = audio.set_frame_rate(sampleRate)
 
         # look through instructions to find unique clips
         clips = [(ii["start"], ii["dur"]) for ii in instructions if ii["filename"]==filename]
@@ -97,26 +62,9 @@ def mixAudio(instructions, duration, outfilename, sfx=True, sampleWidth=2, sampl
         # make segments from clips
         segments = []
         for clipStart, clipDur in clips:
-            clipEnd = None
-            if clipDur > 0:
-                clipEnd = clipStart + clipDur
-            else:
-                clipEnd = audioDurationMs
-
-            # check bounds
-            clipStart = lim(clipStart, (0, audioDurationMs))
-            clipEnd = lim(clipEnd, (0, audioDurationMs))
-            if clipStart >= clipEnd:
+            clip = getAudioClip(audio, clipStart, clipDur, audioDurationMs)
+            if clip is None:
                 continue
-            newClipDur = clipEnd - clipStart
-
-            clip = audio[clipStart:clipEnd]
-
-            # add a fade in/out to avoid clicking
-            fadeInDur = min(clipFadeIn, newClipDur)
-            fadeOutDur = min(clipFadeOut, newClipDur)
-            clip = clip.fade_in(fadeInDur).fade_out(fadeOutDur)
-
             segments.append({
                 "id": (clipStart, clipDur),
                 "start": clipStart,

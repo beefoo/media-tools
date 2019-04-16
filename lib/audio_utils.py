@@ -75,6 +75,74 @@ def analyzeAudio(fn, start=0, dur=250, findSamples=False):
     bandwidth = scaleAudioData(librosa.feature.spectral_bandwidth(y=y, sr=sr))
     return np.asarray([centroid, bandwidth])
 
+def applyAudioProperties(audio, props, sfx=True, fxPad=3000):
+    p = props
+    if "matchDb" in p and p["matchDb"] > -9999:
+        audio = matchDb(audio, i["matchDb"])
+    if "maxDb" in p and p["maxDb"] > -9999:
+        audio = maxDb(audio, i["maxDb"])
+    if "reverse" in p and p["reverse"]:
+        audio = audio.reverse()
+    if "db" in p and p["db"] != 0.0:
+        audio = audio.apply_gain(i["db"])
+    if "pan" in p and p["pan"] != 0.0:
+        audio = audio.pan(i["pan"])
+    if "fadeIn" in p and p["fadeIn"] > 0:
+        audio = audio.fade_in(i["fadeIn"])
+    if "fadeOut" in p and p["fadeOut"] > 0:
+        audio = audio.fade_out(i["fadeOut"])
+    if sfx:
+        if "stretch" in p and p["stretch"] > 1.0:
+            audio = stretchSound(audio, i["stretch"])
+        effects = []
+        for effect in ["reverb", "distortion", "highpass", "lowpass"]:
+            if effect in p and p[effect] > 0:
+                effects.append((effect, p[effect]))
+        if len(effects) > 0:
+            audio = addFx(audio, effects, pad=fxPad)
+    return audio
+
+def getAudio(filename, sampleWidth=2, sampleRate=44100, channels=2):
+    audiofilename = getAudioFile(filename)
+    fformat = audiofilename.split(".")[-1].lower()
+    audio = AudioSegment.from_file(audiofilename, format=fformat)
+    # convert to stereo
+    if audio.channels != channels:
+        print("Warning: channels changed to %s from %s in %s" % (channels, audio.channels, filename))
+        audio = audio.set_channels(channels)
+    # convert sample width
+    if audio.sample_width != sampleWidth:
+        print("Warning: sample width changed to %s from %s in %s" % (sampleWidth, audio.sample_width, filename))
+        audio = audio.set_sample_width(sampleWidth)
+    # convert sample rate
+    if audio.frame_rate != sampleRate:
+        print("Warning: frame rate changed to %s from %s in %s" % (sampleRate, audio.frame_rate, filename))
+        audio = audio.set_frame_rate(sampleRate)
+    return audio
+
+def getAudioClip(audio, clipStart, clipDur, audioDurationMs=None, clipFadeIn=10, clipFadeOut=10):
+    audioDurationMs = audioDurationMs if audioDurationMs is not None else len(audio)
+    clipEnd = None
+    if clipDur > 0:
+        clipEnd = clipStart + clipDur
+    else:
+        clipEnd = audioDurationMs
+    # check bounds
+    clipStart = lim(clipStart, (0, audioDurationMs))
+    clipEnd = lim(clipEnd, (0, audioDurationMs))
+    if clipStart >= clipEnd:
+        return None
+
+    newClipDur = clipEnd - clipStart
+    clip = audio[clipStart:clipEnd]
+
+    # add a fade in/out to avoid clicking
+    fadeInDur = min(clipFadeIn, newClipDur)
+    fadeOutDur = min(clipFadeOut, newClipDur)
+    clip = clip.fade_in(fadeInDur).fade_out(fadeOutDur)
+
+    return clip
+
 def getAudioFile(fn, samplerate=44100):
     # format = fn.split(".")[-1]
     # # if this is an .mp4, convert to .mp3
