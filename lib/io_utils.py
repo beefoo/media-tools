@@ -20,7 +20,8 @@ try:
     reload(sys)
     sys.setdefaultencoding('utf8')
 except:
-    print("reload operation not supported, skipping...")
+    pass
+    # print("reload operation not supported, skipping...")
 
 def downloadBinaryFile(url, filename, overwrite=False):
     if os.path.isfile(filename) and not overwrite:

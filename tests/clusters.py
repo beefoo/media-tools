@@ -31,7 +31,7 @@ addVideoArgs(parser)
 parser.add_argument('-grid', dest="GRID", default="128x128", help="Size of grid")
 parser.add_argument('-grid0', dest="START_GRID", default="128x128", help="Start size of grid")
 parser.add_argument('-grid1', dest="END_GRID", default="128x128", help="End size of grid")
-parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.2,6.0", help="Volume range")
+parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.1,6.0", help="Volume range")
 parser.add_argument('-lim', dest="LIMIT", default=4096, type=int, help="Limit number of clips; -1 if all")
 parser.add_argument('-lsort', dest="LIMIT_SORT", default="power=desc=0.8&clarity=desc", help="Sort string if/before reducing clip size")
 parser.add_argument('-props', dest="PROPS", default="tsne,tsne2", help="X and Y properties")
@@ -39,6 +39,7 @@ parser.add_argument('-clusters', dest="CLUSTERS", default=128, type=int, help="N
 parser.add_argument('-runs', dest="RUNS", default=20, type=int, help="Number of times to run k-means to determine best centroids")
 parser.add_argument('-overlap', dest="OVERLAP", default=128, type=int, help="Overlap clips in milliseconds")
 parser.add_argument('-overlapp', dest="OVERLAP_PERCENT", default=0.5, type=float, help="Overlap clips in percentage of clip duration")
+parser.add_argument('-coverlapp', dest="CLUSTER_OVERLAP_PERCENT", default=0.25, type=float, help="Overlap clusters in percentage of clusters duration")
 parser.add_argument('-play', dest="PLAY_CLUSTERS", default=16, type=int, help="Play this many clusters")
 a = parser.parse_args()
 parseVideoArgs(a)
@@ -110,6 +111,7 @@ for i in range(count):
     # alternate between lower and higher hz
     cluster = clusters.pop(-1) if i % 2 > 0 else clusters.pop(0)
     ccount = len(cluster["clips"])
+    cdur = 0
     for j, clip in enumerate(cluster["clips"]):
         nclip = 1.0 * j / (ccount-1)
         volume = lerp(a.VOLUME_RANGE, easeSinInOutBell(nclip))
@@ -134,9 +136,12 @@ for i in range(count):
         delta = min(a.OVERLAP, roundInt(clip.props["audioDur"] * a.OVERLAP_PERCENT))
         ms += delta
         clips.append(clip)
+        cdur += delta
+    if i < (count-1):
+        ms -= roundInt(cdur * a.CLUSTER_OVERLAP_PERCENT)
 stepTime = logTime(stepTime, "Created sequence")
 
-for i, c in enumrate(clips):
+for i, c in enumerate(clips):
     c.setProp("index", i)
 
 processComposition(a, clips, ms, sampler, stepTime, startTime)
