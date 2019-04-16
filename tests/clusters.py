@@ -31,7 +31,7 @@ addVideoArgs(parser)
 parser.add_argument('-grid', dest="GRID", default="128x128", help="Size of grid")
 parser.add_argument('-grid0', dest="START_GRID", default="128x128", help="Start size of grid")
 parser.add_argument('-grid1', dest="END_GRID", default="128x128", help="End size of grid")
-parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.1,0.6", help="Volume range")
+parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.4,0.6", help="Volume range")
 parser.add_argument('-lim', dest="LIMIT", default=4096, type=int, help="Limit number of clips; -1 if all")
 parser.add_argument('-lsort', dest="LIMIT_SORT", default="power=desc=0.8&clarity=desc", help="Sort string if/before reducing clip size")
 parser.add_argument('-props', dest="PROPS", default="tsne,tsne2", help="X and Y properties")
@@ -76,7 +76,15 @@ for i, s in enumerate(samples):
     samples[i]["y"] = lerp((SIZE*0.5, a.HEIGHT-SIZE*0.5), s["ny"])
     samples[i]["width"] = SIZE
     samples[i]["height"] = SIZE
-    samples[i]["alpha"] = 0.0
+    samples[i]["alpha"] = a.ALPHA_RANGE[0]
+
+baseImage = clipsToFrame({
+        "filename": False,
+        "width": a.WIDTH,
+        "height": a.HEIGHT
+    },
+    samplesToClips(samples),
+    loadVidoPixelDataDebug(clipCount=len(samples)))
 
 xRange = (xy[:,0].min(), xy[:,0].max())
 yRange = (xy[:,1].min(), xy[:,1].max())
@@ -95,21 +103,21 @@ for i, c in enumerate(clusters):
     csamples = sorted(c["items"], key=lambda s: s["stsne"])
     clusters[i]["std"] = np.std([distance(cx, cy, s["x"], s["y"]) for s in csamples])
     clusters[i]["medianHz"] = np.median([s["hz"] for s in csamples])
-    cclips = samplesToClips(csamples)
     # assign start times
     ms = 0
-    ccount = len(cclips)
-    for j, c in enumerate(cclips):
-        nclip = 1.0 * j / (ccount-1)
-        c.setState("volume", lerp(a.VOLUME_RANGE, easeSinInOutBell(nclip)))
-        c.setState("startMs", ms)
-        delta = min(a.OVERLAP, roundInt(c.props["audioDur"] * a.OVERLAP_PERCENT))
-        if nclip >= 1.0:
-            delta = c.props["audioDur"]
+    ccount = len(csamples)
+    for j, sample in enumerate(csamples):
+        nsample = 1.0 * j / (ccount-1)
+        csamples[j]["volume"] = lerp(a.VOLUME_RANGE, easeSinInOutBell(nsample))
+        csamples[j]["playMs"] = ms
+        csamples[j]["alpha"] = 0.0
+        delta = min(a.OVERLAP, roundInt(sample["audioDur"] * a.OVERLAP_PERCENT))
+        if nsample >= 1.0:
+            delta = sample["audioDur"]
         ms += delta
-    clusters[i]["clips"] = cclips
+    clusters[i]["items"] = csamples
     clusters[i]["dur"] = ms
-stepTime = logTime(stepTime, "Samples to clips")
+stepTime = logTime(stepTime, "Process clusters")
 
 # choose clusters
 clusters = sortBy(clusters, [
@@ -119,25 +127,18 @@ clusters = sortBy(clusters, [
 clusters = sorted(clusters, key=lambda c: c["medianHz"])
 count = len(clusters)
 
-baseImage = clipsToFrame({
-        "filename": False,
-        "width": a.WIDTH,
-        "height": a.HEIGHT
-    },
-    samplesToClips(samples),
-    loadVidoPixelDataDebug(clipCount=len(samples)))
-
 clips = []
 ms = a.PAD_START
 for i in range(count):
     # cluster = clusters.pop(-1) if i % 2 > 0 else clusters.pop(0) # alternate between lower and higher hz
     cluster = clusters[i]
-    for j, clip in enumerate(cluster["clips"]):
-        clipMs = ms + clip.getState("startMs")
+    for j, sample in enumerate(cluster["items"]):
+        clip = Clip(sample)
+        clipMs = ms + clip.props["playMs"]
         clip.queuePlay(clipMs, {
             "start": clip.props["audioStart"],
             "dur": clip.props["audioDur"],
-            "volume": clip.getState("volume"),
+            "volume": clip.props["volume"],
             "fadeOut": clip.props["fadeOut"],
             "fadeIn": clip.props["fadeIn"],
             "pan": 0.0,
