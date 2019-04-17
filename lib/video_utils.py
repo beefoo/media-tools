@@ -558,7 +558,7 @@ def loadVideoPixelData(clips, fps, cacheDir="tmp/", width=None, height=None, ver
     print("Finished loading pixel data.")
     return clipsPixelData
 
-def loadVidoPixelDataDebug(clipCount):
+def loadVideoPixelDataDebug(clipCount):
     clipsPixelData = np.zeros((clipCount, 1, 1, 1, 3))
     for i in range(clipCount):
         clipsPixelData[i, 0, 0, 0] = getRandomColor(i)
@@ -572,7 +572,7 @@ def loadVideoPixelDataFromFrames(frames, clips, containerW, containerH, fps, cac
     resizeMode = getValue(globalArgs, "resizeMode", "fill")
 
     if debug:
-        clipsPixelData = loadVidoPixelDataDebug(clipCount)
+        clipsPixelData = loadVideoPixelDataDebug(clipCount)
         return clipsPixelData
 
     loaded = False
