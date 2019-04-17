@@ -53,7 +53,7 @@ aa["DEBUG"] = True
 # aa["OVERWRITE"] = True
 
 PROP1, PROP2 = tuple([p for p in a.PROPS.strip().split(",")])
-SIZE = 4
+SIZE = 8
 
 # Get video data
 startTime = logTime()
@@ -76,7 +76,7 @@ for i, s in enumerate(samples):
     samples[i]["y"] = lerp((SIZE*0.5, a.HEIGHT-SIZE*0.5), s["ny"])
     samples[i]["width"] = SIZE
     samples[i]["height"] = SIZE
-    samples[i]["alpha"] = a.ALPHA_RANGE[0]
+    samples[i]["alpha"] = 0.1
 
 baseImage = clipsToFrame({
         "filename": False,
@@ -84,7 +84,8 @@ baseImage = clipsToFrame({
         "height": a.HEIGHT
     },
     samplesToClips(samples),
-    loadVidoPixelDataDebug(clipCount=len(samples)))
+    loadVideoPixelDataDebug(clipCount=len(samples)))
+stepTime = logTime(stepTime, "Loaded base image")
 
 xRange = (xy[:,0].min(), xy[:,0].max())
 yRange = (xy[:,1].min(), xy[:,1].max())
@@ -103,6 +104,7 @@ for i, c in enumerate(clusters):
     csamples = sorted(c["items"], key=lambda s: s["stsne"])
     clusters[i]["std"] = np.std([distance(cx, cy, s["x"], s["y"]) for s in csamples])
     clusters[i]["medianHz"] = np.median([s["hz"] for s in csamples])
+    clusters[i]["medianClarity"] = np.median([s["clarity"] for s in csamples])
     # assign start times
     ms = 0
     ccount = len(csamples)
@@ -121,11 +123,14 @@ stepTime = logTime(stepTime, "Process clusters")
 
 # choose clusters
 clusters = sortBy(clusters, [
-    ("nDistanceFromCenter", "desc", 0.25), # prefer clusters at the edge
-    ("std", "asc") # prefer clusters closer together
+    ("nDistanceFromCenter", "desc", 0.5), # prefer clusters at the edge
+    ("std", "asc", 0.75), # prefer clusters closer together
+    ("medianHz", "asc", 0.75), # prefer lower frequencies
+    ("medianClarity", "desc") # prefer higher clarity
 ], targetLen=a.PLAY_CLUSTERS)
 clusters = sorted(clusters, key=lambda c: c["medianHz"])
 count = len(clusters)
+print("%s clusters to play" % count)
 
 clips = []
 ms = a.PAD_START
