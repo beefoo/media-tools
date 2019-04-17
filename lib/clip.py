@@ -296,6 +296,7 @@ class Vector:
 class Clip:
 
     npProperties = [("x", "f"), ("y", "f"), ("width", "f"), ("height", "f"), ("alpha", "f"), ("tn", "f"), ("zindex", "i"), ("rotation", "f"), ("blur", "f"), ("brightness", "f")]
+    gpuPropertyCount = 10
 
     @staticmethod
     def npPropertyCount():

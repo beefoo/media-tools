@@ -84,7 +84,7 @@ def blurImage(im, radius):
         im = im.filter(ImageFilter.GaussianBlur(radius=radius))
     return im
 
-def clipsToFrame(p, clips, pixelData, precision=3, customClipToArrFunction=None, baseImage=None, globalArgs={}):
+def clipsToFrame(p, clips, pixelData, precision=3, customClipToArrFunction=None, baseImage=None, gpuProgram=None, globalArgs={}):
     filename = p["filename"]
     width = p["width"]
     height = p["height"]
@@ -109,7 +109,7 @@ def clipsToFrame(p, clips, pixelData, precision=3, customClipToArrFunction=None,
     # frame does not exist, create frame image
     if not fileExists:
         im = Image.new(mode="RGBA", size=(width, height), color=(0, 0, 0, 255))
-        im = clipsToFrameGPU(clipArr, width, height, pixelData, precision, baseImage=baseImage, globalArgs=globalArgs)
+        im = clipsToFrameGPU(clipArr, width, height, pixelData, precision, baseImage=baseImage, gpuProgram=gpuProgram, globalArgs=globalArgs)
         im = im.convert("RGB")
         # save if necessary
         if saveFrame:
@@ -128,8 +128,8 @@ def clipsToFrame(p, clips, pixelData, precision=3, customClipToArrFunction=None,
 
     return returnValue
 
-def clipsToFrameGPU(clips, width, height, clipsPixelData, precision=3, baseImage=None, globalArgs={}):
-    c = globalArgs["colors"] if "colors" in globalArgs else 3
+def clipsToFrameGPU(clips, width, height, clipsPixelData, precision=3, baseImage=None, gpuProgram=None, globalArgs={}):
+    c = getValue(globalArgs, "colors", 3)
     offset = 0
     maxScaleFactor = 2.0
     precisionMultiplier = int(10 ** precision)
@@ -159,7 +159,7 @@ def clipsToFrameGPU(clips, width, height, clipsPixelData, precision=3, baseImage
             pixelCount += int(h*w*c)
 
     validCount = len(indices)
-    propertyCount = 10
+    propertyCount = Clip.gpuPropertyCount
     properties = np.zeros((validCount, propertyCount), dtype=np.int32)
     pixelData = np.zeros(pixelCount, dtype=np.uint8)
     for i, clipIndex in enumerate(indices):
@@ -216,7 +216,7 @@ def clipsToFrameGPU(clips, width, height, clipsPixelData, precision=3, baseImage
         pixelData[px0:px1] = pixels.reshape(-1)
         offset += int(h*w*c)
 
-    pixels = clipsToImageGPU(width, height, pixelData, properties, c, precision, baseImage=baseImage)
+    pixels = clipsToImageGPU(width, height, pixelData, properties, c, precision, gpuProgram=gpuProgram, baseImage=baseImage)
     return Image.fromarray(pixels, mode="RGB")
 
 def compileFrames(infile, fps, outfile, padZeros, audioFile=None, quality="high"):
@@ -645,6 +645,9 @@ def pasteImage(im, clipImg, x, y):
     return im
 
 def processFrames(params, clips, clipsPixelData, threads=1, precision=3, verbose=True, customClipToArrFunction=None, globalArgs={}):
+    if len(params) < 1:
+        return
+
     count = len(params)
     print("Processing %s frames" % count)
     threads = getThreadCount(threads)
@@ -656,9 +659,15 @@ def processFrames(params, clips, clipsPixelData, threads=1, precision=3, verbose
     if propagateFrames:
         isSequential = True
 
+    # load gpu program
+    p0 = params[0]
+    colorDimensions = getValue(globalArgs, "colors", 3)
+    pcount = Clip.gpuPropertyCount
+    gpuProgram = loadMakeImageProgram(p0["width"], p0["height"], pcount, colorDimensions, precision)
+
     if threads > 1 and not isSequential:
         pool = ThreadPool(threads)
-        pclipsToFrame = partial(clipsToFrame, clips=clips, pixelData=clipsPixelData, precision=precision, customClipToArrFunction=customClipToArrFunction, baseImage=baseImage, globalArgs=globalArgs)
+        pclipsToFrame = partial(clipsToFrame, clips=clips, pixelData=clipsPixelData, precision=precision, customClipToArrFunction=customClipToArrFunction, baseImage=baseImage, gpuProgram=gpuProgram, globalArgs=globalArgs)
         pool.map(pclipsToFrame, params)
         pool.close()
         pool.join()
@@ -666,7 +675,7 @@ def processFrames(params, clips, clipsPixelData, threads=1, precision=3, verbose
         prevImage = None
         for i, p in enumerate(params):
             baseImage = prevImage if propagateFrames else baseImage
-            prevImage = clipsToFrame(p, clips=clips, pixelData=clipsPixelData, precision=precision, customClipToArrFunction=customClipToArrFunction, baseImage=baseImage, globalArgs=globalArgs)
+            prevImage = clipsToFrame(p, clips=clips, pixelData=clipsPixelData, precision=precision, customClipToArrFunction=customClipToArrFunction, baseImage=baseImage, gpuProgram=gpuProgram, globalArgs=globalArgs)
             if verbose:
                 printProgress(i+1, count)
 

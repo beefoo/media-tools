@@ -10,22 +10,8 @@ from lib.clip import *
 
 os.environ['PYOPENCL_COMPILER_OUTPUT'] = '1'
 
-def clipsToImageGPU(width, height, flatPixelData, properties, colorDimensions, precision, baseImage=None):
-    count, pcount = properties.shape
-
-    # blank image if no clip data
-    if count <= 0 and baseImage is None:
-        return np.zeros((height, width, 3), dtype=np.uint8)
-    # base image if exists
-    elif count <= 0:
-        return np.array(baseImage, dtype=np.uint8)
-
+def loadMakeImageProgram(width, height, pcount, colorDimensions, precision):
     precisionMultiplier = int(10 ** precision)
-    properties = properties.reshape(-1)
-    zvalues = np.zeros(width * height * 2, dtype=np.int32)
-    result = np.zeros(width * height * 3, dtype=np.uint8) if baseImage is None else np.array(baseImage, dtype=np.uint8).reshape(-1)
-    # baseImage = np.copy(result)
-
     # the kernel function
     srcCode = """
     static float normF(float value, float a, float b) {
@@ -206,7 +192,32 @@ def clipsToImageGPU(width, height, flatPixelData, properties, colorDimensions, p
     }
     """ % (width, height, pcount, colorDimensions, precisionMultiplier)
 
-    ctx, mf, queue, prg = loadGPUProgram(srcCode)
+    return loadGPUProgram(srcCode)
+
+def clipsToImageGPU(width, height, flatPixelData, properties, colorDimensions, precision, gpuProgram=None, baseImage=None):
+    count, pcount = properties.shape
+
+    # blank image if no clip data
+    if count <= 0 and baseImage is None:
+        return np.zeros((height, width, 3), dtype=np.uint8)
+    # base image if exists
+    elif count <= 0:
+        return np.array(baseImage, dtype=np.uint8)
+
+    properties = properties.reshape(-1)
+    zvalues = np.zeros(width * height * 2, dtype=np.int32)
+    result = np.zeros(width * height * 3, dtype=np.uint8) if baseImage is None else np.array(baseImage, dtype=np.uint8).reshape(-1)
+    # baseImage = np.copy(result)
+
+    ctx = prg = None
+    if gpuProgram is not None:
+        ctx, prg = gpuProgram
+    else:
+        ctx, prg = loadMakeImageProgram(width, height, pcount, colorDimensions, precision)
+        
+    # Create queue for each kernel execution
+    queue = cl.CommandQueue(ctx)
+    mf = cl.mem_flags
 
     bufIn1 =  cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=flatPixelData)
     bufIn2 =  cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=properties)
@@ -266,7 +277,10 @@ def clipsToImageGPULite(width, height, flatPixelData, properties):
     }
     """ % (width, height, pcount)
 
-    ctx, mf, queue, prg = loadGPUProgram(srcCode)
+    ctx, prg = loadGPUProgram(srcCode)
+    # Create queue for each kernel execution
+    queue = cl.CommandQueue(ctx)
+    mf = cl.mem_flags
 
     bufIn1 =  cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=flatPixelData)
     bufIn2 =  cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=properties)
@@ -289,10 +303,8 @@ def loadGPUProgram(srcCode):
     else:
         print("Warning: using CPU instead of GPU")
         ctx = cl.Context(CPU)
-    # Create queue for each kernel execution
-    queue = cl.CommandQueue(ctx)
-    mf = cl.mem_flags
+
     # Kernel function instantiation
     prg = cl.Program(ctx, srcCode).build()
 
-    return (ctx, mf, queue, prg)
+    return (ctx, prg)
