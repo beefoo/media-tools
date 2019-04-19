@@ -67,11 +67,12 @@ rowCount = len(rows)
 print("Found %s rows" % rowCount)
 
 # Sort and limit
-rows = sortByQueryString(rows, SORT)
 if LIMIT > 0 and len(rows) > LIMIT:
+    rows = sortByQueryString(rows, SORT)
     rows = rows[:LIMIT]
 rowCount = len(rows)
 
+rows = addIndices(rows)
 rows = prependAll(rows, ("filename", MEDIA_DIRECTORY))
 for i, row in enumerate(rows):
     rows[i]["t"] = row["start"] + roundInt(row["dur"]*0.5)
@@ -91,12 +92,15 @@ print("Each file will be about %s" % formatSeconds(totalDur/1000.0/FILE_COUNT))
 if args.PROBE:
     sys.exit()
 
+# sort rows by filename to reduce number of file reads
+rows = sorted(rows, key=lambda r: r["filename"])
+
 # Make sure output dirs exist
 makeDirectories([AUDIO_FILE, IMAGE_FILE, CACHE_DIR])
 
 samplesPerFile = ceilInt(1.0 * rowCount / FILE_COUNT)
 audioSpriteFiles = []
-sprites = []
+sprites = [None for i in range(rowCount)]
 for file in range(FILE_COUNT):
     iStart = file * samplesPerFile
     iEnd = iStart + samplesPerFile
@@ -114,7 +118,7 @@ for file in range(FILE_COUNT):
             "start": row["start"],
             "dur": row["dur"]
         })
-        sprites.append([file, ms, row["dur"]])
+        sprites[row["index"]] = [file, ms, row["dur"]]
         ms += row["dur"]
     outfilename = AUDIO_FILE.replace(".mp3", ".%s.mp3" % zeroPad(file+1, FILE_COUNT))
     if not os.path.isfile(outfilename) or OVERWRITE:
@@ -132,7 +136,7 @@ if TYPE == "grid":
 
     rows = addGridPositions(rows, GRID_W, IMAGE_W, IMAGE_H)
     for i, row in enumerate(rows):
-        sprites[i] += [round(1.0*row["x"]/IMAGE_W, 3), round(1.0*row["y"]/IMAGE_H, 3)]
+        sprites[row["index"]] += [round(1.0*row["x"]/IMAGE_W, 3), round(1.0*row["y"]/IMAGE_H, 3)]
 
 # otherwise, just do a cloud
 else:
@@ -149,7 +153,7 @@ else:
         rows[i]["y"] = y
         rows[i]["width"] = CELL_W
         rows[i]["height"] = CELL_H
-        sprites[i] += [round(1.0*x/IMAGE_W, 3), round(1.0*y/IMAGE_H, 3)]
+        sprites[row["index"]] += [round(1.0*x/IMAGE_W, 3), round(1.0*y/IMAGE_H, 3)]
 
 # kind of a hack: only take one frame at time
 for i, row in enumerate(rows):
