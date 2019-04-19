@@ -9,7 +9,9 @@ from pprint import pprint
 import sys
 
 from lib.audio_mixer import *
+from lib.clip import *
 from lib.collection_utils import *
+from lib.composition_utils import *
 from lib.io_utils import *
 from lib.math_utils import *
 from lib.video_utils import *
@@ -17,42 +19,47 @@ from lib.video_utils import *
 # input
 parser = argparse.ArgumentParser()
 parser.add_argument('-in', dest="INPUT_FILE", default="tmp/samples_tsne.csv", help="Input file")
-parser.add_argument('-dir', dest="AUDIO_DIRECTORY", default="media/sample/", help="Input file")
-parser.add_argument('-props', dest="PROPS", default="tsne,tsne2", help="Properties to sort x,y matrix by")
+parser.add_argument('-dir', dest="MEDIA_DIRECTORY", default="media/sample/", help="Input file")
+parser.add_argument('-props', dest="PROPS", default="tsne,tsne2", help="Properties to sort x,y matrix by; only necessary for cloud type; will use gridX,gridY for grid type")
 parser.add_argument('-sort', dest="SORT", default="clarity=desc=0.5&power=desc", help="Query string to filter and sort by")
 parser.add_argument('-lim', dest="LIMIT", default=-1, type=int, help="Target total sample count, -1 for everything")
-parser.add_argument('-width', dest="IMAGE_W", default=1920, type=int, help="Image width in pixels")
-parser.add_argument('-height', dest="IMAGE_H", default=1920, type=int, help="Image height in pixels")
-parser.add_argument('-cell', dest="CELL_DIMENSIONS", default="40x40", help="Dimensions of each cell")
-parser.add_argument('-count', dest="FILE_COUNT", default=6, type=int, help="Number of audio files to produce")
+parser.add_argument('-width', dest="IMAGE_W", default=3840, type=int, help="Image width in pixels")
+parser.add_argument('-height', dest="IMAGE_H", default=3840, type=int, help="Image height in pixels")
+parser.add_argument('-cell', dest="CELL_DIMENSIONS", default="30x30", help="Dimensions of each cell")
+parser.add_argument('-count', dest="FILE_COUNT", default=12, type=int, help="Number of audio files to produce")
 parser.add_argument('-id', dest="UNIQUE_ID", default="sample", help="Key for naming files")
 parser.add_argument('-type', dest="TYPE", default="grid", help="Grid or cloud")
+parser.add_argument('-cached', dest="CACHE_DIR", default="tmp/%s_cache/", help="Grid or cloud")
 parser.add_argument('-log', dest="LOG", default=0, type=int, help="Display using log?")
-parser.add_argument('-overwrite', dest="OVERWRITE", default=0, type=int, help="Overwrite existing?")
+parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite existing?")
+parser.add_argument('-probe', dest="PROBE", action="store_true", help="Just display durations?")
 args = parser.parse_args()
 
 # Parse arguments
 INPUT_FILE = args.INPUT_FILE
-AUDIO_DIRECTORY = args.AUDIO_DIRECTORY
+MEDIA_DIRECTORY = args.MEDIA_DIRECTORY
 SORT = args.SORT
 PROP1, PROP2 = tuple([p for p in args.PROPS.strip().split(",")])
 IMAGE_W = args.IMAGE_W
 IMAGE_H = args.IMAGE_H
 CELL_W, CELL_H = tuple([int(d) for d in args.CELL_DIMENSIONS.split("x")])
+GRID_W, GRID_H = (int(IMAGE_W/CELL_W), int(IMAGE_H/CELL_H))
 LIMIT = args.LIMIT
 FILE_COUNT = args.FILE_COUNT
 UNIQUE_ID = args.UNIQUE_ID
-OVERWRITE = args.OVERWRITE > 0
+OVERWRITE = args.OVERWRITE
 TYPE = args.TYPE
 LOG = args.LOG
+FPS = 30
 
 if TYPE == "grid" and LIMIT < 0:
-    LIMIT = IMAGE_W/CELL_W * IMAGE_H/CELL_H
-    print("Limiting grid to %s x %s = %s" % (IMAGE_W/CELL_W, IMAGE_H/CELL_H, LIMIT))
+    LIMIT = GRID_W * GRID_H
+    print("Limiting grid to %s x %s = %s" % (GRID_W, GRID_H, LIMIT))
 
-AUDIO_FILE = "sprites/%s/%s.mp3" % (UNIQUE_ID, UNIQUE_ID)
+AUDIO_FILE = "sprites/sprite/%s/%s.mp3" % (UNIQUE_ID, UNIQUE_ID)
 MANIFEST_FILE = AUDIO_FILE.replace(".mp3", ".json")
-IMAGE_FILE = "sprites/%s/%s.png" % (UNIQUE_ID, UNIQUE_ID)
+IMAGE_FILE = "sprites/sprite/%s/%s.png" % (UNIQUE_ID, UNIQUE_ID)
+CACHE_DIR = args.CACHE_DIR % UNIQUE_ID
 
 # Read files
 fieldNames, rows = readCsv(INPUT_FILE)
@@ -64,6 +71,10 @@ rows = sortByQueryString(rows, SORT)
 if LIMIT > 0 and len(rows) > LIMIT:
     rows = rows[:LIMIT]
 rowCount = len(rows)
+
+rows = prependAll(rows, ("filename", MEDIA_DIRECTORY))
+for i, row in enumerate(rows):
+    rows[i]["t"] = row["start"] + roundInt(row["dur"]*0.5)
 
 # use logarithmic scale
 if LOG > 0:
@@ -77,8 +88,11 @@ totalDur = sum([r["dur"] for r in rows])
 print("Total duration: %s" % formatSeconds(totalDur/1000.0))
 print("Each file will be about %s" % formatSeconds(totalDur/1000.0/FILE_COUNT))
 
+if args.PROBE:
+    sys.exit()
+
 # Make sure output dirs exist
-makeDirectories([AUDIO_FILE, IMAGE_FILE])
+makeDirectories([AUDIO_FILE, IMAGE_FILE, CACHE_DIR])
 
 samplesPerFile = ceilInt(1.0 * rowCount / FILE_COUNT)
 audioSpriteFiles = []
@@ -96,7 +110,7 @@ for file in range(FILE_COUNT):
     for row in fileRows:
         instructions.append({
             "ms": ms,
-            "filename": AUDIO_DIRECTORY + row["filename"],
+            "filename": row["filename"],
             "start": row["start"],
             "dur": row["dur"]
         })
@@ -109,33 +123,16 @@ for file in range(FILE_COUNT):
         print("Already created %s" % outfilename)
     audioSpriteFiles.append(os.path.basename(outfilename))
 
-clips = []
-
 if TYPE == "grid":
-    import rasterfairy
 
-    xy = [[row[PROP1]*1000, row[PROP2]*1000] for row in rows]
-    xy = np.array(xy)
-    nx = IMAGE_W / CELL_W
-    ny = IMAGE_H / CELL_H
-    print("Determining grid assignment...")
+    testRow = rows[0]
+    if "gridX" not in testRow or "gridY" not in testRow:
+        print("You must run samples_to_grid.py first")
+        sys.exit()
 
-    gridAssignment = rasterfairy.transformPointCloud2D(xy, target=(nx, ny))
-    grid, gridShape = gridAssignment
-    i = 0
-    for row, pos in zip(rows, grid):
-        idx_x, idx_y = pos
-        x, y = CELL_W * idx_x, CELL_H * idx_y
-        clips.append({
-            "x": x,
-            "y": y,
-            "width": CELL_W,
-            "height": CELL_H,
-            "filename": AUDIO_DIRECTORY + row["filename"],
-            "t": row["start"] + roundInt(row["dur"]*0.5)
-        })
-        sprites[i] += [round(1.0*x/IMAGE_W, 3), round(1.0*y/IMAGE_H, 3)]
-        i += 1
+    rows = addGridPositions(rows, GRID_W, IMAGE_W, IMAGE_H)
+    for i, row in enumerate(rows):
+        sprites[i] += [round(1.0*row["x"]/IMAGE_W, 3), round(1.0*row["y"]/IMAGE_H, 3)]
 
 # otherwise, just do a cloud
 else:
@@ -148,25 +145,28 @@ else:
         ny = 1.0 - norm(row[PROP2], range2)
         x = roundInt((IMAGE_W - CELL_W) * nx)
         y = roundInt((IMAGE_H - CELL_H) * ny)
-        clips.append({
-            "x": x,
-            "y": y,
-            "width": CELL_W,
-            "height": CELL_H,
-            "filename": AUDIO_DIRECTORY + row["filename"],
-            "t": row["start"] + roundInt(row["dur"]*0.5)
-        })
+        rows[i]["x"] = x
+        rows[i]["y"] = y
+        rows[i]["width"] = CELL_W
+        rows[i]["height"] = CELL_H
         sprites[i] += [round(1.0*x/IMAGE_W, 3), round(1.0*y/IMAGE_H, 3)]
 
+# kind of a hack: only take one frame at time
+for i, row in enumerate(rows):
+    rows[i]["start"] = row["t"]
+    rows[i]["dur"] = 1
+
 print("Generating image...")
+clips = samplesToClips(rows)
+pixelData = loadVideoPixelData(clips, fps=FPS, cacheDir=CACHE_DIR, verifyData=False)
 clipsToFrame({
     "filename": IMAGE_FILE,
     "overwrite": OVERWRITE,
     "width": IMAGE_W,
     "height": IMAGE_H,
-    "clips": clips,
+    "ms": 0,
     "verbose": True
-})
+}, clips, pixelData)
 
 # Write json sprite file
 jsonData = {}

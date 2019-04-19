@@ -60,7 +60,7 @@ var App = (function() {
     this.sprites = allSprites;
 
     _.each(options.audioSpriteFiles, function(fn, i){
-      var audioFilename = uid + "/" + fn;
+      var audioFilename = "sprite/" + uid + "/" + fn;
       var sprites = _.filter(allSprites, function(s){ return s.fileIndex===i; });
       sprites = _.map(sprites, function(s, i){ return [""+s.id, s.audioPosition]; });
       sprites = _.object(sprites);
@@ -88,7 +88,7 @@ var App = (function() {
   App.prototype.loadData = function(){
     var _this = this;
     var uid = this.opt.uid;
-    var url = uid + "/" + uid + ".json";
+    var url = "sprite/" + uid + "/" + uid + ".json";
     var deferred = $.Deferred();
     $.getJSON(url, function(data) {
       console.log("Loaded data with "+data.sprites.length+" sprites")
@@ -113,7 +113,7 @@ var App = (function() {
     this.cellNW = options.cellW / options.width;
     this.cellNH = options.cellH / options.height;
 
-    var imageUrl = this.opt.uid + "/" + options.image;
+    var imageUrl = "sprite/" + this.opt.uid + "/" + options.image;
 
     this.$image = $('<img src="'+imageUrl+'" alt="Matrix of scenes from video" />');
     this.$imageWrapper = $('#image');

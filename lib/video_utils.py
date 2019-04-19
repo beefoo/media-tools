@@ -453,6 +453,16 @@ def loadVideoPixelData(clips, fps, cacheDir="tmp/", width=None, height=None, ver
     msStep = frameToMs(1, fps, False)
     clipsPixelData = [None] * len(clips)
 
+    for i, clip in enumerate(clips):
+        if "maxWidth" in clip.props and "maxHeight" in clip.props:
+            break
+        if i <= 0:
+            print("Warning: max width/height not set, setting it to given width/height")
+        if "maxWidth" not in clip.props:
+            clip.setProp("maxWidth", clip.props["width"])
+        if "maxHeight" not in clip.props:
+            clip.setProp("maxHeight", clip.props["height"])
+
     # only open one video at a time
     for i, fn in enumerate(filenames):
         # check for cache fors filename
