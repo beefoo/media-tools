@@ -132,7 +132,10 @@ def formatNumber(n):
     return "{:,}".format(n)
 
 def formatSeconds(s):
-    return time.strftime('%H:%M:%S', time.gmtime(s))
+    tString = time.strftime('%H:%M:%S', time.gmtime(s))
+    if tString.startswith("00:"):
+        tString = tString[3:]
+    return tString
 
 def getRandomColor(seed=None):
     c = []

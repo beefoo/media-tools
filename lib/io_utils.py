@@ -187,26 +187,29 @@ def supportsEncoding():
 
 def writeCsv(filename, arr, headings="auto", append=False, encoding="utf8"):
     if headings == "auto":
-        headings = arr[0].keys()
+        headings = arr[0].keys() if len(arr) > 0 and type(arr[0]) is dict else None
     mode = 'w' if not append else 'a'
     canEncode = supportsEncoding()
     if not canEncode:
         mode += 'b'
     f = open(filename, mode, encoding=encoding, newline='') if canEncode else open(filename, mode)
     writer = csv.writer(f)
-    if not append:
+    if not append and headings is not None:
         writer.writerow(headings)
     for i, d in enumerate(arr):
         row = []
-        for h in headings:
-            value = ""
-            if h in d:
-                value = d[h]
-            if isinstance(value, list):
-                value = ",".join(value)
-            if not canEncode and encoding=="utf8" and isinstance(value, str):
-                value = value.encode("utf-8")
-            row.append(value)
+        if headings is not None:
+            for h in headings:
+                value = ""
+                if h in d:
+                    value = d[h]
+                if isinstance(value, list):
+                    value = ",".join(value)
+                if not canEncode and encoding=="utf8" and isinstance(value, str):
+                    value = value.encode("utf-8")
+                row.append(value)
+        else:
+            row = d
         writer.writerow(row)
     f.close()
     print("Wrote %s rows to %s" % (len(arr), filename))
