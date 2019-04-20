@@ -29,7 +29,7 @@ parser.add_argument('-cell', dest="CELL_DIMENSIONS", default="30x30", help="Dime
 parser.add_argument('-count', dest="FILE_COUNT", default=12, type=int, help="Number of audio files to produce")
 parser.add_argument('-id', dest="UNIQUE_ID", default="sample", help="Key for naming files")
 parser.add_argument('-type', dest="TYPE", default="grid", help="Grid or cloud")
-parser.add_argument('-cached', dest="CACHE_DIR", default="tmp/%s_cache/", help="Grid or cloud")
+parser.add_argument('-cached', dest="CACHE_DIR", default="tmp/sprite_%s_cache/", help="Grid or cloud")
 parser.add_argument('-log', dest="LOG", default=0, type=int, help="Display using log?")
 parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite existing?")
 parser.add_argument('-probe', dest="PROBE", action="store_true", help="Just display durations?")
