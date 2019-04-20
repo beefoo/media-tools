@@ -134,6 +134,8 @@ if TYPE == "grid":
         print("You must run samples_to_grid.py first")
         sys.exit()
 
+    # Sort by grid
+    rows = sorted(rows, key=lambda s: (s["gridY"], s["gridX"]))
     rows = addGridPositions(rows, GRID_W, IMAGE_W, IMAGE_H)
     for i, row in enumerate(rows):
         sprites[row["index"]] += [round(1.0*row["x"]/IMAGE_W, 3), round(1.0*row["y"]/IMAGE_H, 3)]
@@ -155,8 +157,11 @@ else:
         rows[i]["height"] = CELL_H
         sprites[row["index"]] += [round(1.0*x/IMAGE_W, 3), round(1.0*y/IMAGE_H, 3)]
 
-# kind of a hack: only take one frame at time
 for i, row in enumerate(rows):
+    # add label
+    label = os.path.basename(row["filename"]) + " " + formatSeconds(row["start"]/1000.0)
+    sprites[row["index"]] += [label]
+    # kind of a hack: only take one frame at time
     rows[i]["start"] = row["t"]
     rows[i]["dur"] = 1
 
