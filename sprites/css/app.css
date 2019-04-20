@@ -5,8 +5,8 @@ body {
 
 .image {
   position: relative;
-  width: 99vw;
-  height: 99vw;
+  /* width: 99vw;
+  height: 99vw; */
 }
 
 .image img,

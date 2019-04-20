@@ -4,7 +4,7 @@ var App = (function() {
 
   function App(config) {
     var defaults = {
-      "uid": "ia_politicaladarchive"
+      "uid": "ia_fedflixnara"
     };
     var q = queryParams();
     this.opt = _.extend({}, defaults, config, q);
@@ -54,33 +54,35 @@ var App = (function() {
         "fileIndex": s[0],
         "audioPosition": [s[1], s[2]],
         "nx": s[3],
-        "ny": s[4]
+        "ny": s[4],
+        "label": s[5]
       }
     });
     this.sprites = allSprites;
 
-    _.each(options.audioSpriteFiles, function(fn, i){
-      var audioFilename = "sprite/" + uid + "/" + fn;
-      var sprites = _.filter(allSprites, function(s){ return s.fileIndex===i; });
-      sprites = _.map(sprites, function(s, i){ return [""+s.id, s.audioPosition]; });
-      sprites = _.object(sprites);
-      var promise = $.Deferred();
-      var sound = new Howl({
-        src: [audioFilename],
-        sprite: sprites,
-        onload: function(){
-          console.log("Loaded "+audioFilename);
-          promise.resolve();
-        }
-      });
-      spritePromises.push(promise);
-      sounds.push(sound);
-    });
-    this.sounds = sounds;
+    // _.each(options.audioSpriteFiles, function(fn, i){
+    //   var audioFilename = "sprite/" + uid + "/" + fn;
+    //   var sprites = _.filter(allSprites, function(s){ return s.fileIndex===i; });
+    //   sprites = _.map(sprites, function(s, i){ return [""+s.id, s.audioPosition]; });
+    //   sprites = _.object(sprites);
+    //   var promise = $.Deferred();
+    //   var sound = new Howl({
+    //     src: [audioFilename],
+    //     sprite: sprites,
+    //     onload: function(){
+    //       console.log("Loaded "+audioFilename);
+    //       promise.resolve();
+    //     }
+    //   });
+    //   spritePromises.push(promise);
+    //   sounds.push(sound);
+    // });
+    // this.sounds = sounds;
+    // $.when.apply(null, spritePromises).done(function() {
+    //   deferred.resolve();
+    // });
 
-    $.when.apply(null, spritePromises).done(function() {
-      deferred.resolve();
-    });
+    deferred.resolve();
 
     return deferred.promise();
   };
@@ -117,7 +119,9 @@ var App = (function() {
 
     this.$image = $('<img src="'+imageUrl+'" alt="Matrix of scenes from video" />');
     this.$imageWrapper = $('#image');
-    this.$imageWrapper.append(this.$image);
+    this.$imageWrapper.width(this.imageW);
+    this.$imageWrapper.height(this.imageH);
+    this.$imageWrapper.prepend(this.$image);
 
     this.$label = $("#label");
     this.$label.css({
@@ -173,9 +177,10 @@ var App = (function() {
 
     // play the cell if not already playing
     if (this.currentCell !== id) {
+      this.$label.attr("title", first.label);
       var fileIndex = first.fileIndex;
-      var sound = this.sounds[fileIndex];
-      sound.play(""+id);
+      // var sound = this.sounds[fileIndex];
+      // sound.play(""+id);
       this.currentCell = id;
     }
   };
