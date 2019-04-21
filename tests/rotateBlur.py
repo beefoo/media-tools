@@ -75,7 +75,8 @@ for i in range(COUNT):
 clips = samplesToClips(samples)
 for i, clip in enumerate(clips):
     rotations = i % 3 + 1
-    clip.queueTween(0, durationMs, [("rotation", 0, rotations*360, "sin")])
+    mult = 1.0 if i % 2 > 0 else -1.0
+    clip.queueTween(0, durationMs, [("rotation", 0, rotations*360*mult, "sin")])
     blurDur = int(durationMs/rotations)
     halfBlurDur = blurDur/2
     blurRadius = 2.0

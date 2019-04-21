@@ -183,6 +183,11 @@ def norm(value, ab, limit=False):
         n = lim(n)
     return n
 
+# normalize angle between -360 to 360
+def normalizeAngle(degrees):
+    # return degrees % 360.0 if degrees >= 0.0 else degrees % -360.0
+    return degrees % 360.0
+
 def parseFloat(string):
     return parseNumber(string, alwaysFloat=True)
 

@@ -37,6 +37,7 @@ parser.add_argument('-waves', dest="WAVE_COUNT", default=4, type=int, help="Numb
 parser.add_argument('-gridc', dest="GRID_CYCLES", default=2, type=int, help="Number of times to go through the full grid")
 parser.add_argument('-duration', dest="TARGET_DURATION", default=120, type=int, help="Target duration in seconds")
 parser.add_argument('-translate', dest="TRANSLATE_AMOUNT", default=0.5, type=float, help="Amount to translate clip as a percentage of height")
+parser.add_argument('-rotate', dest="ROTATE_AMOUNT", default=12.0, type=float, help="Max amount to rotate clip in degrees")
 parser.add_argument('-prad', dest="PLAY_RADIUS", default=8.0, type=float, help="Radius of cells/clips to play at any given time")
 parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.3,0.6", help="Volume range")
 parser.add_argument('-dpdur', dest="DELAY_PLAY_MS", default=1000, type=int, help="Don't play the first x ms of moving")
@@ -139,7 +140,7 @@ def dequeueClips(ms, clips, queue):
                         "maxDb": clip.props["maxDb"]
                     })
                     speed = easeSinInOutBell(nprogress)
-                    clipDur = clip.props["renderDur"] * (1.0 + speed * 0.5)
+                    clipDur = clip.props["renderDur"] * (1.0 + speed)
                     leftMs = max(10, roundInt(clipDur * 0.5))
                     rightMs = clipDur - leftMs
 
@@ -147,10 +148,23 @@ def dequeueClips(ms, clips, queue):
                     ty = clip.props["height"] * a.TRANSLATE_AMOUNT * speed * ndistance * 2
                     xMultiplier = -1.0 * xDelta / clip.props["width"] * 0.5
                     tx = clip.props["height"] * a.TRANSLATE_AMOUNT * xMultiplier * speed * ndistance
+                    rotation = a.ROTATE_AMOUNT * speed
+                    if tx > 0.0:
+                        rotation *= -1.0
 
                     brightnessTo = lerp(a.BRIGHTNESS_RANGE, ndistance)
-                    clip.queueTween(playMs, leftMs, [("brightness", a.BRIGHTNESS_RANGE[0], brightnessTo, "sin"), ("translateX", 0, tx, "sin"), ("translateY", 0, ty, "sin")])
-                    clip.queueTween(playMs+leftMs, rightMs, [("brightness", brightnessTo, a.BRIGHTNESS_RANGE[0], "sin"), ("translateX", tx, 0, "sin"), ("translateY", ty, 0, "sin")])
+                    clip.queueTween(playMs, leftMs, [
+                        ("brightness", a.BRIGHTNESS_RANGE[0], brightnessTo, "sin"),
+                        ("translateX", 0, tx, "sin"),
+                        ("translateY", 0, ty, "sin"),
+                        ("rotation", 0.0, rotation, "sin")
+                    ])
+                    clip.queueTween(playMs+leftMs, rightMs, [
+                        ("brightness", brightnessTo, a.BRIGHTNESS_RANGE[0], "sin"),
+                        ("translateX", tx, 0, "sin"),
+                        ("translateY", ty, 0, "sin"),
+                        ("rotation", rotation, 0.0, "sin")
+                    ])
             queue.pop(cindex, None)
 
     return queue
@@ -235,4 +249,4 @@ def clipToNpArrFalling(clip, ms, containerW, containerH, precision, parent, glob
         roundInt(props["brightness"] * precisionMultiplier)
     ], dtype=np.int32)
 
-processComposition(a, clips, endMs, sampler, stepTime, startTime, customClipToArrFunction=clipToNpArrFalling)
+processComposition(a, clips, endMs, sampler, stepTime, startTime, customClipToArrFunction=clipToNpArrFalling, containsAlphaClips=True)

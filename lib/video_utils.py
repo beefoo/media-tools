@@ -65,7 +65,7 @@ def alphaMask(im, mask):
 def applyEffects(im, x, y, rotation=0.0, blur=0.0, mask=None, colors=4):
     im = im.convert("RGBA")
     w, h = im.size
-    angle = rotation % 360.0
+    angle = normalizeAngle(rotation)
     if mask is not None:
         im = alphaMask(im, mask)
     if angle > 0.0 or blur > 0.0:
@@ -440,7 +440,7 @@ def getVideoClipImage(video, videoDur, clip, t=None, resizeMode="fill", resample
 
 def getRotation(clip):
     rotation = clip["rotation"] if "rotation" in clip else 0.0
-    angle = rotation % 360.0
+    angle = normalizeAngle(rotation)
     return angle
 
 def hasAudio(filename):
@@ -707,7 +707,7 @@ def resizeCanvas(im, cw, ch):
     return newImg
 
 def rotateImage(im, angle):
-    if angle > 0.0:
+    if abs(angle) > 0.0:
         im = im.rotate(360.0-angle, expand=False, resample=Image.BICUBIC, fillcolor=(0,0,0,0))
     return im
 
