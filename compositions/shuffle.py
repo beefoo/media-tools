@@ -144,9 +144,11 @@ for i in range(a.SHUFFLE_COUNT):
                 ("brightness", a.BRIGHTNESS_RANGE[1], a.BRIGHTNESS_RANGE[0], "sin")
             ])
 
+startMs = a.PAD_START
 zoomDur = roundInt(shuffleDur * a.SHUFFLE_COUNT * 0.5)
-container.queueTween(a.PAD_START, zoomDur, ("scale", fromScale, toScale, "cubicInOut"))
-durationMs = a.PAD_START + shuffleDur * a.SHUFFLE_COUNT
+container.queueTween(startMs, zoomDur, ("scale", fromScale, toScale, "cubicInOut"))
+shuffleMs = (shuffleDur + a.TRANSITION_MS) * a.SHUFFLE_COUNT
+durationMs = startMs + shuffleMs
 
 stepTime = logTime(stepTime, "Create plays/tweens")
 
@@ -155,9 +157,43 @@ container.vector.sortFrames()
 
 # custom clip to numpy array function to override default tweening logic
 def clipToNpArrShuffle(clip, ms, containerW, containerH, precision, parent, globalArgs={}):
-    customProps = None
+    global a
+    global startMs
+    global durationMs
+    global shuffleDur
+    global offsetPositions
+    global gridW
+    global gridH
+
+    nprogress = norm(ms, (startMs, durationMs))
+    fshuffle = a.SHUFFLE_COUNT * nprogress
+    shuffleIndex = min(floorInt(fshuffle), a.SHUFFLE_COUNT-1)
+    nshuffle = lim(fshuffle - shuffleIndex)
+    transitionThreshold = 1.0 * shuffleDur / (shuffleDur + a.TRANSITION_MS)
+
+    crow = clip.props["row"]
+    ccol = clip.props["col"]
+
+    offsetY, offsetX = tuple(offsetPositions[shuffleIndex, crow, ccol])
+
+    # we are transitioning
+    if nshuffle > transitionThreshold and shuffleIndex < a.SHUFFLE_COUNT-1:
+        ntransition = norm(nshuffle, (transitionThreshold, 1.0), limit=True)
+        toOffsetY, toOffsetX = tuple(offsetPositions[shuffleIndex+1, crow, ccol])
+        offsetY, offsetX = (lerp((offsetY, toOffsetY), ease(ntransition)), lerp((offsetX, toOffsetX), ease(ntransition)))
+
+    newRow = (crow + offsetY) % gridH
+    newCol = (ccol + offsetX) % gridW
+    cellW = 1.0 * a.WIDTH / gridW
+    cellH = 1.0 * a.HEIGHT / gridH
+    margin = a.CLIP_MARGIN * cellW * 0.5
+
+    customProps = {}
+    customProps["x"] = newCol * cellW + margin
+    customProps["y"] = newRow * cellH + margin
+
     precisionMultiplier = int(10 ** precision)
-    props = clip.toDict(_ms, containerW, containerH, parent, customProps=customProps)
+    props = clip.toDict(ms, containerW, containerH, parent, customProps=customProps)
 
     return np.array([
         roundInt(props["x"] * precisionMultiplier),
