@@ -36,7 +36,7 @@ parser.add_argument('-bps', dest="BEATS_PER_SHUFFLE", default=8, type=int, help=
 parser.add_argument('-count', dest="SHUFFLE_COUNT", default=8, type=int, help="Number of shuffles to play")
 parser.add_argument('-bdivision', dest="BEAT_DIVISIONS", default=3, type=int, help="Number of times to divide each beat")
 parser.add_argument('-transition', dest="TRANSITION_MS", default=2048, type=int, help="Duration of transition")
-parser.add_argument('-mos', dest="MAX_OFFSET_STEP", default=32, type=int, help="Max offset step per shuffle")
+parser.add_argument('-mos', dest="MAX_OFFSET_STEP", default=8, type=int, help="Max offset step per shuffle")
 parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.6,0.8", help="Volume range")
 a = parser.parse_args()
 parseVideoArgs(a)
@@ -62,10 +62,16 @@ stepTime = logTime(stepTime, "Samples to clips")
 for i, clip in enumerate(clips):
     clip.vector.setParent(container.vector)
 
+def normalizeOffset(row, col, offsetY, offsetX, gridH, gridW):
+    newRow = (row + offsetY) % gridH
+    newCol = (col + offsetX) % gridW
+    return (newRow, newCol)
+
 # assign offsets per shuffle
 offsetPositions = np.zeros((a.SHUFFLE_COUNT, gridH, gridW, 2), dtype=int)
 shuffledIndices = np.zeros((a.SHUFFLE_COUNT, gridH, gridW), dtype=int)
 shuffledIndices[0] = np.array(range(gridH*gridW)).reshape(gridH, gridW)
+gridRatio = 1.0 * max(startGridW, endGridW) / gridW
 for index in range(a.SHUFFLE_COUNT-1):
     i = index + 1
     prev = offsetPositions[i-1]
@@ -73,16 +79,14 @@ for index in range(a.SHUFFLE_COUNT-1):
         for col in range(gridW):
             j = row * gridW + col
             s = samples[j]
-
             offsetX = prev[row, col, 1]
             offsetY = prev[row, col, 0]
-            prevRow = (s["row"] + offsetY) % gridH
-            prevCol = (s["col"] + offsetX) % gridW
+            prevRow, prevCol, = normalizeOffset(s["row"], s["col"], offsetY, offsetX, gridH, gridW)
             # offset vertical on even step
             if i % 2 == 0:
                 # offset more as we get closer to center
                 centerCol = 0.5 * (gridW-1)
-                nDistanceFromCenter = abs(prevCol-centerCol) / centerCol
+                nDistanceFromCenter = lim(abs(prevCol-centerCol) / centerCol * gridRatio)
                 offset = roundInt(lerp((a.MAX_OFFSET_STEP, 1), ease(nDistanceFromCenter)))
                 if prevCol % 2 > 0:
                     offset = -offset
@@ -91,7 +95,7 @@ for index in range(a.SHUFFLE_COUNT-1):
             else:
                 # offset more as we get closer to center
                 centerRow = 0.5 * (gridH-1)
-                nDistanceFromCenter = abs(prevRow-centerRow) / centerRow
+                nDistanceFromCenter = lim(abs(prevRow-centerRow) / centerRow * gridRatio)
                 offset = roundInt(lerp((a.MAX_OFFSET_STEP, 1), ease(nDistanceFromCenter)))
                 if prevRow % 2 > 0:
                     offset = -offset
@@ -99,8 +103,7 @@ for index in range(a.SHUFFLE_COUNT-1):
             # store the cumulative offsets
             offsetPositions[i, row, col] = [offsetY, offsetX]
             # assign new index
-            newRow = (s["row"] + offsetY) % gridH
-            newCol = (s["col"] + offsetX) % gridW
+            newRow, newCol = normalizeOffset(s["row"], s["col"], offsetY, offsetX, gridH, gridW)
             shuffledIndices[i, int(newRow), int(newCol)] = s["index"]
 
 shuffleDur = a.BEATS_PER_SHUFFLE * a.BEAT_MS
@@ -115,8 +118,8 @@ for i in range(a.SHUFFLE_COUNT):
     for col in playCols:
         row = playRows[col % 2]
         clipIndices.append(indices[row, col])
-    pprint(clipIndices)
-    print("-----")
+    # pprint(clipIndices)
+    # print("-----")
     for beat in range(a.BEATS_PER_SHUFFLE):
         for subbeat in range(SUB_BEATS):
             clipMs = a.PAD_START + shuffleDur * i + a.TRANSITION_MS * i + beat * a.BEAT_MS + subbeat * subBeatDur
@@ -145,9 +148,9 @@ for i in range(a.SHUFFLE_COUNT):
             ])
 
 startMs = a.PAD_START
-zoomDur = roundInt(shuffleDur * a.SHUFFLE_COUNT * 0.5)
-container.queueTween(startMs, zoomDur, ("scale", fromScale, toScale, "cubicInOut"))
 shuffleMs = (shuffleDur + a.TRANSITION_MS) * a.SHUFFLE_COUNT
+zoomDur = roundInt(shuffleMs * 0.5)
+container.queueTween(startMs, zoomDur, ("scale", fromScale, toScale, "cubicInOut"))
 durationMs = startMs + shuffleMs
 
 stepTime = logTime(stepTime, "Create plays/tweens")
@@ -165,32 +168,36 @@ def clipToNpArrShuffle(clip, ms, containerW, containerH, precision, parent, glob
     global gridW
     global gridH
 
-    nprogress = norm(ms, (startMs, durationMs))
-    fshuffle = a.SHUFFLE_COUNT * nprogress
-    shuffleIndex = min(floorInt(fshuffle), a.SHUFFLE_COUNT-1)
-    nshuffle = lim(fshuffle - shuffleIndex)
-    transitionThreshold = 1.0 * shuffleDur / (shuffleDur + a.TRANSITION_MS)
+    customProps = None
 
-    crow = clip.props["row"]
-    ccol = clip.props["col"]
+    if ms >= startMs:
+        nprogress = norm(ms, (startMs, durationMs))
+        fshuffle = a.SHUFFLE_COUNT * nprogress
+        shuffleIndex = min(floorInt(fshuffle), a.SHUFFLE_COUNT-1)
+        nshuffle = lim(fshuffle - shuffleIndex) # progress within current shuffle
+        transitionThreshold = 1.0 * shuffleDur / (shuffleDur + a.TRANSITION_MS) # threshold within nshuffle to start transitioning
 
-    offsetY, offsetX = tuple(offsetPositions[shuffleIndex, crow, ccol])
+        crow = clip.props["row"]
+        ccol = clip.props["col"]
 
-    # we are transitioning
-    if nshuffle > transitionThreshold and shuffleIndex < a.SHUFFLE_COUNT-1:
-        ntransition = norm(nshuffle, (transitionThreshold, 1.0), limit=True)
-        toOffsetY, toOffsetX = tuple(offsetPositions[shuffleIndex+1, crow, ccol])
-        offsetY, offsetX = (lerp((offsetY, toOffsetY), ease(ntransition)), lerp((offsetX, toOffsetX), ease(ntransition)))
+        offsetY, offsetX = tuple(offsetPositions[shuffleIndex, crow, ccol])
+        newRow, newCol = normalizeOffset(crow, ccol, offsetY, offsetX, gridH, gridW)
 
-    newRow = (crow + offsetY) % gridH
-    newCol = (ccol + offsetX) % gridW
-    cellW = 1.0 * a.WIDTH / gridW
-    cellH = 1.0 * a.HEIGHT / gridH
-    margin = a.CLIP_MARGIN * cellW * 0.5
+        # we are transitioning to the next shuffle; don't transition if last shuffle
+        if nshuffle > transitionThreshold and shuffleIndex < a.SHUFFLE_COUNT-1:
+            ntransition = norm(nshuffle, (transitionThreshold, 1.0), limit=True)
+            toOffsetY, toOffsetX = tuple(offsetPositions[shuffleIndex+1, crow, ccol])
+            deltaOffsetY, deltaOffsetX = (toOffsetY-offsetY, toOffsetX-offsetX) # amount we move from previous positions
+            fromRow, fromCol = (newRow, newCol) # previous positions
+            newRow, newCol = (lerp((fromRow, fromRow+deltaOffsetY), ease(ntransition)), lerp((fromCol, fromCol+deltaOffsetX), ease(ntransition)))
 
-    customProps = {}
-    customProps["x"] = newCol * cellW + margin
-    customProps["y"] = newRow * cellH + margin
+        cellW = 1.0 * a.WIDTH / gridW
+        cellH = 1.0 * a.HEIGHT / gridH
+        margin = a.CLIP_MARGIN * cellW * 0.5
+
+        x = newCol * cellW + margin
+        y = newRow * cellH + margin
+        customProps = {"pos": [x, y]}
 
     precisionMultiplier = int(10 ** precision)
     props = clip.toDict(ms, containerW, containerH, parent, customProps=customProps)
