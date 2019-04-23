@@ -71,7 +71,7 @@ def normalizeOffset(row, col, offsetY, offsetX, gridH, gridW):
 offsetPositions = np.zeros((a.SHUFFLE_COUNT, gridH, gridW, 2), dtype=int)
 shuffledIndices = np.zeros((a.SHUFFLE_COUNT, gridH, gridW), dtype=int)
 shuffledIndices[0] = np.array(range(gridH*gridW)).reshape(gridH, gridW)
-gridRatio = 1.0 * max(startGridW, endGridW) / gridW
+gridRatio = 1.0 * min(startGridW, endGridW) / gridW
 for index in range(a.SHUFFLE_COUNT-1):
     i = index + 1
     prev = offsetPositions[i-1]
@@ -141,7 +141,7 @@ for i in range(a.SHUFFLE_COUNT):
             leftMs = roundInt(clip.props["renderDur"] * 0.2)
             rightMs = clip.props["renderDur"] - leftMs
             clip.queueTween(clipMs, leftMs, [
-                ("brightness", 0, a.BRIGHTNESS_RANGE[1], "sin")
+                ("brightness", a.BRIGHTNESS_RANGE[0], a.BRIGHTNESS_RANGE[1], "sin")
             ])
             clip.queueTween(clipMs+leftMs, rightMs, [
                 ("brightness", a.BRIGHTNESS_RANGE[1], a.BRIGHTNESS_RANGE[0], "sin")
@@ -190,6 +190,7 @@ def clipToNpArrShuffle(clip, ms, containerW, containerH, precision, parent, glob
             deltaOffsetY, deltaOffsetX = (toOffsetY-offsetY, toOffsetX-offsetX) # amount we move from previous positions
             fromRow, fromCol = (newRow, newCol) # previous positions
             newRow, newCol = (lerp((fromRow, fromRow+deltaOffsetY), ease(ntransition)), lerp((fromCol, fromCol+deltaOffsetX), ease(ntransition)))
+            newRow, newCol = (newRow % gridH, newCol % gridW)
 
         cellW = 1.0 * a.WIDTH / gridW
         cellH = 1.0 * a.HEIGHT / gridH
