@@ -146,31 +146,31 @@ for i in range(a.SHUFFLE_COUNT):
             clip.queueTween(clipMs+leftMs, rightMs, [
                 ("brightness", a.BRIGHTNESS_RANGE[1], a.BRIGHTNESS_RANGE[0], "sin")
             ])
-        # play stetched during the transition
-        clipMs = a.PAD_START + shuffleDur * i + a.TRANSITION_MS * i + (beat+1) * a.BEAT_MS
-        volume = 1.0 / SUB_BEATS
-        clipDur = roundInt(a.BEAT_MS * 1.25)
-        for clipIndex in clipIndices:
-            clip = clips[clipIndex]
-            clip.queuePlay(clipMs, {
-                "start": clip.props["audioStart"],
-                "dur": clip.props["audioDur"],
-                "volume": volume,
-                "fadeOut": clip.props["fadeOut"],
-                "fadeIn": clip.props["fadeIn"],
-                "pan": clip.props["pan"],
-                "reverb": clip.props["reverb"],
-                "matchDb": clip.props["matchDb"],
-                "stretchTo": clipDur
-            })
-            leftMs = roundInt(clipDur * 0.2)
-            rightMs = clipDur - leftMs
-            clip.queueTween(clipMs, leftMs, [
-                ("brightness", a.BRIGHTNESS_RANGE[0], a.BRIGHTNESS_RANGE[1], "sin")
-            ])
-            clip.queueTween(clipMs+leftMs, rightMs, [
-                ("brightness", a.BRIGHTNESS_RANGE[1], a.BRIGHTNESS_RANGE[0], "sin")
-            ])
+    # play stetched during the transition
+    clipMs = a.PAD_START + shuffleDur * (i+1) + a.TRANSITION_MS * i
+    volume = max(0.33, 1.0 / SUB_BEATS)
+    clipDur = roundInt(a.BEAT_MS * 1.25)
+    for clipIndex in clipIndices:
+        clip = clips[clipIndex]
+        clip.queuePlay(clipMs, {
+            "start": clip.props["audioStart"],
+            "dur": clip.props["audioDur"],
+            "volume": volume,
+            "fadeOut": clip.props["fadeOut"],
+            "fadeIn": clip.props["fadeIn"],
+            "pan": clip.props["pan"],
+            "reverb": clip.props["reverb"],
+            "matchDb": clip.props["matchDb"],
+            "stretchTo": clipDur
+        })
+        leftMs = roundInt(clipDur * 0.2)
+        rightMs = clipDur - leftMs
+        clip.queueTween(clipMs, leftMs, [
+            ("brightness", a.BRIGHTNESS_RANGE[0], a.BRIGHTNESS_RANGE[1], "sin")
+        ])
+        clip.queueTween(clipMs+leftMs, rightMs, [
+            ("brightness", a.BRIGHTNESS_RANGE[1], a.BRIGHTNESS_RANGE[0], "sin")
+        ])
 
 startMs = a.PAD_START
 shuffleMs = (shuffleDur + a.TRANSITION_MS) * a.SHUFFLE_COUNT
