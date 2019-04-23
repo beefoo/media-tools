@@ -94,6 +94,9 @@ def applyAudioProperties(audio, props, sfx=True, fxPad=3000):
     if sfx:
         if "stretch" in p and p["stretch"] > 1.0:
             audio = stretchSound(audio, p["stretch"])
+        elif "stretchTo" in p and p["stretchTo"] > p["dur"]:
+            stretchAmount = 1.0 * p["stretchTo"] / p["dur"]
+            audio = stretchSound(audio, stretchAmount)
         effects = []
         for effect in ["reverb", "distortion", "highpass", "lowpass"]:
             if effect in p and p[effect] > 0:
