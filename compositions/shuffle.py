@@ -33,7 +33,7 @@ parser.add_argument('-grid0', dest="START_GRID", default="64x64", help="Start si
 parser.add_argument('-grid1', dest="END_GRID", default="32x32", help="End size of grid")
 parser.add_argument('-beat', dest="BEAT_MS", default=2048, type=int, help="Duration of beat")
 parser.add_argument('-bps', dest="BEATS_PER_SHUFFLE", default=8, type=int, help="Number of beats to play per shuffle")
-parser.add_argument('-count', dest="SHUFFLE_COUNT", default=8, type=int, help="Number of shuffles to play")
+parser.add_argument('-count', dest="SHUFFLE_COUNT", default=5, type=int, help="Number of shuffles to play")
 parser.add_argument('-bdivision', dest="BEAT_DIVISIONS", default=3, type=int, help="Number of times to divide each beat")
 parser.add_argument('-transition', dest="TRANSITION_MS", default=4096, type=int, help="Duration of transition")
 parser.add_argument('-mos', dest="MAX_OFFSET_STEP", default=8, type=int, help="Max offset step per shuffle")
@@ -106,6 +106,40 @@ for index in range(a.SHUFFLE_COUNT-1):
             newRow, newCol = normalizeOffset(s["row"], s["col"], offsetY, offsetX, gridH, gridW)
             shuffledIndices[i, int(newRow), int(newCol)] = s["index"]
 
+def getClipIndices(shuffledIndices, i, playRows, playCols):
+    indices = shuffledIndices[i]
+    clipIndices = []
+    for col in playCols:
+        row = playRows[col % 2]
+        clipIndices.append(indices[row, col])
+    return clipIndices
+
+def playTransition(a, clips, clipMs, clipIndices, reverse=False):
+    volume = a.VOLUME_RANGE[0]
+    clipDur = roundInt(a.TRANSITION_MS * 1.25)
+    for clipIndex in clipIndices:
+        clip = clips[clipIndex]
+        clip.queuePlay(clipMs, {
+            "start": clip.props["audioStart"],
+            "dur": clip.props["audioDur"],
+            "volume": volume,
+            "fadeOut": clip.props["fadeOut"],
+            "fadeIn": clip.props["fadeIn"],
+            "pan": clip.props["pan"],
+            "reverb": clip.props["reverb"],
+            "matchDb": clip.props["matchDb"],
+            "stretchTo": clipDur,
+            "reverse": reverse
+        })
+        leftMs = roundInt(clipDur * 0.2)
+        rightMs = clipDur - leftMs
+        clip.queueTween(clipMs, leftMs, [
+            ("brightness", a.BRIGHTNESS_RANGE[0], a.BRIGHTNESS_RANGE[1], "sin")
+        ])
+        clip.queueTween(clipMs+leftMs, rightMs, [
+            ("brightness", a.BRIGHTNESS_RANGE[1], a.BRIGHTNESS_RANGE[0], "sin")
+        ])
+
 shuffleDur = a.BEATS_PER_SHUFFLE * a.BEAT_MS
 subBeatDur = roundInt(1.0 * a.BEAT_MS / SUB_BEATS)
 cRow = roundInt(gridH * 0.5)
@@ -113,11 +147,7 @@ playRows = [cRow-1, cRow]
 colOffset = roundInt((gridW - SUB_BEATS) * 0.5)
 playCols = [colOffset+i for i in range(SUB_BEATS)]
 for i in range(a.SHUFFLE_COUNT):
-    indices = shuffledIndices[i]
-    clipIndices = []
-    for col in playCols:
-        row = playRows[col % 2]
-        clipIndices.append(indices[row, col])
+    clipIndices = getClipIndices(shuffledIndices, i, playRows, playCols)
     # pprint(clipIndices)
     # print("-----")
     for beat in range(a.BEATS_PER_SHUFFLE):
@@ -149,35 +179,22 @@ for i in range(a.SHUFFLE_COUNT):
     # play stetched during the transition
     if i < a.SHUFFLE_COUNT-1:
         clipMs = a.PAD_START + shuffleDur * (i+1) + a.TRANSITION_MS * i
-        volume = a.VOLUME_RANGE[0]
-        clipDur = roundInt(a.TRANSITION_MS * 1.25)
-        for clipIndex in clipIndices:
-            clip = clips[clipIndex]
-            clip.queuePlay(clipMs, {
-                "start": clip.props["audioStart"],
-                "dur": clip.props["audioDur"],
-                "volume": volume,
-                "fadeOut": clip.props["fadeOut"],
-                "fadeIn": clip.props["fadeIn"],
-                "pan": clip.props["pan"],
-                "reverb": clip.props["reverb"],
-                "matchDb": clip.props["matchDb"],
-                "stretchTo": clipDur
-            })
-            leftMs = roundInt(clipDur * 0.2)
-            rightMs = clipDur - leftMs
-            clip.queueTween(clipMs, leftMs, [
-                ("brightness", a.BRIGHTNESS_RANGE[0], a.BRIGHTNESS_RANGE[1], "sin")
-            ])
-            clip.queueTween(clipMs+leftMs, rightMs, [
-                ("brightness", a.BRIGHTNESS_RANGE[1], a.BRIGHTNESS_RANGE[0], "sin")
-            ])
+        playTransition(a, clips, clipMs, clipIndices)
 
 startMs = a.PAD_START
-shuffleMs = (shuffleDur + a.TRANSITION_MS) * a.SHUFFLE_COUNT
+shuffleMs = (shuffleDur + a.TRANSITION_MS) * a.SHUFFLE_COUNT - a.TRANSITION_MS
+reverseMs = a.TRANSITION_MS * (a.SHUFFLE_COUNT-1)
+
+# reverse the shuffles
+for index in range(a.SHUFFLE_COUNT-1):
+    i = a.SHUFFLE_COUNT - 1 - index
+    clipIndices = getClipIndices(shuffledIndices, i, playRows, playCols)
+    clipMs = startMs + shuffleMs + index * a.TRANSITION_MS
+    playTransition(a, clips, clipMs, clipIndices, reverse=True)
+
 zoomDur = roundInt(shuffleMs * 0.5)
 container.queueTween(startMs, zoomDur, ("scale", fromScale, toScale, "cubicInOut"))
-durationMs = startMs + shuffleMs
+durationMs = startMs + shuffleMs + reverseMs
 
 stepTime = logTime(stepTime, "Create plays/tweens")
 
@@ -189,22 +206,26 @@ def clipToNpArrShuffle(clip, ms, containerW, containerH, precision, parent, glob
     global a
     global startMs
     global durationMs
+    global shuffleMs
     global shuffleDur
     global offsetPositions
     global gridW
     global gridH
 
     customProps = None
+    crow = clip.props["row"]
+    ccol = clip.props["col"]
+    cellW = 1.0 * a.WIDTH / gridW
+    cellH = 1.0 * a.HEIGHT / gridH
+    margin = a.CLIP_MARGIN * cellW * 0.5
 
-    if ms >= startMs:
-        nprogress = norm(ms, (startMs, durationMs))
+    # we are in the main shuffling stage
+    if startMs <= ms < (startMs+shuffleMs):
+        nprogress = norm(ms, (startMs, startMs+shuffleMs+a.TRANSITION_MS)) # need to add one more TRANSITION_MS to calculate progress correctly
         fshuffle = a.SHUFFLE_COUNT * nprogress
         shuffleIndex = min(floorInt(fshuffle), a.SHUFFLE_COUNT-1)
         nshuffle = lim(fshuffle - shuffleIndex) # progress within current shuffle
         transitionThreshold = 1.0 * shuffleDur / (shuffleDur + a.TRANSITION_MS) # threshold within nshuffle to start transitioning
-
-        crow = clip.props["row"]
-        ccol = clip.props["col"]
 
         offsetY, offsetX = tuple(offsetPositions[shuffleIndex, crow, ccol])
         newRow, newCol = normalizeOffset(crow, ccol, offsetY, offsetX, gridH, gridW)
@@ -218,9 +239,23 @@ def clipToNpArrShuffle(clip, ms, containerW, containerH, precision, parent, glob
             newRow, newCol = (lerp((fromRow, fromRow+deltaOffsetY), ease(ntransition)), lerp((fromCol, fromCol+deltaOffsetX), ease(ntransition)))
             newRow, newCol = (newRow % gridH, newCol % gridW)
 
-        cellW = 1.0 * a.WIDTH / gridW
-        cellH = 1.0 * a.HEIGHT / gridH
-        margin = a.CLIP_MARGIN * cellW * 0.5
+        x = newCol * cellW + margin
+        y = newRow * cellH + margin
+        customProps = {"pos": [x, y]}
+
+    # we are reverse transitioning
+    elif ms >= (startMs+shuffleMs):
+        nprogress = norm(ms, (startMs+shuffleMs, durationMs))
+        fshuffle = (a.SHUFFLE_COUNT-2) * (1.0-nprogress) + 1.0
+        shuffleIndex = lim(ceilInt(fshuffle), (1, a.SHUFFLE_COUNT-1))
+        ntransition = lim(shuffleIndex - fshuffle) # progress within current transition
+
+        offsetY, offsetX = tuple(offsetPositions[shuffleIndex, crow, ccol])
+        toOffsetY, toOffsetX = tuple(offsetPositions[shuffleIndex-1, crow, ccol])
+        deltaOffsetY, deltaOffsetX = (toOffsetY-offsetY, toOffsetX-offsetX) # amount we move from previous positions
+        fromRow, fromCol = normalizeOffset(crow, ccol, offsetY, offsetX, gridH, gridW)
+        newRow, newCol = (lerp((fromRow, fromRow+deltaOffsetY), ease(ntransition)), lerp((fromCol, fromCol+deltaOffsetX), ease(ntransition)))
+        newRow, newCol = (newRow % gridH, newCol % gridW)
 
         x = newCol * cellW + margin
         y = newRow * cellH + margin
