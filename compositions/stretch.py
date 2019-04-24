@@ -62,10 +62,39 @@ toScale = 1.0 * gridW / endGridW
 container.queueTween(startMs, zoomDur, ("scale", fromScale, toScale, "cubicInOut"))
 durationMs = startMs + stretchMs
 
-def stretchAndPlayClip(a, clips, clipMs, row, col, gridW):
+def stretchAndPlayClip(a, clips, ms, row, col, gridW):
     index = row * gridW + col
     clip = clips[index]
-    
+    audioDur = clip.props["audioDur"]
+    targetStretch = 1.0 * a.STRETCH_TO_MS / audioDur
+    progress = 0.0
+    elapsedMs = 0.0
+    while progress <= 1.0:
+        volume = lerp(a.VOLUME_RANGE, 1.0-progress)
+        stretchAmount = lerp((1.0, targetStretch), progress)
+        clipMs = ms + elapsedMs
+        clip.queuePlay(clipMs, {
+            "start": clip.props["audioStart"],
+            "dur": clip.props["audioDur"],
+            "volume": volume,
+            "fadeOut": clip.props["fadeOut"],
+            "fadeIn": clip.props["fadeIn"],
+            "pan": clip.props["pan"],
+            "reverb": clip.props["reverb"],
+            "matchDb": clip.props["matchDb"],
+            "stretch": stretchAmount
+        })
+        clipDur = audioDur * stretchAmount
+        leftMs = roundInt(clipDur * 0.2)
+        rightMs = clipDur - leftMs
+        clip.queueTween(clipMs, leftMs, [
+            ("brightness", a.BRIGHTNESS_RANGE[0], a.BRIGHTNESS_RANGE[1], "sin")
+        ])
+        clip.queueTween(clipMs+leftMs, rightMs, [
+            ("brightness", a.BRIGHTNESS_RANGE[1], a.BRIGHTNESS_RANGE[0], "sin")
+        ])
+        elapsedMs += clipDur
+        progress = 1.0 * elapsedMs / a.STRETCH_TO_MS
 
 rowIndex = floorInt((gridH-1) * 0.5)
 midCol = (gridW-1) * 0.5
