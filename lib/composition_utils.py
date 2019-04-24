@@ -48,30 +48,43 @@ def getInitialOffset(a):
     else:
         basename = os.path.basename(a.OUTPUT_FILE)
         dirname = os.path.dirname(a.OUTPUT_FILE)
+        ext = basename.split(".")[-1]
         # check for enumeration
-        pattern = r"[a-zA-Z\_\-\.]+\_([0-9]+)\_[a-zA-Z\_\-\.]"
+        pattern = r"([a-zA-Z\_\-\.]+\_)([0-9]+)(\_[a-zA-Z\_\-\.])"
         match = re.match(pattern, basename)
         if match:
-            numberString = match.group(1) # e.g. 2, 02, 20
-            padding = len(numberString)
+            baseString = match.group(1)
+            numberString = match.group(2) # e.g. 2, 02, 20
             number = int(numberString)
-            if number > 1:
+
+            fileMatchStr = os.path.join(dirname, baseString + "*" + "." + ext)
+            filenames = getFilenames(fileMatchStr)
+
+            if number > 1 and len(filenames) >= (number-1):
                 print("Determining initial offset based on previous file durations...")
-                for i in range(1, number):
-                    iStr = str(i).zfill(padding)
-                    iBasename = re.sub(pattern, iStr, basename, 1)
-                    iFilename = os.path.join(dirname, iBasename)
-                    iDur = getDurationFromAudioFile(iFilename)
-                    if iDur > 0:
-                        print("Found %s with duration %s" % (iBasename, iDur))
-                        offset += iDur
-                    # Could not determine length
-                    else:
-                        print("Could not find duration for %s, exiting check" % iFilename)
-                        offset = 0
-                        break
+
+                foundFiles = [False for i in range(number-1)]
+
+                for fn in filenames:
+                    basefn = os.path.basename(fn)
+                    m = re.match(pattern, basefn)
+                    if m:
+                        n = int(m.group(2))
+                        index = n - 1
+                        if index < (number-1) and not foundFiles[index]:
+                            dur = getDurationFromAudioFile(fn)
+                            if dur > 0:
+                                offset += dur
+                                foundFiles[index] = True
+
+                if not all(found for found in foundFiles):
+                    print("Could not find durations for all files")
+                    offset = 0
         else:
             print("No files matching pattern for automatic initial offset check")
+
+    if offset > 0:
+        print("Found previous duration total to be %s" % formatSeconds(offset/1000.0))
 
     return offset
 
