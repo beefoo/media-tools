@@ -37,7 +37,7 @@ def addPositionNoise(clips, noiseXRange, noiseYRange, randomSeed=3):
     return clips
 
 # attempt to get the clip's offset based on arguments
-def getClipOffset(a, dur):
+def getInitialOffset(a):
     offset = 0
 
     # first check if was manually set
@@ -72,10 +72,6 @@ def getClipOffset(a, dur):
                         break
         else:
             print("No files matching pattern for automatic initial offset check")
-
-    if offset > 0:
-        offset = int(offset) % int(dur)
-        print("Setting clip offset: %s" % offset)
 
     return offset
 
@@ -158,6 +154,7 @@ def initGridComposition(a, stepTime=False):
     if a.NOISE > 0:
         samples = addPositionNoise(samples, (-a.NOISE, a.NOISE), (-a.NOISE*aspectRatio, a.NOISE*aspectRatio), a.RANDOM_SEED+3)
 
+    initialOffset = getInitialOffset(a)
     cCol, cRow = ((gridW-1) * 0.5, (gridH-1) * 0.5)
     for i, s in enumerate(samples):
         # Add audio properties
@@ -175,7 +172,7 @@ def initGridComposition(a, stepTime=False):
         samples[i]["maxDb"] = a.MAX_DB
         samples[i]["distanceFromCenter"] = distance(cCol, cRow, s["col"], s["row"])
         samples[i]["renderDur"] = max(audioDur, samples[i]["dur"], a.MIN_CLIP_DUR + pseudoRandom(i, range=(0, 500), isInt=True))
-        samples[i]["initialOffset"] = getClipOffset(a, samples[i]["renderDur"])
+        samples[i]["initialOffset"] = initialOffset % samples[i]["renderDur"]
     samples = addNormalizedValues(samples, "distanceFromCenter", "nDistanceFromCenter")
 
     # limit the number of clips playing
