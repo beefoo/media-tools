@@ -310,7 +310,8 @@ class Clip:
             "dur": 0,
             "state": {},
             "plays": [],
-            "index": 0
+            "index": 0,
+            "initialOffset": 0
         }
 
         defaults.update(props)
@@ -320,6 +321,7 @@ class Clip:
         self.start = defaults["start"]
         self.dur = defaults["dur"]
         self.plays = defaults["plays"]
+        self.initialOffset = defaults["initialOffset"]
 
         if self.dur <= 0 and self.filename is not None:
             self.dur = getDurationFromAudioFile(self.filename)
@@ -353,14 +355,10 @@ class Clip:
             firstPlay = self.plays[0]
             lastPlay = self.plays[-1]
 
-            # if we are before the first play, randomize the beginning
-            if ms < firstPlay[0]:
-                start = pseudoRandom(self.props["index"]+firstPlay[0], range=(0, (self.dur-1)), isInt=True)
-
-            # if we are after the last play, randomize the ending
-            elif ms > lastPlay[1]:
-                start = pseudoRandom(self.props["index"]+lastPlay[1], range=(0, (self.dur-1)), isInt=True)
-
+            # if we are before the first play or after the last one, set to initial offset
+            # for continuity between compositions
+            if ms < firstPlay[0] or ms > lastPlay[1]:
+                start = self.initialOffset
 
         msSincePlay = ms - start
         remainder = msSincePlay % self.dur

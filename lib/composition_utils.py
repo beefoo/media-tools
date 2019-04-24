@@ -1,12 +1,15 @@
 
 from lib.audio_mixer import *
+from lib.audio_utils import getDurationFromAudioFile
 from lib.clip import *
 from lib.io_utils import *
 from lib.math_utils import *
 from lib.sampler import *
 from lib.video_utils import *
 import math
+import os
 from pprint import pprint
+import re
 
 def addGridPositions(clips, cols, width, height, offsetX=0, offsetY=0, marginX=0, marginY=0):
     rows = ceilInt(1.0 * len(clips) / cols)
@@ -32,6 +35,49 @@ def addPositionNoise(clips, noiseXRange, noiseYRange, randomSeed=3):
         clips[i]["x"] = c["x"] + pseudoRandom(randomSeed+i*2, range=noiseXRange)
         clips[i]["y"] = c["y"] + pseudoRandom(randomSeed+i*2+1, range=noiseYRange)
     return clips
+
+# attempt to get the clip's offset based on arguments
+def getClipOffset(a, dur):
+    offset = 0
+
+    # first check if was manually set
+    if a.CLIP_INITIAL_OFFSET > 0:
+        offset = a.CLIP_INITIAL_OFFSET
+
+    # otherwise, attempt to automatically determine this based on previous files
+    else:
+        basename = os.path.basename(a.OUTPUT_FILE)
+        dirname = os.path.dirname(a.OUTPUT_FILE)
+        # check for enumeration
+        pattern = r"[a-zA-Z\_\-\.]+\_([0-9]+)\_[a-zA-Z\_\-\.]"
+        match = re.match(pattern, basename)
+        if match:
+            numberString = match.group(1) # e.g. 2, 02, 20
+            padding = len(numberString)
+            number = int(numberString)
+            if number > 1:
+                print("Determining initial offset based on previous file durations...")
+                for i in range(1, number):
+                    iStr = str(i).zfill(padding)
+                    iBasename = re.sub(pattern, iStr, basename, 1)
+                    iFilename = os.path.join(dirname, iBasename)
+                    iDur = getDurationFromAudioFile(iFilename)
+                    if iDur > 0:
+                        print("Found %s with duration %s" % (iBasename, iDur))
+                        offset += iDur
+                    # Could not determine length
+                    else:
+                        print("Could not find duration for %s, exiting check" % iFilename)
+                        offset = 0
+                        break
+        else:
+            print("No files matching pattern for automatic initial offset check")
+
+    if offset > 0:
+        offset = int(offset) % int(dur)
+        print("Setting clip offset: %s" % offset)
+
+    return offset
 
 def getDivisionIncrement(count):
     if count < 2:
@@ -129,6 +175,7 @@ def initGridComposition(a, stepTime=False):
         samples[i]["maxDb"] = a.MAX_DB
         samples[i]["distanceFromCenter"] = distance(cCol, cRow, s["col"], s["row"])
         samples[i]["renderDur"] = max(audioDur, samples[i]["dur"], a.MIN_CLIP_DUR + pseudoRandom(i, range=(0, 500), isInt=True))
+        samples[i]["initialOffset"] = getClipOffset(a, samples[i]["renderDur"])
     samples = addNormalizedValues(samples, "distanceFromCenter", "nDistanceFromCenter")
 
     # limit the number of clips playing
