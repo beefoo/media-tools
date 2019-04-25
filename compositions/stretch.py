@@ -55,7 +55,7 @@ for i, clip in enumerate(clips):
 
 steps = roundInt(endGridH * 0.5)
 startMs = a.PAD_START
-stretchMs = (steps-1) * a.STEP_MS + a.STRETCH_DURATION
+stretchMs = (steps-1) * a.STEP_MS + a.STRETCH_DURATION * 2 # 2x to shrink back down to normal size
 zoomDur = roundInt(stretchMs * 0.5)
 fromScale = 1.0 * gridW / startGridW
 toScale = 1.0 * gridW / endGridW
@@ -65,6 +65,7 @@ durationMs = startMs + stretchMs
 def stretchAndPlayClip(a, clips, ms, row, col, gridW):
     index = row * gridW + col
     clip = clips[index]
+    clip.setState("isPlayable", True)
     audioDur = clip.props["audioDur"]
     targetStretch = 1.0 * a.STRETCH_TO_MS / audioDur
     progress = 0.0
@@ -94,22 +95,41 @@ def stretchAndPlayClip(a, clips, ms, row, col, gridW):
             ("brightness", a.BRIGHTNESS_RANGE[1], a.BRIGHTNESS_RANGE[0], "sin")
         ])
         elapsedMs += clipDur
-        progress = 1.0 * elapsedMs / a.STRETCH_TO_MS
+        progress = 1.0 * elapsedMs / a.STRETCH_DURATION
+    # queue stretch in/out
+    clipScaleTo = 1.0 * a.HEIGHT / clip.props["height"]
+    clip.queueTween(ms, a.STRETCH_DURATION, ("scaleY", 1.0, clipScaleTo, "quadInOut"))
+    clip.queueTween(ms+a.STRETCH_DURATION, a.STRETCH_DURATION, ("scaleY", clipScaleTo, 1.0, "quadInOut"))
 
+# stretch and play the middle row of clips
 rowIndex = floorInt((gridH-1) * 0.5)
 midCol = (gridW-1) * 0.5
 for i in range(steps):
-    clipMs = i * a.STEP_MS
+    clipMs = startMs + i * a.STEP_MS
     colLeft = floorInt(midCol) - i
     colRight = ceilInt(midCol) + i
     stretchAndPlayClip(a, clips, clipMs, rowIndex, colLeft, gridW)
     stretchAndPlayClip(a, clips, clipMs, rowIndex, colRight, gridW)
 
+# move the rest of the clips out of the way as the middle row stretches
+midRow = (gridH-1) * 0.5
+deltaY = (a.HEIGHT - clips[0].props["height"]) * 0.5
+for clip in clips:
+    if clip.getState("isPlayable"):
+        continue
+
+    col = clip.props["col"]
+    step = floorInt(midCol) - col if col < midCol else col - ceilInt(midCol)
+    clipMs = startMs + step * a.STEP_MS
+
+    row = clip.props["row"]
+    translateYTo = deltaY if row > midRow else -deltaY
+
+    clip.queueTween(clipMs, a.STRETCH_DURATION, ("translateY", 0, translateYTo, "quadInOut"))
+    clip.queueTween(clipMs+a.STRETCH_DURATION, a.STRETCH_DURATION, ("translateY", translateYTo, 0, "quadInOut"))
+
 # sort frames
 container.vector.sortFrames()
-
-# reset scale
-container.vector.setTransform(scale=(1.0, 1.0))
 stepTime = logTime(stepTime, "Created video clip sequence")
 
 processComposition(a, clips, durationMs, sampler, stepTime, startTime)
