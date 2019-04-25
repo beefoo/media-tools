@@ -72,7 +72,8 @@ def getInitialOffset(a):
                         n = int(m.group(2))
                         index = n - 1
                         if index < (number-1) and not foundFiles[index]:
-                            dur = getDurationFromAudioFile(fn)
+                            # dur = getDurationFromAudioFile(fn)
+                            dur = roundInt(getDurationFromFile(fn, accurate=True) * 1000)
                             if dur > 0:
                                 offset += dur
                                 foundFiles[index] = True
