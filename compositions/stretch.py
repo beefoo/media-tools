@@ -32,8 +32,8 @@ parser.add_argument('-grid', dest="GRID", default="128x128", help="Size of grid"
 parser.add_argument('-grid0', dest="START_GRID", default="32x32", help="Start size of grid")
 parser.add_argument('-grid1', dest="END_GRID", default="128x128", help="End size of grid")
 parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.4,0.8", help="Volume range")
-parser.add_argument('-sdur', dest="STRETCH_DURATION", default=8192, type=int, help="How long it takes to stretech to full height")
-parser.add_argument('-stms', dest="STRETCH_TO_MS", default=4096, type=int, help="Target stretch duration")
+parser.add_argument('-sdur', dest="STRETCH_DURATION", default=16384, type=int, help="How long it takes to stretech to full height")
+parser.add_argument('-stms', dest="STRETCH_TO_MS", default=8192, type=int, help="Target stretch duration")
 parser.add_argument('-step', dest="STEP_MS", default=2048, type=int, help="Start next clips after this amount of time")
 a = parser.parse_args()
 parseVideoArgs(a)
@@ -53,10 +53,10 @@ stepTime = logTime(stepTime, "Samples to clips")
 for i, clip in enumerate(clips):
     clip.vector.setParent(container.vector)
 
-steps = parseInt(endGridH * 0.5)
+steps = roundInt(endGridH * 0.5)
 startMs = a.PAD_START
 stretchMs = (steps-1) * a.STEP_MS + a.STRETCH_DURATION
-zoomDur = parseInt(stretchMs * 0.5)
+zoomDur = roundInt(stretchMs * 0.5)
 fromScale = 1.0 * gridW / startGridW
 toScale = 1.0 * gridW / endGridW
 container.queueTween(startMs, zoomDur, ("scale", fromScale, toScale, "cubicInOut"))
@@ -68,7 +68,7 @@ def stretchAndPlayClip(a, clips, ms, row, col, gridW):
     audioDur = clip.props["audioDur"]
     targetStretch = 1.0 * a.STRETCH_TO_MS / audioDur
     progress = 0.0
-    elapsedMs = 0.0
+    elapsedMs = 0
     while progress <= 1.0:
         volume = lerp(a.VOLUME_RANGE, 1.0-progress)
         stretchAmount = lerp((1.0, targetStretch), progress)
@@ -84,7 +84,7 @@ def stretchAndPlayClip(a, clips, ms, row, col, gridW):
             "matchDb": clip.props["matchDb"],
             "stretch": stretchAmount
         })
-        clipDur = audioDur * stretchAmount
+        clipDur = roundInt(audioDur * stretchAmount)
         leftMs = roundInt(clipDur * 0.2)
         rightMs = clipDur - leftMs
         clip.queueTween(clipMs, leftMs, [

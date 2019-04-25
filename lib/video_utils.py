@@ -53,7 +53,7 @@ def addVideoArgs(parser):
     parser.add_argument('-keep', dest="KEEP_FIRST_AUDIO_CLIPS", default=-1, type=int, help="Ensure the middle x audio files play")
     parser.add_argument('-fa', dest="FRAME_ALPHA", default=1.0, type=float, help="For adding frame content on top of previous frames; must be 0 <= x < 1; lower number = slower fade of prev frames")
     parser.add_argument('-rmode', dest="RESIZE_MODE", default="fill", help="Mode for resizing frames: fill, contain, or warp")
-    parser.add_argument('-cio', dest="CLIP_INITIAL_OFFSET", default=0, type=int, help="Milliseconds to offset the initial clip state for continuity between compositions")
+    parser.add_argument('-io', dest="CLIP_INITIAL_OFFSET", default=0, type=int, help="Milliseconds to offset the initial clip state for continuity between compositions")
 
 
 def alphaMask(im, mask):
