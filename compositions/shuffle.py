@@ -246,7 +246,7 @@ def clipToNpArrShuffle(clip, ms, containerW, containerH, precision, parent, glob
     # we are reverse transitioning
     elif ms >= (startMs+shuffleMs):
         nprogress = norm(ms, (startMs+shuffleMs, durationMs))
-        fshuffle = (a.SHUFFLE_COUNT-2) * (1.0-nprogress) + 1.0
+        fshuffle = (a.SHUFFLE_COUNT-1) * (1.0-nprogress)
         shuffleIndex = lim(ceilInt(fshuffle), (1, a.SHUFFLE_COUNT-1))
         ntransition = lim(shuffleIndex - fshuffle) # progress within current transition
 
