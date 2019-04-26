@@ -58,6 +58,10 @@ class Vector:
             keyframe.update({"name": "translate", "dimension": 0})
         elif name == "translateY":
             keyframe.update({"name": "translate", "dimension": 1})
+        elif name == "scaleX":
+            keyframe.update({"name": "scale", "dimension": 0})
+        elif name == "scaleY":
+            keyframe.update({"name": "scale", "dimension": 1})
         elif name == "x":
             keyframe.update({"name": "pos", "dimension": 0})
         elif name == "y":
