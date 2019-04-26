@@ -107,6 +107,10 @@ def clipsToFrame(p, clips, pixelData, precision=3, customClipToArrFunction=None,
 
     if not fileExists and saveFrame or not saveFrame or isSequential:
         clipArr = clipsToNpArr(clips, ms, width, height, precision, customClipToArrFunction=customClipToArrFunction, globalArgs=globalArgs)
+        # debugFilename = "tmp/debug.%s.%s.txt" % (os.path.basename(filename), ms)
+        # debugArr = clipArr[:,5].astype(int)
+        # np.savetxt(debugFilename, debugArr, fmt='%i')
+        # sys.exit()
 
     # frame does not exist, create frame image
     if not fileExists:

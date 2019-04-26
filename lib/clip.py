@@ -343,7 +343,7 @@ class Clip:
 
         plays = [t for t in self.plays if t[0] <= ms <= t[1]]
         time = 0.0
-        start = 0
+        start = self.initialOffset
 
         # check if we are playing this clip at this time
         if len(plays) > 0:
@@ -365,14 +365,15 @@ class Clip:
                 start = self.initialOffset
 
         msSincePlay = ms - start
-        remainder = msSincePlay % self.dur
 
         # play forward and backward
-        if msSincePlay > self.dur:
-            dremainder = msSincePlay % int(self.dur*2)
-            # go backwards the 2nd half
-            if dremainder > self.dur:
-                remainder = max(0, self.dur - 1 - remainder)
+        remainder = msSincePlay % int(self.dur*2)
+        if remainder > self.dur:
+            remainder -= self.dur
+            remainer = self.dur - remainder - 1
+
+        # if self.props["index"] <= 0:
+        #     print("*** ms: %s, start: %s, dur: %s, remainder: %s" % (ms, start, self.dur, remainder))
 
         time = roundInt(self.start + remainder)
         return time

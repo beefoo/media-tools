@@ -170,6 +170,7 @@ def initGridComposition(a, stepTime=False):
         samples = addPositionNoise(samples, (-a.NOISE, a.NOISE), (-a.NOISE*aspectRatio, a.NOISE*aspectRatio), a.RANDOM_SEED+3)
 
     initialOffset = getInitialOffset(a)
+    print("Initial offset: %s" % initialOffset)
     cCol, cRow = ((gridW-1) * 0.5, (gridH-1) * 0.5)
     for i, s in enumerate(samples):
         # Add audio properties
@@ -186,7 +187,7 @@ def initGridComposition(a, stepTime=False):
         samples[i]["matchDb"] = a.MATCH_DB
         samples[i]["maxDb"] = a.MAX_DB
         samples[i]["distanceFromCenter"] = distance(cCol, cRow, s["col"], s["row"])
-        samples[i]["renderDur"] = max(audioDur, samples[i]["dur"], a.MIN_CLIP_DUR + pseudoRandom(i, range=(0, 500), isInt=True))
+        samples[i]["renderDur"] = samples[i]["dur"]
         samples[i]["initialOffset"] = (initialOffset % samples[i]["renderDur"]) * -1
     samples = addNormalizedValues(samples, "distanceFromCenter", "nDistanceFromCenter")
 
