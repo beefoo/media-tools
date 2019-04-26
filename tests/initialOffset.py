@@ -22,7 +22,27 @@ addVideoArgs(parser)
 a = parser.parse_args()
 parseVideoArgs(a)
 aa = vars(a)
-aa["OUTPUT_FILE"] = "output/ia_fedflixnara_05_shuffle.mp4"
 
+aa["OUTPUT_FILE"] = "output/ia_fedflixnara_01_proliferation.mp4"
+offset = getInitialOffset(a)
+print(offset)
+print("-----")
+
+aa["OUTPUT_FILE"] = "output/ia_fedflixnara_02_waves.mp4"
+offset = getInitialOffset(a)
+print(offset)
+print("-----")
+
+aa["OUTPUT_FILE"] = "output/ia_fedflixnara_03_falling.mp4"
+offset = getInitialOffset(a)
+print(offset)
+print("-----")
+
+aa["OUTPUT_FILE"] = "output/ia_fedflixnara_04_orbits.mp4"
+offset = getInitialOffset(a)
+print(offset)
+print("-----")
+
+aa["OUTPUT_FILE"] = "output/ia_fedflixnara_05_shuffle.mp4"
 offset = getInitialOffset(a)
 print(offset)

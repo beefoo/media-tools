@@ -46,11 +46,12 @@ def getInitialOffset(a):
 
     # otherwise, attempt to automatically determine this based on previous files
     else:
+        # print(a.OUTPUT_FILE)
         basename = os.path.basename(a.OUTPUT_FILE)
         dirname = os.path.dirname(a.OUTPUT_FILE)
         ext = basename.split(".")[-1]
         # check for enumeration
-        pattern = r"([a-zA-Z\_\-\.]+\_)([0-9]+)([a-zA-Z\_\-\.])"
+        pattern = r"([a-zA-Z\_\-\.]+\_)([0-9]+)([a-zA-Z\_\-\.]+)"
         match = re.match(pattern, basename)
         if match:
             baseString = match.group(1)
@@ -270,6 +271,9 @@ def processComposition(a, clips, videoDurationMs, sampler=None, stepTime=False, 
     # adjust frames if audio is longer than video
     totalFrames = msToFrame(durationMs, a.FPS) if durationMs > videoDurationMs else msToFrame(videoDurationMs, a.FPS)
     print("Total frames: %s" % totalFrames)
+
+    # ceil to the nearest second
+    totalFrames = int(ceilToNearest(totalFrames, a.FPS))
 
     # get frame sequence
     videoFrames = []

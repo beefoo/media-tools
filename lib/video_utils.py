@@ -252,7 +252,7 @@ def compileFrames(infile, fps, outfile, padZeros, audioFile=None, quality="high"
                     '-c:a','aac',
                     # '-q:v','1',
                     '-b:a', '192k',
-                    '-shortest',
+                    # '-shortest',
                     outfile]
     else:
         command = ['ffmpeg','-y',
