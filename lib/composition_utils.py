@@ -50,7 +50,7 @@ def getInitialOffset(a):
         dirname = os.path.dirname(a.OUTPUT_FILE)
         ext = basename.split(".")[-1]
         # check for enumeration
-        pattern = r"([a-zA-Z\_\-\.]+\_)([0-9]+)(\_[a-zA-Z\_\-\.])"
+        pattern = r"([a-zA-Z\_\-\.]+\_)([0-9]+)([a-zA-Z\_\-\.])"
         match = re.match(pattern, basename)
         if match:
             baseString = match.group(1)
@@ -186,7 +186,7 @@ def initGridComposition(a, stepTime=False):
         samples[i]["maxDb"] = a.MAX_DB
         samples[i]["distanceFromCenter"] = distance(cCol, cRow, s["col"], s["row"])
         samples[i]["renderDur"] = max(audioDur, samples[i]["dur"], a.MIN_CLIP_DUR + pseudoRandom(i, range=(0, 500), isInt=True))
-        samples[i]["initialOffset"] = initialOffset % samples[i]["renderDur"]
+        samples[i]["initialOffset"] = (initialOffset % samples[i]["renderDur"]) * -1
     samples = addNormalizedValues(samples, "distanceFromCenter", "nDistanceFromCenter")
 
     # limit the number of clips playing
