@@ -372,6 +372,8 @@ class Clip:
             remainder -= self.dur
             remainer = self.dur - remainder - 1
 
+        remainder = lim(remainder, (0, self.dur-1))
+
         # if self.props["index"] <= 0:
         #     print("*** ms: %s, start: %s, dur: %s, remainder: %s" % (ms, start, self.dur, remainder))
 
