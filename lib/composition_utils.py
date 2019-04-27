@@ -187,7 +187,7 @@ def initGridComposition(a, stepTime=False):
         samples[i]["matchDb"] = a.MATCH_DB
         samples[i]["maxDb"] = a.MAX_DB
         samples[i]["distanceFromCenter"] = distance(cCol, cRow, s["col"], s["row"])
-        samples[i]["renderDur"] = samples[i]["dur"]
+        samples[i]["renderDur"] = max(audioDur, samples[i]["dur"], a.MIN_CLIP_DUR + pseudoRandom(i, range=(0, 500), isInt=True))
         samples[i]["initialOffset"] = (initialOffset % (samples[i]["dur"]*2)) * -1
     samples = addNormalizedValues(samples, "distanceFromCenter", "nDistanceFromCenter")
 
