@@ -271,10 +271,14 @@ def processComposition(a, clips, videoDurationMs, sampler=None, stepTime=False, 
 
     # adjust frames if audio is longer than video
     totalFrames = msToFrame(durationMs, a.FPS) if durationMs > videoDurationMs else msToFrame(videoDurationMs, a.FPS)
-    print("Total frames: %s" % totalFrames)
 
     # ceil to the nearest second
     totalFrames = int(ceilToNearest(totalFrames, a.FPS))
+    print("Total frames: %s" % totalFrames)
+    durationMs = frameToMs(totalFrames, a.FPS)
+    if a.PROBE:
+        print("Total ms: %s" % durationMs)
+        sys.exit()
 
     # get frame sequence
     videoFrames = []

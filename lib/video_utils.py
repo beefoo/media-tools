@@ -54,7 +54,7 @@ def addVideoArgs(parser):
     parser.add_argument('-fa', dest="FRAME_ALPHA", default=1.0, type=float, help="For adding frame content on top of previous frames; must be 0 <= x < 1; lower number = slower fade of prev frames")
     parser.add_argument('-rmode', dest="RESIZE_MODE", default="fill", help="Mode for resizing frames: fill, contain, or warp")
     parser.add_argument('-io', dest="CLIP_INITIAL_OFFSET", default=0, type=int, help="Milliseconds to offset the initial clip state for continuity between compositions")
-
+    parser.add_argument('-probe', dest="PROBE", action="store_true", help="Just spit out duration info?")
 
 def alphaMask(im, mask):
     w, h = im.size
