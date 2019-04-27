@@ -188,7 +188,7 @@ def initGridComposition(a, stepTime=False):
         samples[i]["maxDb"] = a.MAX_DB
         samples[i]["distanceFromCenter"] = distance(cCol, cRow, s["col"], s["row"])
         samples[i]["renderDur"] = samples[i]["dur"]
-        samples[i]["initialOffset"] = (initialOffset % samples[i]["renderDur"]) * -1
+        samples[i]["initialOffset"] = (initialOffset % (samples[i]["dur"]*2)) * -1
     samples = addNormalizedValues(samples, "distanceFromCenter", "nDistanceFromCenter")
 
     # limit the number of clips playing

@@ -370,7 +370,7 @@ class Clip:
         remainder = msSincePlay % int(self.dur*2)
         if remainder > self.dur:
             remainder -= self.dur
-            remainer = self.dur - remainder - 1
+            remainder = self.dur - remainder - 1
 
         remainder = lim(remainder, (0, self.dur-1))
 
