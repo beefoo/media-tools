@@ -125,7 +125,8 @@ def initGridComposition(a, stepTime=False):
     endGridW, endGridH = tuple([int(v) for v in a.END_GRID.strip().split("x")])
     gridW, gridH = tuple([int(v) for v in a.GRID.strip().split("x")])
 
-    makeDirectories([a.OUTPUT_FRAME, a.OUTPUT_FILE, a.CACHE_DIR])
+    if not a.PROBE:
+        makeDirectories([a.OUTPUT_FRAME, a.OUTPUT_FILE, a.CACHE_DIR])
 
     _, samples = readCsv(a.INPUT_FILE)
     stepTime = logTime(stepTime, "Read CSV")
