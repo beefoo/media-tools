@@ -27,7 +27,7 @@ def makeTrack(duration, instructions, segments, sfx=True, sampleWidth=2, sampleR
         sys.stdout.flush()
     return baseAudio
 
-def mixAudio(instructions, duration, outfilename, sfx=True, sampleWidth=2, sampleRate=44100, channels=2, fxPad=3000):
+def mixAudio(instructions, duration, outfilename, sfx=True, sampleWidth=2, sampleRate=44100, channels=2, fxPad=3000, masterDb=0.0):
     # remove instructions with no volume
     instructions = [i for i in instructions if "volume" not in i or i["volume"] > 0]
     audioFiles = list(set([i["filename"] for i in instructions]))
@@ -81,6 +81,9 @@ def mixAudio(instructions, duration, outfilename, sfx=True, sampleWidth=2, sampl
 
     print("Writing to file...")
     format = outfilename.split(".")[-1]
+    # adjust master volume
+    if masterDb != 0.0:
+        baseAudio = baseAudio.apply_gain(masterDb)
     f = baseAudio.export(outfilename, format=format)
     print("Wrote to %s" % outfilename)
 

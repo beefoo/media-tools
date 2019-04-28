@@ -21,7 +21,7 @@ def addVideoArgs(parser):
     parser.add_argument('-in', dest="INPUT_FILE", default="tmp/samples.csv", help="Input file")
     parser.add_argument('-ss', dest="EXCERPT_START", type=float, default=-1, help="Excerpt start in seconds")
     parser.add_argument('-sd', dest="EXCERPT_DUR", type=float, default=-1, help="Excerpt duration in seconds")
-    parser.add_argument('-vol', dest="VOLUME", type=float, default=1.0, help="Master volume applied to all clips")
+    parser.add_argument('-db', dest="MASTER_DB", type=float, default=0.0, help="Master +/- decibels to be applied to final audio")
     parser.add_argument('-dir', dest="MEDIA_DIRECTORY", default="media/sample/", help="Input file")
     parser.add_argument('-width', dest="WIDTH", default=1920, type=int, help="Output video width")
     parser.add_argument('-height', dest="HEIGHT", default=1080, type=int, help="Output video height")

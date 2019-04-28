@@ -305,7 +305,7 @@ def processComposition(a, clips, videoDurationMs, sampler=None, stepTime=False, 
     rebuildVideo = (not a.AUDIO_ONLY and (len(videoFrames) > 0 and not os.path.isfile(videoFrames[-1]["filename"]) or a.OVERWRITE))
 
     if rebuildAudio:
-        mixAudio(audioSequence, durationMs, a.AUDIO_OUTPUT_FILE)
+        mixAudio(audioSequence, durationMs, a.AUDIO_OUTPUT_FILE, masterDb=a.MASTER_DB)
         stepTime = logTime(stepTime, "Mix audio")
 
     if rebuildVideo:
