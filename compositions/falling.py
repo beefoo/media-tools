@@ -39,7 +39,7 @@ parser.add_argument('-duration', dest="TARGET_DURATION", default=120, type=int, 
 parser.add_argument('-translate', dest="TRANSLATE_AMOUNT", default=0.5, type=float, help="Amount to translate clip as a percentage of height")
 parser.add_argument('-rotate', dest="ROTATE_AMOUNT", default=12.0, type=float, help="Max amount to rotate clip in degrees")
 parser.add_argument('-prad', dest="PLAY_RADIUS", default=8.0, type=float, help="Radius of cells/clips to play at any given time")
-parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.3,0.6", help="Volume range")
+parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.3,1.0", help="Volume range")
 parser.add_argument('-dpdur', dest="DELAY_PLAY_MS", default=1000, type=int, help="Don't play the first x ms of moving")
 a = parser.parse_args()
 parseVideoArgs(a)
