@@ -31,10 +31,11 @@ addVideoArgs(parser)
 parser.add_argument('-grid', dest="GRID", default="128x128", help="Size of grid")
 parser.add_argument('-grid0', dest="START_GRID", default="32x32", help="Start size of grid")
 parser.add_argument('-grid1', dest="END_GRID", default="128x128", help="End size of grid")
-parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.4,0.8", help="Volume range")
+parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.4,1.0", help="Volume range")
 parser.add_argument('-sdur', dest="STRETCH_DURATION", default=16384, type=int, help="How long it takes to stretech to full height")
 parser.add_argument('-stms', dest="STRETCH_TO_MS", default=8192, type=int, help="Target stretch duration")
 parser.add_argument('-step', dest="STEP_MS", default=2048, type=int, help="Start next clips after this amount of time")
+parser.add_argument('-tba', dest="TRANSITION_BACK_AT", default=0.5, type=float, help="When to start transitioning stretched clip back to normal as a percent of total duration")
 a = parser.parse_args()
 parseVideoArgs(a)
 
@@ -62,7 +63,7 @@ toScale = 1.0 * gridW / endGridW
 container.queueTween(startMs, zoomDur, ("scale", fromScale, toScale, "cubicInOut"))
 durationMs = startMs + stretchMs
 
-def stretchAndPlayClip(a, clips, ms, row, col, gridW):
+def stretchAndPlayClip(a, clips, ms, row, col, gridW, clipRevertStartMs, clipRevertDuration):
     index = row * gridW + col
     clip = clips[index]
     clip.setState("isPlayable", True)
@@ -99,17 +100,28 @@ def stretchAndPlayClip(a, clips, ms, row, col, gridW):
     # queue stretch in/out
     clipScaleTo = 1.0 * a.HEIGHT / clip.props["height"]
     clip.queueTween(ms, a.STRETCH_DURATION, ("scaleY", 1.0, clipScaleTo, "quadInOut"))
-    clip.queueTween(ms+a.STRETCH_DURATION, a.STRETCH_DURATION, ("scaleY", clipScaleTo, 1.0, "quadInOut"))
+    revertStart = clipRevertStartMs
+    revertDur = clipRevertDuration
+    # don't start reverting until completely stretched
+    if revertStart < (ms+a.STRETCH_DURATION):
+        revertStart = ms+a.STRETCH_DURATION
+        revertDur = a.STRETCH_DURATION
+    clip.queueTween(revertStart, revertDur, ("scaleY", clipScaleTo, 1.0, "quadInOut"))
 
 # stretch and play the middle row of clips
 rowIndex = floorInt((gridH-1) * 0.5)
 midCol = (gridW-1) * 0.5
+revertDuration = stretchMs - roundInt(stretchMs * a.TRANSITION_BACK_AT) # time it takes for all clips to revert back
+clipRevertDuration = roundInt(revertDuration * 0.5) # time it takes for an individual clip to revert back
+clipRevertStep = roundInt(1.0 * (revertDuration - clipRevertDuration) / steps) # offset for each clip to start to revert back
+revertStartMs = startMs + roundInt(stretchMs * a.TRANSITION_BACK_AT)
 for i in range(steps):
     clipMs = startMs + i * a.STEP_MS
     colLeft = floorInt(midCol) - i
     colRight = ceilInt(midCol) + i
-    stretchAndPlayClip(a, clips, clipMs, rowIndex, colLeft, gridW)
-    stretchAndPlayClip(a, clips, clipMs, rowIndex, colRight, gridW)
+    clipRevertStartMs = revertStartMs + i * clipRevertStep
+    stretchAndPlayClip(a, clips, clipMs, rowIndex, colLeft, gridW, clipRevertStartMs, clipRevertDuration)
+    stretchAndPlayClip(a, clips, clipMs, rowIndex, colRight, gridW, clipRevertStartMs, clipRevertDuration)
 
 # move the rest of the clips out of the way as the middle row stretches
 midRow = (gridH-1) * 0.5
