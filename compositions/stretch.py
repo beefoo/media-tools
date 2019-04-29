@@ -63,6 +63,15 @@ toScale = 1.0 * gridW / endGridW
 container.queueTween(startMs, zoomDur, ("scale", fromScale, toScale, "cubicInOut"))
 durationMs = startMs + stretchMs
 
+def getRevertTween(a, ms, clipRevertStartMs, clipRevertDuration):
+    revertStart = clipRevertStartMs
+    revertDur = clipRevertDuration
+    # don't start reverting until completely stretched
+    if revertStart < (ms+a.STRETCH_DURATION):
+        revertStart = ms+a.STRETCH_DURATION
+        revertDur = a.STRETCH_DURATION
+    return (revertStart, revertDur)
+
 def stretchAndPlayClip(a, clips, ms, row, col, gridW, clipRevertStartMs, clipRevertDuration):
     index = row * gridW + col
     clip = clips[index]
@@ -100,19 +109,14 @@ def stretchAndPlayClip(a, clips, ms, row, col, gridW, clipRevertStartMs, clipRev
     # queue stretch in/out
     clipScaleTo = 1.0 * a.HEIGHT / clip.props["height"]
     clip.queueTween(ms, a.STRETCH_DURATION, ("scaleY", 1.0, clipScaleTo, "quadInOut"))
-    revertStart = clipRevertStartMs
-    revertDur = clipRevertDuration
-    # don't start reverting until completely stretched
-    if revertStart < (ms+a.STRETCH_DURATION):
-        revertStart = ms+a.STRETCH_DURATION
-        revertDur = a.STRETCH_DURATION
+    revertStart, revertDur = getRevertTween(a, ms, clipRevertStartMs, clipRevertDuration)
     clip.queueTween(revertStart, revertDur, ("scaleY", clipScaleTo, 1.0, "quadInOut"))
 
 # stretch and play the middle row of clips
 rowIndex = floorInt((gridH-1) * 0.5)
 midCol = (gridW-1) * 0.5
 revertDuration = stretchMs - roundInt(stretchMs * a.TRANSITION_BACK_AT) # time it takes for all clips to revert back
-clipRevertDuration = roundInt(revertDuration * 0.5) # time it takes for an individual clip to revert back
+clipRevertDuration = a.STRETCH_DURATION # time it takes for an individual clip to revert back
 clipRevertStep = roundInt(1.0 * (revertDuration - clipRevertDuration) / steps) # offset for each clip to start to revert back
 revertStartMs = startMs + roundInt(stretchMs * a.TRANSITION_BACK_AT)
 for i in range(steps):
@@ -138,7 +142,9 @@ for clip in clips:
     translateYTo = deltaY if row > midRow else -deltaY
 
     clip.queueTween(clipMs, a.STRETCH_DURATION, ("translateY", 0, translateYTo, "quadInOut"))
-    clip.queueTween(clipMs+a.STRETCH_DURATION, a.STRETCH_DURATION, ("translateY", translateYTo, 0, "quadInOut"))
+    clipRevertStartMs = revertStartMs + step * clipRevertStep
+    revertStart, revertDur = getRevertTween(a, clipMs, clipRevertStartMs, clipRevertDuration)
+    clip.queueTween(revertStart, revertDur, ("translateY", translateYTo, 0, "quadInOut"))
 
 # sort frames
 container.vector.sortFrames()
