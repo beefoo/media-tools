@@ -120,6 +120,11 @@ def getOffset(count, index):
 def getRing(col, row, cCol, cRow):
     return ceilInt(max(abs(cCol-col), abs(cRow-row)))
 
+def getRingCount(ring):
+    ringGridW = ring * 2
+    ringGridH = ringGridW
+    return ringGridW * 2 + (ringGridH-2) * 2
+
 def initGridComposition(a, stepTime=False):
     startGridW, startGridH = tuple([int(v) for v in a.START_GRID.strip().split("x")])
     endGridW, endGridH = tuple([int(v) for v in a.END_GRID.strip().split("x")])

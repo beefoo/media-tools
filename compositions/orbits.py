@@ -64,11 +64,6 @@ def ringComparison(s):
     else:
         return (1, -x, -y)
 
-def getRingCount(ring):
-    ringGridW = ring * 2
-    ringGridH = ringGridW
-    return ringGridW * 2 + (ringGridH-2) * 2
-
 subbeats = 2**a.BEAT_DIVISIONS
 ringStepOffsetMs = 0
 rotationSteps = END_RINGS * max(1, roundInt(a.ROTATION_STEPS_OFFSET/2))
@@ -79,7 +74,9 @@ for step in range(END_RINGS):
     ringBeatOffset = getOffset(subbeats, step % subbeats)
     ringBeatOffsetMs = roundInt(ringBeatOffset * a.BEAT_MS)
     ringStartMs = a.PAD_START + ringStepOffsetMs + ringBeatOffsetMs
-    ringStepOffsetMs += roundInt(lerp((a.ROTATION_STEPS_OFFSET, 1.0), ease(nstep))) * a.BEAT_MS
+    rotateStepThreshold = 0.5 # after this amount of progress, just step one at a time
+    rotateStepsOffset = 1 if nstep >= rotateStepThreshold else roundInt(lerp((a.ROTATION_STEPS_OFFSET, 1.0), ease(nstep/rotateStepThreshold)))
+    ringStepOffsetMs += rotateStepsOffset * a.BEAT_MS
     ringSamples = [s for s in samples if s["ring"]==ring]
     ringSamples = sorted(ringSamples, key=ringComparison)
     ringCellCount = getRingCount(ring)
@@ -163,7 +160,7 @@ ms = max([s["rotateEndMs"] for s in samples]) + a.BEAT_MS
 # pprint(list(zip(scaleXs, scaleYs)))
 # sys.exit()
 
-pivot = 0.833
+pivot = 0.8
 tweenStartMs = roundInt(lerp((scaleXs[0], scaleXs[1]), pivot))
 container.queueTween(tweenStartMs, scaleXs[-1]-tweenStartMs, ("scale", scaleYs[0], scaleYs[-1], "quadInOut"))
 

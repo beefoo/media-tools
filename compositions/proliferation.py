@@ -35,6 +35,7 @@ parser.add_argument('-bstep', dest="BASE_STEP_MS", default=4096, type=int, help=
 parser.add_argument('-kfd', dest="KEYS_FOR_DISTANCE", default="tsne,tsne2", help="Keys for determining distance between clips")
 parser.add_argument('-cscale', dest="CLIP_SCALE_AMOUNT", default=1.1, type=float, help="Amount to scale clip when playing")
 parser.add_argument('-mci', dest="MIN_CLIP_INTERVAL_MS", default=16, type=int, help="Minimum time between consecutive clips")
+parser.add_argument('-rw', dest="RING_WINDOW", default=3, type=int, help="How many rings to look at to determine pool of clips to choose from")
 parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.4,1.0", help="Volume range")
 a = parser.parse_args()
 parseVideoArgs(a)
@@ -89,13 +90,18 @@ scaleYs = [fromScale]
 baseStepMs = a.BASE_STEP_MS * 4
 for step in range(END_RINGS):
     ring = step + 1
+    ringMax = step + a.RING_WINDOW
     ringStartMs = ms
-    ringClips = [c for c in clips if c.props["ring"] == ring]
-    ringClipCount = len(ringClips)
+    ringClips = [c for c in clips if c.props["ring"] <= ringMax and not c.getState("played")]
+    ringClipCount = getRingCount(ring)
     ringClipPlayCount = ringClipCount
     ringDurMs = roundInt(1.0 * baseStepMs / ring)
 
-    ringScale = 1.0 * gridW / (ring*2)
+    ringClips = sorted(ringClips, key=lambda c: c.props["playOrder"])
+    if len(ringClips) > ringClipCount:
+        ringClips = ringClips[:ringClipCount]
+
+    ringScale = 1.0 * gridW / (max([c.props["ring"] for c in ringClips])*2)
     if ringScale < fromScale:
         scaleXs.append(ringStartMs)
         scaleYs.append(ringScale)
@@ -119,6 +125,7 @@ for step in range(END_RINGS):
 
     for j, clip in enumerate(ringClips):
         clipMs = roundInt(ringStartMs + j * ringClipMs)
+
         if clip.props["index"] in playIndicesSet:
             clip.queuePlay(clipMs, {
                 "start": clip.props["audioStart"],
@@ -135,6 +142,7 @@ for step in range(END_RINGS):
             #     sampler.queuePlay(clipMs + roundInt(ringClipMs/2.0), "snare", index=step+j, params={
             #         "volume": 0.8
             #     })
+        clip.setState("played", True)
         leftMs = roundInt(clip.props["renderDur"] * 0.2)
         rightMs = clip.props["renderDur"] - leftMs
         clip.queueTween(clipMs, leftMs, [
@@ -147,7 +155,7 @@ for step in range(END_RINGS):
     ms += ringDurMs
 
 # tween container zoom
-pivot = 0.55
+pivot = 0.5
 tweenPivotMs = lerp((scaleXs[0], scaleXs[1]), pivot)
 # tweenPivotScale = lerp((scaleYs[0], scaleYs[1]), pivot)
 # container.queueTween(scaleXs[0], tweenPivotMs-scaleXs[0], ("scale", scaleYs[0], tweenPivotScale, "expIn^9"))
