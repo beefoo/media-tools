@@ -92,9 +92,9 @@ def loadMakeImageProgram(width, height, pcount, colorDimensions, precision):
         int4 finalcolor = blendColors(colorT, colorB, yLerp);
 
         // avoid dark corners
-        if (colorT.w < 255 && colorB.w < 255) {
-            finalcolor.w = max(colorT.w, colorB.w);
-        }
+        //if (colorT.w < 255 && colorB.w < 255) {
+        //    finalcolor.w = max(colorT.w, colorB.w);
+        //}
 
         return finalcolor;
     }
@@ -214,7 +214,7 @@ def clipsToImageGPU(width, height, flatPixelData, properties, colorDimensions, p
         ctx, prg = gpuProgram
     else:
         ctx, prg = loadMakeImageProgram(width, height, pcount, colorDimensions, precision)
-        
+
     # Create queue for each kernel execution
     queue = cl.CommandQueue(ctx)
     mf = cl.mem_flags

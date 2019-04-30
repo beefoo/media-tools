@@ -107,10 +107,17 @@ def clipsToFrame(p, clips, pixelData, precision=3, customClipToArrFunction=None,
 
     if not fileExists and saveFrame or not saveFrame or isSequential:
         clipArr = clipsToNpArr(clips, ms, width, height, precision, customClipToArrFunction=customClipToArrFunction, globalArgs=globalArgs)
+        # Clip debug:
+    #     pprint(clips[8124].props)
+    #     clipArr = clipsToNpArr(clips, ms, width, height, precision, customClipToArrFunction=customClipToArrFunction, globalArgs=globalArgs)
+    #     print("---")
+    #     pprint(clipArr[8124])
+    # sys.exit()
+        # Time debug:
         # debugFilename = "tmp/debug.%s.%s.txt" % (os.path.basename(filename), ms)
         # debugArr = clipArr[:,5].astype(int)
         # np.savetxt(debugFilename, debugArr, fmt='%i')
-        # sys.exit()
+    # sys.exit()
 
     # frame does not exist, create frame image
     if not fileExists:
@@ -210,6 +217,7 @@ def clipsToFrameGPU(clips, width, height, clipsPixelData, precision=3, baseImage
                 resampleType = Image.LANCZOS if imW > rw else Image.NEAREST
                 im = im.resize((rw, rh), resample=resampleType)
 
+            # im.save("output/test_pil.png")
             pixels = np.array(im)
             h, w, _c = pixels.shape
         # pixels are size 3, but need size 4
