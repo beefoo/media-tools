@@ -157,9 +157,11 @@ else:
         rows[i]["height"] = CELL_H
         sprites[row["index"]] += [round(1.0*x/IMAGE_W, 3), round(1.0*y/IMAGE_H, 3)]
 
+rows = addIndices(rows, "gridIndex")
+
 for i, row in enumerate(rows):
     # add label
-    label = os.path.basename(row["filename"]) + " " + formatSeconds(row["start"]/1000.0)
+    label = os.path.basename(row["filename"]) + " " + formatSeconds(row["start"]/1000.0) + ", index: %s" % row["gridIndex"]
     sprites[row["index"]] += [label]
     # kind of a hack: only take one frame at time
     rows[i]["start"] = row["t"]
@@ -167,15 +169,16 @@ for i, row in enumerate(rows):
 
 print("Generating image...")
 clips = samplesToClips(rows)
-pixelData = loadVideoPixelData(clips, fps=FPS, cacheDir=CACHE_DIR, verifyData=False)
-clipsToFrame({
-    "filename": IMAGE_FILE,
-    "overwrite": OVERWRITE,
-    "width": IMAGE_W,
-    "height": IMAGE_H,
-    "ms": 0,
-    "verbose": True
-}, clips, pixelData)
+if OVERWRITE or not os.path.isfile(IMAGE_FILE):
+    pixelData = loadVideoPixelData(clips, fps=FPS, cacheDir=CACHE_DIR, verifyData=False)
+    clipsToFrame({
+        "filename": IMAGE_FILE,
+        "overwrite": OVERWRITE,
+        "width": IMAGE_W,
+        "height": IMAGE_H,
+        "ms": 0,
+        "verbose": True
+    }, clips, pixelData)
 
 # Write json sprite file
 jsonData = {}
