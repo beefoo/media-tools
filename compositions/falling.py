@@ -177,6 +177,7 @@ radius = a.PLAY_RADIUS
 queue = {}
 xs = []
 ys = []
+prevXDelta = 0
 for f in range(totalFrames):
     frame = f + 1
     frameMs = startMs + frameToMs(frame, a.FPS)
@@ -186,6 +187,9 @@ for f in range(totalFrames):
     frameCx, frameCy = (frameCx % a.WIDTH, frameCy % a.HEIGHT) # wrap around
     gridCx, gridCy = (1.0*frameCx/a.WIDTH*gridW, 1.0 * frameCy/a.HEIGHT*gridH)
 
+    xVelocity = xDelta - prevXDelta
+    prevXDelta = xDelta
+    # xs.append(xVelocity)
     xs.append(xDelta)
     ys.append(yDelta)
 
