@@ -295,7 +295,7 @@ for clip in clips:
     leftMs = roundInt(clipDur * 0.2)
     rightMs = clipDur - leftMs
     clip.queueTween(clipMs, leftMs, [
-        ("brightness", 0, a.BRIGHTNESS_RANGE[1], "sin")
+        ("brightness", a.BRIGHTNESS_RANGE[0], a.BRIGHTNESS_RANGE[1], "sin")
     ])
     clip.queueTween(clipMs+leftMs, rightMs, [
         ("brightness", a.BRIGHTNESS_RANGE[1], a.BRIGHTNESS_RANGE[0], "sin")
