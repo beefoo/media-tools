@@ -35,7 +35,7 @@ parser.add_argument('-bstep', dest="BASE_STEP_MS", default=4096, type=int, help=
 parser.add_argument('-kfd', dest="KEYS_FOR_DISTANCE", default="tsne,tsne2", help="Keys for determining distance between clips")
 parser.add_argument('-cscale', dest="CLIP_SCALE_AMOUNT", default=1.1, type=float, help="Amount to scale clip when playing")
 parser.add_argument('-mci', dest="MIN_CLIP_INTERVAL_MS", default=16, type=int, help="Minimum time between consecutive clips")
-parser.add_argument('-rw', dest="RING_WINDOW", default=3, type=int, help="How many rings to look at to determine pool of clips to choose from")
+parser.add_argument('-rw', dest="RING_WINDOW", default=1, type=int, help="How many rings to look at to determine pool of clips to choose from")
 parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.4,1.0", help="Volume range")
 a = parser.parse_args()
 parseVideoArgs(a)
@@ -155,7 +155,7 @@ for step in range(END_RINGS):
     ms += ringDurMs
 
 # tween container zoom
-pivot = 0.5
+pivot = 0.55
 tweenPivotMs = lerp((scaleXs[0], scaleXs[1]), pivot)
 # tweenPivotScale = lerp((scaleYs[0], scaleYs[1]), pivot)
 # container.queueTween(scaleXs[0], tweenPivotMs-scaleXs[0], ("scale", scaleYs[0], tweenPivotScale, "expIn^9"))
