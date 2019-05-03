@@ -46,6 +46,7 @@ parseVideoArgs(a)
 aa = vars(a)
 
 TARGET_DURATION_MS = roundInt(a.TARGET_DURATION * 1000)
+VELOCITY_X_MAX = 0.853 # expected velocity x max
 
 # Get video data
 startTime = logTime()
@@ -122,7 +123,7 @@ def dequeueClips(ms, clips, queue):
         thresholdMs = clip.props["renderDur"] * 2
         # we have passed this clip
         if (ms - frameMs) > thresholdMs:
-            ndistance, playMs, xDelta, nprogress = max(queue[cindex], key=itemgetter(0)) # get the loudest frame
+            ndistance, playMs, xVelocity, nprogress = max(queue[cindex], key=itemgetter(0)) # get the loudest frame
             lastPlayedMs = clip.getState("lastPlayedMs")
             # check to make sure we don't play if already playing
             if lastPlayedMs is None or (playMs - lastPlayedMs) > thresholdMs:
@@ -140,15 +141,16 @@ def dequeueClips(ms, clips, queue):
                         "maxDb": clip.props["maxDb"]
                     })
                     speed = easeSinInOutBell(nprogress)
-                    clipDur = clip.props["renderDur"] * (1.0 + speed)
-                    leftMs = max(10, roundInt(clipDur * 0.5))
+                    clipDur = roundInt(lerp((clip.props["renderDur"]*1.5, clip.props["renderDur"]*2), speed))
+                    clipDur = max(1000, clipDur)
+                    leftMs = roundInt(clipDur * 0.5)
                     rightMs = clipDur - leftMs
 
                     # offset this depending on the xoffset and y speed
                     ty = clip.props["height"] * a.TRANSLATE_AMOUNT * speed * ndistance * 2
-                    xMultiplier = -1.0 * xDelta / clip.props["width"] * 0.5
+                    xMultiplier = -1.0 * xVelocity
                     tx = clip.props["height"] * a.TRANSLATE_AMOUNT * xMultiplier * speed * ndistance
-                    rotation = a.ROTATE_AMOUNT * speed
+                    rotation = a.ROTATE_AMOUNT * speed * abs(xVelocity)
                     if tx > 0.0:
                         rotation *= -1.0
 
@@ -187,7 +189,8 @@ for f in range(totalFrames):
     frameCx, frameCy = (frameCx % a.WIDTH, frameCy % a.HEIGHT) # wrap around
     gridCx, gridCy = (1.0*frameCx/a.WIDTH*gridW, 1.0 * frameCy/a.HEIGHT*gridH)
 
-    xVelocity = xDelta - prevXDelta
+    xVelocity = xDelta - prevXDelta # this number is positive if camera moves left
+    nxVelocity = lim(xVelocity / VELOCITY_X_MAX, (-1.0, 1.0))
     prevXDelta = xDelta
     # xs.append(xVelocity)
     xs.append(xDelta)
@@ -197,7 +200,7 @@ for f in range(totalFrames):
     for ndistance, clip in frameClips:
         cindex = clip.props["index"]
         if ndistance > 0:
-            entry = (ndistance, frameMs, xDelta, nprogress)
+            entry = (ndistance, frameMs, xVelocity, nprogress)
             if cindex in queue:
                 queue[cindex].append(entry)
             else:
@@ -215,6 +218,7 @@ container.vector.sortFrames()
 # plt.scatter(ts, xs, 3)
 # # plt.scatter(ts, ys, 3)
 # plt.show()
+# # print(max(xs))
 # sys.exit()
 
 # custom clip to numpy array function to override default tweening logic
