@@ -12,8 +12,8 @@ var SwipesApp = (function() {
       gridW: 128,
       gridH: 128,
       margin: 0.5,
-      frequency: 8,
-      radius: 1.0,
+      frequency: 2,
+      radius: 4.0,
       rotationDur: 8000
     };
     opt = $.extend({}, defaults, config);
@@ -49,7 +49,7 @@ var SwipesApp = (function() {
       width: w,
       height: h,
       backgroundColor: 0x000000,
-      resolution: window.devicePixelRatio || 1
+      resolution: 1
     });
     $container.append(app.view);
 
@@ -74,8 +74,8 @@ var SwipesApp = (function() {
         rects.push(rect);
 
         // south to north, offsets are based on row
-        var n = 1.0 * (row+col) / (opt.gridH+opt.gridW-2);
-        offsetsN.push(norm(Math.sin(n*opt.frequency*Math.PI), -1, 1));
+        var n = 1.0 * (row+col) / (opt.gridH+opt.gridW-2) * 2 * Math.PI * opt.frequency;
+        offsetsN.push(n);
 
         // offsetsNE[i] = ;
         // offsetsE[i] = ;
@@ -91,15 +91,15 @@ var SwipesApp = (function() {
   function render(deltaTime){
     var now = new Date().getTime();
     var offset = offsets[currentOffsetIndex];
+    var nprogress = (now % opt.rotationDur) / opt.rotationDur;
+    var radians = (1.0 - nprogress) * 2.0 * Math.PI;
 
     for(var i=0; i<rects.length; i++) {
       var rect = rects[i];
       var pos = positions[i];
-      var offsetMs = offset[i] * opt.rotationDur;
-      offsetMs = (now + offsetMs) % opt.rotationDur;
-      var nprogress = offsetMs / opt.rotationDur;
-      var radians = nprogress * 2.0 * Math.PI;
-      var tpos = translatePoint(pos, radians, rectRadius);
+      var roffset = offset[i];
+      var rradians = radians + roffset;
+      var tpos = translatePoint(pos, rradians, rectRadius);
       rect.x = tpos[0];
       rect.y = tpos[1];
     }

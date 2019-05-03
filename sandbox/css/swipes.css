@@ -3,12 +3,21 @@ body {
 }
 
 .app {
-  width: 1920px;
-  height: 1080px;
-  background: black;
+  width: 100vw;
+  height: 56.25vw;  /* 1920 x 1080 ratio */
   position: absolute;
   top: 50%;
-  left: 50%;
-  margin-top: -540px;
-  margin-left: -960px;
+  left: 0;
+  margin-top: -28.125vw;
+  background: black;
+}
+@media (min-aspect-ratio: 1920/1080) {
+  .app {
+    width: 177.777777778vh;
+    height: 100vh;
+    top: 0;
+    left: 50%;
+    margin-top: 0;
+    margin-left: -88.888888889vh;
+  }
 }
