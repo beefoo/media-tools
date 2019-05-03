@@ -73,20 +73,36 @@ var SwipesApp = (function() {
         positions.push([x, y]);
         rects.push(rect);
 
-        // south to north, offsets are based on row
-        var n = 1.0 * (row+col) / (opt.gridH+opt.gridW-2) * 2 * Math.PI * opt.frequency;
+        // south to north
+        var n = 1.0 * (1.0 - row / (opt.gridH-1)) * 2 * Math.PI * opt.frequency;
         offsetsN.push(n);
 
-        // offsetsNE[i] = ;
-        // offsetsE[i] = ;
-        // offsetsSE[i] = ;
+        // southwest to northeast
+        n = 1.0 * ((opt.gridW-row-1)+col) / (opt.gridH+opt.gridW-2) * 2 * Math.PI * opt.frequency;
+        offsetsNE.push(n);
+
+        // west to east
+        n = 1.0 * col / (opt.gridW-1) * 2 * Math.PI * opt.frequency;
+        offsetsE.push(n);
+
+        // northwest to southeast
+        n = 1.0 * (row+col) / (opt.gridH+opt.gridW-2) * 2 * Math.PI * opt.frequency;
+        offsetsSE.push(n);
       }
     }
     offsets = [offsetsN, offsetsNE, offsetsE, offsetsSE];
     currentOffsetIndex = 0;
 
     app.ticker.add(render);
+    loadListeners();
   }
+
+  function loadListeners(){
+    $container.on("click", function(){
+      currentOffsetIndex++;
+      if (currentOffsetIndex >= offsets.length) currentOffsetIndex = 0;
+    })
+  };
 
   function render(deltaTime){
     var now = new Date().getTime();
