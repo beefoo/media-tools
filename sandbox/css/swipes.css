@@ -1,0 +1,14 @@
+body {
+  background: #222;
+}
+
+.app {
+  width: 1920px;
+  height: 1080px;
+  background: black;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin-top: -540px;
+  margin-left: -960px;
+}
