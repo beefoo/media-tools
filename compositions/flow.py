@@ -34,7 +34,10 @@ parser.add_argument('-grid', dest="GRID", default="128x128", help="Size of grid"
 parser.add_argument('-grid0', dest="START_GRID", default="128x128", help="Start size of grid")
 parser.add_argument('-grid1', dest="END_GRID", default="128x128", help="End size of grid")
 parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.3,0.8", help="Volume range")
-parser.add_argument('-dur', dest="DURATION_MS", default=132000, type=int, help="Target duration in ms")
+parser.add_argument('-radius', dest="RADIUS", default=4.0, type=float, help="Target radius as a percentage of clip height")
+parser.add_argument('-freq', dest="FREQ_RANGE", default="8.0,4.0", help="Frequency range")
+parser.add_argument('-rdur', dest="ROTATION_DUR", default=8000, type=int, help="Target duration in ms")
+parser.add_argument('-rot', dest="ROTATIONS", default=16, type=int, help="Total number of rotations")
 a = parser.parse_args()
 parseVideoArgs(a)
 aa = vars(a)
@@ -62,8 +65,9 @@ toScale = 1.0 * gridW / endGridW
 if fromScale != toScale:
     container.queueTween(a.PAD_START, a.DURATION_MS, ("scale", fromScale, toScale, "quadInOut"))
 
+rotationsMs = a.ROTATION_DUR * a.ROTATIONS
 startMs = a.PAD_START
-endMs = startMs + a.DURATION_MS
+endMs = startMs + rotationsMs
 durationMs = endMs
 
 # sort frames
@@ -72,7 +76,7 @@ container.vector.sortFrames()
 stepTime = logTime(stepTime, "Calculated sequence")
 
 # custom clip to numpy array function to override default tweening logic
-def clipToNpArrSwipes(clip, ms, containerW, containerH, precision, parent, globalArgs={}):
+def clipToNpArrFlow(clip, ms, containerW, containerH, precision, parent, globalArgs={}):
     customProps = None
 
     # customProps = {
@@ -95,4 +99,4 @@ def clipToNpArrSwipes(clip, ms, containerW, containerH, precision, parent, globa
         roundInt(props["brightness"] * precisionMultiplier)
     ], dtype=np.int32)
 
-processComposition(a, clips, durationMs, sampler, stepTime, startTime, customClipToArrFunction=clipToNpArrSwipes, containsAlphaClips=True, isSequential=True)
+processComposition(a, clips, durationMs, sampler, stepTime, startTime, customClipToArrFunction=clipToNpArrFlow, containsAlphaClips=True, isSequential=True)

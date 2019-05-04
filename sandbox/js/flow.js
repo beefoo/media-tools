@@ -12,8 +12,8 @@ var SwipesApp = (function() {
       gridW: 128,
       gridH: 128,
       margin: 0.5,
-      frequency: 2,
-      radius: 4.0,
+      frequency: 4,
+      radius: 2.0,
       rotationDur: 8000
     };
     opt = $.extend({}, defaults, config);
