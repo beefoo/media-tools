@@ -245,8 +245,8 @@ def timecodeToMs(tc):
     return roundInt(seconds*1000)
 
 # East = 0 degrees
-def translatePoint(x, y, distance, angle):
-    rad = math.radians(angle)
+def translatePoint(x, y, distance, angle, radians=False):
+    rad = angle if radians else math.radians(angle)
     x2 = x + distance * math.cos(rad)
     y2 = y + distance * math.sin(rad)
     return (x2, y2)

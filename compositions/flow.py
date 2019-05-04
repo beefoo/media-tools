@@ -35,15 +35,17 @@ parser.add_argument('-grid0', dest="START_GRID", default="128x128", help="Start 
 parser.add_argument('-grid1', dest="END_GRID", default="128x128", help="End size of grid")
 parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.3,0.8", help="Volume range")
 parser.add_argument('-radius', dest="RADIUS", default=4.0, type=float, help="Target radius as a percentage of clip height")
-parser.add_argument('-freq', dest="FREQ_RANGE", default="8.0,4.0", help="Frequency range")
+parser.add_argument('-freq', dest="FREQ_RANGE", default="2.0,4.0", help="Frequency range")
 parser.add_argument('-rdur', dest="ROTATION_DUR", default=8000, type=int, help="Target duration in ms")
-parser.add_argument('-rot', dest="ROTATIONS", default=16, type=int, help="Total number of rotations")
+parser.add_argument('-rot', dest="ROTATIONS", default=8, type=int, help="Total number of rotations")
+parser.add_argument('-tdur', dest="TRANSITION_DUR", default=8000, type=int, help="How long it takes to transition to/from target frequency and radius")
 a = parser.parse_args()
 parseVideoArgs(a)
 aa = vars(a)
 aa["PAD_END"] = 6000
 aa["THREADS"] = 1 # enforce one thread since we need to process frames sequentially
 aa["FRAME_ALPHA"] = 0.01 # decrease to make "trails" longer
+aa["FREQ_RANGE"] = tuple([float(f) for f in a.FREQ_RANGE.strip().split(",")])
 
 # Get video data
 startTime = logTime()
@@ -59,6 +61,10 @@ stepTime = logTime(stepTime, "Samples to clips")
 
 for i, clip in enumerate(clips):
     clip.vector.setParent(container.vector)
+    clip.setState("cx", clip.props["x"] + clip.props["width"] * 0.5)
+    clip.setState("cy", clip.props["y"] + clip.props["height"] * 0.5)
+    rotationOffset = 1.0 * ((gridW-clip.props["row"]-1)+clip.props["col"]) / (gridH + gridW - 2) * 2.0 * math.pi
+    clip.setState("rotationOffset", rotationOffset)
 
 fromScale = 1.0 * gridW / startGridW
 toScale = 1.0 * gridW / endGridW
@@ -77,11 +83,40 @@ stepTime = logTime(stepTime, "Calculated sequence")
 
 # custom clip to numpy array function to override default tweening logic
 def clipToNpArrFlow(clip, ms, containerW, containerH, precision, parent, globalArgs={}):
+    global a
+    global startMs
+    global endMs
+
     customProps = None
 
-    # customProps = {
-    #     "pos": [x, y]
-    # }
+    if startMs <= ms < endMs:
+
+        transitionInMs = startMs + a.TRANSITION_DUR
+        transitionOutMs = endMs - a.TRANSITION_DUR
+        radius = a.RADIUS
+        freq = a.FREQ_RANGE[1]
+        nprogress = 1.0
+
+        # Check if we're transitioning
+        if ms < transitionInMs:
+            nprogress = norm(ms, (startMs, transitionInMs))
+        elif ms > transitionOutMs:
+            nprogress = 1.0 - norm(ms, (transitionOutMs, endMs))
+        if nprogress < 1.0:
+            nprogress = ease(nprogress)
+            radius = a.RADIUS * nprogress
+            freq = lerp(a.FREQ_RANGE, nprogress)
+
+        radius *= clip.props["height"]
+
+        # Rotate clip around its center
+        nrotation = 1.0 * (ms % a.ROTATION_DUR) / a.ROTATION_DUR
+        angle = (1.0 - nrotation) * 2.0 * math.pi + clip.getState("rotationOffset") * freq
+        cx, cy = translatePoint(clip.getState("cx"), clip.getState("cy"), radius, angle, radians=True)
+        x, y = (cx - clip.props["width"]*0.5, cy - clip.props["height"]*0.5)
+        customProps = {
+            "pos": [x, y]
+        }
 
     precisionMultiplier = int(10 ** precision)
     props = clip.toDict(ms, containerW, containerH, parent, customProps=customProps)
