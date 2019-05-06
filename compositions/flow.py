@@ -33,7 +33,7 @@ addVideoArgs(parser)
 parser.add_argument('-grid', dest="GRID", default="128x128", help="Size of grid")
 parser.add_argument('-grid0', dest="START_GRID", default="128x128", help="Start size of grid")
 parser.add_argument('-grid1', dest="END_GRID", default="128x128", help="End size of grid")
-parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.4,1.0", help="Volume range")
+parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.6,1.0", help="Volume range")
 parser.add_argument('-radius', dest="RADIUS", default=4.0, type=float, help="Target radius as a percentage of clip height")
 parser.add_argument('-freq', dest="FREQ_RANGE", default="2.0,2.0", help="Frequency range")
 parser.add_argument('-rdur', dest="ROTATION_DUR", default=8000, type=int, help="Target duration in ms")
@@ -79,6 +79,7 @@ if a.CLIPS_TO_PLAY > 0 and a.CLIPS_TO_PLAY < sampleCount:
     playableClips = clips[:a.CLIPS_TO_PLAY]
     clips = sorted(clips, key=lambda c: c.props["index"])
 updateClipStates(playableClips, ("isPlayable", True))
+playableClips = sorted(playableClips, key=lambda c: c.props["stsne"])
 
 fromScale = 1.0 * gridW / startGridW
 toScale = 1.0 * gridW / endGridW
