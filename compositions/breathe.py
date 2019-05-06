@@ -81,7 +81,7 @@ container.vector.sortFrames()
 stepTime = logTime(stepTime, "Calculated sequence")
 
 # custom clip to numpy array function to override default tweening logic
-def clipToNpArrShrink(clip, ms, containerW, containerH, precision, parent, globalArgs={}):
+def clipToNpArrBreathe(clip, ms, containerW, containerH, precision, parent, globalArgs={}):
     customProps = None
 
     # customProps = {
@@ -104,4 +104,4 @@ def clipToNpArrShrink(clip, ms, containerW, containerH, precision, parent, globa
         roundInt(props["brightness"] * precisionMultiplier)
     ], dtype=np.int32)
 
-processComposition(a, clips, durationMs, sampler, stepTime, startTime, customClipToArrFunction=clipToNpArrShrink, containsAlphaClips=True, isSequential=True)
+processComposition(a, clips, durationMs, sampler, stepTime, startTime, customClipToArrFunction=clipToNpArrBreathe, containsAlphaClips=True, isSequential=True)
