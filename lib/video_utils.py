@@ -91,7 +91,7 @@ def clipsToFrame(p, clips, pixelData, precision=3, customClipToArrFunction=None,
     width = p["width"]
     height = p["height"]
 
-    ms = getValue(p, "ms", 1.0)
+    ms = getValue(p, "ms", 0)
     overwrite = getValue(p, "overwrite", False)
     verbose = getValue(p, "verbose", False)
     debug = getValue(p, "debug", False)
@@ -99,6 +99,7 @@ def clipsToFrame(p, clips, pixelData, precision=3, customClipToArrFunction=None,
 
     frameAlpha = getValue(globalArgs, "frameAlpha", None)
     isSequential = getValue(globalArgs, "isSequential", False)
+    container = getValue(globalArgs, "container", None)
 
     im = None
     fileExists = filename and os.path.isfile(filename) and not overwrite
@@ -124,6 +125,12 @@ def clipsToFrame(p, clips, pixelData, precision=3, customClipToArrFunction=None,
         im = Image.new(mode="RGBA", size=(width, height), color=(0, 0, 0, 255))
         im = clipsToFrameGPU(clipArr, width, height, pixelData, precision, baseImage=baseImage, gpuProgram=gpuProgram, globalArgs=globalArgs)
         im = im.convert("RGB")
+        # check to see if we're applying container-level effects
+        if container is not None:
+            # right now we only care about blur
+            blur = container.vector.getBlur(ms)
+            if blur > 0.0:
+                im = blurImage(im, blur)
         # save if necessary
         if saveFrame:
             im.save(filename)

@@ -229,7 +229,7 @@ def limitAudioClips(samples, maxAudioClips, keyName, invert=False, keepFirst=64,
         samples[i]["playAudio"] = (s["index"] in indicesToKeep)
     return samples
 
-def processComposition(a, clips, videoDurationMs, sampler=None, stepTime=False, startTime=False, customClipToArrFunction=None, containsAlphaClips=False, isSequential=False, customClipToArrCalcFunction=None, baseImage=None):
+def processComposition(a, clips, videoDurationMs, sampler=None, stepTime=False, startTime=False, customClipToArrFunction=None, containsAlphaClips=False, isSequential=False, customClipToArrCalcFunction=None, baseImage=None, container=None):
 
     # get audio sequence
     samplerClips = sampler.getClips() if sampler is not None else []
@@ -320,7 +320,8 @@ def processComposition(a, clips, videoDurationMs, sampler=None, stepTime=False, 
             "isSequential": isSequential,
             "frameAlpha": a.FRAME_ALPHA,
             "resizeMode": a.RESIZE_MODE,
-            "baseImage": baseImage
+            "baseImage": baseImage,
+            "container": container
         }
         clipsPixelData = loadVideoPixelDataFromFrames(videoFrames, clips, a.WIDTH, a.HEIGHT, a.FPS, a.CACHE_DIR, a.CACHE_KEY, a.VERIFY_CACHE, cache=True, debug=a.DEBUG, precision=a.PRECISION, customClipToArrFunction=customClipToArrFunction, customClipToArrCalcFunction=customClipToArrCalcFunction, globalArgs=globalArgs)
         stepTime = logTime(stepTime, "Loaded pixel data")

@@ -104,4 +104,4 @@ def clipToNpArrBreathe(clip, ms, containerW, containerH, precision, parent, glob
         roundInt(props["brightness"] * precisionMultiplier)
     ], dtype=np.int32)
 
-processComposition(a, clips, durationMs, sampler, stepTime, startTime, customClipToArrFunction=clipToNpArrBreathe, containsAlphaClips=True, isSequential=True)
+processComposition(a, clips, durationMs, sampler, stepTime, startTime, customClipToArrFunction=clipToNpArrBreathe, containsAlphaClips=True, isSequential=True, container=container)
