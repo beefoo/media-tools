@@ -43,8 +43,8 @@ a = parser.parse_args()
 parseVideoArgs(a)
 aa = vars(a)
 aa["PAD_END"] = 6000
-aa["THREADS"] = 1 # enforce one thread since we need to process frames sequentially
-aa["FRAME_ALPHA"] = 0.01 # decrease to make "trails" longer
+# aa["THREADS"] = 1 # enforce one thread since we need to process frames sequentially
+# aa["FRAME_ALPHA"] = 0.01 # decrease to make "trails" longer
 aa["FREQ_RANGE"] = tuple([float(f) for f in a.FREQ_RANGE.strip().split(",")])
 
 # Get video data
@@ -130,4 +130,4 @@ def clipToNpArrFlow(clip, ms, containerW, containerH, precision, parent, globalA
         roundInt(brightness * precisionMultiplier)
     ], dtype=np.int32)
 
-processComposition(a, clips, durationMs, sampler, stepTime, startTime, customClipToArrFunction=clipToNpArrFlow, containsAlphaClips=True, isSequential=True)
+processComposition(a, clips, durationMs, sampler, stepTime, startTime, customClipToArrFunction=clipToNpArrFlow, containsAlphaClips=True)
