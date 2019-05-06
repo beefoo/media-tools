@@ -33,12 +33,13 @@ addVideoArgs(parser)
 parser.add_argument('-grid', dest="GRID", default="128x128", help="Size of grid")
 parser.add_argument('-grid0', dest="START_GRID", default="128x128", help="Start size of grid")
 parser.add_argument('-grid1', dest="END_GRID", default="128x128", help="End size of grid")
-parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.3,0.8", help="Volume range")
+parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.4,1.0", help="Volume range")
 parser.add_argument('-radius', dest="RADIUS", default=4.0, type=float, help="Target radius as a percentage of clip height")
 parser.add_argument('-freq', dest="FREQ_RANGE", default="2.0,2.0", help="Frequency range")
 parser.add_argument('-rdur', dest="ROTATION_DUR", default=8000, type=int, help="Target duration in ms")
 parser.add_argument('-rot', dest="ROTATIONS", default=8, type=int, help="Total number of rotations")
-
+parser.add_argument('-ctp', dest="CLIPS_TO_PLAY", default=256, type=int, help="Total number of clips to play")
+parser.add_argument('-pdur', dest="PLAY_DURATION", default=8000, type=int, help="Duration to play for each clip")
 a = parser.parse_args()
 parseVideoArgs(a)
 aa = vars(a)
@@ -59,6 +60,7 @@ for i, s in enumerate(samples):
 clips = samplesToClips(samples)
 stepTime = logTime(stepTime, "Samples to clips")
 
+# Determine rotation offsets and brightness
 degreesPerMs = 360.0 / a.ROTATION_DUR
 for i, clip in enumerate(clips):
     clip.vector.setParent(container.vector)
@@ -70,6 +72,14 @@ for i, clip in enumerate(clips):
     nBrightness = easeSinInOutBell(nBrightness)
     clip.setState("nBrightness", nBrightness)
 
+# Decide which clips to play
+playableClips = clips[:]
+if a.CLIPS_TO_PLAY > 0 and a.CLIPS_TO_PLAY < sampleCount:
+    clips = sorted(clips, key=lambda c: c.getState("nBrightness"), reverse=True)
+    playableClips = clips[:a.CLIPS_TO_PLAY]
+    clips = sorted(clips, key=lambda c: c.props["index"])
+updateClipStates(playableClips, ("isPlayable", True))
+
 fromScale = 1.0 * gridW / startGridW
 toScale = 1.0 * gridW / endGridW
 if fromScale != toScale:
@@ -79,6 +89,31 @@ rotationsMs = a.ROTATION_DUR * a.ROTATIONS
 startMs = a.PAD_START
 endMs = startMs + rotationsMs
 durationMs = endMs
+
+# Create audio sequence
+playStepMs = roundInt(1.0 * (rotationsMs-a.PLAY_DURATION) / a.CLIPS_TO_PLAY)
+for i, clip in enumerate(playableClips):
+    ms = startMs + i * playStepMs
+    # ease the whole sequence in then out
+    nprogress = norm(ms, (startMs, endMs))
+    nprogress = easeSinInOutBell(nprogress)
+    # ease clips in and out with rotations
+    nrotation = 1.0 * (ms % a.ROTATION_DUR) / a.ROTATION_DUR
+    nrotation = easeSinInOutBell(nrotation)
+    volume = lerp(a.VOLUME_RANGE, nrotation) * nprogress
+    fadeOut = roundInt(clip.props["audioDur"] * 0.9)
+    fadeIn = clip.props["audioDur"] - fadeOut
+    clip.queuePlay(ms, {
+        "start": clip.props["audioStart"],
+        "dur": clip.props["audioDur"],
+        "volume": volume,
+        "fadeOut": fadeOut,
+        "fadeIn": fadeIn,
+        "pan": clip.props["pan"],
+        "reverb": clip.props["reverb"],
+        "matchDb": clip.props["matchDb"],
+        "stretchTo": a.PLAY_DURATION
+    })
 
 # sort frames
 container.vector.sortFrames()
