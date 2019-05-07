@@ -38,17 +38,19 @@ parser.add_argument('-bdur', dest="BREATH_DUR", default=8000, type=int, help="Br
 parser.add_argument('-bcount', dest="BREATH_COUNT", default=16, type=int, help="Number of breaths")
 parser.add_argument('-bstep', dest="BREATH_STEP", default=0.618, type=float, help="Amount to scale radius for each breath")
 parser.add_argument('-props', dest="CLUSTER_PROPS", default="tsne,tsne2", help="X and Y properties for clustering")
-parser.add_argument('-clusters', dest="CLUSTERS", default=64, type=int, help="Number of clusters to play")
 parser.add_argument('-blur', dest="BLUR_AMOUNT", default=4.0, type=float, help="Amount to blur frame")
 parser.add_argument('-scale', dest="SCALE_AMOUNT", default=1.0, type=float, help="Amount to scale each clip")
 parser.add_argument('-btms', dest="BLUR_TRANSITION_MS", default=16000, type=int, help="Duration it take to transition to blurred and scaled clips")
 parser.add_argument('-rot', dest="ROTATIONS", default=1, type=int, help="Number of rotations a clip should make ")
+parser.add_argument('-maxapc', dest="MAX_AUDIO_CLIPS_PER_CLUSTER", default=64, type=int, help="Max number of clips to play per cluster")
+parser.add_argument('-cdur', dest="CLIP_DUR", default=128, type=int, help="Target clip play duration")
 a = parser.parse_args()
 parseVideoArgs(a)
 aa = vars(a)
 # aa["PAD_END"] = 6000
 # aa["THREADS"] = 1 # enforce one thread since we need to process frames sequentially
 # aa["FRAME_ALPHA"] = 0.01 # decrease to make "trails" longer
+aa["REVERB"] = 100
 
 PROP1, PROP2 = tuple([p for p in a.CLUSTER_PROPS.strip().split(",")])
 
@@ -58,14 +60,18 @@ stepTime = startTime
 samples, sampleCount, container, sampler, stepTime, cCol, cRow, gridW, gridH, startGridW, startGridH, endGridW, endGridH = initGridComposition(a, stepTime)
 
 # add clusters
-# print("Calculating clusters...")
-
-# samples, clusterCenters = addClustersToList(samples, PROP1, PROP2, nClusters=a.CLUSTERS)
-# stepTime = logTime(stepTime, "Calculated clusters")
+print("Calculating clusters...")
+samples, clusterCenters = addClustersToList(samples, PROP1, PROP2, nClusters=a.BREATH_COUNT)
+stepTime = logTime(stepTime, "Calculated clusters")
 
 # set clip brightness to min by default
 for i, s in enumerate(samples):
     samples[i]["brightness"] = a.BRIGHTNESS_RANGE[0]
+
+# set z-index based on distance from center (center in front)
+samples = sorted(samples, key=lambda s: (s["distanceFromCenter"], s["angleFromCenter"]), reverse=True)
+samples = addIndices(samples, "zindex", startIndex=1)
+samples = sorted(samples, key=lambda s: s["index"])
 
 # add normalized values for cluster props
 samples = addNormalizedValues(samples, PROP1, "n"+PROP1)
@@ -78,6 +84,8 @@ offsetX = (a.WIDTH - a.HEIGHT) * 0.5
 cx = a.WIDTH*0.5
 cy = a.HEIGHT*0.5
 for clip in clips:
+    clip.vector.setParent(container.vector)
+
     # make them squares based on height
     fromH = clip.props["height"]
     toH = fromH * a.SCALE_AMOUNT
@@ -95,10 +103,6 @@ for clip in clips:
     # randomly assign breath duration
     clip.setState("breathDur", lerp((a.BREATH_DUR*0.5, a.BREATH_DUR), pseudoRandom(clip.props["index"])))
 
-
-for i, clip in enumerate(clips):
-    clip.vector.setParent(container.vector)
-
 fromScale = 1.0 * gridW / startGridW
 toScale = 1.0 * gridW / endGridW
 if fromScale != toScale:
@@ -110,8 +114,56 @@ breatheMs = a.BREATH_DUR * a.BREATH_COUNT
 endMs = breatheStartMs + breatheMs
 durationMs = endMs
 
+# group clips by cluster
+clipGroups = [[] for i in range(a.BREATH_COUNT)]
+for clip in clips:
+    clipGroups[clip.props["cluster"]].append(clip)
+
+exhaleMs = roundInt(a.BREATH_DUR * 0.5)
+for i, group in enumerate(clipGroups):
+    center = clusterCenters[i]
+    playGroup = sorted(group, key=lambda c: distance(center[0], center[1], c.props[PROP1], c.props[PROP2]))
+
+    # assign random variance
+    count = len(playGroup)
+    clipStepMs = roundInt(1.0 * exhaleMs / (count+1))
+    playableCount = min(count, a.MAX_AUDIO_CLIPS_PER_CLUSTER)
+    clipPlayStepMs = roundInt(1.0 * exhaleMs / (playableCount+1))
+    groupStartMs = breatheStartMs + a.BREATH_DUR * i + (a.BREATH_DUR-exhaleMs)
+    for j, clip in enumerate(playGroup):
+        clipMs = groupStartMs + j * clipStepMs
+        # these will actually play audio
+        if j < playableCount:
+            nprogress = 1.0 * j / playableCount
+            volume = lerp(a.VOLUME_RANGE, 1.0-nprogress)
+            clipMs = groupStartMs + j * clipPlayStepMs
+            playDur = min(a.CLIP_DUR, clip.props["audioDur"])
+            fadeOut = roundInt(playDur * 0.8)
+            fadeIn = playDur - fadeOut
+            clip.queuePlay(clipMs, {
+                "start": clip.props["audioStart"],
+                "dur": playDur,
+                "volume": volume,
+                "fadeOut": fadeOut,
+                "fadeIn": fadeIn,
+                "pan": clip.props["pan"],
+                "reverb": clip.props["reverb"],
+                "matchDb": clip.props["matchDb"]
+            })
+        clipDur = clip.props["audioDur"]
+        leftMs = roundInt(clipDur * 0.2)
+        rightMs = clipDur - leftMs
+        clip.queueTween(clipMs, leftMs, ("brightness", a.BRIGHTNESS_RANGE[0], a.BRIGHTNESS_RANGE[1], "sin"))
+        clip.queueTween(clipMs+leftMs, rightMs, ("brightness", a.BRIGHTNESS_RANGE[1], a.BRIGHTNESS_RANGE[0], "sin"))
+        clipDur = clip.props["renderDur"] * 2.0
+        clip.queueTween(clipMs, clipDur, [
+            ("alpha", 1.0, 0.0, "sin"),
+            ("blur", 0.0, a.BLUR_AMOUNT, "sin")
+        ])
+
+
 # blur container
-container.queueTween(startMs, a.BLUR_TRANSITION_MS, ("blur", 0.0, a.BLUR_AMOUNT, "cubicInOut"))
+# container.queueTween(startMs, a.BLUR_TRANSITION_MS, ("blur", 0.0, a.BLUR_AMOUNT, "cubicInOut"))
 
 # sort frames
 container.vector.sortFrames()
@@ -188,4 +240,8 @@ def clipToNpArrBreathe(clip, ms, containerW, containerH, precision, parent, glob
         roundInt(props["brightness"] * precisionMultiplier)
     ], dtype=np.int32)
 
-processComposition(a, clips, durationMs, sampler, stepTime, startTime, customClipToArrFunction=clipToNpArrBreathe, containsAlphaClips=True, container=container)
+processComposition(a, clips, durationMs, sampler, stepTime, startTime,
+    customClipToArrFunction=clipToNpArrBreathe,
+    containsAlphaClips=True
+    # container=container
+)

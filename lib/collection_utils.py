@@ -5,9 +5,9 @@ from operator import itemgetter
 from pprint import pprint
 from lib.math_utils import *
 
-def addIndices(arr, keyName="index"):
+def addIndices(arr, keyName="index", startIndex=0):
     for i, item in enumerate(arr):
-        arr[i][keyName] = i
+        arr[i][keyName] = startIndex + i
     return arr
 
 def containsList(bucketList, needleList):
