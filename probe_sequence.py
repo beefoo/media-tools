@@ -10,7 +10,7 @@ from lib.math_utils import *
 # input
 parser = argparse.ArgumentParser()
 parser.add_argument('-in', dest="INPUT_FILE", default="tmp/ia_fedflixnara_subset_128x128.csv", help="Input sample csv file")
-parser.add_argument('-seq', dest="SEQUENCE", default="proliferation,waves,falling,orbits,shuffle,stretch,wind", help="Comma separated list of compositions")
+parser.add_argument('-seq', dest="SEQUENCE", default="proliferation,waves,falling,orbits,shuffle,stretch,flow", help="Comma separated list of compositions")
 parser.add_argument('-pyv', dest="PYTHON_NAME", default="python3", help="Name of python command")
 a = parser.parse_args()
 
