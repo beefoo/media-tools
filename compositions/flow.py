@@ -38,7 +38,7 @@ parser.add_argument('-radius', dest="RADIUS", default=4.0, type=float, help="Tar
 parser.add_argument('-freq', dest="FREQ_RANGE", default="2.0,2.0", help="Frequency range")
 parser.add_argument('-rdur', dest="ROTATION_DUR", default=8000, type=int, help="Target duration in ms")
 parser.add_argument('-rot', dest="ROTATIONS", default=8, type=int, help="Total number of rotations")
-parser.add_argument('-ctp', dest="CLIPS_TO_PLAY", default=1024, type=int, help="Total number of clips to play")
+parser.add_argument('-ctp', dest="CLIPS_TO_PLAY", default=512, type=int, help="Total number of clips to play")
 parser.add_argument('-pdur', dest="PLAY_DURATION", default=8000, type=int, help="Duration to play for each clip")
 a = parser.parse_args()
 parseVideoArgs(a)
