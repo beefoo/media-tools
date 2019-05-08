@@ -92,6 +92,7 @@ endMs = startMs + rotationsMs
 durationMs = endMs
 
 # Create audio sequence
+audioOffset = roundInt(a.ROTATION_DUR * -0.5)
 playStepMs = roundInt(1.0 * (rotationsMs-a.PLAY_DURATION) / a.CLIPS_TO_PLAY)
 for i, clip in enumerate(playableClips):
     ms = startMs + i * playStepMs
@@ -104,7 +105,7 @@ for i, clip in enumerate(playableClips):
     volume = lerp(a.VOLUME_RANGE, nrotation) * nprogress
     fadeOut = roundInt(clip.props["audioDur"] * 0.9)
     fadeIn = clip.props["audioDur"] - fadeOut
-    clip.queuePlay(ms, {
+    clip.queuePlay(ms + audioOffset, {
         "start": clip.props["audioStart"],
         "dur": clip.props["audioDur"],
         "volume": volume,
