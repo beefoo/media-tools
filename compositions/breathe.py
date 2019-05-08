@@ -36,7 +36,7 @@ parser.add_argument('-grid1', dest="END_GRID", default="128x128", help="End size
 parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.3,0.8", help="Volume range")
 parser.add_argument('-bdur', dest="BREATH_DUR", default=8000, type=int, help="Breath duration in ms")
 parser.add_argument('-bcount', dest="BREATH_COUNT", default=16, type=int, help="Number of breaths")
-parser.add_argument('-bstep', dest="BREATH_STEP", default=0.618, type=float, help="Amount to scale radius for each breath")
+parser.add_argument('-bstep', dest="BREATH_STEP", default=0.9, type=float, help="Amount to scale radius for each breath")
 parser.add_argument('-props', dest="CLUSTER_PROPS", default="tsne,tsne2", help="X and Y properties for clustering")
 parser.add_argument('-blur', dest="BLUR_AMOUNT", default=4.0, type=float, help="Amount to blur frame")
 parser.add_argument('-scale', dest="SCALE_AMOUNT", default=1.0, type=float, help="Amount to scale each clip")
@@ -69,7 +69,7 @@ for i, s in enumerate(samples):
     samples[i]["brightness"] = a.BRIGHTNESS_RANGE[0]
 
 # set z-index based on distance from center (center in front)
-samples = sorted(samples, key=lambda s: (s["distanceFromCenter"], s["angleFromCenter"]), reverse=True)
+samples = sorted(samples, key=lambda s: s["distanceFromCenter"], reverse=True)
 samples = addIndices(samples, "zindex", startIndex=1)
 samples = sorted(samples, key=lambda s: s["index"])
 
