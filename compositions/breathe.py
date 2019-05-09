@@ -33,15 +33,16 @@ addVideoArgs(parser)
 parser.add_argument('-grid', dest="GRID", default="128x128", help="Size of grid")
 parser.add_argument('-grid0', dest="START_GRID", default="128x128", help="Start size of grid")
 parser.add_argument('-grid1', dest="END_GRID", default="128x128", help="End size of grid")
-parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.3,0.8", help="Volume range")
+parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.4,0.8", help="Volume range")
 parser.add_argument('-bdur', dest="BREATH_DUR", default=8000, type=int, help="Breath duration in ms")
 parser.add_argument('-bcount', dest="BREATH_COUNT", default=16, type=int, help="Number of breaths")
-parser.add_argument('-bstep', dest="BREATH_STEP", default=0.9, type=float, help="Amount to scale radius for each breath")
+parser.add_argument('-bstep', dest="BREATH_STEP", default=0.92, type=float, help="Amount to scale radius for each breath")
 parser.add_argument('-props', dest="CLUSTER_PROPS", default="tsne,tsne2", help="X and Y properties for clustering")
-parser.add_argument('-blur', dest="BLUR_AMOUNT", default=4.0, type=float, help="Amount to blur frame")
+parser.add_argument('-blur', dest="BLUR_AMOUNT", default=8.0, type=float, help="Amount to blur frame")
+parser.add_argument('-bstart', dest="BLUR_START", default=0.75, type=float, help="When to start blurring, as a percentage of breath composition")
 parser.add_argument('-scale', dest="SCALE_AMOUNT", default=1.0, type=float, help="Amount to scale each clip")
-parser.add_argument('-btms', dest="BLUR_TRANSITION_MS", default=16000, type=int, help="Duration it take to transition to blurred and scaled clips")
-parser.add_argument('-rot', dest="ROTATIONS", default=1, type=int, help="Number of rotations a clip should make ")
+parser.add_argument('-trans', dest="TRANSITION_MS", default=16000, type=int, help="Duration it take to transition to blurred and scaled clips")
+parser.add_argument('-rot', dest="ANGLE_RANGE", default="0.0,180.0", help="Range of angle rotation a clip should make in degrees")
 parser.add_argument('-maxapc', dest="MAX_AUDIO_CLIPS_PER_CLUSTER", default=64, type=int, help="Max number of clips to play per cluster")
 parser.add_argument('-cdur', dest="CLIP_DUR", default=128, type=int, help="Target clip play duration")
 a = parser.parse_args()
@@ -53,6 +54,7 @@ aa = vars(a)
 aa["REVERB"] = 100
 
 PROP1, PROP2 = tuple([p for p in a.CLUSTER_PROPS.strip().split(",")])
+aa["ANGLE_RANGE"] = tuple([float(v) for v in a.ANGLE_RANGE.strip().split(",")])
 
 # Get video data
 startTime = logTime()
@@ -100,8 +102,9 @@ for clip in clips:
     clip.setState("distanceFromCenter", distance(cx, cy, toX, toY))
     clip.setState("angleFromCenter", angleBetween(cx, cy, toX, toY))
 
-    # randomly assign breath duration
-    clip.setState("breathDur", lerp((a.BREATH_DUR*0.5, a.BREATH_DUR), pseudoRandom(clip.props["index"])))
+    # randomly assign breath offset, rotations
+    clip.setState("breathOffset", lerp((0.0, a.BREATH_DUR*0.5), pseudoRandom(clip.props["index"]+1)))
+    clip.setState("angleToRotate", lerp(a.ANGLE_RANGE, pseudoRandom(clip.props["index"]+2)))
 
 fromScale = 1.0 * gridW / startGridW
 toScale = 1.0 * gridW / endGridW
@@ -109,7 +112,7 @@ if fromScale != toScale:
     container.queueTween(a.PAD_START, a.DURATION_MS, ("scale", fromScale, toScale, "quadInOut"))
 
 startMs = a.PAD_START
-breatheStartMs = startMs + a.BLUR_TRANSITION_MS
+breatheStartMs = startMs + a.TRANSITION_MS
 breatheMs = a.BREATH_DUR * a.BREATH_COUNT
 endMs = breatheStartMs + breatheMs
 durationMs = endMs
@@ -122,20 +125,20 @@ for clip in clips:
 exhaleMs = roundInt(a.BREATH_DUR * 0.5)
 for i, group in enumerate(clipGroups):
     center = clusterCenters[i]
-    playGroup = sorted(group, key=lambda c: distance(center[0], center[1], c.props[PROP1], c.props[PROP2]))
+    volumeMultiplier = 1.0 - 1.0 * i / (len(clipGroups)-1) # quieter as we go on
 
-    # assign random variance
-    count = len(playGroup)
+    # determine when to play
+    count = len(group)
     clipStepMs = roundInt(1.0 * exhaleMs / (count+1))
     playableCount = min(count, a.MAX_AUDIO_CLIPS_PER_CLUSTER)
     clipPlayStepMs = roundInt(1.0 * exhaleMs / (playableCount+1))
     groupStartMs = breatheStartMs + a.BREATH_DUR * i + (a.BREATH_DUR-exhaleMs)
-    for j, clip in enumerate(playGroup):
+    for j, clip in enumerate(group):
         clipMs = groupStartMs + j * clipStepMs
         # these will actually play audio
         if j < playableCount:
             nprogress = 1.0 * j / playableCount
-            volume = lerp(a.VOLUME_RANGE, 1.0-nprogress)
+            volume = lerp(a.VOLUME_RANGE, 1.0-nprogress) * volumeMultiplier
             clipMs = groupStartMs + j * clipPlayStepMs
             playDur = min(a.CLIP_DUR, clip.props["audioDur"])
             fadeOut = roundInt(playDur * 0.8)
@@ -150,20 +153,17 @@ for i, group in enumerate(clipGroups):
                 "reverb": clip.props["reverb"],
                 "matchDb": clip.props["matchDb"]
             })
-        clipDur = clip.props["audioDur"]
-        leftMs = roundInt(clipDur * 0.2)
+        clipDur = clip.props["renderDur"]
+        leftMs = roundInt(clipDur * 0.25)
         rightMs = clipDur - leftMs
         clip.queueTween(clipMs, leftMs, ("brightness", a.BRIGHTNESS_RANGE[0], a.BRIGHTNESS_RANGE[1], "sin"))
         clip.queueTween(clipMs+leftMs, rightMs, ("brightness", a.BRIGHTNESS_RANGE[1], a.BRIGHTNESS_RANGE[0], "sin"))
-        clipDur = clip.props["renderDur"] * 2.0
-        clip.queueTween(clipMs, clipDur, [
-            ("alpha", 1.0, 0.0, "sin"),
-            ("blur", 0.0, a.BLUR_AMOUNT, "sin")
-        ])
-
 
 # blur container
-# container.queueTween(startMs, a.BLUR_TRANSITION_MS, ("blur", 0.0, a.BLUR_AMOUNT, "cubicInOut"))
+blurStartMs = roundInt(startMs + a.BLUR_START * breatheMs)
+blurDur = roundInt(breatheMs - a.BLUR_START * breatheMs)
+blurEndMs = blurStartMs + blurDur
+container.queueTween(blurStartMs, blurDur, ("blur", 0.0, a.BLUR_AMOUNT, "cubicInOut"))
 
 # sort frames
 container.vector.sortFrames()
@@ -175,11 +175,14 @@ def clipToNpArrBreathe(clip, ms, containerW, containerH, precision, parent, glob
     global a
     global startMs
     global breatheStartMs
+    global blurStartMs
+    global blurEndMs
     global endMs
     global cx
     global cy
 
     customProps = None
+    alpha = 1.0
 
     # initial transition of scale and position
     if startMs <= ms < breatheStartMs:
@@ -195,34 +198,37 @@ def clipToNpArrBreathe(clip, ms, containerW, containerH, precision, parent, glob
         }
 
     elif ms >= breatheStartMs:
-        nprogress = norm(ms, (breatheStartMs, endMs))
-        breathIndex = roundInt(nprogress * (a.BREATH_COUNT-1))
-
-        breathPadding = roundInt((a.BREATH_DUR-clip.getState("breathDur"))*0.5)
-        bStartMs = breatheStartMs + breathIndex * a.BREATH_DUR + breathPadding
-        bEndMs = bStartMs + clip.getState("breathDur")
-        bnprogress = norm(ms, (bStartMs, bEndMs), limit=True)
+        offsetMs = clip.getState("breathOffset")
+        nprogress = norm(ms, (breatheStartMs+offsetMs, endMs+offsetMs), limit=True)
+        fbreathIndex = nprogress * a.BREATH_COUNT
+        breathIndex = min(floorInt(fbreathIndex), a.BREATH_COUNT-1)
+        bnprogress = lim(fbreathIndex-breathIndex)
 
         # determine distance from center
         d = clip.getState("distanceFromCenter")
-        d0 = d * (a.BREATH_STEP ** breathIndex)
-        dmid = d * (a.BREATH_STEP ** (breathIndex+2))
-        d1 = d * (a.BREATH_STEP ** (breathIndex+1))
-        distance = lerp((d0, dmid), ease(bnprogress/0.5, "cubicInOut")) if bnprogress <= 0.5 else lerp((dmid, d1), ease((bnprogress-0.5)/0.5, "cubicInOut"))
+        d0 = d * (a.BREATH_STEP**breathIndex)
+        dmid = d * (a.BREATH_STEP**(breathIndex+2))
+        d1 = d * (a.BREATH_STEP**(breathIndex+1))
+        distanceFromCenter = lerp((d0, dmid), ease((bnprogress/0.5), "cubicInOut")) if bnprogress <= 0.5 else lerp((dmid, d1), ease(((bnprogress-0.5)/0.5), "cubicInOut"))
 
         # determine angle from center
-        angleToRotate = a.ROTATIONS * 360.0
+        angleToRotate = clip.getState("angleToRotate")
         angle = clip.getState("angleFromCenter") + angleToRotate * nprogress
         angle = angle % 360.0
 
         # set position
-        x, y = translatePoint(cx, cy, distance, angle)
+        x, y = translatePoint(cx, cy, distanceFromCenter, angle)
         w = clip.getState("tw")
         h = clip.getState("th")
         customProps = {
             "pos": [x, y],
             "size": [w, h]
         }
+
+    # fade out
+    if ms > blurStartMs:
+        nalpha = norm(ms, (blurStartMs, blurEndMs), limit=True)
+        alpha = ease(1.0-nalpha, "cubicInOut")
 
     precisionMultiplier = int(10 ** precision)
     props = clip.toDict(ms, containerW, containerH, parent, customProps=customProps)
@@ -232,7 +238,7 @@ def clipToNpArrBreathe(clip, ms, containerW, containerH, precision, parent, glob
         roundInt(props["y"] * precisionMultiplier),
         roundInt(props["width"] * precisionMultiplier),
         roundInt(props["height"] * precisionMultiplier),
-        roundInt(props["alpha"] * precisionMultiplier),
+        roundInt(alpha * precisionMultiplier),
         roundInt(props["tn"] * precisionMultiplier),
         roundInt(props["zindex"]),
         roundInt(props["rotation"] * precisionMultiplier),
