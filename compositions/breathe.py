@@ -42,7 +42,7 @@ parser.add_argument('-blur', dest="BLUR_AMOUNT", default=8.0, type=float, help="
 parser.add_argument('-bstart', dest="BLUR_START", default=0.75, type=float, help="When to start blurring, as a percentage of breath composition")
 parser.add_argument('-scale', dest="SCALE_AMOUNT", default=1.0, type=float, help="Amount to scale each clip")
 parser.add_argument('-trans', dest="TRANSITION_MS", default=16000, type=int, help="Duration it take to transition to blurred and scaled clips")
-parser.add_argument('-rot', dest="ANGLE_RANGE", default="0.0,180.0", help="Range of angle rotation a clip should make in degrees")
+parser.add_argument('-rot', dest="ANGLE_RANGE", default="0.0,360.0", help="Range of angle rotation a clip should make in degrees")
 parser.add_argument('-maxapc', dest="MAX_AUDIO_CLIPS_PER_CLUSTER", default=64, type=int, help="Max number of clips to play per cluster")
 parser.add_argument('-cdur', dest="CLIP_DUR", default=128, type=int, help="Target clip play duration")
 a = parser.parse_args()
@@ -103,7 +103,7 @@ for clip in clips:
     clip.setState("angleFromCenter", angleBetween(cx, cy, toX, toY))
 
     # randomly assign breath offset, rotations
-    clip.setState("breathOffset", lerp((0.0, a.BREATH_DUR*0.5), pseudoRandom(clip.props["index"]+1)))
+    clip.setState("breathOffset", lerp((0.0, a.BREATH_DUR*0.25), pseudoRandom(clip.props["index"]+1)))
     clip.setState("angleToRotate", lerp(a.ANGLE_RANGE, pseudoRandom(clip.props["index"]+2)))
 
 fromScale = 1.0 * gridW / startGridW
@@ -207,7 +207,7 @@ def clipToNpArrBreathe(clip, ms, containerW, containerH, precision, parent, glob
         # determine distance from center
         d = clip.getState("distanceFromCenter")
         d0 = d * (a.BREATH_STEP**breathIndex)
-        dmid = d * (a.BREATH_STEP**(breathIndex+2))
+        dmid = d * (a.BREATH_STEP**(breathIndex+4))
         d1 = d * (a.BREATH_STEP**(breathIndex+1))
         distanceFromCenter = lerp((d0, dmid), ease((bnprogress/0.5), "cubicInOut")) if bnprogress <= 0.5 else lerp((dmid, d1), ease(((bnprogress-0.5)/0.5), "cubicInOut"))
 
