@@ -87,7 +87,7 @@ def blurImage(im, radius):
         im = im.filter(ImageFilter.GaussianBlur(radius=radius))
     return im
 
-def clipsToFrame(p, clips, pixelData, precision=3, customClipToArrFunction=None, baseImage=None, gpuProgram=None, globalArgs={}):
+def clipsToFrame(p, clips, pixelData, precision=3, customClipToArrFunction=None, baseImage=None, gpuProgram=None, postProcessingFunction=None, globalArgs={}):
     filename = p["filename"]
     width = p["width"]
     height = p["height"]
@@ -132,6 +132,9 @@ def clipsToFrame(p, clips, pixelData, precision=3, customClipToArrFunction=None,
             blur = container.vector.getBlur(ms)
             if blur > 0.0:
                 im = blurImage(im, blur)
+        # check to see if there's post-processing to be done
+        if postProcessingFunction is not None:
+            im = postProcessingFunction(im, ms)
         # save if necessary
         if saveFrame:
             im.save(filename)
@@ -676,7 +679,7 @@ def pasteImage(im, clipImg, x, y):
     im = Image.alpha_composite(im, stagingImg)
     return im
 
-def processFrames(params, clips, clipsPixelData, threads=1, precision=3, verbose=True, customClipToArrFunction=None, globalArgs={}):
+def processFrames(params, clips, clipsPixelData, threads=1, precision=3, verbose=True, customClipToArrFunction=None, postProcessingFunction=None, globalArgs={}):
     if len(params) < 1:
         return
 
@@ -699,7 +702,7 @@ def processFrames(params, clips, clipsPixelData, threads=1, precision=3, verbose
 
     if threads > 1 and not isSequential:
         pool = ThreadPool(threads)
-        pclipsToFrame = partial(clipsToFrame, clips=clips, pixelData=clipsPixelData, precision=precision, customClipToArrFunction=customClipToArrFunction, baseImage=baseImage, gpuProgram=gpuProgram, globalArgs=globalArgs)
+        pclipsToFrame = partial(clipsToFrame, clips=clips, pixelData=clipsPixelData, precision=precision, customClipToArrFunction=customClipToArrFunction, baseImage=baseImage, gpuProgram=gpuProgram, postProcessingFunction=postProcessingFunction, globalArgs=globalArgs)
         pool.map(pclipsToFrame, params)
         pool.close()
         pool.join()
@@ -707,7 +710,7 @@ def processFrames(params, clips, clipsPixelData, threads=1, precision=3, verbose
         prevImage = None
         for i, p in enumerate(params):
             baseImage = prevImage if propagateFrames else baseImage
-            prevImage = clipsToFrame(p, clips=clips, pixelData=clipsPixelData, precision=precision, customClipToArrFunction=customClipToArrFunction, baseImage=baseImage, gpuProgram=gpuProgram, globalArgs=globalArgs)
+            prevImage = clipsToFrame(p, clips=clips, pixelData=clipsPixelData, precision=precision, customClipToArrFunction=customClipToArrFunction, baseImage=baseImage, gpuProgram=gpuProgram, postProcessingFunction=postProcessingFunction, globalArgs=globalArgs)
             if verbose:
                 printProgress(i+1, count)
 
