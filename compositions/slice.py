@@ -86,9 +86,9 @@ def postProcessSlice(im, ms):
     static float ease(float value) {
         float n = value;
         if (n < 0.5) {
-            n = 4.0 * n * n * n;
+            n = 2.0 * n * n;
         } else {
-            n = (n-1.0) * (2.0 * n - 2.0) * (2.0 * n - 2.0) + 1.0;
+            n = -1.0 + (4.0 - 2.0 * n) * n;
         }
         return n;
     }
@@ -198,11 +198,10 @@ def postProcessSlice(im, ms):
         float nprogress = normF(ms, cycleStartMs, cycleStartMs + cycleMs);
         nprogress = ease(nprogress);
         float offsetX = nprogress * distanceToMove;
-        if (posy %% 2 > 0) {
-            offsetX = -offsetX;
-        }
+        if (posy %% 2 > 0) offsetX = -offsetX;
         float xf = (float) posx + offsetX;
         xf = fmod(xf, (float) canvasW); // wrap around
+        if (xf < 0.0) xf = (float) canvasW + xf;
 
         // get srcPixel
         int4 srcColor = getPixelF(pdata, xf, (float) posy, canvasH, canvasW, colorDimensions);
