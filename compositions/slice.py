@@ -35,12 +35,12 @@ parser.add_argument('-grid', dest="GRID", default="128x128", help="Size of grid"
 parser.add_argument('-grid0', dest="START_GRID", default="128x128", help="Start size of grid")
 parser.add_argument('-grid1', dest="END_GRID", default="128x128", help="End size of grid")
 parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.4,0.8", help="Volume range")
-parser.add_argument('-cdur', dest="CYCLE_MS", default=16000, type=int, help="Duration of cycle in milliseconds")
-parser.add_argument('-cycles', dest="CYCLES", default=3.875, type=float, help="Number of cycles")
-parser.add_argument('-coffset', dest="CYCLE_OFFSET", default=0.125, type=float, help="Number of cycles to offset")
+parser.add_argument('-crange', dest="CYCLE_RANGE_MS", default="16000,24000", help="Duration of cycle in milliseconds")
+parser.add_argument('-cycles', dest="CYCLES", default=4, type=int, help="Number of cycles")
 a = parser.parse_args()
 parseVideoArgs(a)
 aa = vars(a)
+aa["CYCLE_RANGE_MS"] = tuple([int(f) for f in a.CYCLE_RANGE_MS.strip().split(",")])
 
 # Get video data
 startTime = logTime()
@@ -55,10 +55,9 @@ clips = samplesToClips(samples)
 stepTime = logTime(stepTime, "Samples to clips")
 
 startMs = a.PAD_START
-cycleMs = roundInt(a.CYCLE_MS * a.CYCLES)
-cycleOffsetMs = roundInt(a.CYCLE_MS * a.CYCLE_OFFSET)
-cyclesMs = cycleMs + cycleOffsetMs
-endMs = startMs + cyclesMs
+cycleMinMs = roundInt(a.CYCLE_RANGE_MS[0] * a.CYCLES)
+cycleMaxMs = roundInt(a.CYCLE_RANGE_MS[1] * a.CYCLES)
+endMs = startMs + cycleMaxMs
 distanceToMove = roundInt(a.WIDTH * a.CYCLES)
 durationMs = endMs
 
@@ -72,8 +71,8 @@ def postProcessSlice(im, ms):
     global a
     global startMs
     global distanceToMove
-    global cycleMs
-    global cycleOffsetMs
+    global cycleMinMs
+    global cycleMaxMs
 
     pixels = np.array(im, dtype=np.uint8)
     colors = 3
@@ -101,6 +100,10 @@ def postProcessSlice(im, ms):
             n = 1.0 - ease((n - 0.5) / 0.5);
         }
         return n;
+    }
+
+    static float lerpF(float a, float b, float mu) {
+        return (b - a) * mu + a;
     }
 
     static float normF(float value, float a, float b) {
@@ -182,8 +185,8 @@ def postProcessSlice(im, ms):
         float ms = %f;
         float startMs = %f;
         float distanceToMove = %f;
-        float cycleMs = %f;
-        float cycleOffsetMs = %f;
+        float cycleMinMs = %f;
+        float cycleMaxMs = %f;
 
         // get current position
         int posx = get_global_id(1);
@@ -193,9 +196,8 @@ def postProcessSlice(im, ms):
         // make vertical middle values move earlier/faster
         float ny = (float) posy / (float) (canvasH-1);
         ny = 1.0 - easeBell(ny); // middle y values are near 0.0
-        float offsetMs = cycleOffsetMs * ny;
-        float cycleStartMs = startMs+offsetMs;
-        float nprogress = normF(ms, cycleStartMs, cycleStartMs + cycleMs);
+        float durMs = lerpF(cycleMinMs, cycleMaxMs, ny);
+        float nprogress = normF(ms, startMs, startMs + durMs);
         nprogress = ease(nprogress);
         float offsetX = nprogress * distanceToMove;
         if (posy %% 2 > 0) offsetX = -offsetX;
@@ -218,7 +220,7 @@ def postProcessSlice(im, ms):
         result[i+1] = blendedColor.y;
         result[i+2] = blendedColor.z;
     }
-    """ % (width, height, colors, ms, startMs, distanceToMove, cycleMs, cycleOffsetMs)
+    """ % (width, height, colors, ms, startMs, distanceToMove, cycleMinMs, cycleMaxMs)
 
     ctx, prg = loadGPUProgram(srcCode)
     # Create queue for each kernel execution
