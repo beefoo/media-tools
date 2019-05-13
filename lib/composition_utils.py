@@ -26,8 +26,8 @@ def addGridPositions(clips, cols, width, height, offsetX=0, offsetY=0, marginX=0
         clips[i]["y"] = row * cellH + marginY*0.5 + offsetY
         clips[i]["width"] = cellW - marginX
         clips[i]["height"] = cellH - marginY
-        clips[i]["nx"] = 1.0 * col / (cols-1)
-        clips[i]["ny"] = 1.0 * row / (rows-1)
+        clips[i]["nx"] = 1.0 * col / (cols-1) if cols > 1 else 0
+        clips[i]["ny"] = 1.0 * row / (rows-1) if rows > 1 else 0
     return clips
 
 def addPositionNoise(clips, noiseXRange, noiseYRange, randomSeed=3):
@@ -199,7 +199,7 @@ def initGridComposition(a, stepTime=False):
 
     # limit the number of clips playing
     if sampleCount > a.MAX_AUDIO_CLIPS and a.MAX_AUDIO_CLIPS > 0:
-        samples = limitAudioClips(samples, a.MAX_AUDIO_CLIPS, "nDistanceFromCenter", keepFirst=a.KEEP_FIRST_AUDIO_CLIPS, invert=True, seed=(a.RANDOM_SEED+3))
+        samples = limitAudioClips(samples, a.MAX_AUDIO_CLIPS, "nDistanceFromCenter", keepFirst=a.KEEP_FIRST_AUDIO_CLIPS, invert=(not a.INVERT_LOUDEST), seed=(a.RANDOM_SEED+3))
         stepTime = logTime(stepTime, "Calculate which audio clips are playing")
 
         # show a viz of which frames are playing
@@ -207,7 +207,7 @@ def initGridComposition(a, stepTime=False):
             for i, s in enumerate(samples):
                 samples[i]["alpha"] = 1.0 if s["playAudio"] else 0.2
             clipsToFrame({ "filename": a.OUTPUT_FRAME % "playTest", "width": a.WIDTH, "height": a.HEIGHT, "overwrite": True, "debug": True },
-                samplesToClips(samples), loadVidoPixelDataDebug(len(samples)))
+                samplesToClips(samples), loadVideoPixelDataDebug(len(samples)))
             # reset alpha
             for i, s in enumerate(samples):
                 samples[i]["alpha"] = 1.0
@@ -218,7 +218,7 @@ def limitAudioClips(samples, maxAudioClips, keyName, invert=False, keepFirst=64,
     indicesToKeep = []
     shuffleSamples = samples[:]
     shuffleSampleCount = maxAudioClips
-    if maxAudioClips > keepFirst:
+    if maxAudioClips > keepFirst and keepFirst > 0:
         shuffleSampleCount -= keepFirst
         keepSamples = samples[:keepFirst]
         indicesToKeep = [s["index"] for s in keepSamples]
