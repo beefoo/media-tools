@@ -34,17 +34,19 @@ addVideoArgs(parser)
 parser.add_argument('-grid', dest="GRID", default="128x128", help="Size of grid")
 parser.add_argument('-grid0', dest="START_GRID", default="128x128", help="Start size of grid")
 parser.add_argument('-grid1', dest="END_GRID", default="128x128", help="End size of grid")
-parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.4,0.8", help="Volume range")
+parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.8,1.0", help="Volume range")
 parser.add_argument('-crange', dest="CYCLE_RANGE_MS", default="32000,48000", help="Duration of cycle in milliseconds")
 parser.add_argument('-cycles', dest="CYCLES", default=2, type=int, help="Number of cycles")
-parser.add_argument('-mpdur', dest="MIN_PLAY_MS", default=32, type=int, help="Minimum duration to play clip")
-parser.add_argument('-ctp', dest="CLIPS_TO_PLAY", default=4096, type=int, help="Number of clips to play in total")
+parser.add_argument('-prange', dest="PLAY_DUR_RANGE", default="64,128", help="Duration range to play clip")
+parser.add_argument('-drange', dest="DELAY_DUR_RANGE", default="64,512", help="Duration range to delay clip echo")
+parser.add_argument('-ctp', dest="CLIPS_TO_PLAY", default=2048, type=int, help="Number of clips to play in total")
 parser.add_argument('-mbdur', dest="MIN_BEAT_MS", default=64, type=int, help="Minimum distance between clips playing")
-parser.add_argument('-stretch', dest="STRETCH_TO", default=4.0, type=float, help="Amount to stretch clips")
 a = parser.parse_args()
 parseVideoArgs(a)
 aa = vars(a)
 aa["CYCLE_RANGE_MS"] = tuple([int(f) for f in a.CYCLE_RANGE_MS.strip().split(",")])
+aa["PLAY_DUR_RANGE"] = tuple([int(f) for f in a.PLAY_DUR_RANGE.strip().split(",")])
+aa["DELAY_DUR_RANGE"] = tuple([int(f) for f in a.DELAY_DUR_RANGE.strip().split(",")])
 
 # Get video data
 startTime = logTime()
@@ -88,29 +90,35 @@ msToPlay = [roundInt(startMs + b*a.MIN_BEAT_MS) for b in beatsToPlay]
 for i, index in enumerate(playIndices):
     clips[index].setState("playMs", msToPlay[i])
 
+def playClip(clip, ms, playStart, playDur, volume):
+    fadeOut = roundInt(playDur * 0.8)
+    fadeIn = playDur - fadeOut
+    clip.queuePlay(ms, {
+        "start": playStart,
+        "dur": playDur,
+        "volume": volume,
+        "fadeOut": fadeOut,
+        "fadeIn": fadeIn,
+        "pan": clip.props["pan"],
+        "reverb": clip.props["reverb"],
+        "matchDb": clip.props["matchDb"]
+    })
+
 for clip in clips:
     if clip.props["canPlay"]:
         clipMs = clip.getState("playMs")
         nprogress = norm(clipMs, (startMs, endMs), limit=True)
 
         # cut clips as we get closer to middle
-        ncut = ease(lim(nprogress / 0.5))
-        playDur = roundInt(lerp((clip.props["audioDur"], a.MIN_PLAY_MS), ncut))
-        fadeOut = roundInt(playDur * 0.8)
-        fadeIn = playDur - fadeOut
-        volume = lerp(a.VOLUME_RANGE, 1.0-ncut)
-        stretchAmount = lerp((1.0, a.STRETCH_TO), (nprogress-0.5)/0.5) if nprogress > 0.5 else 1.0
-        clip.queuePlay(clipMs, {
-            "start": clip.props["audioStart"],
-            "dur": playDur,
-            "volume": volume,
-            "fadeOut": fadeOut,
-            "fadeIn": fadeIn,
-            "pan": clip.props["pan"],
-            "reverb": clip.props["reverb"],
-            "matchDb": clip.props["matchDb"]
-            # "stretch": stretchAmount
-        })
+        ncut = 1.0-ease(lim(nprogress / 0.5))
+        playDur = roundInt(lerp(a.PLAY_DUR_RANGE, ncut))
+        volume = lerp(a.VOLUME_RANGE, ncut)
+        playStart = clip.props["audioStart"]
+        playClip(clip, clipMs, playStart, playDur, volume)
+        # play an echo
+        delay = playDur + lerp(a.DELAY_DUR_RANGE, 1.0-ncut)
+        playClip(clip, clipMs + delay, playStart + delay, playDur, volume)
+
         clipDur = clip.props["renderDur"]
         leftMs = roundInt(clipDur * 0.2)
         rightMs = clipDur - leftMs
