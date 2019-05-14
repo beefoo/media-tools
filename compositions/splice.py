@@ -37,6 +37,10 @@ parser.add_argument('-grid1', dest="END_GRID", default="128x128", help="End size
 parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.4,0.8", help="Volume range")
 parser.add_argument('-crange', dest="CYCLE_RANGE_MS", default="32000,48000", help="Duration of cycle in milliseconds")
 parser.add_argument('-cycles', dest="CYCLES", default=2, type=int, help="Number of cycles")
+parser.add_argument('-mpdur', dest="MIN_PLAY_MS", default=32, type=int, help="Minimum duration to play clip")
+parser.add_argument('-ctp', dest="CLIPS_TO_PLAY", default=4096, type=int, help="Number of clips to play in total")
+parser.add_argument('-mbdur', dest="MIN_BEAT_MS", default=64, type=int, help="Minimum distance between clips playing")
+parser.add_argument('-stretch', dest="STRETCH_TO", default=4.0, type=float, help="Amount to stretch clips")
 a = parser.parse_args()
 parseVideoArgs(a)
 aa = vars(a)
@@ -47,9 +51,15 @@ startTime = logTime()
 stepTime = startTime
 samples, sampleCount, container, sampler, stepTime, cCol, cRow, gridW, gridH, startGridW, startGridH, endGridW, endGridH = initGridComposition(a, stepTime)
 
-# set clip brightness to min by default
+# play the X quietest clips
+samples = sortBy(samples, [("power", "asc")])
+playIndices = []
 for i, s in enumerate(samples):
     samples[i]["brightness"] = a.BRIGHTNESS_RANGE[0]
+    samples[i]["canPlay"] = True if i < a.CLIPS_TO_PLAY else False
+    if i < a.CLIPS_TO_PLAY:
+        playIndices.append(s["index"])
+samples = sortBy(samples, [("index", "asc")])
 
 clips = samplesToClips(samples)
 stepTime = logTime(stepTime, "Samples to clips")
@@ -61,9 +71,55 @@ endMs = startMs + cycleMaxMs
 distanceToMove = roundInt(a.WIDTH * a.CYCLES)
 durationMs = endMs
 
-# clipW = clips[0].props["width"]
-# clipH = clips[0].props["height"]
-# clipMargin = a.CLIP_MARGIN * clipW
+# play more clips around the middle
+beatCount = roundInt(1.0 * cycleMaxMs / a.MIN_BEAT_MS)
+beats = np.array(range(beatCount))
+weights = [easeSinInOutBell(v) for v in np.linspace(0, 1, beatCount).tolist()]
+beatsToPlay = weightedShuffle(beats, weights, count=a.CLIPS_TO_PLAY)
+msToPlay = [roundInt(startMs + b*a.MIN_BEAT_MS) for b in beatsToPlay]
+
+# from matplotlib import pyplot as plt
+# x = [v/1000.0 for v in msToPlay]
+# y = [10 for v in range(len(x))]
+# plt.scatter(x, y, s=1)
+# plt.show()
+# sys.exit()
+
+for i, index in enumerate(playIndices):
+    clips[index].setState("playMs", msToPlay[i])
+
+for clip in clips:
+    if clip.props["canPlay"]:
+        clipMs = clip.getState("playMs")
+        nprogress = norm(clipMs, (startMs, endMs), limit=True)
+
+        # cut clips as we get closer to middle
+        ncut = ease(lim(nprogress / 0.5))
+        playDur = roundInt(lerp((clip.props["audioDur"], a.MIN_PLAY_MS), ncut))
+        fadeOut = roundInt(playDur * 0.8)
+        fadeIn = playDur - fadeOut
+        volume = lerp(a.VOLUME_RANGE, 1.0-ncut)
+        stretchAmount = lerp((1.0, a.STRETCH_TO), (nprogress-0.5)/0.5) if nprogress > 0.5 else 1.0
+        clip.queuePlay(clipMs, {
+            "start": clip.props["audioStart"],
+            "dur": playDur,
+            "volume": volume,
+            "fadeOut": fadeOut,
+            "fadeIn": fadeIn,
+            "pan": clip.props["pan"],
+            "reverb": clip.props["reverb"],
+            "matchDb": clip.props["matchDb"]
+            # "stretch": stretchAmount
+        })
+        clipDur = clip.props["renderDur"]
+        leftMs = roundInt(clipDur * 0.2)
+        rightMs = clipDur - leftMs
+        clip.queueTween(clipMs, leftMs, [
+            ("brightness", a.BRIGHTNESS_RANGE[0], a.BRIGHTNESS_RANGE[1], "sin")
+        ])
+        clip.queueTween(clipMs+leftMs, rightMs, [
+            ("brightness", a.BRIGHTNESS_RANGE[1], a.BRIGHTNESS_RANGE[0], "sin")
+        ])
 
 stepTime = logTime(stepTime, "Calculated sequence")
 
