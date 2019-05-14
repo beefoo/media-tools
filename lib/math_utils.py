@@ -148,6 +148,10 @@ def getRandomColor(seed=None):
 def getValue(d, key, default):
     return d[key] if key in d else default
 
+def hex2rgb(hex):
+  # "#FFFFFF" -> [255,255,255]
+  return [int(hex[i:i+2], 16) for i in range(1,6,2)]
+
 def isNumber(n):
     return isinstance(n, (int, float))
 
