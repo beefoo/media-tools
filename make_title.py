@@ -31,10 +31,10 @@ parser.add_argument('-out', dest="OUTPUT_FILE", default="output/title_main.mp4",
 
 # text properties
 # font is "default" or font file name, size in points, margin as a percent of text height, line height as a percent of text height, letter width as a percent of text width
-parser.add_argument('-h1', dest="H1_PROPS", default="OpenSans-Italic.ttf,128,0.3,1,1.1", help="Heading 1 (font, size, margin, line-height, letter-width)")
-parser.add_argument('-h2', dest="H2_PROPS", default="default,60,0.2,1.2,1.2", help="Heading 2 (font, size, margin, line-height, letter-width)")
-parser.add_argument('-h3', dest="H3_PROPS", default="default,36,0.2,1.5,1.2", help="Heading 3 (font, size, margin, line-height, letter-width)")
-parser.add_argument('-pg', dest="P_PROPS", default="default,24,0.2,1.5,1", help="Paragraph (font, size, margin, line-height, letter-width)")
+parser.add_argument('-h1', dest="H1_PROPS", default="OpenSans-Italic.ttf,96,0.3,1,1.3", help="Heading 1 (font, size, margin, line-height, letter-width)")
+parser.add_argument('-h2', dest="H2_PROPS", default="default,72,0.3,1.2,1.2", help="Heading 2 (font, size, margin, line-height, letter-width)")
+parser.add_argument('-h3', dest="H3_PROPS", default="default,36,0.5,1.5,1.2", help="Heading 3 (font, size, margin, line-height, letter-width)")
+parser.add_argument('-pg', dest="P_PROPS", default="default,28,0.5,1.5,1.2", help="Paragraph (font, size, margin, line-height, letter-width)")
 parser.add_argument('-align', dest="TEXT_ALIGN", default="center", help="Paragraph size in pts")
 parser.add_argument('-tyoffset', dest="TEXTBLOCK_Y_OFFSET", default=-0.02, type=float, help="Vertical offset of text as a percentage of frame height; otherwise will be vertically centered")
 parser.add_argument('-txoffset', dest="TEXTBLOCK_X_OFFSET", default=0.0, type=float, help="Horizontal offset of text as a percentage of frame width; otherwise will be horizontally centered")
