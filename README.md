@@ -111,26 +111,37 @@ python stats_plot.py -in "tmp/sampledata/ia_fedflixnara/gov.archives.111-tv-221.
 
 ### 7. Visualizing audio/video
 
-Create a subset by taking all films with more than 500 samples with sound; take the 65,536 (256x256) samples with most power and clarity; limit 100 samples per film
+Create a subset by taking all films with more than 500 samples with sound; take the 16,384 (128x128) samples with most power and clarity; limit 100 samples per film
 
 ```
-python samples_subset.py -in "tmp/ia_fedflixnara.csv" -dir "tmp/sampledata/ia_fedflixnara/" -out "tmp/ia_fedflixnara_subset.csv" -filter "samples>500&medianPower>0.5" -lim 65536 -ffilter "octave>1&power>0" -fsort "power=desc=0.75&clarity=desc" -flim 100
+python samples_subset.py -in "tmp/ia_fedflixnara.csv" -dir "tmp/sampledata/ia_fedflixnara/" -out "tmp/ia_fedflixnara_subset.csv" -filter "samples>500&medianPower>0.5" -lim 16384 -ffilter "octave>1&power>0" -fsort "power=desc=0.75&clarity=desc" -flim 100
 ```
 
-Extract [t-SNE](https://en.wikipedia.org/wiki/T-distributed_stochastic_neighbor_embedding) features of the sample subset and cache the feature data
+Now we can attempt to sort this subset be spectral similarity via [t-SNE](https://en.wikipedia.org/wiki/T-distributed_stochastic_neighbor_embedding). First, we must extract 1-D tsne values from the subset and cache the feature data:
+
+```
+python samples_to_tsne.py -in "tmp/ia_fedflixnara_subset.csv" -dir "tmp/sampledata/ia_fedflixnara/" -components 1 -prefix "stsne" -angle 0.1 -cache "tmp/ia_fedflixnara_subset_features.p"
+```
+
+Then sort the samples by t-SNE and output to audio file:
+
+```
+python3 features_to_audio.py -in "tmp/ia_fedflixnara_subset.csv" -dir "tmp/sampledata/ia_fedflixnara/" -sort "stsne=asc" -out "output/ia_fedflixnara_sort_stsne_asc.mp3"
+```
+
+Now we will lay out the samples on a 2-D grid using t-SNE again, but with two components instead of one:
 
 ```
 python samples_to_tsne.py -in "tmp/ia_fedflixnara_subset.csv" -dir "tmp/downloads/ia_fedflixnara/" -components 2 -angle 0.2 -cache "tmp/ia_fedflixnara_subset_features.p"
 ```
 
-Put the sample subset in a 256x256 grid based on the t-SNE features (essentially created a matrix of samples organized by spectral similarity). This requires [rasterfairy](https://github.com/Quasimondo/RasterFairy) and Python 2.7+
+Then put the sample subset in a 128x128 grid based on the t-SNE features (essentially created a matrix of samples organized by spectral similarity). This requires [rasterfairy](https://github.com/Quasimondo/RasterFairy) and Python 2.7+
 
 ```
-python samples_to_grid.py -in "tmp/ia_fedflixnara_subset.csv" -grid "256x256"
+python samples_to_grid.py -in "tmp/ia_fedflixnara_subset.csv" -grid "128x128"
 ```
 
-More soon...
-
+_More soon..._
 
 ## Small collection workflow
 
