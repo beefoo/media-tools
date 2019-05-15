@@ -34,19 +34,19 @@ addVideoArgs(parser)
 parser.add_argument('-grid', dest="GRID", default="128x128", help="Size of grid")
 parser.add_argument('-grid0', dest="START_GRID", default="128x128", help="Start size of grid")
 parser.add_argument('-grid1', dest="END_GRID", default="128x128", help="End size of grid")
-parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.8,1.0", help="Volume range")
+parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.4,0.8", help="Volume range")
 parser.add_argument('-crange', dest="CYCLE_RANGE_MS", default="32000,48000", help="Duration of cycle in milliseconds")
 parser.add_argument('-cycles', dest="CYCLES", default=2, type=int, help="Number of cycles")
-parser.add_argument('-prange', dest="PLAY_DUR_RANGE", default="64,128", help="Duration range to play clip")
-parser.add_argument('-drange', dest="DELAY_DUR_RANGE", default="64,512", help="Duration range to delay clip echo")
-parser.add_argument('-ctp', dest="CLIPS_TO_PLAY", default=2048, type=int, help="Number of clips to play in total")
-parser.add_argument('-mbdur', dest="MIN_BEAT_MS", default=64, type=int, help="Minimum distance between clips playing")
+parser.add_argument('-cdur', dest="CLIP_PLAY_MS", default=128, type=int, help="Duration to play clip")
+parser.add_argument('-mstep', dest="MIN_PLAY_STEP", default=128, type=int, help="Minimum to time between subsequent plays in a column")
+parser.add_argument('-cprange', dest="COL_PLAY_RANGE", default="8000,1000", help="Duration range to play full column loop")
+parser.add_argument('-srange', dest="STRETCH_RANGE", default="4.0,16.0", help="Range to stretch clips")
 a = parser.parse_args()
 parseVideoArgs(a)
 aa = vars(a)
 aa["CYCLE_RANGE_MS"] = tuple([int(f) for f in a.CYCLE_RANGE_MS.strip().split(",")])
-aa["PLAY_DUR_RANGE"] = tuple([int(f) for f in a.PLAY_DUR_RANGE.strip().split(",")])
-aa["DELAY_DUR_RANGE"] = tuple([int(f) for f in a.DELAY_DUR_RANGE.strip().split(",")])
+aa["COL_PLAY_RANGE"] = tuple([int(f) for f in a.COL_PLAY_RANGE.strip().split(",")])
+aa["STRETCH_RANGE"] = tuple([float(f) for f in a.STRETCH_RANGE.strip().split(",")])
 
 # Get video data
 startTime = logTime()
@@ -56,10 +56,18 @@ samples, sampleCount, container, sampler, stepTime, cCol, cRow, gridW, gridH, st
 # play clips on the edges
 for i, s in enumerate(samples):
     samples[i]["brightness"] = a.BRIGHTNESS_RANGE[0]
-    samples[i]["canPlay"] = (s["col"] <= 0 or s["col"] >= (gridW-1))
 
 clips = samplesToClips(samples)
 stepTime = logTime(stepTime, "Samples to clips")
+
+colLeft = roundInt((gridW-1) * 0.25)
+colRight = gridW - colLeft - 1
+for clip in clips:
+    isLeft = (clip.props["col"] == colLeft)
+    isRight = (clip.props["col"] == colRight)
+    clip.setState("canPlay", (isLeft or isRight))
+    clip.setState("isLeft", isLeft)
+    clip.setState("isRight", isRight)
 
 startMs = a.PAD_START
 cycleMinMs = roundInt(a.CYCLE_RANGE_MS[0] * a.CYCLES)
@@ -68,53 +76,85 @@ endMs = startMs + cycleMaxMs
 distanceToMove = roundInt(a.WIDTH * a.CYCLES)
 durationMs = endMs
 
-# play more clips around the middle
-beatCount = roundInt(1.0 * cycleMaxMs / a.MIN_BEAT_MS)
-beats = np.array(range(beatCount))
-weights = [easeSinInOutBell(v) for v in np.linspace(0, 1, beatCount).tolist()]
-beatsToPlay = weightedShuffle(beats, weights, count=a.CLIPS_TO_PLAY)
-msToPlay = [roundInt(startMs + b*a.MIN_BEAT_MS) for b in beatsToPlay]
+def getPan(ms, clip):
+    global startMs
+    global cycleMinMs
+    global cycleMaxMs
+    global distanceToMove
 
-# from matplotlib import pyplot as plt
-# x = [v/1000.0 for v in msToPlay]
-# y = [10 for v in range(len(x))]
-# plt.scatter(x, y, s=1)
-# plt.show()
-# sys.exit()
+    ny = clip.props["ny"]
+    ny = 1.0 - easeSinInOutBell(ny) # middle y values are near 0.0
+    durMs = lerp((cycleMinMs, cycleMaxMs), ny)
+    nprogress = norm(ms, (startMs, startMs + durMs), limit=True)
+    nprogress = ease(nprogress, "quadInOut")
+    offsetX = nprogress * distanceToMove
+    if clip.getState("isRight"):
+        offsetX = -offsetX
+    x = clip.props["x"] + offsetX
+    x = x % a.WIDTH # wrap around
+    if x < 0:
+        x = a.WIDTH + x
+    nx = lim(1.0 * x / a.WIDTH)
 
-def playClip(clip, ms, playStart, playDur, volume):
-    fadeOut = roundInt(playDur * 0.8)
-    fadeIn = playDur - fadeOut
-    clip.queuePlay(ms, {
-        "start": playStart,
-        "dur": playDur,
-        "volume": volume,
-        "fadeOut": fadeOut,
-        "fadeIn": fadeIn,
-        "pan": clip.props["pan"],
-        "reverb": clip.props["reverb"],
-        "matchDb": clip.props["matchDb"]
-    })
+    return lerp((-1.0, 1.0), nx)
 
-for clip in clips:
-    if clip.props["canPlay"]:
-        # clipMs = clip.getState("playMs")
-        # nprogress = norm(clipMs, (startMs, endMs), limit=True)
-        #
-        # # cut clips as we get closer to middle
-        # ncut = 1.0-ease(lim(nprogress / 0.5))
-        # playDur = roundInt(lerp(a.PLAY_DUR_RANGE, ncut))
-        # volume = lerp(a.VOLUME_RANGE, ncut)
-        # playStart = clip.props["audioStart"]
-        # playClip(clip, clipMs, playStart, playDur, volume)
-        # # play an echo
-        # delay = playDur + lerp(a.DELAY_DUR_RANGE, 1.0-ncut)
-        # playClip(clip, clipMs + delay, playStart + delay, playDur, volume)
+# Calculate audio sequence
+playableClips = [clip for clip in clips if clip.getState("canPlay")]
+ms = startMs
+i = 0
+while ms < endMs:
+    nprogress = norm(ms, (startMs, endMs), limit=True)
+    eprogress = ease(nprogress)
+    colMs = roundInt(lerp(a.COL_PLAY_RANGE, eprogress))
+    stepMs = roundInt(1.0 * colMs / gridH)
+    playEvery = ceilInt(1.0 * a.MIN_PLAY_STEP / stepMs) if stepMs < a.MIN_PLAY_STEP else 1 # avoid playing too many in a column
 
-        clipDur = clip.props["renderDur"]
-        clip.queueTween(startMs, clipDur*4, [
+    colStartMs = ms
+    colEndMs = ms + colMs - stepMs
+    stretchAmount = lerp(a.STRETCH_RANGE, eprogress)
+
+    for clip in playableClips:
+        canPlay = clip.props["row"] % playEvery <= 0 if playEvery > 1 else True
+        # play in order of column; alternate left and right
+        nseq = clip.props["ny"] if clip.getState("isLeft") else 1.0 - clip.props["ny"]
+        # alternate up and down
+        if i % 2 > 0:
+            nseq = 1.0 - nseq
+        eseq = ease(nseq)
+
+        clipMs = lerp((colStartMs, colEndMs), eseq)
+        clipPlayMs = min(clip.props["audioDur"], a.CLIP_PLAY_MS)
+
+        if canPlay:
+            # get quieter over time, louder as clips go up
+            nvolume = (1.0-eprogress) * (1.0-clip.props["ny"])
+            volume = lerp(a.VOLUME_RANGE, nvolume)
+            fadeOut = roundInt(clipPlayMs * 0.8)
+            fadeIn = clipPlayMs - fadeOut
+            pan = getPan(clipMs, clip)
+            clip.queuePlay(clipMs, {
+                "start": clip.props["audioStart"],
+                "dur": clipPlayMs,
+                "volume": volume,
+                "fadeOut": fadeOut,
+                "fadeIn": fadeIn,
+                "pan": pan,
+                "reverb": clip.props["reverb"],
+                "matchDb": clip.props["matchDb"],
+                "stretch": stretchAmount
+            })
+        clipDur = roundInt(clipPlayMs * stretchAmount)
+        leftMs = roundInt(clipDur * 0.2)
+        rightMs = clipDur - leftMs
+        clip.queueTween(clipMs, leftMs, [
             ("brightness", a.BRIGHTNESS_RANGE[0], a.BRIGHTNESS_RANGE[1], "sin")
         ])
+        clip.queueTween(clipMs+leftMs, rightMs, [
+            ("brightness", a.BRIGHTNESS_RANGE[1], a.BRIGHTNESS_RANGE[0], "sin")
+        ])
+
+    ms += colMs
+    i += 1
 
 stepTime = logTime(stepTime, "Calculated sequence")
 
