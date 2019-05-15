@@ -34,13 +34,13 @@ addVideoArgs(parser)
 parser.add_argument('-grid', dest="GRID", default="128x128", help="Size of grid")
 parser.add_argument('-grid0', dest="START_GRID", default="128x128", help="Start size of grid")
 parser.add_argument('-grid1', dest="END_GRID", default="128x128", help="End size of grid")
-parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.4,0.8", help="Volume range")
+parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.4,1.0", help="Volume range")
 parser.add_argument('-crange', dest="CYCLE_RANGE_MS", default="32000,48000", help="Duration of cycle in milliseconds")
 parser.add_argument('-cycles', dest="CYCLES", default=2, type=int, help="Number of cycles")
 parser.add_argument('-cdur', dest="CLIP_PLAY_MS", default=128, type=int, help="Duration to play clip")
 parser.add_argument('-mstep', dest="MIN_PLAY_STEP", default=128, type=int, help="Minimum to time between subsequent plays in a column")
 parser.add_argument('-cprange', dest="COL_PLAY_RANGE", default="8000,1000", help="Duration range to play full column loop")
-parser.add_argument('-srange', dest="STRETCH_RANGE", default="4.0,16.0", help="Range to stretch clips")
+parser.add_argument('-srange', dest="STRETCH_RANGE", default="8.0,16.0", help="Range to stretch clips")
 a = parser.parse_args()
 parseVideoArgs(a)
 aa = vars(a)
@@ -127,8 +127,8 @@ while ms < endMs:
 
         if canPlay:
             # get quieter over time, louder as clips go up
-            nvolume = (1.0-eprogress) * (1.0-clip.props["ny"])
-            volume = lerp(a.VOLUME_RANGE, nvolume)
+            nvolume = 1.0 - clip.props["ny"]
+            volume = lerp(a.VOLUME_RANGE, nvolume) * (1.0-eprogress)
             fadeOut = roundInt(clipPlayMs * 0.8)
             fadeIn = clipPlayMs - fadeOut
             pan = getPan(clipMs, clip)
