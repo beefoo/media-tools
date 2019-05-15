@@ -1,0 +1,34 @@
+python3 scrapers/internet_archive/download_metadata.py -query " {query}" -out "{tempDir}{uid}.csv"
+python3 scrapers/internet_archive/download_media.py -in "{tempDir}{uid}.csv" -out "{downloadDir}{uid}/"
+python3 get_file_features.py -in "{tempDir}{uid}.csv" -dir "{downloadDir}{uid}/"
+python3 audio_to_samples.py -in "{tempDir}{uid}.csv" -dir "{downloadDir}{uid}/" -out "{sharedDir}sampledata/{uid}/%s.csv" -features
+python3 get_sample_features.py -in "{tempDir}{uid}.csv" -dir "{sharedDir}sampledata/{uid}/"
+// stats
+python3 stats_histogram.py -in "{tempDir}{uid}.csv" -plot "duration,samples,medianPower,medianHz,medianClarity,medianDur"
+python3 stats_totals.py -in "{tempDir}{uid}.csv"
+// subset
+python3 samples_subset.py -in "{tempDir}{uid}.csv" -dir "{sharedDir}sampledata/{uid}/" -out "{tempDir}{uid}_subset_128x128.csv" -filter "samples>500&medianPower>0.5" -lim 16384 -ffilter "octave>1&power>0" -fsort "power=desc=0.75&clarity=desc" -flim 32
+python3 samples_to_tsne.py -in "{tempDir}{uid}_subset_128x128.csv" -dir "{downloadDir}{uid}/" -components 2 -angle 0.1 -cache "{tempDir}{uid}_subset_128x128_features.p" -threads 4 -rate 50
+python3 samples_to_tsne.py -in "{tempDir}{uid}_subset_128x128.csv" -dir "{downloadDir}{uid}/" -components 1 -prefix "stsne" -angle 0.1 -cache "{tempDir}{uid}_subset_128x128_features.p" -threads 4 -rate 50
+python samples_to_grid.py -in "{tempDir}{uid}_subset_128x128.csv" -grid "128x128"
+python3 samples_to_vsamples.py -in "{tempDir}{uid}_subset_128x128.csv" -dir "{downloadDir}{uid}/" -threads 4
+// viz
+python3 stats_plot.py -in {tempDir}{uid}_subset_128x128.csv -props "tsne,tsne2"
+python3 stats_plot.py -in {tempDir}{uid}_subset_128x128.csv -props "power,hz" -log 1
+python3 features_to_audio.py -in "{tempDir}{uid}_subset_128x128.csv" -dir "{downloadDir}{uid}/" -sort "hz=asc" -out "{outputDir}{uid}_sort_hz_asc.mp3" -probe
+python3 features_to_audio.py -in "{tempDir}{uid}_subset_128x128.csv" -dir "{downloadDir}{uid}/" -sort "stsne=asc" -out "{outputDir}{uid}_sort_stsne_asc.mp3" -probe
+python3 samples_to_clusters.py -in "{tempDir}{uid}_subset_128x128.csv" -clusters 128 -plot
+python3 samples_to_sprite.py -in "{tempDir}{uid}_subset_128x128.csv" -dir "{downloadDir}{uid}/" -id "{uid}" -probe
+// compositions
+python3 compositions/proliferation.py -in "{tempDir}{uid}_subset_128x128.csv" -dir "{downloadDir}{uid}/" -out "{outputDir}{uid}_01_proliferation.mp4" -cache -cd "{tempDir}{uid}_cache/" -ckey "{uid}_proliferation" -outframe "{tempDir}{uid}_proliferation_frames/frame.%s.png" -db 6.0 -vo -debug -overwrite -verifyc -threads 2
+python3 compositions/waves.py -in "{tempDir}{uid}_subset_128x128.csv" -dir "{downloadDir}{uid}/" -out "{outputDir}{uid}_02_waves.mp4" -cache -cd "{tempDir}{uid}_cache/" -ckey "{uid}_waves" -outframe "{tempDir}{uid}_waves_frames/frame.%s.png" -io 83000 -vo -debug -overwrite -verifyc -threads 2
+python3 compositions/falling.py -in "{tempDir}{uid}_subset_128x128.csv" -dir "{downloadDir}{uid}/" -out "{outputDir}{uid}_03_falling.mp4" -cache -cd "{tempDir}{uid}_cache/" -ckey "{uid}_falling" -outframe "{tempDir}{uid}_falling_frames/frame.%s.png" -io 188000 -db 0.6 -vo -debug -overwrite -verifyc -threads 2
+python3 compositions/orbits.py -in "{tempDir}{uid}_subset_128x128.csv" -dir "{downloadDir}{uid}/" -out "{outputDir}{uid}_04_orbits.mp4" -cache -cd "{tempDir}{uid}_cache/" -ckey "{uid}_orbits" -outframe "{tempDir}{uid}_orbits_frames/frame.%s.png" -io 312000 -db 3.0 -vo -debug -overwrite -verifyc -threads 2
+python3 compositions/shuffle.py -in "{tempDir}{uid}_subset_128x128.csv" -dir "{downloadDir}{uid}/" -out "{outputDir}{uid}_05_shuffle.mp4" -cache -cd "{tempDir}{uid}_cache/" -ckey "{uid}_shuffle" -outframe "{tempDir}{uid}_shuffle_frames/frame.%s.png" -io 441000 -db 1.8 -vo -debug -overwrite -verifyc -threads 2
+python3 compositions/stretch.py -in "{tempDir}{uid}_subset_128x128.csv" -dir "{downloadDir}{uid}/" -out "{outputDir}{uid}_06_stretch.mp4" -cache -cd "{tempDir}{uid}_cache/" -ckey "{uid}_stretch" -outframe "{tempDir}{uid}_stretch_frames/frame.%s.png" -io 560000 -vo -debug -overwrite -verifyc -threads 2
+python3 compositions/flow.py -in "{tempDir}{uid}_subset_128x128.csv" -dir "{downloadDir}{uid}/" -out "{outputDir}{uid}_07_flow.mp4" -cache -cd "{tempDir}{uid}_cache/" -ckey "{uid}_flow" -outframe "{tempDir}{uid}_flow_frames/frame.%s.png" -io 726000 -vo -debug -overwrite -verifyc -threads 2
+python3 compositions/splice.py -in "{tempDir}{uid}_subset_128x128.csv" -dir "{downloadDir}{uid}/" -out "{outputDir}{uid}_08_splice.mp4" -cache -cd "{tempDir}{uid}_cache/" -ckey "{uid}_splice" -outframe "{tempDir}{uid}_splice_frames/frame.%s.png" -io 797000 -vo -debug -overwrite -verifyc -threads 2
+// combiners
+python3 probe_sequence.py -in "{tempDir}{uid}_subset_128x128.csv"
+python3 make_sequence.py -in "{tempDir}{uid}_subset_128x128.csv" -dir "{downloadDir}{uid}/" -uid "{uid}" -probe
+python3 combine_media.py -in "{sharedDir}manifests/{uid}.txt" -dir "{outputDir}" -out "{sharedDir}{outputDir}{uid}.mp4"
