@@ -53,15 +53,10 @@ startTime = logTime()
 stepTime = startTime
 samples, sampleCount, container, sampler, stepTime, cCol, cRow, gridW, gridH, startGridW, startGridH, endGridW, endGridH = initGridComposition(a, stepTime)
 
-# play the X quietest clips
-samples = sortBy(samples, [("power", "asc")])
-playIndices = []
+# play clips on the edges
 for i, s in enumerate(samples):
     samples[i]["brightness"] = a.BRIGHTNESS_RANGE[0]
-    samples[i]["canPlay"] = True if i < a.CLIPS_TO_PLAY else False
-    if i < a.CLIPS_TO_PLAY:
-        playIndices.append(s["index"])
-samples = sortBy(samples, [("index", "asc")])
+    samples[i]["canPlay"] = (s["col"] <= 0 or s["col"] >= (gridW-1))
 
 clips = samplesToClips(samples)
 stepTime = logTime(stepTime, "Samples to clips")
@@ -87,9 +82,6 @@ msToPlay = [roundInt(startMs + b*a.MIN_BEAT_MS) for b in beatsToPlay]
 # plt.show()
 # sys.exit()
 
-for i, index in enumerate(playIndices):
-    clips[index].setState("playMs", msToPlay[i])
-
 def playClip(clip, ms, playStart, playDur, volume):
     fadeOut = roundInt(playDur * 0.8)
     fadeIn = playDur - fadeOut
@@ -106,27 +98,22 @@ def playClip(clip, ms, playStart, playDur, volume):
 
 for clip in clips:
     if clip.props["canPlay"]:
-        clipMs = clip.getState("playMs")
-        nprogress = norm(clipMs, (startMs, endMs), limit=True)
-
-        # cut clips as we get closer to middle
-        ncut = 1.0-ease(lim(nprogress / 0.5))
-        playDur = roundInt(lerp(a.PLAY_DUR_RANGE, ncut))
-        volume = lerp(a.VOLUME_RANGE, ncut)
-        playStart = clip.props["audioStart"]
-        playClip(clip, clipMs, playStart, playDur, volume)
-        # play an echo
-        delay = playDur + lerp(a.DELAY_DUR_RANGE, 1.0-ncut)
-        playClip(clip, clipMs + delay, playStart + delay, playDur, volume)
+        # clipMs = clip.getState("playMs")
+        # nprogress = norm(clipMs, (startMs, endMs), limit=True)
+        #
+        # # cut clips as we get closer to middle
+        # ncut = 1.0-ease(lim(nprogress / 0.5))
+        # playDur = roundInt(lerp(a.PLAY_DUR_RANGE, ncut))
+        # volume = lerp(a.VOLUME_RANGE, ncut)
+        # playStart = clip.props["audioStart"]
+        # playClip(clip, clipMs, playStart, playDur, volume)
+        # # play an echo
+        # delay = playDur + lerp(a.DELAY_DUR_RANGE, 1.0-ncut)
+        # playClip(clip, clipMs + delay, playStart + delay, playDur, volume)
 
         clipDur = clip.props["renderDur"]
-        leftMs = roundInt(clipDur * 0.2)
-        rightMs = clipDur - leftMs
-        clip.queueTween(clipMs, leftMs, [
+        clip.queueTween(startMs, clipDur*4, [
             ("brightness", a.BRIGHTNESS_RANGE[0], a.BRIGHTNESS_RANGE[1], "sin")
-        ])
-        clip.queueTween(clipMs+leftMs, rightMs, [
-            ("brightness", a.BRIGHTNESS_RANGE[1], a.BRIGHTNESS_RANGE[0], "sin")
         ])
 
 stepTime = logTime(stepTime, "Calculated sequence")
