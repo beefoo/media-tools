@@ -33,5 +33,5 @@ instructions = [{
     "reverb": 80
 }]
 
-mixAudio(instructions, a.CLIP_DURATION + 2000, a.OUTPUT_FILE, sfx=True, sampleWidth=2, sampleRate=48000, channels=2, fxPad=3000, masterDb=0.0)
+mixAudio(instructions, a.CLIP_DURATION + 2000, a.OUTPUT_FILE, sfx=True, sampleWidth=4, sampleRate=48000, channels=2, fxPad=3000, masterDb=0.0)
 print("Done.")
