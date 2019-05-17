@@ -11,7 +11,7 @@ def getAudioSequenceDuration(sequence):
     lastAudioClip = sequence[-1]
     return lastAudioClip["ms"] + lastAudioClip["dur"]
 
-def makeTrack(duration, instructions, segments, sfx=True, sampleWidth=2, sampleRate=44100, channels=2, fxPad=3000):
+def makeTrack(duration, instructions, segments, sfx=True, sampleWidth=3, sampleRate=48000, channels=2, fxPad=3000):
     # build audio
     baseAudio = AudioSegment.silent(duration=duration, frame_rate=sampleRate)
     baseAudio = baseAudio.set_channels(channels)
@@ -27,7 +27,7 @@ def makeTrack(duration, instructions, segments, sfx=True, sampleWidth=2, sampleR
         sys.stdout.flush()
     return baseAudio
 
-def mixAudio(instructions, duration, outfilename, sfx=True, sampleWidth=2, sampleRate=44100, channels=2, fxPad=3000, masterDb=0.0):
+def mixAudio(instructions, duration, outfilename, sfx=True, sampleWidth=3, sampleRate=48000, channels=2, fxPad=3000, masterDb=0.0):
     # remove instructions with no volume
     instructions = [i for i in instructions if "volume" not in i or i["volume"] > 0]
     audioFiles = list(set([i["filename"] for i in instructions]))

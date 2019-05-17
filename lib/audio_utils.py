@@ -105,7 +105,9 @@ def applyAudioProperties(audio, props, sfx=True, fxPad=3000):
             audio = addFx(audio, effects, pad=fxPad)
     return audio
 
-def getAudio(filename, sampleWidth=2, sampleRate=44100, channels=2):
+# Note: sample_width -> bit_depth conversions: 1->8, 2->16, 3->24, 4->32
+# 24 bit depth and 48K sample rates are industry standards
+def getAudio(filename, sampleWidth=3, sampleRate=48000, channels=2):
     audiofilename = getAudioFile(filename)
     fformat = audiofilename.split(".")[-1].lower()
     audio = AudioSegment.from_file(audiofilename, format=fformat)
@@ -146,7 +148,7 @@ def getAudioClip(audio, clipStart, clipDur, audioDurationMs=None, clipFadeIn=10,
 
     return clip
 
-def getAudioFile(fn, samplerate=44100):
+def getAudioFile(fn, samplerate=48000):
     # format = fn.split(".")[-1]
     # # if this is an .mp4, convert to .mp3
     # if format == "mp4":
