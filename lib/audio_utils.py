@@ -106,8 +106,8 @@ def applyAudioProperties(audio, props, sfx=True, fxPad=3000):
     return audio
 
 # Note: sample_width -> bit_depth conversions: 1->8, 2->16, 3->24, 4->32
-# 24 bit depth and 48K sample rates are industry standards
-def getAudio(filename, sampleWidth=3, sampleRate=48000, channels=2):
+# 24/32 bit depth and 48K sample rates are industry standards
+def getAudio(filename, sampleWidth=4, sampleRate=48000, channels=2):
     audiofilename = getAudioFile(filename)
     fformat = audiofilename.split(".")[-1].lower()
     audio = AudioSegment.from_file(audiofilename, format=fformat)
