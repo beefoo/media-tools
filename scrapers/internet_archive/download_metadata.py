@@ -20,7 +20,7 @@ from lib.io_utils import *
 # input
 parser = argparse.ArgumentParser()
 parser.add_argument('-query', dest="QUERY", default="collection:(prelingerhomemovies) AND mediatype:(movies)", help="Query. See reference: https://archive.org/advancedsearch.php")
-parser.add_argument('-keys', dest="RETURN_KEYS", default="date,description,identifier,item_size,publicdate,subject,title", help="List of keys to return")
+parser.add_argument('-keys', dest="RETURN_KEYS", default="date,description,identifier,item_size,publicdate,subject,title,creator,licenseurl", help="List of keys to return")
 parser.add_argument('-sort', dest="SORT_BY", default="downloads desc", help="Sort string")
 parser.add_argument('-format', dest="FORMAT", default=".mp4", help="Derivative to retrieve")
 parser.add_argument('-multi', dest="MULTI_FORMAT", action="store_true", help="Download multiple istances of the same format?")
