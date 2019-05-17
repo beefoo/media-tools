@@ -21,6 +21,10 @@ def makeTrack(duration, instructions, segments, sfx=True, sampleWidth=4, sampleR
         segment = [s for s in segments if s["id"]==(i["start"], i["dur"])].pop()
         audio = segment["audio"]
         audio = applyAudioProperties(audio, i, sfx, fxPad)
+        # convert sample width
+        if audio.sample_width != sampleWidth:
+            # print("Warning: sample width changed to %s from %s" % (sampleWidth, audio.sample_width))
+            audio = audio.set_sample_width(sampleWidth)
         baseAudio = baseAudio.overlay(audio, position=i["ms"])
         sys.stdout.write('\r')
         sys.stdout.write("%s%%" % round(1.0*(index+1)/instructionCount*100,1))
