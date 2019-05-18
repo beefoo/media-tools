@@ -16,7 +16,7 @@ parser.add_argument('-outframe', dest="OUTPUT_FRAME", default="tmp/%s_%s_frames/
 parser.add_argument('-out', dest="OUTPUT_FILE", default="output/%s_%s_%s.mp4", help="Output file pattern")
 parser.add_argument('-cd', dest="CACHE_DIR", default="tmp/%s_cache/", help="Cache dir pattern")
 parser.add_argument('-seq', dest="SEQUENCE", default="proliferation,waves,falling,orbits,shuffle,stretch,flow,splice", help="Comma separated list of compositions")
-parser.add_argument('-db', dest="SEQUENCE_DB", default="6.0,0.0,0.6,3.0,1.8,0.0,0.0,0.0", help="Comma separated list of decibel adjustments; leave blank if no adjustments")
+parser.add_argument('-db', dest="SEQUENCE_DB", default="1.8,0,0,1.2,0,0,0,10.0", help="Comma separated list of decibel adjustments; leave blank if no adjustments")
 parser.add_argument('-pyv', dest="PYTHON_NAME", default="python3", help="Name of python command")
 parser.add_argument('-probe', dest="PROBE", action="store_true", help="Just spit out duration info and commands")
 parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite existing?")
