@@ -17,13 +17,14 @@ def addTextArguments(parser):
     parser.add_argument('-h2', dest="H2_PROPS", default="default,72,0.3,1.2,1.2,default", help="Heading 2 (font, size, margin, line-height, letter-width, align)")
     parser.add_argument('-h3', dest="H3_PROPS", default="default,36,0.5,1.5,1.2,default", help="Heading 3 (font, size, margin, line-height, letter-width, align)")
     parser.add_argument('-pg', dest="P_PROPS", default="default,28,0.5,1.5,1.2,default", help="Paragraph (font, size, margin, line-height, letter-width, align)")
-    parser.add_argument('-li', dest="LI_PROPS", default="default,12,0.5,1.1,1,left", help="List item (font, size, margin, line-height, letter-width, align)")
+    parser.add_argument('-li', dest="LI_PROPS", default="default,14,0.5,1.1,1,left", help="List item (font, size, margin, line-height, letter-width, align)")
+    parser.add_argument('-table', dest="TABLE_PROPS", default="default,14,2.0,1.1,1,left", help="List item (font, size, margin, line-height, letter-width, align)")
     parser.add_argument('-align', dest="TEXT_ALIGN", default="center", help="Default text align")
     parser.add_argument('-tyoffset', dest="TEXTBLOCK_Y_OFFSET", default=-0.02, type=float, help="Vertical offset of text as a percentage of frame height; otherwise will be vertically centered")
     parser.add_argument('-txoffset', dest="TEXTBLOCK_X_OFFSET", default=0.0, type=float, help="Horizontal offset of text as a percentage of frame width; otherwise will be horizontally centered")
     parser.add_argument('-color', dest="TEXT_COLOR", default="#FFFFFF", help="Color of font")
     parser.add_argument('-bg', dest="BG_COLOR", default="#000000", help="Color of background")
-    parser.add_argument('-maxw', dest="MAX_TEXT_WIDTH", default=0.8, type=float, help="Max text width as a percentage of frame width")
+    parser.add_argument('-maxw', dest="MAX_TEXT_WIDTH", default=0.9, type=float, help="Max text width as a percentage of frame width")
 
 def addTextMeasurements(lines, tprops, maxWidth=-1):
     prevType = None
@@ -33,14 +34,18 @@ def addTextMeasurements(lines, tprops, maxWidth=-1):
     for i, line in enumerate(lines):
         type = line["type"]
 
-        # update lines
-        line.update(tprops[type])
+        if type == "table":
+            multilines = getTableLines(line, tprops, maxWidth)
 
-        # assume if same type as previous, don't put margin between them, except list items
-        if i > 0 and type == prevType and type != "li":
-            parsedLines[-1]["marginValue"] = 0
+        else:
+            # update lines
+            line.update(tprops[type])
 
-        multilines = getMultilines(line, maxWidth)
+            # assume if same type as previous, don't put margin between them, except list items
+            if i > 0 and type == prevType and type != "li":
+                parsedLines[-1]["marginValue"] = 0
+
+            multilines = getMultilines(line, maxWidth)
 
         # last line has no margin
         if i >= (lineCount-1):
@@ -50,6 +55,23 @@ def addTextMeasurements(lines, tprops, maxWidth=-1):
         prevType = type
 
     return parsedLines
+
+def drawLineToImage(draw, line, tx, ty, width, height, color):
+    lfont = line["font"]
+    ls = line["letterSpacing"]
+    xmin, xmax = (-line["width"], width)
+    ymin, ymax = (-line["height"], height)
+    # draw text if in bounds
+    if xmin <= tx <= xmax and ymin <= ty <= ymax:
+        if ls <= 0:
+            draw.text((tx, ty), line["text"], font=lfont, fill=color)
+        # draw char by char if we have letter width set
+        else:
+            chars = list(line["text"])
+            for char in chars:
+                draw.text((tx, ty), char, font=lfont, fill=color)
+                cw, ch = lfont.getsize(char)
+                tx += cw + ls
 
 def getBBoxFromLines(lines):
     width = max([l["width"] for l in lines])
@@ -64,6 +86,7 @@ def getCreditLines(line, a, uniqueKey="title", lineType="li", sortBy="text"):
     query = dict([tuple(c.split("=")) for c in queryStr.split("&")])
     sampleData = None if "sampledata" not in query else a.SAMPLE_DATA_DIR + query["sampledata"]
     metadata = None if "metadata" not in query else a.METADATA_DIR + query["metadata"]
+    cols = 1 if "cols" not in query else int(query["cols"])
 
     if metadata is None:
         print("Metadata not found in credit line; skipping")
@@ -100,6 +123,26 @@ def getCreditLines(line, a, uniqueKey="title", lineType="li", sortBy="text"):
 
     if sortBy:
         lines = sorted(lines, key=lambda l: l[sortBy])
+
+    print("Found %s credits" % len(lines))
+
+    # if cols are more than one, break them into rows
+    if cols > 1:
+        lineCount = len(lines)
+        rowCount = ceilInt(1.0 * lineCount / cols)
+        rows = []
+        for row in range(rowCount):
+            i0 = row * cols
+            i1 = min(i0 + cols, lineCount)
+            row = lines[i0:i1]
+            rows.append({
+                "type": "row",
+                "cols": row
+            })
+        lines = [{
+            "type": "table",
+            "rows": rows
+        }]
 
     return lines
 
@@ -169,6 +212,48 @@ def getMultilines(line, maxWidth):
 
     return mlines
 
+def getTableLines(line, tprops, maxWidth):
+    rows = line["rows"]
+    rowCount = len(rows)
+    tableProps = tprops["table"].copy()
+    colCount = len(rows[0]["cols"])
+
+    # calculate column width with margin
+    tlw, tlh, _ = getLineSize(tableProps["font"], "A")
+    tableMargin = tableProps["margin"] * tlh
+    colWidth = 1.0 * maxWidth / colCount - tableProps["margin"] * (colCount-1)
+
+    # break into cols
+    cols = [[] for col in range(colCount)]
+    for row in rows:
+        rowCols = row["cols"]
+        for col in range(colCount):
+            if col < len(rowCols):
+                cols[col].append(rowCols[col])
+
+    tableH = 0
+    tableW = maxWidth
+    parsedCols = []
+    for colRows in cols:
+        parsedLines = []
+        for line in colRows:
+            line.update(tprops["li"])
+            multilines = getMultilines(line, colWidth)
+            parsedLines += multilines
+        colW, colH = getBBoxFromLines(parsedLines)
+        tableH = max(tableH, colH)
+        parsedCols.append(parsedLines)
+
+    tableProps.update({
+        "type": "table",
+        "width": tableW,
+        "height": tableH,
+        "lineHeightValue": tableH,
+        "marginValue": tableMargin,
+        "cols": parsedCols
+    })
+    return [tableProps]
+
 def getTextProperty(a, prop):
     fontName, size, margin, lineHeight, letterWidth, align = tuple([parseNumber(v) for v in prop.strip().split(",")])
     fontName = a.FONT_DIR + a.DEFAULT_FONT_FILE if fontName=="default" else a.FONT_DIR + fontName
@@ -182,7 +267,8 @@ def getTextProperties(a):
         "h2": getTextProperty(a, a.H2_PROPS),
         "h3": getTextProperty(a, a.H3_PROPS),
         "p": getTextProperty(a, a.P_PROPS),
-        "li": getTextProperty(a, a.LI_PROPS)
+        "li": getTextProperty(a, a.LI_PROPS),
+        "table": getTextProperty(a, a.TABLE_PROPS)
     }
 
 def linesToImage(lines, fn, width, height, color="#ffffff", bgColor="#000000", tblockYOffset=0, tblockXOffset=0, x="auto", y="auto"):
@@ -198,27 +284,24 @@ def linesToImage(lines, fn, width, height, color="#ffffff", bgColor="#000000", t
 
     ty = y
     for line in lines:
-        lfont = line["font"]
         talign = line["align"]
         tx = x
         if talign == "center":
             tx = x + (tw - line["width"]) * 0.5
         elif talign == "right":
             tx = x + (tw - line["width"])
-        ls = line["letterSpacing"]
-        xmin, xmax = (-line["width"], width)
-        ymin, ymax = (-line["height"], height)
-        # draw text if in bounds
-        if xmin <= tx <= xmax and ymin <= ty <= ymax:
-            if ls <= 0:
-                draw.text((tx, ty), line["text"], font=lfont, fill=color)
-            # draw char by char if we have letter width set
-            else:
-                chars = list(line["text"])
-                for char in chars:
-                    draw.text((tx, ty), char, font=lfont, fill=color)
-                    cw, ch = lfont.getsize(char)
-                    tx += cw + ls
+
+        if line["type"] == "table":
+            colW = 1.0 * line["width"] / len(line["cols"])
+            for cindex, colRows in enumerate(line["cols"]):
+                colX = tx + cindex * colW
+                colY = ty
+                for row in colRows:
+                    drawLineToImage(draw, row, colX, colY, width, height, color)
+                    colY += row["lineHeightValue"] + row["marginValue"]
+        else:
+            drawLineToImage(draw, line, tx, ty, width, height, color)
+
         ty += line["lineHeightValue"] + line["marginValue"]
     im.save(fn)
     print("Saved %s" % fn)
