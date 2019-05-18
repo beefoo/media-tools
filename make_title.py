@@ -9,6 +9,7 @@ import sys
 
 from lib.io_utils import *
 from lib.math_utils import *
+from lib.processing_utils import *
 from lib.text_utils import *
 from lib.video_utils import *
 
@@ -43,9 +44,10 @@ removeFiles(a.OUTPUT_FRAME % "*")
 
 # Read text
 lines = parseMdFile(a.INPUT_FILE, a)
+lines = addTextMeasurements(lines, tprops)
 
 if a.DEBUG:
-    linesToImage(lines, a.OUTPUT_FRAME % "test", tprops, a.WIDTH, a.HEIGHT,
+    linesToImage(lines, a.OUTPUT_FRAME % "test", a.WIDTH, a.HEIGHT,
                     color=a.TEXT_COLOR,
                     bgColor=a.BG_COLOR,
                     tblockYOffset=TEXTBLOCK_Y_OFFSET,
@@ -95,11 +97,11 @@ for f in range(totalFrames):
                 textColor.append(roundInt(lerp((c0[i], c1[i]), lerpColor)))
             textColor = tuple(textColor)
 
-        lines = addTextMeasurements(lines, tprops, a)
-        linesToImage(lines, filename, tprops, a.WIDTH, a.HEIGHT,
+        linesToImage(lines, filename, a.WIDTH, a.HEIGHT,
                         color=textColor,
                         bgColor=a.BG_COLOR,
                         tblockYOffset=TEXTBLOCK_Y_OFFSET,
                         tblockXOffset=TEXTBLOCK_X_OFFSET)
+    printProgress(frame, totalFrames)
 
 compileFrames(a.OUTPUT_FRAME, a.FPS, a.OUTPUT_FILE, getZeroPadding(totalFrames))

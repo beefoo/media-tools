@@ -17,16 +17,15 @@ def addTextArguments(parser):
     parser.add_argument('-h2', dest="H2_PROPS", default="default,72,0.3,1.2,1.2,default", help="Heading 2 (font, size, margin, line-height, letter-width, align)")
     parser.add_argument('-h3', dest="H3_PROPS", default="default,36,0.5,1.5,1.2,default", help="Heading 3 (font, size, margin, line-height, letter-width, align)")
     parser.add_argument('-pg', dest="P_PROPS", default="default,28,0.5,1.5,1.2,default", help="Paragraph (font, size, margin, line-height, letter-width, align)")
-    parser.add_argument('-li', dest="LI_PROPS", default="default,28,0.5,1.5,1.2,default", help="List item (font, size, margin, line-height, letter-width, align)")
+    parser.add_argument('-li', dest="LI_PROPS", default="default,12,0.5,1.1,1,left", help="List item (font, size, margin, line-height, letter-width, align)")
     parser.add_argument('-align', dest="TEXT_ALIGN", default="center", help="Default text align")
     parser.add_argument('-tyoffset', dest="TEXTBLOCK_Y_OFFSET", default=-0.02, type=float, help="Vertical offset of text as a percentage of frame height; otherwise will be vertically centered")
     parser.add_argument('-txoffset', dest="TEXTBLOCK_X_OFFSET", default=0.0, type=float, help="Horizontal offset of text as a percentage of frame width; otherwise will be horizontally centered")
     parser.add_argument('-color', dest="TEXT_COLOR", default="#FFFFFF", help="Color of font")
     parser.add_argument('-bg', dest="BG_COLOR", default="#000000", help="Color of background")
     parser.add_argument('-maxw', dest="MAX_TEXT_WIDTH", default=0.8, type=float, help="Max text width as a percentage of frame width")
-    parser.add_argument('-indent', dest="TEXT_INDENT", default=0.05, type=float, help="Amount to indent text as a percent of frame width")
 
-def addTextMeasurements(lines, tprops, a):
+def addTextMeasurements(lines, tprops, maxWidth=-1):
     prevType = None
     lineCount = len(lines)
     parsedLines = []
@@ -37,11 +36,11 @@ def addTextMeasurements(lines, tprops, a):
         # update lines
         line.update(tprops[type])
 
-        # assume if same type as previous, don't put margin between them
-        if i > 0 and type == prevType:
+        # assume if same type as previous, don't put margin between them, except list items
+        if i > 0 and type == prevType and type != "li":
             parsedLines[-1]["marginValue"] = 0
 
-        multilines = getMultilines(line, a.MAX_TEXT_WIDTH, a.TEXT_INDENT)
+        multilines = getMultilines(line, maxWidth)
 
         # last line has no margin
         if i >= (lineCount-1):
@@ -109,57 +108,53 @@ def getLineSize(font, text, letterWidth=1.0):
     letterSpacing = 0
 
     if letterWidth != 1.0:
-        lw = 0
-        chars = list(text)
-        cws = []
-        for char in chars:
-            cw, ch = font.getsize(char)
-            cws.append(cw)
-        cwMean = np.mean(cws)
-        cw = cwMean * letterWidth
-        letterSpacing = cw - cwMean
-        lw = (len(cws)-1) * cw
+        # normalize letter spacing with a constant char
+        aw, ah = font.getsize("A")
+        letterSpacing = aw * letterWidth - aw
+        clen = len(text)
+        if clen > 1:
+            lw += letterSpacing * (clen-1)
 
     return (lw, lh, letterSpacing)
 
-def getMultilines(line, maxWidth, textIndent):
+def getLineWidth(font, text, letterWidth=1.0):
+    lw, lh, letterSpacing = getLineSize(font, text, letterWidth)
+    return lw
+
+def getMultilines(line, maxWidth):
     mlines = [line]
     lw, lh, letterSpacing = getLineSize(line["font"], line["text"], line["letterWidth"])
 
-    # for paragraphs and line items, wrap into multiline with text indent
-    if line["type"] in set(["p", "li"]) and maxWidth > 1 and lw > maxWidth:
+    # for line items, wrap into multiline
+    if line["type"] == "li" and maxWidth > 1 and lw > maxWidth:
         mlines = []
         font = line["font"]
         text = line["text"]
-        words = text.split(" ")
-        mlw = 0
-        index0 = 0
-        sw, sh = font.getsize(" ")
+        words = text.split()
         currentLineText = ""
         wordCount = len(words)
         for i, word in enumerate(words):
-            ww, wh = font.getsize(word)
-            testW = mlw + ww if mlw <= 0 else mlw + ww + sw
+            testString = word if len(currentLineText) < 1 else currentLineText + " " + word
+            testW = getLineWidth(font, testString, line["letterWidth"])
+            # test string too long, must add previous line and move on to next line
             if testW > maxWidth:
                 mline = line.copy()
                 if len(currentLineText) > 0:
                     mline["text"] = currentLineText
                     currentLineText = word
-                    mlw = ww
                 # Word is too long... just add it
                 else:
                     mline["text"] = word
-                tw, th = font.getsize(mline["text"])
-                mline["width"] = tw
+                mline["width"] = getLineWidth(font, mline["text"], line["letterWidth"])
                 mlines.append(mline)
+            # otherwise add to current line
             else:
-                mlw = testW
-                currentLineText += " " + word
+                currentLineText = testString
+            # leftover text at the end; just add it
             if i >= wordCount-1 and len(currentLineText) > 0:
                 mline = line.copy()
                 mline["text"] = currentLineText
-                tw, th = font.getsize(mline["text"])
-                mline["width"] = tw
+                mline["width"] = getLineWidth(font, mline["text"], line["letterWidth"])
                 mlines.append(mline)
 
     margin = lh * line["margin"]
@@ -171,7 +166,6 @@ def getMultilines(line, maxWidth, textIndent):
         mlines[i]["marginValue"] = 0 if i < mlineCount-1 else margin # only add margin to last line
         mlines[i]["lineHeightValue"] = lineHeight
         mlines[i]["letterSpacing"] = letterSpacing
-        mlines[i]["indent"] = 0 if "indent" not in mline else mline["indent"]
 
     return mlines
 
@@ -191,7 +185,7 @@ def getTextProperties(a):
         "li": getTextProperty(a, a.LI_PROPS)
     }
 
-def linesToImage(lines, fn, tprops, width, height, color="#ffffff", bgColor="#000000", tblockYOffset=0, tblockXOffset=0, x="auto", y="auto"):
+def linesToImage(lines, fn, width, height, color="#ffffff", bgColor="#000000", tblockYOffset=0, tblockXOffset=0, x="auto", y="auto"):
     tw, th = getBBoxFromLines(lines)
 
     if x=="auto":
@@ -212,17 +206,20 @@ def linesToImage(lines, fn, tprops, width, height, color="#ffffff", bgColor="#00
         elif talign == "right":
             tx = x + (tw - line["width"])
         ls = line["letterSpacing"]
-        if ls <= 0:
-            draw.text((tx, ty), line["text"], font=lfont, fill=color)
-        # draw char by char if we have letter width set
-        else:
-            chars = list(line["text"])
-            for char in chars:
-                draw.text((tx, ty), char, font=lfont, fill=color)
-                cw, ch = lfont.getsize(char)
-                tx += cw + ls
+        xmin, xmax = (-line["width"], width)
+        ymin, ymax = (-line["height"], height)
+        # draw text if in bounds
+        if xmin <= tx <= xmax and ymin <= ty <= ymax:
+            if ls <= 0:
+                draw.text((tx, ty), line["text"], font=lfont, fill=color)
+            # draw char by char if we have letter width set
+            else:
+                chars = list(line["text"])
+                for char in chars:
+                    draw.text((tx, ty), char, font=lfont, fill=color)
+                    cw, ch = lfont.getsize(char)
+                    tx += cw + ls
         ty += line["lineHeightValue"] + line["marginValue"]
-
     im.save(fn)
     print("Saved %s" % fn)
 
@@ -260,6 +257,10 @@ def parseMdFile(fn, a, includeBlankLines=False):
 
 def normalizeText(text):
 
+    # normalize whitespace
+    text = ' '.join(text.split())
+
+    # convert all uppercase to title case
     if text.isupper():
         text = text.title()
 

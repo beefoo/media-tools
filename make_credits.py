@@ -27,12 +27,11 @@ parser.add_argument('-pad1', dest="PAD_END", default=2000, type=int, help="Paddi
 parser.add_argument('-outframe', dest="OUTPUT_FRAME", default="tmp/credits/frame.%s.png", help="Output frames pattern")
 parser.add_argument('-out', dest="OUTPUT_FILE", default="output/credits.mp4", help="Output media file")
 parser.add_argument('-debug', dest="DEBUG", action="store_true", help="Debug mode?")
-parser.add_argument('-speed', dest="SCROLL_SPEED", default=0.5, type=float, help="(scroll mode only) How much to scroll per frame in px? assumes 30fps; assumes 1920x1080px")
+parser.add_argument('-speed', dest="SCROLL_SPEED", default=1.0, type=float, help="(scroll mode only) How much to scroll per frame in px? assumes 30fps; assumes 1920x1080px")
 a = parser.parse_args()
 aa = vars(a)
 aa["SCROLL_SPEED"] = a.SCROLL_SPEED * (a.WIDTH / 1920.0) / (a.FPS / 30.0)
 aa["MAX_TEXT_WIDTH"] = roundInt(a.MAX_TEXT_WIDTH * a.WIDTH)
-aa["TEXT_INDENT"] = roundInt(a.TEXT_INDENT * a.WIDTH)
 
 # parse properties
 tprops = getTextProperties(a)
@@ -47,5 +46,34 @@ removeFiles(a.OUTPUT_FRAME % "*")
 lines = parseMdFile(a.INPUT_FILE, a)
 print("Found %s lines" % len(lines))
 
-lines = addTextMeasurements(lines, tprops, a)
-tw, th = getBBoxFromLines(lines, a)
+lines = addTextMeasurements(lines, tprops, maxWidth=a.MAX_TEXT_WIDTH)
+tw, th = getBBoxFromLines(lines)
+
+print("Size: %s x %s" % (tw, th))
+totalFrames = roundInt((th+a.HEIGHT) / a.SCROLL_SPEED) + msToFrame(a.PAD_START + a.PAD_END, a.FPS)
+durationMs = frameToMs(totalFrames, a.FPS)
+print("Total time: %s" % formatSeconds(durationMs/1000.0))
+if a.DEBUG:
+    sys.exit()
+
+# get frame sequence
+
+print("Making video frame sequence...")
+startMs = a.PAD_START
+endMs = durationMs - a.PAD_END
+for f in range(totalFrames):
+    frame = f + 1
+    ms = frameToMs(frame, a.FPS)
+    filename = a.OUTPUT_FRAME % zeroPad(frame, totalFrames)
+    if ms <= startMs or ms > endMs:
+        saveBlankFrame(filename, a.WIDTH, a.HEIGHT, bgColor=a.BG_COLOR)
+    else:
+        nprogress = norm(ms, (startMs, endMs), limit=True)
+        y = lerp((a.HEIGHT, -(th+a.HEIGHT)), nprogress)
+        linesToImage(lines, filename, a.WIDTH, a.HEIGHT,
+                        color=a.TEXT_COLOR,
+                        bgColor=a.BG_COLOR,
+                        y=y,
+                        tblockXOffset=TEXTBLOCK_X_OFFSET)
+
+compileFrames(a.OUTPUT_FRAME, a.FPS, a.OUTPUT_FILE, getZeroPadding(totalFrames))
