@@ -29,7 +29,7 @@ parser.add_argument('-outframe', dest="OUTPUT_FRAME", default="tmp/credits/frame
 parser.add_argument('-out', dest="OUTPUT_FILE", default="output/credits.mp4", help="Output media file")
 parser.add_argument('-debug', dest="DEBUG", action="store_true", help="Debug mode?")
 parser.add_argument('-ds', dest="DEBUG_SECONDS", default=120, type=int, help="Debug time in seconds")
-parser.add_argument('-speed', dest="SCROLL_SPEED", default=2.0, type=float, help="(scroll mode only) How much to scroll per frame in px? assumes 30fps; assumes 1920x1080px")
+parser.add_argument('-speed', dest="SCROLL_SPEED", default=2.4, type=float, help="(scroll mode only) How much to scroll per frame in px? assumes 30fps; assumes 1920x1080px")
 a = parser.parse_args()
 aa = vars(a)
 aa["SCROLL_SPEED"] = a.SCROLL_SPEED * (a.WIDTH / 1920.0) / (a.FPS / 30.0)

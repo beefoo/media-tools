@@ -18,7 +18,7 @@ def addTextArguments(parser):
     parser.add_argument('-h3', dest="H3_PROPS", default="default,36,0.5,1.5,1.2,default", help="Heading 3 (font, size, margin, line-height, letter-width, align)")
     parser.add_argument('-pg', dest="P_PROPS", default="default,28,0.5,1.5,1.2,default", help="Paragraph (font, size, margin, line-height, letter-width, align)")
     parser.add_argument('-li', dest="LI_PROPS", default="default,14,0.5,1.1,1,left", help="List item (font, size, margin, line-height, letter-width, align)")
-    parser.add_argument('-table', dest="TABLE_PROPS", default="default,14,2.0,1.1,1,left", help="List item (font, size, margin, line-height, letter-width, align)")
+    parser.add_argument('-table', dest="TABLE_PROPS", default="default,14,12.0,1.1,1,left", help="List item (font, size, margin, line-height, letter-width, align)")
     parser.add_argument('-align', dest="TEXT_ALIGN", default="center", help="Default text align")
     parser.add_argument('-tyoffset', dest="TEXTBLOCK_Y_OFFSET", default=-0.02, type=float, help="Vertical offset of text as a percentage of frame height; otherwise will be vertically centered")
     parser.add_argument('-txoffset', dest="TEXTBLOCK_X_OFFSET", default=0.0, type=float, help="Horizontal offset of text as a percentage of frame width; otherwise will be horizontally centered")
@@ -75,7 +75,7 @@ def drawLineToImage(draw, line, tx, ty, width, height, color):
 
 def getBBoxFromLines(lines):
     width = max([l["width"] for l in lines])
-    height = sum([l["lineHeightValue"]+l["margin"] for l in lines])
+    height = sum([l["lineHeightValue"]+l["marginValue"] for l in lines])
     return (width, height)
 
 def getCreditLines(line, a, uniqueKey="title", lineType="li", sortBy="text"):
@@ -221,7 +221,8 @@ def getTableLines(line, tprops, maxWidth):
     # calculate column width with margin
     tlw, tlh, _ = getLineSize(tableProps["font"], "A")
     tableMargin = tableProps["margin"] * tlh
-    colWidth = 1.0 * maxWidth / colCount - tableProps["margin"] * (colCount-1)
+    colMargin = tlh
+    colWidth = 1.0 * maxWidth / colCount - colMargin * (colCount-1)
 
     # break into cols
     cols = [[] for col in range(colCount)]
