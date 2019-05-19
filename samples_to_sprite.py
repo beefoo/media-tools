@@ -33,6 +33,7 @@ parser.add_argument('-cached', dest="CACHE_DIR", default="tmp/sprite_%s_cache/",
 parser.add_argument('-log', dest="LOG", default=0, type=int, help="Display using log?")
 parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite existing?")
 parser.add_argument('-probe', dest="PROBE", action="store_true", help="Just display durations?")
+parser.add_argument('-image', dest="IMAGE_ONLY", action="store_true", help="Just output image with no audio?")
 args = parser.parse_args()
 
 # Parse arguments
@@ -122,7 +123,8 @@ for file in range(FILE_COUNT):
         ms += row["dur"]
     outfilename = AUDIO_FILE.replace(".mp3", ".%s.mp3" % zeroPad(file+1, FILE_COUNT))
     if not os.path.isfile(outfilename) or OVERWRITE:
-        mixAudio(instructions, ms+1000, outfilename)
+        if not a.IMAGE_ONLY:
+            mixAudio(instructions, ms+1000, outfilename)
     else:
         print("Already created %s" % outfilename)
     audioSpriteFiles.append(os.path.basename(outfilename))
