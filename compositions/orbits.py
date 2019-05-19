@@ -97,11 +97,12 @@ stepTime = logTime(stepTime, "Samples to clips")
 for i, clip in enumerate(clips):
     clip.vector.setParent(container.vector)
 
-def queuePlay(clip, ms, a):
+def queuePlay(clip, ms, a, nvolume):
+    nvolume = ease(nvolume)
     clip.queuePlay(ms, {
         "start": clip.props["audioStart"],
         "dur": clip.props["audioDur"],
-        "volume": lerp(a.VOLUME_RANGE, (1.0 - clip.props["nDistanceFromCenter"])),
+        "volume": lerp(a.VOLUME_RANGE, nvolume),
         "fadeOut": clip.props["fadeOut"],
         "fadeIn": clip.props["fadeIn"],
         "pan": 0,
@@ -128,14 +129,16 @@ for clip in clips:
     # play forward until we're half way
     ms = rotateStartMs + clipPlayMs
     while ms <= rotateReverseMs:
-        queuePlay(clip, ms, a)
+        nvolume = 1.0 - norm(ms, (rotateStartMs, rotateEndMs), limit=True) # fade out
+        queuePlay(clip, ms, a, nvolume)
         ms += ringDurMs
     # now play in reverse
     ringIndex = clip.props["ringIndexReversed"]
     clipPlayMs = getClipPlayMs(PLAY_OFFSET, ringCellCount, ringIndex, rotateDurMs, reversed=True)
     ms = rotateReverseMs + clipPlayMs
     while ms <= rotateEndMs:
-        queuePlay(clip, ms, a)
+        nvolume = 1.0 - norm(ms, (rotateStartMs, rotateEndMs), limit=True) # fade out
+        queuePlay(clip, ms, a, nvolume)
         ms += ringDurMs
 
 # initialize container scale
