@@ -1,5 +1,6 @@
 
 import numpy as np
+import os
 from PIL import Image, ImageFont, ImageDraw
 from pprint import pprint
 from string import Formatter
@@ -12,13 +13,14 @@ def addTextArguments(parser):
     parser.add_argument('-fdir', dest="FONT_DIR", default="media/fonts/Open_Sans/", help="Directory of font files")
     parser.add_argument('-font', dest="DEFAULT_FONT_FILE", default="OpenSans-Regular.ttf", help="Default font file")
     parser.add_argument('-res', dest="RESOLUTION", default=1.0, type=float, help="Multiplies text sizes")
+    parser.add_argument('-rr', dest="RESIZE_RESOLUTION", default=1.0, type=float, help="Multiplies text sizes, then resizes back to 1.0 upon render for better text positioning")
     # font is "default" or font file name, size in points, margin as a percent of text height, line height as a percent of text height, letter width as a percent of text width
-    parser.add_argument('-h1', dest="H1_PROPS", default="OpenSans-Italic.ttf,96,0.3,1,1.3,default", help="Heading 1 (font, size, margin, line-height, letter-width, align)")
-    parser.add_argument('-h2', dest="H2_PROPS", default="default,72,0.3,1.2,1.2,default", help="Heading 2 (font, size, margin, line-height, letter-width, align)")
-    parser.add_argument('-h3', dest="H3_PROPS", default="default,36,0.5,1.5,1.2,default", help="Heading 3 (font, size, margin, line-height, letter-width, align)")
-    parser.add_argument('-pg', dest="P_PROPS", default="default,28,0.5,1.5,1.2,default", help="Paragraph (font, size, margin, line-height, letter-width, align)")
-    parser.add_argument('-li', dest="LI_PROPS", default="default,14,0.5,1.1,1,left", help="List item (font, size, margin, line-height, letter-width, align)")
-    parser.add_argument('-table', dest="TABLE_PROPS", default="default,14,12.0,1.1,1,left", help="List item (font, size, margin, line-height, letter-width, align)")
+    parser.add_argument('-h1', dest="H1_PROPS", default="font=OpenSans-Italic.ttf&size=96&margin=0.3&letterWidth=1.3", help="Heading 1 (font, size, margin, line-height, letter-width, align)")
+    parser.add_argument('-h2', dest="H2_PROPS", default="size=72&margin=0.3&lineHeight=1.2&letterWidth=1.2", help="Heading 2 (font, size, margin, line-height, letter-width, align)")
+    parser.add_argument('-h3', dest="H3_PROPS", default="size=36&margin=0.5&lineHeight=1.5&letterWidth=1.2", help="Heading 3 (font, size, margin, line-height, letter-width, align)")
+    parser.add_argument('-pg', dest="P_PROPS", default="size=28&margin=0.5&lineHeight=1.5&letterWidth=1.2", help="Paragraph (font, size, margin, line-height, letter-width, align)")
+    parser.add_argument('-li', dest="LI_PROPS", default="size=14&margin=0.5&lineHeight=1.1&align=left", help="List item (font, size, margin, line-height, letter-width, align)")
+    parser.add_argument('-table', dest="TABLE_PROPS", default="size=16&margin=12.0&align=left", help="List item (font, size, margin, line-height, letter-width, align)")
     parser.add_argument('-align', dest="TEXT_ALIGN", default="center", help="Default text align")
     parser.add_argument('-tyoffset', dest="TEXTBLOCK_Y_OFFSET", default=-0.02, type=float, help="Vertical offset of text as a percentage of frame height; otherwise will be vertically centered")
     parser.add_argument('-txoffset', dest="TEXTBLOCK_X_OFFSET", default=0.0, type=float, help="Horizontal offset of text as a percentage of frame width; otherwise will be horizontally centered")
@@ -83,7 +85,7 @@ def getCreditLines(line, a, uniqueKey="title", lineType="li", sortBy="text"):
     # Line string looks like: ={title};sampledata=ia_fedflixnara_samples.csv&metadata=ia_fedflixnara.csv
     line = line[1:].strip()
     template, queryStr = tuple(line.split(";"))
-    query = dict([tuple(c.split("=")) for c in queryStr.split("&")])
+    query = parseQueryString(queryStr, parseNumbers=False)
     sampleData = None if "sampledata" not in query else a.SAMPLE_DATA_DIR + query["sampledata"]
     metadata = None if "metadata" not in query else a.METADATA_DIR + query["metadata"]
     cols = 1 if "cols" not in query else int(query["cols"])
@@ -256,11 +258,18 @@ def getTableLines(line, tprops, maxWidth):
     return [tableProps]
 
 def getTextProperty(a, prop):
-    fontName, size, margin, lineHeight, letterWidth, align = tuple([parseNumber(v) for v in prop.strip().split(",")])
-    fontName = a.FONT_DIR + a.DEFAULT_FONT_FILE if fontName=="default" else a.FONT_DIR + fontName
-    align = a.TEXT_ALIGN if align=="default" else align
-    font = ImageFont.truetype(font=fontName, size=roundInt(size*a.RESOLUTION), layout_engine=ImageFont.LAYOUT_RAQM)
-    return {"font": font, "margin": margin, "lineHeight": lineHeight, "letterWidth": letterWidth, "align": align}
+    query = parseQueryString(prop)
+    fontName = a.FONT_DIR + a.DEFAULT_FONT_FILE if "font" not in query else a.FONT_DIR + query["font"]
+    query["align"] = a.TEXT_ALIGN if "align" not in query else query["align"]
+    query["size"] = 16 if "size" not in query else query["size"]
+    query["margin"] = 0.0 if "margin" not in query else query["margin"]
+    query["lineHeight"] = 1.0 if "lineHeight" not in query else query["lineHeight"]
+    query["letterWidth"] = 1.0 if "letterWidth" not in query else query["letterWidth"]
+    # pprint(query)
+    # print(fontName)
+    # sys.exit()
+    query["font"] = ImageFont.truetype(font=fontName, size=roundInt(query["size"]*a.RESOLUTION*a.RESIZE_RESOLUTION), layout_engine=ImageFont.LAYOUT_RAQM)
+    return query
 
 def getTextProperties(a):
     return {
@@ -272,7 +281,11 @@ def getTextProperties(a):
         "table": getTextProperty(a, a.TABLE_PROPS)
     }
 
-def linesToImage(lines, fn, width, height, color="#ffffff", bgColor="#000000", tblockYOffset=0, tblockXOffset=0, x="auto", y="auto"):
+def linesToImage(lines, fn, width, height, color="#ffffff", bgColor="#000000", tblockYOffset=0, tblockXOffset=0, x="auto", y="auto", resizeResolution=1.0, overwrite=False):
+    if os.path.isfile(fn) and not overwrite:
+        print("%s already exists." % fn)
+        return
+
     tw, th = getBBoxFromLines(lines)
 
     if x=="auto":
@@ -304,6 +317,12 @@ def linesToImage(lines, fn, width, height, color="#ffffff", bgColor="#000000", t
             drawLineToImage(draw, line, tx, ty, width, height, color)
 
         ty += line["lineHeightValue"] + line["marginValue"]
+
+    if resizeResolution > 1.0:
+        rw = roundInt(1.0*width/resizeResolution)
+        rh = roundInt(1.0*height/resizeResolution)
+        im = im.resize((rw, rh), resample=Image.LANCZOS)
+
     im.save(fn)
     print("Saved %s" % fn)
 

@@ -745,7 +745,10 @@ def rotatePixels(pixels, angle, resize=None):
     im = rotateImage(im, angle)
     return np.array(im)
 
-def saveBlankFrame(fn, width, height, bgColor="#000000"):
+def saveBlankFrame(fn, width, height, bgColor="#000000", overwrite=False):
+    if os.path.isfile(fn) and not overwrite:
+        print("%s already exists." % fn)
+        return
     im = Image.new('RGB', (width, height), bgColor)
     im.save(fn)
     print("Saved %s" % fn)

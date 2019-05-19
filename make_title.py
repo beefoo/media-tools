@@ -30,7 +30,11 @@ parser.add_argument('-pad1', dest="PAD_END", default=3000, type=int, help="Paddi
 parser.add_argument('-outframe', dest="OUTPUT_FRAME", default="tmp/titles/frame.%s.png", help="Output frames pattern")
 parser.add_argument('-out', dest="OUTPUT_FILE", default="output/title_main.mp4", help="Output media file")
 parser.add_argument('-debug', dest="DEBUG", action="store_true", help="Debug mode?")
+parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite existing frames?")
 a = parser.parse_args()
+aa = vars(a)
+aa["WIDTH"] = roundInt(a.WIDTH * a.RESIZE_RESOLUTION)
+aa["HEIGHT"] = roundInt(a.HEIGHT * a.RESIZE_RESOLUTION)
 
 # parse properties
 tprops = getTextProperties(a)
@@ -39,8 +43,10 @@ TEXTBLOCK_X_OFFSET = roundInt(a.WIDTH * a.TEXTBLOCK_X_OFFSET)
 
 # make dirs
 makeDirectories([a.OUTPUT_FRAME, a.OUTPUT_FILE])
+
 # remove existing files
-removeFiles(a.OUTPUT_FRAME % "*")
+if a.OVERWRITE:
+    removeFiles(a.OUTPUT_FRAME % "*")
 
 # Read text
 lines = parseMdFile(a.INPUT_FILE, a)
@@ -51,7 +57,8 @@ if a.DEBUG:
                     color=a.TEXT_COLOR,
                     bgColor=a.BG_COLOR,
                     tblockYOffset=TEXTBLOCK_Y_OFFSET,
-                    tblockXOffset=TEXTBLOCK_X_OFFSET)
+                    tblockXOffset=TEXTBLOCK_X_OFFSET,
+                    resizeResolution=a.RESIZE_RESOLUTION)
     sys.exit()
 
 # Determine length
@@ -76,7 +83,7 @@ for f in range(totalFrames):
     filename = a.OUTPUT_FRAME % zeroPad(frame, totalFrames)
     # padding: just output blank image
     if ms <= fadeInStart or ms >= fadeOutEnd:
-        saveBlankFrame(filename, a.WIDTH, a.HEIGHT, bgColor=a.BG_COLOR)
+        saveBlankFrame(filename, a.WIDTH, a.HEIGHT, bgColor=a.BG_COLOR, overwrite=a.OVERWRITE)
     # otherwise, draw text
     else:
         textColor = a.TEXT_COLOR
@@ -101,7 +108,9 @@ for f in range(totalFrames):
                         color=textColor,
                         bgColor=a.BG_COLOR,
                         tblockYOffset=TEXTBLOCK_Y_OFFSET,
-                        tblockXOffset=TEXTBLOCK_X_OFFSET)
+                        tblockXOffset=TEXTBLOCK_X_OFFSET,
+                        resizeResolution=a.RESIZE_RESOLUTION,
+                        overwrite=a.OVERWRITE)
     printProgress(frame, totalFrames)
 
 compileFrames(a.OUTPUT_FRAME, a.FPS, a.OUTPUT_FILE, getZeroPadding(totalFrames))

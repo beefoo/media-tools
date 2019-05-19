@@ -21,7 +21,7 @@ def dequeue(arr, count):
     return (returnArr, remainder)
 
 def filterByQueryString(arr, queryString):
-    return filterWhere(arr, parseQueryString(queryString))
+    return filterWhere(arr, parseFilterString(queryString))
 
 def filterWhere(arr, filters):
     if isinstance(filters, tuple):
@@ -73,7 +73,7 @@ def groupList(arr, groupBy, sort=False, desc=True):
         groups = sorted(groups, key=lambda k: k["count"], reverse=reversed)
     return groups
 
-def parseQueryString(str):
+def parseFilterString(str):
     if len(str) <= 0:
         return []
     conditionStrings = str.split("&")

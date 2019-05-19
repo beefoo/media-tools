@@ -29,9 +29,12 @@ parser.add_argument('-outframe', dest="OUTPUT_FRAME", default="tmp/credits/frame
 parser.add_argument('-out', dest="OUTPUT_FILE", default="output/credits.mp4", help="Output media file")
 parser.add_argument('-debug', dest="DEBUG", action="store_true", help="Debug mode?")
 parser.add_argument('-ds', dest="DEBUG_SECONDS", default=120, type=int, help="Debug time in seconds")
+parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite existing frames?")
 parser.add_argument('-speed', dest="SCROLL_SPEED", default=3.0, type=float, help="How much to scroll per frame in px? assumes 30fps; assumes 1920x1080px")
 a = parser.parse_args()
 aa = vars(a)
+aa["WIDTH"] = roundInt(a.WIDTH * a.RESIZE_RESOLUTION)
+aa["HEIGHT"] = roundInt(a.HEIGHT * a.RESIZE_RESOLUTION)
 aa["SCROLL_SPEED"] = a.SCROLL_SPEED * (a.WIDTH / 1920.0) / (a.FPS / 30.0)
 aa["MAX_TEXT_WIDTH"] = roundInt(a.MAX_TEXT_WIDTH * a.WIDTH) if 0 < a.MAX_TEXT_WIDTH <= 1.0 else a.WIDTH
 
@@ -53,8 +56,10 @@ print("Total time: %s" % formatSeconds(durationMs/1000.0))
 
 # make dirs
 makeDirectories([a.OUTPUT_FRAME, a.OUTPUT_FILE])
+
 # remove existing files
-removeFiles(a.OUTPUT_FRAME % "*")
+if a.OVERWRITE:
+    removeFiles(a.OUTPUT_FRAME % "*")
 
 # get frame sequence
 
@@ -69,7 +74,7 @@ for f in range(totalFrames):
     ms = frameToMs(frame, a.FPS)
     filename = a.OUTPUT_FRAME % zeroPad(frame, totalFrames)
     if ms <= startMs or ms > endMs:
-        saveBlankFrame(filename, a.WIDTH, a.HEIGHT, bgColor=a.BG_COLOR)
+        saveBlankFrame(filename, a.WIDTH, a.HEIGHT, bgColor=a.BG_COLOR, overwrite=a.OVERWRITE)
     else:
         nprogress = norm(ms, (startMs, endMs), limit=True)
         y = lerp((a.HEIGHT, -(th+a.HEIGHT)), nprogress)
@@ -77,7 +82,9 @@ for f in range(totalFrames):
                         color=a.TEXT_COLOR,
                         bgColor=a.BG_COLOR,
                         y=y,
-                        tblockXOffset=TEXTBLOCK_X_OFFSET)
+                        tblockXOffset=TEXTBLOCK_X_OFFSET,
+                        resizeResolution=a.RESIZE_RESOLUTION,
+                        overwrite=a.OVERWRITE)
     printProgress(frame, totalFrames)
 
 if a.DEBUG:
