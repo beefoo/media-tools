@@ -34,9 +34,9 @@ addVideoArgs(parser)
 parser.add_argument('-grid', dest="GRID", default="128x128", help="Size of grid")
 parser.add_argument('-grid0', dest="START_GRID", default="128x128", help="Start size of grid")
 parser.add_argument('-grid1', dest="END_GRID", default="128x128", help="End size of grid")
-parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.4,1.0", help="Volume range")
-parser.add_argument('-crange', dest="CYCLE_RANGE_MS", default="32000,48000", help="Duration of cycle in milliseconds")
-parser.add_argument('-cycles', dest="CYCLES", default=2, type=int, help="Number of cycles")
+parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.1,1.0", help="Volume range")
+parser.add_argument('-crange', dest="CYCLE_RANGE_MS", default="64000,96000", help="Duration of cycle in milliseconds")
+parser.add_argument('-cycles', dest="CYCLES", default=1, type=int, help="Number of cycles")
 parser.add_argument('-cdur', dest="CLIP_PLAY_MS", default=128, type=int, help="Duration to play clip")
 parser.add_argument('-mstep', dest="MIN_PLAY_STEP", default=64, type=int, help="Minimum to time between subsequent plays in a column")
 parser.add_argument('-cprange', dest="COL_PLAY_RANGE", default="8000,2000", help="Duration range to play full column loop")
@@ -105,6 +105,7 @@ i = 0
 while ms < endMs:
     nprogress = norm(ms, (startMs, endMs), limit=True)
     eprogress = ease(nprogress)
+    bprogress = easeSinInOutBell(nprogress)
     colMs = roundInt(lerp(a.COL_PLAY_RANGE, eprogress))
     stepMs = roundInt(1.0 * colMs / gridH)
     playEvery = ceilInt(1.0 * a.MIN_PLAY_STEP / stepMs) if stepMs < a.MIN_PLAY_STEP else 1 # avoid playing too many in a column
@@ -127,8 +128,8 @@ while ms < endMs:
 
         if canPlay:
             # get quieter over time, louder as clips go up
-            nvolume = 1.0 - clip.props["ny"]
-            volume = lerp(a.VOLUME_RANGE, nvolume) * (1.0-eprogress)
+            nvolume = (1.0 - clip.props["ny"]) * bprogress
+            volume = lerp(a.VOLUME_RANGE, nvolume)
             fadeOut = roundInt(clipPlayMs * 0.8)
             fadeIn = clipPlayMs - fadeOut
             pan = getPan(clipMs, clip)
