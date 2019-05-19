@@ -31,10 +31,16 @@ a = parser.parse_args()
 # Read files
 files = []
 fromManifest = a.INPUT_FILE.endswith(".csv") and "*" not in a.INPUT_FILE
+blacklist = []
 if fromManifest:
     fieldNames, files = readCsv(a.INPUT_FILE)
     for i, f in enumerate(files):
         files[i]["sampleFilename"] = a.INPUT_DIR + f["filename"] + ".csv"
+    blacklistFn = a.INPUT_FILE.replace(".csv", "_blacklist.csv")
+    if os.path.isfile(blacklistFn):
+        _, bfiles = readCsv(blacklistFn)
+        if len(bfiles):
+            blacklist = [b["filename"] for b in bfiles]
 else:
     files = getFilenames(a.INPUT_FILE)
     files = [{"sampleFilename": f} for f in files]
@@ -47,6 +53,12 @@ if len(a.FILTER) > 0:
     files = filterByQueryString(files, a.FILTER)
     fileCount = len(files)
     print("Found %s files after filtering" % fileCount)
+
+if len(blacklist) > 0:
+    blacklist = set(blacklist)
+    files = [f for f in files if f["filename"] not in blacklist]
+    print("Removed %s files that were blacklisted" % (fileCount-len(files)))
+    fileCount = len(files)
 
 # check to see how many samples we should retrieve per file (if applicable)
 limitPerFile = a.LIMIT_PER_FILE
