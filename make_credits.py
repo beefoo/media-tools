@@ -7,6 +7,7 @@ from pprint import pprint
 import subprocess
 import sys
 
+from lib.audio_mixer import *
 from lib.io_utils import *
 from lib.math_utils import *
 from lib.processing_utils import *
@@ -31,6 +32,13 @@ parser.add_argument('-debug', dest="DEBUG", action="store_true", help="Debug mod
 parser.add_argument('-ds', dest="DEBUG_SECONDS", default=120, type=int, help="Debug time in seconds")
 parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite existing frames?")
 parser.add_argument('-speed', dest="SCROLL_SPEED", default=3.0, type=float, help="How much to scroll per frame in px? assumes 30fps; assumes 1920x1080px")
+
+parser.add_argument('-audio', dest="AUDIO_FILE", default="", help="Audio track to add to credits")
+parser.add_argument('-astart', dest="AUDIO_START", default=0, type=int, help="Audio start in ms")
+parser.add_argument('-afadein', dest="AUDIO_FADE_IN", default=3000, type=int, help="Fade in audio in ms")
+parser.add_argument('-afadeout', dest="AUDIO_FADE_OUT", default=5000, type=int, help="Fade out audio in ms")
+parser.add_argument('-apad0', dest="AUDIO_PAD_IN", default=500, type=int, help="Pad in audio in ms")
+parser.add_argument('-apad1', dest="AUDIO_PAD_OUT", default=500, type=int, help="Pad out audio in ms")
 a = parser.parse_args()
 aa = vars(a)
 aa["WIDTH"] = roundInt(a.WIDTH * a.RESIZE_RESOLUTION)
@@ -87,7 +95,33 @@ for f in range(totalFrames):
                         overwrite=a.OVERWRITE)
     printProgress(frame, totalFrames)
 
+
+
+audioFile = None
+if len(a.AUDIO_FILE) > 0:
+    audioFile = a.OUTPUT_FILE.replace(".mp4", ".mp3")
+    if not os.path.isfile(audioFile) or a.OVERWRITE:
+        audioDur = durationMs
+        srcDur = floorInt(getDurationFromFile(a.AUDIO_FILE, accurate=True) * 1000)
+        print("Source audio dur: %s" % formatSeconds(srcDur/1000.0))
+        clipDur = audioDur - a.AUDIO_PAD_IN - a.AUDIO_PAD_OUT
+        if a.AUDIO_START + clipDur > srcDur:
+            print("Source audio not long enough (%s > %s)" % (a.AUDIO_START + clipDur, srcDur))
+        instructions = [{
+            "ms": a.AUDIO_PAD_IN,
+            "filename": a.AUDIO_FILE,
+            "start": a.AUDIO_START,
+            "dur": clipDur,
+            "volume": 1.0,
+            "fadeIn": a.AUDIO_FADE_IN,
+            "fadeOut": a.AUDIO_FADE_OUT,
+            "matchDb": -16
+        }]
+        if a.DEBUG:
+            sys.exit()
+        mixAudio(instructions, audioDur, audioFile)
+
 if a.DEBUG:
     sys.exit()
 
-compileFrames(a.OUTPUT_FRAME, a.FPS, a.OUTPUT_FILE, getZeroPadding(totalFrames))
+compileFrames(a.OUTPUT_FRAME, a.FPS, a.OUTPUT_FILE, getZeroPadding(totalFrames), audioFile=audioFile)
