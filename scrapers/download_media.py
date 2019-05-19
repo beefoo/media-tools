@@ -27,6 +27,7 @@ parser.add_argument('-limit', dest="LIMIT", default=-1, type=int, help="Limit do
 parser.add_argument('-out', dest="OUTPUT_DIR", default="media/downloads/%s.mp4", help="Output directory")
 parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite existing data?")
 parser.add_argument('-filter', dest="FILTER", default="", help="Query string to filter by")
+parser.add_argument('-probe', dest="PROBE", action="store_true", help="Just output debug info")
 a = parser.parse_args()
 
 # Make sure output dirs exist
@@ -46,6 +47,7 @@ if len(a.FILTER) > 0:
 if a.LIMIT > 0:
     rows = rows[:a.LIMIT]
 
+nofileCount = 0
 for i, row in enumerate(rows):
     url = a.URL % row[a.ID_KEY] if a.ID_KEY in row else False
     if not url:
@@ -54,5 +56,12 @@ for i, row in enumerate(rows):
 
     filepath = a.OUTPUT_DIR % row[a.ID_KEY]
     filename = os.path.basename(filepath)
-    downloadBinaryFile(url, filepath, a.OVERWRITE)
-    printProgress(i+1, fileCount)
+    if a.PROBE:
+        if not os.path.isfile(filepath):
+            nofileCount += 1
+    else:
+        downloadBinaryFile(url, filepath, a.OVERWRITE)
+        printProgress(i+1, fileCount)
+
+if a.PROBE:
+    print("%s files to download" % nofileCount)

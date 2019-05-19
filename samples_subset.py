@@ -25,7 +25,7 @@ parser.add_argument('-fsort', dest="SORT_PER_FILE", default="", help="Query stri
 parser.add_argument('-ffilter', dest="FILTER_PER_FILE", default="", help="Query string to filter by per sample file")
 parser.add_argument('-flim', dest="LIMIT_PER_FILE", default=-1, type=int, help="Target total sample count per file, -1 for everything")
 
-parser.add_argument('-stats', dest="JUST_STATS", default=0, type=int, help="Just show the stats")
+parser.add_argument('-probe', dest="PROBE", action="store_true", help="Just show the stats")
 a = parser.parse_args()
 
 # Read files
@@ -74,5 +74,5 @@ if a.LIMIT > 0 and sampleCount > a.LIMIT:
     allSamples = sortByQueryString(allSamples, a.SORT_PER_FILE, a.LIMIT)
     sampleCount = len(allSamples)
 
-if a.JUST_STATS < 1:
+if not a.PROBE:
     writeCsv(a.OUTPUT_FILE, allSamples, headings=allFieldNames)
