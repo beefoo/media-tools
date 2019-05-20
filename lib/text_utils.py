@@ -346,6 +346,8 @@ def parseMdFile(fn, a, includeBlankLines=False):
         elif line.startswith("-"):
             type = "li"
             line = line[1:].strip()
+        elif line.startswith("_"):
+            line = " "
 
         if line.startswith("="):
             creditLines = getCreditLines(line, a)

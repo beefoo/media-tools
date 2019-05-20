@@ -43,6 +43,9 @@ def framesExist(filePattern, frameCount):
             break
     return exist
 
+def getBasename(fn):
+    return os.path.splitext(os.path.basename(fn))[0]
+
 def getFileExt(fn):
     basename = os.path.basename(fn)
     return "." + basename.split(".")[-1]
