@@ -416,6 +416,14 @@ def gePowerFromTimecodes(timecodes, method="max"):
 def getStft(y, n_fft=2048, hop_length=512):
     return librosa.feature.rmse(S=librosa.stft(y, n_fft=n_fft, hop_length=hop_length))[0]
 
+def makeBlankAudio(duration, fn, sampleWidth=4, sampleRate=48000, channels=2):
+    baseAudio = AudioSegment.silent(duration=duration, frame_rate=sampleRate)
+    baseAudio = baseAudio.set_channels(channels)
+    baseAudio = baseAudio.set_sample_width(sampleWidth)
+    format = fn.split(".")[-1]
+    baseAudio.export(fn, format=format)
+    print("Created blank audio: %s" % fn)
+
 def matchDb(audio, targetDb):
     deltaDb = targetDb - audio.dBFS
     return audio.apply_gain(deltaDb)

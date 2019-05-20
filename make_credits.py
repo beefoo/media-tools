@@ -8,6 +8,7 @@ import subprocess
 import sys
 
 from lib.audio_mixer import *
+from lib.audio_utils import *
 from lib.io_utils import *
 from lib.math_utils import *
 from lib.processing_utils import *
@@ -97,11 +98,10 @@ for f in range(totalFrames):
 
 
 
-audioFile = None
+audioFile = a.OUTPUT_FILE.replace(".mp4", ".mp3")
+audioDur = durationMs
 if len(a.AUDIO_FILE) > 0:
-    audioFile = a.OUTPUT_FILE.replace(".mp4", ".mp3")
     if not os.path.isfile(audioFile) or a.OVERWRITE:
-        audioDur = durationMs
         srcDur = floorInt(getDurationFromFile(a.AUDIO_FILE, accurate=True) * 1000)
         print("Source audio dur: %s" % formatSeconds(srcDur/1000.0))
         clipDur = audioDur - a.AUDIO_PAD_IN - a.AUDIO_PAD_OUT
@@ -120,6 +120,8 @@ if len(a.AUDIO_FILE) > 0:
         if a.DEBUG:
             sys.exit()
         mixAudio(instructions, audioDur, audioFile)
+else:
+    makeBlankAudio(audioDur, audioFile)
 
 if a.DEBUG:
     sys.exit()

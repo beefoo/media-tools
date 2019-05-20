@@ -6,3 +6,4 @@ media/downloads/*
 node_modules/
 *.pkf
 package-lock.json
+*.log

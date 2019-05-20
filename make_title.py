@@ -7,6 +7,7 @@ from pprint import pprint
 import subprocess
 import sys
 
+from lib.audio_utils import *
 from lib.io_utils import *
 from lib.math_utils import *
 from lib.processing_utils import *
@@ -113,4 +114,8 @@ for f in range(totalFrames):
                         overwrite=a.OVERWRITE)
     printProgress(frame, totalFrames)
 
-compileFrames(a.OUTPUT_FRAME, a.FPS, a.OUTPUT_FILE, getZeroPadding(totalFrames))
+# Create a blank audio track
+audioFile = a.OUTPUT_FILE.replace(".mp4", ".mp3")
+makeBlankAudio(totalMs, audioFile)
+
+compileFrames(a.OUTPUT_FRAME, a.FPS, a.OUTPUT_FILE, getZeroPadding(totalFrames), audioFile=audioFile)
