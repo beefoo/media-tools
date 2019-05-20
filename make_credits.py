@@ -42,6 +42,8 @@ parser.add_argument('-apad0', dest="AUDIO_PAD_IN", default=500, type=int, help="
 parser.add_argument('-apad1', dest="AUDIO_PAD_OUT", default=500, type=int, help="Pad out audio in ms")
 a = parser.parse_args()
 aa = vars(a)
+aa["REAL_WIDTH"] = a.WIDTH
+aa["REAL_HEIGHT"] = a.HEIGHT
 aa["WIDTH"] = roundInt(a.WIDTH * a.RESIZE_RESOLUTION)
 aa["HEIGHT"] = roundInt(a.HEIGHT * a.RESIZE_RESOLUTION)
 aa["SCROLL_SPEED"] = a.SCROLL_SPEED * (a.WIDTH / 1920.0) / (a.FPS / 30.0)
@@ -83,7 +85,7 @@ for f in range(totalFrames):
     ms = frameToMs(frame, a.FPS)
     filename = a.OUTPUT_FRAME % zeroPad(frame, totalFrames)
     if ms <= startMs or ms > endMs:
-        saveBlankFrame(filename, a.WIDTH, a.HEIGHT, bgColor=a.BG_COLOR, overwrite=a.OVERWRITE)
+        saveBlankFrame(filename, a.REAL_WIDTH, a.REAL_HEIGHT, bgColor=a.BG_COLOR, overwrite=a.OVERWRITE)
     else:
         nprogress = norm(ms, (startMs, endMs), limit=True)
         y = lerp((a.HEIGHT, -(th+a.HEIGHT)), nprogress)

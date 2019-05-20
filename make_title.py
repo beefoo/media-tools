@@ -34,6 +34,8 @@ parser.add_argument('-debug', dest="DEBUG", action="store_true", help="Debug mod
 parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite existing frames?")
 a = parser.parse_args()
 aa = vars(a)
+aa["REAL_WIDTH"] = a.WIDTH
+aa["REAL_HEIGHT"] = a.HEIGHT
 aa["WIDTH"] = roundInt(a.WIDTH * a.RESIZE_RESOLUTION)
 aa["HEIGHT"] = roundInt(a.HEIGHT * a.RESIZE_RESOLUTION)
 
@@ -84,7 +86,7 @@ for f in range(totalFrames):
     filename = a.OUTPUT_FRAME % zeroPad(frame, totalFrames)
     # padding: just output blank image
     if ms <= fadeInStart or ms >= fadeOutEnd:
-        saveBlankFrame(filename, a.WIDTH, a.HEIGHT, bgColor=a.BG_COLOR, overwrite=a.OVERWRITE)
+        saveBlankFrame(filename, a.REAL_WIDTH, a.REAL_HEIGHT, bgColor=a.BG_COLOR, overwrite=a.OVERWRITE)
     # otherwise, draw text
     else:
         textColor = a.TEXT_COLOR
