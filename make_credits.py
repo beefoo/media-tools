@@ -27,7 +27,7 @@ parser.add_argument('-height', dest="HEIGHT", default=1080, type=int, help="Outp
 parser.add_argument('-fps', dest="FPS", default=30, type=int, help="Output video frames per second")
 parser.add_argument('-pad0', dest="PAD_START", default=1000, type=int, help="Padding at start in ms")
 parser.add_argument('-pad1', dest="PAD_END", default=2000, type=int, help="Padding at end in ms")
-parser.add_argument('-outframe', dest="OUTPUT_FRAME", default="tmp/credits/frame.%s.png", help="Output frames pattern")
+parser.add_argument('-outframe', dest="OUTPUT_FRAME", default="", help="Output frames pattern")
 parser.add_argument('-out', dest="OUTPUT_FILE", default="output/credits.mp4", help="Output media file")
 parser.add_argument('-debug', dest="DEBUG", action="store_true", help="Debug mode?")
 parser.add_argument('-ds', dest="DEBUG_SECONDS", default=120, type=int, help="Debug time in seconds")
@@ -48,6 +48,9 @@ aa["WIDTH"] = roundInt(a.WIDTH * a.RESIZE_RESOLUTION)
 aa["HEIGHT"] = roundInt(a.HEIGHT * a.RESIZE_RESOLUTION)
 aa["SCROLL_SPEED"] = a.SCROLL_SPEED * (a.WIDTH / 1920.0) / (a.FPS / 30.0)
 aa["MAX_TEXT_WIDTH"] = roundInt(a.MAX_TEXT_WIDTH * a.WIDTH) if 0 < a.MAX_TEXT_WIDTH <= 1.0 else a.WIDTH
+
+if len(a.OUTPUT_FRAME) < 1:
+    aa["OUTPUT_FRAME"] = "tmp/%s/frame.%%s.png" % getBasename(a.OUTPUT_FILE)
 
 # parse properties
 tprops = getTextProperties(a)

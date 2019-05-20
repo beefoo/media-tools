@@ -28,7 +28,7 @@ parser.add_argument('-fadeout', dest="FADE_OUT_MS", default=0, type=int, help="F
 parser.add_argument('-ease', dest="FADE_EASE", default="sin", help="Easing function for fading: linear, sin, quadInOut, cubicInOut")
 parser.add_argument('-pad0', dest="PAD_START", default=1000, type=int, help="Padding at start in ms")
 parser.add_argument('-pad1', dest="PAD_END", default=1000, type=int, help="Padding at end in ms")
-parser.add_argument('-outframe', dest="OUTPUT_FRAME", default="tmp/titles/frame.%s.png", help="Output frames pattern")
+parser.add_argument('-outframe', dest="OUTPUT_FRAME", default="", help="Output frames pattern")
 parser.add_argument('-out', dest="OUTPUT_FILE", default="output/title_main.mp4", help="Output media file")
 parser.add_argument('-debug', dest="DEBUG", action="store_true", help="Debug mode?")
 parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite existing frames?")
@@ -38,6 +38,9 @@ aa["REAL_WIDTH"] = a.WIDTH
 aa["REAL_HEIGHT"] = a.HEIGHT
 aa["WIDTH"] = roundInt(a.WIDTH * a.RESIZE_RESOLUTION)
 aa["HEIGHT"] = roundInt(a.HEIGHT * a.RESIZE_RESOLUTION)
+
+if len(a.OUTPUT_FRAME) < 1:
+    aa["OUTPUT_FRAME"] = "tmp/%s/frame.%%s.png" % getBasename(a.OUTPUT_FILE)
 
 # parse properties
 tprops = getTextProperties(a)
