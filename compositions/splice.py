@@ -33,7 +33,7 @@ parser = argparse.ArgumentParser()
 addVideoArgs(parser)
 parser.add_argument('-grid', dest="GRID", default="128x128", help="Size of grid")
 parser.add_argument('-grid0', dest="START_GRID", default="128x128", help="Start size of grid")
-parser.add_argument('-grid1', dest="END_GRID", default="128x128", help="End size of grid")
+parser.add_argument('-grid1', dest="END_GRID", default="32x32", help="End size of grid")
 parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.1,1.0", help="Volume range")
 parser.add_argument('-crange', dest="CYCLE_RANGE_MS", default="64000,96000", help="Duration of cycle in milliseconds")
 parser.add_argument('-cycles', dest="CYCLES", default=1, type=int, help="Number of cycles")
@@ -63,6 +63,7 @@ stepTime = logTime(stepTime, "Samples to clips")
 colLeft = roundInt((gridW-1) * 0.25)
 colRight = gridW - colLeft - 1
 for clip in clips:
+    clip.vector.setParent(container.vector)
     isLeft = (clip.props["col"] == colLeft)
     isRight = (clip.props["col"] == colRight)
     clip.setState("canPlay", (isLeft or isRight))
@@ -97,6 +98,11 @@ def getPan(ms, clip):
     nx = lim(1.0 * x / a.WIDTH)
 
     return lerp((-1.0, 1.0), nx)
+
+# scale container
+fromScale = 1.0 * gridW / startGridW
+toScale = 1.0 * gridW / endGridW
+container.queueTween(startMs, cycleMaxMs, ("scale", fromScale, toScale, "cubicInOut"))
 
 # Calculate audio sequence
 playableClips = [clip for clip in clips if clip.getState("canPlay")]
@@ -158,6 +164,9 @@ while ms < endMs:
     i += 1
 
 stepTime = logTime(stepTime, "Calculated sequence")
+
+# sort frames
+container.vector.sortFrames()
 
 def postProcessSlice(im, ms):
     global a
