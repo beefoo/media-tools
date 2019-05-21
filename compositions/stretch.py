@@ -38,11 +38,16 @@ parser.add_argument('-step', dest="STEP_MS", default=2048, type=int, help="Start
 parser.add_argument('-tba', dest="TRANSITION_BACK_AT", default=0.5, type=float, help="When to start transitioning stretched clip back to normal as a percent of total duration")
 a = parser.parse_args()
 parseVideoArgs(a)
+aa = vars(a)
 
 # Get video data
 startTime = logTime()
 stepTime = startTime
 samples, sampleCount, container, sampler, stepTime, cCol, cRow, gridW, gridH, startGridW, startGridH, endGridW, endGridH = initGridComposition(a, stepTime)
+
+# stretch the height a little larger than frame height
+cellH = roundInt(1.0 * a.HEIGHT / gridH)
+aa["STRETCH_HEIGHT"] = a.HEIGHT + cellH
 
 # start with everything with minimum brightness
 for i, s in enumerate(samples):
@@ -107,7 +112,7 @@ def stretchAndPlayClip(a, clips, ms, row, col, gridW, clipRevertStartMs, clipRev
         elapsedMs += clipDur
         progress = 1.0 * elapsedMs / a.STRETCH_DURATION
     # queue stretch in/out
-    clipScaleTo = 1.0 * a.HEIGHT / clip.props["height"]
+    clipScaleTo = 1.0 * a.STRETCH_HEIGHT / clip.props["height"]
     clip.queueTween(ms, a.STRETCH_DURATION, ("scaleY", 1.0, clipScaleTo, "quadInOut"))
     revertStart, revertDur = getRevertTween(a, ms, clipRevertStartMs, clipRevertDuration)
     clip.queueTween(revertStart, revertDur, ("scaleY", clipScaleTo, 1.0, "quadInOut"))
@@ -129,7 +134,8 @@ for i in range(steps):
 
 # move the rest of the clips out of the way as the middle row stretches
 midRow = (gridH-1) * 0.5
-deltaY = (a.HEIGHT - clips[0].props["height"]) * 0.5
+# deltaY = (a.STRETCH_HEIGHT - (1.0 * a.STRETCH_HEIGHT / gridH)) * 0.5
+deltaY = (a.STRETCH_HEIGHT - clips[0].props["height"]) * 0.5
 for clip in clips:
     if clip.getState("isPlayable"):
         continue
