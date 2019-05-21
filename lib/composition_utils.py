@@ -306,6 +306,10 @@ def processComposition(a, clips, videoDurationMs, sampler=None, stepTime=False, 
         })
     stepTime = logTime(stepTime, "Processed video frame sequence")
 
+    # We're outputing just a single frame
+    if a.OUTPUT_SINGLE_FRAME > 0:
+        videoFrames = [videoFrames[a.OUTPUT_SINGLE_FRAME-1]]
+
     rebuildAudio = (not a.VIDEO_ONLY and (not os.path.isfile(a.AUDIO_OUTPUT_FILE) or a.OVERWRITE))
     rebuildVideo = (not a.AUDIO_ONLY and (len(videoFrames) > 0 and not os.path.isfile(videoFrames[-1]["filename"]) or a.OVERWRITE))
 
@@ -329,7 +333,7 @@ def processComposition(a, clips, videoDurationMs, sampler=None, stepTime=False, 
             removeFiles(a.OUTPUT_FRAME % "*")
         processFrames(videoFrames, clips, clipsPixelData, threads=a.THREADS, precision=a.PRECISION, customClipToArrFunction=customClipToArrFunction, postProcessingFunction=postProcessingFunction, globalArgs=globalArgs)
 
-    if not a.AUDIO_ONLY:
+    if not a.AUDIO_ONLY and a.OUTPUT_SINGLE_FRAME < 1:
         audioFile = a.AUDIO_OUTPUT_FILE if not a.VIDEO_ONLY and os.path.isfile(a.AUDIO_OUTPUT_FILE) else False
         quality = "medium" if a.DEBUG else "high"
         compileFrames(a.OUTPUT_FRAME, a.FPS, a.OUTPUT_FILE, getZeroPadding(totalFrames), audioFile=audioFile, quality=quality)
