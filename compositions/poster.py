@@ -52,6 +52,11 @@ samples, sampleCount, container, sampler, stepTime, cCol, cRow, gridW, gridH, st
 toScale = 1.0 * gridW / endGridW
 container.vector.setTransform(scale=(toScale, toScale))
 
+frameW = a.WIDTH / toScale
+frameH = a.HEIGHT / toScale
+frameX = (a.WIDTH - frameW) * 0.5
+frameY = (a.HEIGHT - frameH) * 0.5
+
 clips = samplesToClips(samples)
 
 # Determine rotation offsets and brightness
@@ -67,6 +72,10 @@ stepTime = logTime(stepTime, "Calculated sequence")
 # custom clip to numpy array function to override default tweening logic
 def clipToNpArrPoster(clip, ms, containerW, containerH, precision, parent, globalArgs={}):
     global a
+    global frameX
+    global frameY
+    global frameW
+    global frameH
 
     radius = a.RADIUS * clip.props["height"]
     freq = a.FREQ
@@ -80,12 +89,13 @@ def clipToNpArrPoster(clip, ms, containerW, containerH, precision, parent, globa
     # make center dark
     brightness = 1.0
     if not a.FULL_BRIGHTNESS:
-        nx = 1.0 * cx / a.WIDTH
-        ny = 1.0 * cy / a.HEIGHT
+        nx = norm(cx, (frameX, frameX+frameW), limit=True)
+        ny = norm(cy, (frameY, frameY+frameH), limit=True)
         bcx = 0.5
         bcy = 0.5
         bd = distance(bcx, bcy, nx, ny)
-        nbrightness = ease(lim(bd / 0.4), "cubicInOut")
+        nbmax = 1.0 # increase to make more of the center darker
+        nbrightness = ease(lim(bd / nbmax), "cubicInOut")
         brightness = lerp(a.BRIGHTNESS_RANGE, nbrightness)
 
     customProps = {
