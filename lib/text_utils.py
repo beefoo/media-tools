@@ -360,13 +360,15 @@ def parseMdFile(fn, a, includeBlankLines=False):
             })
     return parsedLines
 
-def normalizeText(text):
+def normalizeText(text, toTitleCase=False):
 
     # normalize whitespace
     text = ' '.join(text.split())
 
     # convert all uppercase to title case
-    if text.isupper():
+    # if text.isupper():
+    #     text = text.title()
+    if toTitleCase:
         text = text.title()
 
     return text
