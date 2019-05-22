@@ -19,7 +19,7 @@ def addTextArguments(parser):
     parser.add_argument('-h2', dest="H2_PROPS", default="size=72&margin=0.3&lineHeight=1.2&letterWidth=1.2", help="Heading 2 (font, size, margin, line-height, letter-width, align)")
     parser.add_argument('-h3', dest="H3_PROPS", default="size=36&margin=0.5&lineHeight=1.5&letterWidth=1.2", help="Heading 3 (font, size, margin, line-height, letter-width, align)")
     parser.add_argument('-pg', dest="P_PROPS", default="size=28&margin=0.5&lineHeight=1.5&letterWidth=1.2", help="Paragraph (font, size, margin, line-height, letter-width, align)")
-    parser.add_argument('-li', dest="LI_PROPS", default="size=14&margin=0.5&lineHeight=1.1&align=left", help="List item (font, size, margin, line-height, letter-width, align)")
+    parser.add_argument('-li', dest="LI_PROPS", default="size=14&margin=0.8&lineHeight=1.1&align=left", help="List item (font, size, margin, line-height, letter-width, align)")
     parser.add_argument('-table', dest="TABLE_PROPS", default="size=16&margin=12.0&align=left", help="List item (font, size, margin, line-height, letter-width, align)")
     parser.add_argument('-align', dest="TEXT_ALIGN", default="center", help="Default text align")
     parser.add_argument('-tyoffset', dest="TEXTBLOCK_Y_OFFSET", default=-0.02, type=float, help="Vertical offset of text as a percentage of frame height; otherwise will be vertically centered")
@@ -80,7 +80,7 @@ def getBBoxFromLines(lines):
     height = sum([l["lineHeightValue"]+l["marginValue"] for l in lines])
     return (width, height)
 
-def getCreditLines(line, a, uniqueKey="title", lineType="li", sortBy="text"):
+def getCreditLines(line, a, lineType="li", sortBy="text"):
     lines = []
     # Line string looks like: ={title};sampledata=ia_fedflixnara_samples.csv&metadata=ia_fedflixnara.csv
     line = line[1:].strip()
@@ -111,9 +111,6 @@ def getCreditLines(line, a, uniqueKey="title", lineType="li", sortBy="text"):
     # filter out meta that isn't in sampledata
     meta = [d for d in meta if d["filename"] in ufilenames]
 
-    # make unique based on title (by default)
-    meta = list({d[uniqueKey]:d for d in meta}.values())
-
     tmpl = Template(template)
     for d in meta:
         fvalues = dict([(key, normalizeText(d[key])) for key in keys])
@@ -122,6 +119,9 @@ def getCreditLines(line, a, uniqueKey="title", lineType="li", sortBy="text"):
             "type": lineType,
             "text": text
         })
+
+    # make unique based on text
+    lines = list({line["text"]:line for line in lines}.values())
 
     if sortBy:
         lines = sorted(lines, key=lambda l: l[sortBy])
@@ -149,12 +149,13 @@ def getCreditLines(line, a, uniqueKey="title", lineType="li", sortBy="text"):
     return lines
 
 def getLineSize(font, text, letterWidth=1.0):
+    # normalize letter spacing with a constant char
+    aw, ah = font.getsize("A")
     lw, lh = font.getsize(text)
+    lh = ah
     letterSpacing = 0
 
     if letterWidth != 1.0:
-        # normalize letter spacing with a constant char
-        aw, ah = font.getsize("A")
         letterSpacing = aw * letterWidth - aw
         clen = len(text)
         if clen > 1:

@@ -101,8 +101,6 @@ for f in range(totalFrames):
                         overwrite=a.OVERWRITE)
     printProgress(frame, totalFrames)
 
-
-
 audioFile = a.OUTPUT_FILE.replace(".mp4", ".mp3")
 audioDur = durationMs
 if len(a.AUDIO_FILE) > 0:
