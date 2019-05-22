@@ -19,8 +19,9 @@ def addTextArguments(parser):
     parser.add_argument('-h2', dest="H2_PROPS", default="size=72&margin=0.3&lineHeight=1.2&letterWidth=1.2", help="Heading 2 (font, size, margin, line-height, letter-width, align)")
     parser.add_argument('-h3', dest="H3_PROPS", default="size=36&margin=0.5&lineHeight=1.5&letterWidth=1.2", help="Heading 3 (font, size, margin, line-height, letter-width, align)")
     parser.add_argument('-pg', dest="P_PROPS", default="size=28&margin=0.5&lineHeight=1.5&letterWidth=1.2", help="Paragraph (font, size, margin, line-height, letter-width, align)")
-    parser.add_argument('-li', dest="LI_PROPS", default="size=14&margin=0.8&lineHeight=1.1&align=left", help="List item (font, size, margin, line-height, letter-width, align)")
-    parser.add_argument('-table', dest="TABLE_PROPS", default="size=16&margin=12.0&align=left", help="List item (font, size, margin, line-height, letter-width, align)")
+    parser.add_argument('-li', dest="LI_PROPS", default="size=21&margin=0.6&letterWidth=1.1", help="List item (font, size, margin, line-height, letter-width, align)")
+    parser.add_argument('-col', dest="COL_PROPS", default="size=14&margin=0.8&lineHeight=1.1&align=left", help="Column (font, size, margin, line-height, letter-width, align)")
+    parser.add_argument('-table', dest="TABLE_PROPS", default="size=16&margin=12.0&align=left", help="Table (font, size, margin, line-height, letter-width, align)")
     parser.add_argument('-align', dest="TEXT_ALIGN", default="center", help="Default text align")
     parser.add_argument('-tyoffset', dest="TEXTBLOCK_Y_OFFSET", default=-0.02, type=float, help="Vertical offset of text as a percentage of frame height; otherwise will be vertically centered")
     parser.add_argument('-txoffset', dest="TEXTBLOCK_X_OFFSET", default=0.0, type=float, help="Horizontal offset of text as a percentage of frame width; otherwise will be horizontally centered")
@@ -35,6 +36,7 @@ def addTextMeasurements(lines, tprops, maxWidth=-1):
 
     for i, line in enumerate(lines):
         type = line["type"]
+        customProps = line["customProps"] if "customProps" in line else None
 
         if type == "table":
             multilines = getTableLines(line, tprops, maxWidth)
@@ -42,9 +44,12 @@ def addTextMeasurements(lines, tprops, maxWidth=-1):
         else:
             # update lines
             line.update(tprops[type])
+            # note custom fonts don't support "font" or "size"
+            if customProps:
+                line.update(customProps)
 
             # assume if same type as previous, don't put margin between them, except list items
-            if i > 0 and type == prevType and type != "li":
+            if i > 0 and type == prevType and type not in set(["li", "col"]):
                 parsedLines[-1]["marginValue"] = 0
 
             multilines = getMultilines(line, maxWidth)
@@ -85,10 +90,12 @@ def getCreditLines(line, a, lineType="li", sortBy="text"):
     # Line string looks like: ={title};sampledata=ia_fedflixnara_samples.csv&metadata=ia_fedflixnara.csv
     line = line[1:].strip()
     template, queryStr = tuple(line.split(";"))
-    query = parseQueryString(queryStr, parseNumbers=False)
+    query = parseQueryString(queryStr, parseNumbers=True)
     sampleData = None if "sampledata" not in query else a.SAMPLE_DATA_DIR + query["sampledata"]
     metadata = None if "metadata" not in query else a.METADATA_DIR + query["metadata"]
     cols = 1 if "cols" not in query else int(query["cols"])
+    if cols > 1:
+        lineType = "col"
 
     if metadata is None:
         print("Metadata not found in credit line; skipping")
@@ -117,7 +124,8 @@ def getCreditLines(line, a, lineType="li", sortBy="text"):
         text = tmpl.substitute(fvalues)
         lines.append({
             "type": lineType,
-            "text": text
+            "text": text,
+            "customProps": query
         })
 
     # make unique based on text
@@ -241,7 +249,7 @@ def getTableLines(line, tprops, maxWidth):
     for colRows in cols:
         parsedLines = []
         for line in colRows:
-            line.update(tprops["li"])
+            line.update(tprops["col"])
             multilines = getMultilines(line, colWidth)
             parsedLines += multilines
         colW, colH = getBBoxFromLines(parsedLines)
@@ -279,6 +287,7 @@ def getTextProperties(a):
         "h3": getTextProperty(a, a.H3_PROPS),
         "p": getTextProperty(a, a.P_PROPS),
         "li": getTextProperty(a, a.LI_PROPS),
+        "col": getTextProperty(a, a.COL_PROPS),
         "table": getTextProperty(a, a.TABLE_PROPS)
     }
 
@@ -333,8 +342,13 @@ def parseMdFile(fn, a, includeBlankLines=False):
         lines = f.readlines()
     lines = [l.strip() for l in lines]
     parsedLines = []
+    currentQuery = None
     for line in lines:
         type = "p"
+        # custom props
+        if line.startswith("?"):
+            currentQuery = parseQueryString(line[1:], parseNumbers=True)
+            continue
         if line.startswith("###"):
             type = "h3"
             line = line[3:].strip()
@@ -357,8 +371,10 @@ def parseMdFile(fn, a, includeBlankLines=False):
         elif includeBlankLines or len(line) > 0:
             parsedLines.append({
                 "type": type,
-                "text": line
+                "text": line,
+                "customProps": currentQuery
             })
+        currentQuery = None
     return parsedLines
 
 def normalizeText(text, toTitleCase=False):

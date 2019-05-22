@@ -6,19 +6,23 @@
 ### Part II: All source footage made provided by
 ## The Cornell Lab of Ornithology's Macaulay Library
 
+?margin=2.0
 ### Footage shot by the following photographers:
+
+=${userDisplayName};sampledata=ml_bird_songs_subset_128x128.csv&metadata=ml_bird_songs.csv
+
 _
 _
-
-=${userDisplayName};sampledata=ml_bird_songs_subset_128x128.csv&metadata=ml_bird_songs.csv&maxTextWidth=auto&size=28&margin=0.5&lineHeight=1.5&letterWidth=1.2
-
+_
 ### Part III: All T.V. advertisements provided by
 ## The Internet Archive
 
+?margin=2.0
 ### Advertisements created by the following organizations:
+
+=${sponsors};sampledata=ia_politicaladarchive_subset_128x128.csv&metadata=ia_politicaladarchive.csv
+
 _
 _
-
-=${sponsors};sampledata=ia_politicaladarchive_subset_128x128.csv&metadata=ia_politicaladarchive.csv&maxTextWidth=auto&size=28&margin=0.5&lineHeight=1.5&letterWidth=1.2
-
+_
 Visit movingarchives.brianfoo.com for more information and source code.
