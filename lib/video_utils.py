@@ -36,6 +36,7 @@ def addVideoArgs(parser):
     parser.add_argument('-cd', dest="CACHE_DIR", default="tmp/cache/", help="Dir for caching data")
     parser.add_argument('-ckey', dest="CACHE_KEY", default="sample", help="Key for caching data")
     parser.add_argument('-verifyc', dest="VERIFY_CACHE", action="store_true", help="Add a step for verifying existing cache data?")
+    parser.add_argument('-recalc', dest="RECALC_CLIP_SIZE", action="store_true", help="Recalculate clip sizes?")
     parser.add_argument('-rand', dest="RANDOM_SEED", default=1, type=int, help="Random seed to use for pseudo-randomness")
     parser.add_argument('-pad0', dest="PAD_START", default=1000, type=int, help="Pad the beginning")
     parser.add_argument('-pad1', dest="PAD_END", default=3000, type=int, help="Pad the end")
@@ -606,6 +607,7 @@ def loadVideoPixelDataFromFrames(frames, clips, containerW, containerH, fps, cac
     precisionMultiplier = int(10 ** precision)
     cacheFile = cacheKey + "_maxes.p"
     resizeMode = getValue(globalArgs, "resizeMode", "fill")
+    recalculateClipSizes = getValue(globalArgs, "recalculateClipSizes", False)
 
     if debug:
         clipsPixelData = loadVideoPixelDataDebug(clipCount)
@@ -616,7 +618,7 @@ def loadVideoPixelDataFromFrames(frames, clips, containerW, containerH, fps, cac
     if cache:
         loaded, clipWidthMaxes = loadCacheFile(cacheDir+cacheFile)
 
-    if not loaded or len(clipWidthMaxes) != clipCount:
+    if not loaded or len(clipWidthMaxes) != clipCount or recalculateClipSizes:
         print("Calculating clip size/position from frame sequence...")
         clipWidthMaxes = np.zeros(clipCount, dtype=np.int32)
         clipCompare = np.zeros((2, clipCount), dtype=np.int32)
@@ -649,7 +651,7 @@ def loadVideoPixelDataFromFrames(frames, clips, containerW, containerH, fps, cac
 
     # update clips with max width/height
     for i, clip in enumerate(clips):
-        width = 1.0 * clipWidthMaxes[clip.props["index"]] / precisionMultiplier
+        width = max(1.0 * clipWidthMaxes[clip.props["index"]] / precisionMultiplier, clip.props["width"])
         height = width / clip.vector.aspectRatio
         clip.setProp("maxWidth", width)
         clip.setProp("maxHeight", height)

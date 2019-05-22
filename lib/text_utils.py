@@ -281,7 +281,7 @@ def getTextProperties(a):
         "table": getTextProperty(a, a.TABLE_PROPS)
     }
 
-def linesToImage(lines, fn, width, height, color="#ffffff", bgColor="#000000", tblockYOffset=0, tblockXOffset=0, x="auto", y="auto", resizeResolution=1.0, overwrite=False):
+def linesToImage(lines, fn, width, height, color="#ffffff", bgColor="#000000", tblockYOffset=0, tblockXOffset=0, x="auto", y="auto", resizeResolution=1.0, overwrite=False, bgImage=None):
     if os.path.isfile(fn) and not overwrite:
         print("%s already exists." % fn)
         return
@@ -293,7 +293,7 @@ def linesToImage(lines, fn, width, height, color="#ffffff", bgColor="#000000", t
     if y=="auto":
         y = (height - th) * 0.5 + tblockYOffset
 
-    im = Image.new('RGB', (width, height), bgColor)
+    im = Image.new('RGB', (width, height), bgColor) if bgImage is None else bgImage.copy()
     draw = ImageDraw.Draw(im)
 
     ty = y

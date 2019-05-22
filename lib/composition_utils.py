@@ -309,6 +309,7 @@ def processComposition(a, clips, videoDurationMs, sampler=None, stepTime=False, 
     # We're outputing just a single frame
     if a.OUTPUT_SINGLE_FRAME > 0:
         videoFrames = [videoFrames[a.OUTPUT_SINGLE_FRAME-1]]
+        print("Procesing single frame: %s" % videoFrames[0]["filename"])
 
     rebuildAudio = (not a.VIDEO_ONLY and (not os.path.isfile(a.AUDIO_OUTPUT_FILE) or a.OVERWRITE))
     rebuildVideo = (not a.AUDIO_ONLY and (len(videoFrames) > 0 and not os.path.isfile(videoFrames[-1]["filename"]) or a.OVERWRITE))
@@ -325,7 +326,8 @@ def processComposition(a, clips, videoDurationMs, sampler=None, stepTime=False, 
             "frameAlpha": a.FRAME_ALPHA,
             "resizeMode": a.RESIZE_MODE,
             "baseImage": baseImage,
-            "container": container
+            "container": container,
+            "recalculateClipSizes": a.RECALC_CLIP_SIZE
         }
         clipsPixelData = loadVideoPixelDataFromFrames(videoFrames, clips, a.WIDTH, a.HEIGHT, a.FPS, a.CACHE_DIR, a.CACHE_KEY, a.VERIFY_CACHE, cache=True, debug=a.DEBUG, precision=a.PRECISION, customClipToArrFunction=customClipToArrFunction, customClipToArrCalcFunction=customClipToArrCalcFunction, globalArgs=globalArgs)
         stepTime = logTime(stepTime, "Loaded pixel data")
