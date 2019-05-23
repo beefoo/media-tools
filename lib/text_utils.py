@@ -20,7 +20,7 @@ def addTextArguments(parser):
     parser.add_argument('-h3', dest="H3_PROPS", default="size=36&margin=0.5&lineHeight=1.5&letterWidth=1.2", help="Heading 3 (font, size, margin, line-height, letter-width, align)")
     parser.add_argument('-pg', dest="P_PROPS", default="size=28&margin=0.5&lineHeight=1.5&letterWidth=1.2", help="Paragraph (font, size, margin, line-height, letter-width, align)")
     parser.add_argument('-li', dest="LI_PROPS", default="size=21&margin=0.6&letterWidth=1.1", help="List item (font, size, margin, line-height, letter-width, align)")
-    parser.add_argument('-col', dest="COL_PROPS", default="size=14&margin=0.8&lineHeight=1.1&align=left", help="Column (font, size, margin, line-height, letter-width, align)")
+    parser.add_argument('-col', dest="COL_PROPS", default="size=14&margin=0.8&lineHeight=1.3&align=left", help="Column (font, size, margin, line-height, letter-width, align)")
     parser.add_argument('-table', dest="TABLE_PROPS", default="size=16&margin=12.0&align=left", help="Table (font, size, margin, line-height, letter-width, align)")
     parser.add_argument('-align', dest="TEXT_ALIGN", default="center", help="Default text align")
     parser.add_argument('-tyoffset', dest="TEXTBLOCK_Y_OFFSET", default=-0.02, type=float, help="Vertical offset of text as a percentage of frame height; otherwise will be vertically centered")

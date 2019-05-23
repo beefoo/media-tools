@@ -24,7 +24,7 @@ parser.add_argument('-height', dest="HEIGHT", default=1080, type=int, help="Outp
 parser.add_argument('-fps', dest="FPS", default=30, type=int, help="Output video frames per second")
 parser.add_argument('-duration', dest="DURATION_MS", default=4000, type=int, help="Duration of text in ms, excludes fade and padding")
 parser.add_argument('-fadein', dest="FADE_IN_MS", default=500, type=int, help="Fade in of text in ms")
-parser.add_argument('-fadeout', dest="FADE_OUT_MS", default=0, type=int, help="Fade out of text in ms")
+parser.add_argument('-fadeout', dest="FADE_OUT_MS", default=500, type=int, help="Fade out of text in ms")
 parser.add_argument('-ease', dest="FADE_EASE", default="sin", help="Easing function for fading: linear, sin, quadInOut, cubicInOut")
 parser.add_argument('-pad0', dest="PAD_START", default=1000, type=int, help="Padding at start in ms")
 parser.add_argument('-pad1', dest="PAD_END", default=1000, type=int, help="Padding at end in ms")
