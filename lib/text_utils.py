@@ -180,7 +180,7 @@ def getMultilines(line, maxWidth):
     lw, lh, letterSpacing = getLineSize(line["font"], line["text"], line["letterWidth"])
 
     # for line items, wrap into multiline
-    if line["type"] == "li" and maxWidth > 1 and lw > maxWidth:
+    if line["type"] in set(["li", "col"]) and maxWidth > 1 and lw > maxWidth:
         mlines = []
         font = line["font"]
         text = line["text"]
