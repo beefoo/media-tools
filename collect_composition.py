@@ -20,15 +20,14 @@ from lib.processing_utils import *
 parser = argparse.ArgumentParser()
 parser.add_argument('-in', dest="MANIFEST_FILE", default="path/to/ia_fedflixnara.txt", help="Input text file")
 parser.add_argument('-fdir', dest="FRAMES_DIRECTORY", default="tmp/%s_frames/frame.*.png", help="Directory pattern for frames")
-parser.add_argument('-adir', dest="AUDIO_DIRECTORY", default="output/%s.mp3", help="Directory pattern for audio files")
+parser.add_argument('-afile', dest="AUDIO_FILE", default="output/ia_fedflixnara.mp4", help="Source audio file")
 parser.add_argument('-out', dest="OUTPUT_DIR", default="output/ia_fedflixnara/dcp/", help="Media output directory")
-parser.add_argument('-aout', dest="OUTPUT_AUDIO", default="audio_track.mp3", help="Audio output filename")
+parser.add_argument('-aout', dest="OUTPUT_AUDIO", default="audio_track.wav", help="Audio output filename")
 parser.add_argument('-fout', dest="OUTPUT_FRAMES", default="frame.%s.png", help="Frame output file pattern")
-parser.add_argument('-pyv', dest="PYTHON_NAME", default="python3", help="Name of python command")
 a = parser.parse_args()
 
-FRAMES_OUT = a.OUTPUT_DIR + "frames/"
-AUDIO_OUT = a.OUTPUT_DIR + "audio/"
+FRAMES_OUT = a.OUTPUT_DIR + "frames/" + OUTPUT_FRAMES
+AUDIO_OUT = a.OUTPUT_DIR + "audio/" + OUTPUT_AUDIO
 makeDirectories([FRAMES_OUT, AUDIO_OUT])
 
 manifestLines = []
@@ -40,19 +39,13 @@ if len(manifestLines) <= 0:
     print("Could not find instructions in %s" % a.MANIFEST_FILE)
     sys.exit()
 
-# retrieve media file names
-audiofiles = []
+# retrieve frame file names
 framefiles = []
 for i, line in enumerate(manifestLines):
     if line.startswith("file"):
         fn = line.split()[-1]
         fn = fn.strip("\"'")
         basename = getBasename(fn)
-        audiofile = a.AUDIO_DIRECTORY % basename
-        if not os.path.isfile(audiofile):
-            print("Could not find %s" % audiofile)
-            sys.exit()
-        audiofiles.append(audiofile)
         # remove numbers from basename
         fbasename = "_".join([p for p in basename.split("_") if not isInt(p)])
         framefile = a.FRAMES_DIRECTORY % fbasename
@@ -66,19 +59,13 @@ for i, line in enumerate(manifestLines):
             sys.exit()
         framefiles += lineframefiles
 
-# Write to temporary file for combining audio files
-audioManifestFile = a.OUTPUT_DIR + "audiofiles_manifest.txt"
-with open(audioManifestFile, 'w') as f:
-    for fn in audiofiles:
-        basename = os.path.basename(fn)
-        f.write("file '%s'\n" % basename)
-
-# combine audio file
-audioOutFile = a.OUTPUT_DIR + a.OUTPUT_AUDIO
-command = [a.PYTHON_NAME, 'combine_media.py',
-    '-in', audioManifestFile,
-    '-dir', os.path.dirname(a.AUDIO_DIRECTORY) + "/",
-    '-out', audioOutFile
+# convert audio file
+print("Converting audio...")
+audioOutFile = AUDIO_OUT + a.OUTPUT_AUDIO
+command = ['ffmpeg',
+    '-i', a.AUDIO_FILE,
+    '-map', '0', # output both streams; http://ffmpeg.org/ffmpeg.html#Audio-Options
+    AUDIO_OUT
 ]
 print(" ".join(command))
 finished = subprocess.check_call(command)
@@ -87,6 +74,6 @@ finished = subprocess.check_call(command)
 frameCount = len(framefiles)
 print("Copying %s frames..." % frameCount)
 for i, srcName in enumerate(framefiles):
-    destName = a.OUTPUT_DIR + a.OUTPUT_FRAMES % zeroPad(i+1, frameCount)
+    destName = FRAMES_OUT % zeroPad(i+1, frameCount)
     shutil.copyfile(srcName, destName)
     printProgress(i+1, frameCount)
