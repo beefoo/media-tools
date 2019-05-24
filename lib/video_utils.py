@@ -25,7 +25,7 @@ def addVideoArgs(parser):
     parser.add_argument('-dir', dest="MEDIA_DIRECTORY", default="media/sample/", help="Input file")
     parser.add_argument('-width', dest="WIDTH", default=1920, type=int, help="Output video width")
     parser.add_argument('-height', dest="HEIGHT", default=1080, type=int, help="Output video height")
-    parser.add_argument('-fps', dest="FPS", default=30, type=int, help="Output video frames per second")
+    parser.add_argument('-fps', dest="FPS", default=24, type=int, help="Output video frames per second")
     parser.add_argument('-outframe', dest="OUTPUT_FRAME", default="tmp/sample/frame.%s.png", help="Output frames pattern")
     parser.add_argument('-out', dest="OUTPUT_FILE", default="output/sample.mp4", help="Output media file")
     parser.add_argument('-threads', dest="THREADS", default=1, type=int, help="Amount of parallel frames to process (too many may result in too many open files)")
