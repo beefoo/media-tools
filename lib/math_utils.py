@@ -152,6 +152,16 @@ def hex2rgb(hex):
   # "#FFFFFF" -> [255,255,255]
   return [int(hex[i:i+2], 16) for i in range(1,6,2)]
 
+def isInt(string):
+    answer = False
+    try:
+        if "." not in str(string) and "e" not in str(string):
+            num = int(string)
+            answer = True
+    except ValueError:
+        answer = False
+    return answer
+
 def isNumber(n):
     return isinstance(n, (int, float))
 
