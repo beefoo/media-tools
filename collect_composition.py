@@ -75,6 +75,10 @@ if not os.path.isfile(AUDIO_OUT) or a.OVERWRITE:
     print(" ".join(command))
     finished = subprocess.check_call(command)
 
+# remove existing files
+if a.OVERWRITE:
+    removeFiles(FRAMES_OUT % "*")
+
 # copy frames over
 frameCount = len(framefiles)
 print("Copying %s frames..." % frameCount)
