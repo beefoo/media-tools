@@ -85,7 +85,7 @@ def getBBoxFromLines(lines):
     height = sum([l["lineHeightValue"]+l["marginValue"] for l in lines])
     return (width, height)
 
-def getCreditLines(line, a, lineType="li", sortBy="text"):
+def getCreditLines(line, a, lineType="li"):
     lines = []
     # Line string looks like: ={title};sampledata=ia_fedflixnara_samples.csv&metadata=ia_fedflixnara.csv
     line = line[1:].strip()
@@ -93,6 +93,7 @@ def getCreditLines(line, a, lineType="li", sortBy="text"):
     query = parseQueryString(queryStr, parseNumbers=True)
     sampleData = None if "sampledata" not in query else a.SAMPLE_DATA_DIR + query["sampledata"]
     metadata = None if "metadata" not in query else a.METADATA_DIR + query["metadata"]
+    sortBy = "text" if "sortBy" not in query else query["sortBy"]
     cols = 1 if "cols" not in query else int(query["cols"])
     if cols > 1:
         lineType = "col"
@@ -122,9 +123,11 @@ def getCreditLines(line, a, lineType="li", sortBy="text"):
     for d in meta:
         fvalues = dict([(key, normalizeText(d[key])) for key in keys])
         text = tmpl.substitute(fvalues)
+        lastWord = text.split()[-1]
         lines.append({
             "type": lineType,
             "text": text,
+            "lastWord": lastWord,
             "customProps": query
         })
 

@@ -32,7 +32,7 @@ parser.add_argument('-out', dest="OUTPUT_FILE", default="output/credits.mp4", he
 parser.add_argument('-debug', dest="DEBUG", action="store_true", help="Debug mode?")
 parser.add_argument('-ds', dest="DEBUG_SECONDS", default=120, type=int, help="Debug time in seconds")
 parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite existing frames?")
-parser.add_argument('-speed', dest="SCROLL_SPEED", default=4.0, type=float, help="How much to scroll per frame in px? assumes 30fps; assumes 1920x1080px")
+parser.add_argument('-speed', dest="SCROLL_SPEED", default=3.0, type=float, help="How much to scroll per frame in px? assumes 30fps; assumes 1920x1080px")
 
 parser.add_argument('-audio', dest="AUDIO_FILE", default="", help="Audio track to add to credits")
 parser.add_argument('-astart', dest="AUDIO_START", default=0, type=int, help="Audio start in ms")
