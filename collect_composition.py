@@ -27,6 +27,7 @@ parser.add_argument('-out', dest="OUTPUT_DIR", default="output/ia_fedflixnara/dc
 parser.add_argument('-aout', dest="OUTPUT_AUDIO", default="audio_track.wav", help="Audio output filename")
 parser.add_argument('-fout', dest="OUTPUT_FRAMES", default="frame.%s.png", help="Frame output file pattern")
 parser.add_argument('-fps', dest="FPS", default=30, type=int, help="Frame output file pattern")
+parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite existing?")
 a = parser.parse_args()
 
 FRAMES_OUT = a.OUTPUT_DIR + "frames/" + OUTPUT_FRAMES
@@ -62,23 +63,25 @@ for i, line in enumerate(manifestLines):
             sys.exit()
         framefiles += lineframefiles
 
+
 # convert audio file
 print("Converting audio...")
-audioOutFile = AUDIO_OUT + a.OUTPUT_AUDIO
-command = ['ffmpeg',
-    '-i', a.AUDIO_FILE,
-    '-map', '0', # output both streams; http://ffmpeg.org/ffmpeg.html#Audio-Options
-    AUDIO_OUT
-]
-print(" ".join(command))
-finished = subprocess.check_call(command)
+if not os.path.isfile(AUDIO_OUT) or a.OVERWRITE:
+    command = ['ffmpeg',
+        '-i', a.AUDIO_FILE,
+        '-map', '0', # output both streams; http://ffmpeg.org/ffmpeg.html#Audio-Options
+        AUDIO_OUT
+    ]
+    print(" ".join(command))
+    finished = subprocess.check_call(command)
 
 # copy frames over
 frameCount = len(framefiles)
 print("Copying %s frames..." % frameCount)
 for i, srcName in enumerate(framefiles):
     destName = FRAMES_OUT % zeroPad(i+1, frameCount)
-    shutil.copyfile(srcName, destName)
+    if not os.path.isfile(destName) or a.OVERWRITE:
+        shutil.copyfile(srcName, destName)
     printProgress(i+1, frameCount)
 
 print("Audio duration: %s" % formatSeconds(getDurationFromAudioFile(AUDIO_OUT)/1000.0))
