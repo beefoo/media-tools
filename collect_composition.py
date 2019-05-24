@@ -12,9 +12,11 @@ import shutil
 import subprocess
 import sys
 
+from lib.audio_utils import *
 from lib.io_utils import *
 from lib.math_utils import *
 from lib.processing_utils import *
+from lib.video_utils import *
 
 # input
 parser = argparse.ArgumentParser()
@@ -24,6 +26,7 @@ parser.add_argument('-afile', dest="AUDIO_FILE", default="output/ia_fedflixnara.
 parser.add_argument('-out', dest="OUTPUT_DIR", default="output/ia_fedflixnara/dcp/", help="Media output directory")
 parser.add_argument('-aout', dest="OUTPUT_AUDIO", default="audio_track.wav", help="Audio output filename")
 parser.add_argument('-fout', dest="OUTPUT_FRAMES", default="frame.%s.png", help="Frame output file pattern")
+parser.add_argument('-fps', dest="FPS", default=30, type=int, help="Frame output file pattern")
 a = parser.parse_args()
 
 FRAMES_OUT = a.OUTPUT_DIR + "frames/" + OUTPUT_FRAMES
@@ -77,3 +80,6 @@ for i, srcName in enumerate(framefiles):
     destName = FRAMES_OUT % zeroPad(i+1, frameCount)
     shutil.copyfile(srcName, destName)
     printProgress(i+1, frameCount)
+
+print("Audio duration: %s" % formatSeconds(getDurationFromAudioFile(AUDIO_OUT)/1000.0))
+print("Video duration: %s" % formatSeconds(frameToMs(frameCount, a.FPS)/1000.0))
