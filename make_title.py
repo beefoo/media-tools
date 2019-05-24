@@ -40,7 +40,7 @@ aa["WIDTH"] = roundInt(a.WIDTH * a.RESIZE_RESOLUTION)
 aa["HEIGHT"] = roundInt(a.HEIGHT * a.RESIZE_RESOLUTION)
 
 if len(a.OUTPUT_FRAME) < 1:
-    aa["OUTPUT_FRAME"] = "tmp/%s/frame.%%s.png" % getBasename(a.OUTPUT_FILE)
+    aa["OUTPUT_FRAME"] = "tmp/%s_frames/frame.%%s.png" % getBasename(a.OUTPUT_FILE)
 
 # parse properties
 tprops = getTextProperties(a)

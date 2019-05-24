@@ -50,7 +50,7 @@ aa["SCROLL_SPEED"] = a.SCROLL_SPEED * (a.WIDTH / 1920.0) / (a.FPS / 30.0)
 aa["MAX_TEXT_WIDTH"] = roundInt(a.MAX_TEXT_WIDTH * a.WIDTH) if 0 < a.MAX_TEXT_WIDTH <= 1.0 else a.WIDTH
 
 if len(a.OUTPUT_FRAME) < 1:
-    aa["OUTPUT_FRAME"] = "tmp/%s/frame.%%s.png" % getBasename(a.OUTPUT_FILE)
+    aa["OUTPUT_FRAME"] = "tmp/%s_frames/frame.%%s.png" % getBasename(a.OUTPUT_FILE)
 
 # parse properties
 tprops = getTextProperties(a)

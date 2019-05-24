@@ -24,14 +24,14 @@ parser.add_argument('-in', dest="MANIFEST_FILE", default="path/to/ia_fedflixnara
 parser.add_argument('-fdir', dest="FRAMES_DIRECTORY", default="tmp/%s_frames/frame.*.png", help="Directory pattern for frames")
 parser.add_argument('-afile', dest="AUDIO_FILE", default="output/ia_fedflixnara.mp4", help="Source audio file")
 parser.add_argument('-out', dest="OUTPUT_DIR", default="output/ia_fedflixnara/dcp/", help="Media output directory")
-parser.add_argument('-aout', dest="OUTPUT_AUDIO", default="audio_track.wav", help="Audio output filename")
+parser.add_argument('-aout', dest="OUTPUT_AUDIO", default="audio_track.mp4", help="Audio output filename")
 parser.add_argument('-fout', dest="OUTPUT_FRAMES", default="frame.%s.png", help="Frame output file pattern")
-parser.add_argument('-fps', dest="FPS", default=30, type=int, help="Frame output file pattern")
+parser.add_argument('-fps', dest="FPS", default=24, type=int, help="Frame output file pattern")
 parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite existing?")
 a = parser.parse_args()
 
-FRAMES_OUT = a.OUTPUT_DIR + "frames/" + OUTPUT_FRAMES
-AUDIO_OUT = a.OUTPUT_DIR + "audio/" + OUTPUT_AUDIO
+FRAMES_OUT = a.OUTPUT_DIR + "frames/" + a.OUTPUT_FRAMES
+AUDIO_OUT = a.OUTPUT_DIR + "audio/" + a.OUTPUT_AUDIO
 makeDirectories([FRAMES_OUT, AUDIO_OUT])
 
 manifestLines = []
@@ -68,8 +68,10 @@ for i, line in enumerate(manifestLines):
 print("Converting audio...")
 if not os.path.isfile(AUDIO_OUT) or a.OVERWRITE:
     command = ['ffmpeg',
+        '-y',
         '-i', a.AUDIO_FILE,
-        '-map', '0', # output both streams; http://ffmpeg.org/ffmpeg.html#Audio-Options
+        '-c', 'copy',
+        '-map', '0:a',
         AUDIO_OUT
     ]
     print(" ".join(command))
