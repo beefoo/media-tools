@@ -30,5 +30,5 @@ python3 compositions/flow.py -in "{tempDir}{uid}_subset_128x128.csv" -dir "{down
 python3 compositions/splice.py -in "{tempDir}{uid}_subset_128x128.csv" -dir "{downloadDir}{uid}/" -out "{outputDir}{uid}_08_splice.mp4" -cache -cd "{tempDir}{uid}_cache/" -ckey "{uid}_splice" -outframe "{tempDir}{uid}_splice_frames/frame.%s.png" -io 857000 -vo -debug -overwrite -verifyc -threads 2
 // combiners
 python3 probe_sequence.py -in "{tempDir}{uid}_subset_128x128.csv"
-python3 make_sequence.py -in "{tempDir}{uid}_subset_128x128.csv" -dir "{downloadDir}{uid}/" -uid "{uid}" -probe
+python3 make_sequence.py -in "{tempDir}{uid}_subset_128x128.csv" -dir "{downloadDir}{uid}/" -uid "{uid}" -verifyc -probe
 python3 combine_media.py -in "{sharedDir}manifests/{uid}.txt" -dir "{outputDir}" -out "{sharedDir}{outputDir}{uid}.mp4"

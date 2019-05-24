@@ -19,6 +19,7 @@ parser.add_argument('-seq', dest="SEQUENCE", default="proliferation,waves,fallin
 parser.add_argument('-db', dest="SEQUENCE_DB", default="0,0,0,0,0,0,0,0", help="Comma separated list of decibel adjustments; leave blank if no adjustments")
 parser.add_argument('-pyv', dest="PYTHON_NAME", default="python3", help="Name of python command")
 parser.add_argument('-probe', dest="PROBE", action="store_true", help="Just spit out duration info and commands")
+parser.add_argument('-verifyc', dest="VERIFY_CACHE", action="store_true", help="Add a step for verifying existing cache data?")
 parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite existing?")
 a = parser.parse_args()
 
@@ -64,9 +65,10 @@ for i, comp in enumerate(SEQUENCE):
         '-ckey', "%s_%s" % (a.UNIQUE_ID, comp),
         '-outframe', a.OUTPUT_FRAME % (a.UNIQUE_ID, comp, '%s'),
         '-io', str(offset),
-        '-db', db,
-        '-verifyc'
+        '-db', db
     ]
+    if a.VERIFY_CACHE:
+        command.append('-verifyc')
     if a.OVERWRITE:
         command.append('-overwrite')
     print(" ".join(command))
