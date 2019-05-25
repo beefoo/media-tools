@@ -24,7 +24,7 @@ parser.add_argument('-sdir', dest="SAMPLE_DATA_DIR", default="tmp/", help="Input
 parser.add_argument('-mdir', dest="METADATA_DIR", default="tmp/", help="Input markdown file")
 parser.add_argument('-width', dest="WIDTH", default=1920, type=int, help="Output video width")
 parser.add_argument('-height', dest="HEIGHT", default=1080, type=int, help="Output video height")
-parser.add_argument('-fps', dest="FPS", default=30, type=int, help="Output video frames per second")
+parser.add_argument('-fps', dest="FPS", default=24, type=int, help="Output video frames per second")
 parser.add_argument('-pad0', dest="PAD_START", default=1000, type=int, help="Padding at start in ms")
 parser.add_argument('-pad1', dest="PAD_END", default=2000, type=int, help="Padding at end in ms")
 parser.add_argument('-outframe', dest="OUTPUT_FRAME", default="", help="Output frames pattern")
