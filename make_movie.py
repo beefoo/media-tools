@@ -18,10 +18,11 @@ from lib.video_utils import *
 parser = argparse.ArgumentParser()
 parser.add_argument('-in', dest="INPUT_FILE", default="path/to/manifest.csv", help="Input csv instruction file")
 parser.add_argument('-dir', dest="MEDIA_DIRECTORY", default="output/", help="Input markdown file")
-parser.add_argument('-pad0', dest="PAD_START", default=1.0, type=float, help="Padding at start in s")
+parser.add_argument('-pad0', dest="PAD_START", default=2.0, type=float, help="Padding at start in s")
 parser.add_argument('-pad1', dest="PAD_END", default=1.0, type=float, help="Padding at end in s")
-parser.add_argument('-volume', dest="VOLUME", type=float, default=1.5, help="Adjust volume")
+parser.add_argument('-volume', dest="VOLUME", type=float, default=2.0, help="Adjust volume")
 parser.add_argument('-out', dest="OUTPUT_FILE", default="output/trailer.mp4", help="Output media file")
+parser.add_argument('-quality', dest="QUALITY", default="high", help="High quality is slower")
 parser.add_argument('-probe', dest="PROBE", action="store_true", help="Just view statistics")
 a = parser.parse_args()
 aa = vars(a)
@@ -34,8 +35,7 @@ if len(instructions) <= 0:
     sys.exit()
 
 instructions = prependAll(instructions, ("filename", a.MEDIA_DIRECTORY))
-
-instructions = instructions[:4]
+# instructions = instructions[:4]
 
 # load videos
 sequenceDur = 0
@@ -119,5 +119,8 @@ video = CompositeVideoClip(clips, size=(width, height))
 video = video.set_duration(duration)
 if a.VOLUME != 1.0:
     video = video.volumex(a.VOLUME)
-video.write_videofile(a.OUTPUT_FILE)
+if a.QUALITY == "high":
+    video.write_videofile(a.OUTPUT_FILE, preset="slow", audio_bitrate="256k", audio_fps=48000, bitrate="19820k")
+else:
+    video.write_videofile(a.OUTPUT_FILE)
 print("Wrote %s to file" % a.OUTPUT_FILE)
