@@ -3,6 +3,7 @@ import numpy as np
 import os
 from PIL import Image, ImageFont, ImageDraw
 from pprint import pprint
+import re
 from string import Formatter
 from string import Template
 
@@ -63,6 +64,20 @@ def addTextMeasurements(lines, tprops, maxWidth=-1):
 
     return parsedLines
 
+def cleanText(text, toTitleCase=False):
+
+    # normalize whitespace
+    text = ' '.join(text.split())
+
+    # convert all uppercase to title case
+    # if text.isupper():
+    #     text = text.title()
+    if toTitleCase:
+        text = text.title()
+
+    return text
+
+
 def drawLineToImage(draw, line, tx, ty, width, height, color):
     lfont = line["font"]
     ls = line["letterSpacing"]
@@ -121,18 +136,20 @@ def getCreditLines(line, a, lineType="li"):
 
     tmpl = Template(template)
     for d in meta:
-        fvalues = dict([(key, normalizeText(d[key])) for key in keys])
+        fvalues = dict([(key, cleanText(d[key])) for key in keys])
         text = tmpl.substitute(fvalues)
         lastWord = text.split()[-1]
+        ntext = normalizeText(text)
         lines.append({
             "type": lineType,
             "text": text,
+            "ntext": ntext,
             "lastWord": lastWord,
             "customProps": query
         })
 
     # make unique based on text
-    lines = list({line["text"]:line for line in lines}.values())
+    lines = list({line["ntext"]:line for line in lines}.values())
 
     if sortBy:
         lines = sorted(lines, key=lambda l: l[sortBy])
@@ -339,6 +356,11 @@ def linesToImage(lines, fn, width, height, color="#ffffff", bgColor="#000000", t
     im.save(fn)
     print("Saved %s" % fn)
 
+def normalizeText(text):
+    text = text.lower()
+    text = re.sub(r'([^\s\w]|_)+', '', text)
+    return text
+
 def parseMdFile(fn, a, includeBlankLines=False):
     lines = []
     with open(fn) as f:
@@ -379,16 +401,3 @@ def parseMdFile(fn, a, includeBlankLines=False):
             })
         currentQuery = None
     return parsedLines
-
-def normalizeText(text, toTitleCase=False):
-
-    # normalize whitespace
-    text = ' '.join(text.split())
-
-    # convert all uppercase to title case
-    # if text.isupper():
-    #     text = text.title()
-    if toTitleCase:
-        text = text.title()
-
-    return text
