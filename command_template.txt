@@ -28,7 +28,10 @@ python3 compositions/shuffle.py -in "{tempDir}{uid}_subset_128x128.csv" -dir "{d
 python3 compositions/stretch.py -in "{tempDir}{uid}_subset_128x128.csv" -dir "{downloadDir}{uid}/" -out "{outputDir}{uid}_06_stretch.mp4" -cache -cd "{tempDir}{uid}_cache/" -ckey "{uid}_stretch" -outframe "{tempDir}{uid}_stretch_frames/frame.%s.png" -io 620000 -vo -debug -overwrite -verifyc -threads 2
 python3 compositions/flow.py -in "{tempDir}{uid}_subset_128x128.csv" -dir "{downloadDir}{uid}/" -out "{outputDir}{uid}_07_flow.mp4" -cache -cd "{tempDir}{uid}_cache/" -ckey "{uid}_flow" -outframe "{tempDir}{uid}_flow_frames/frame.%s.png" -io 786000 -vo -debug -overwrite -verifyc -threads 2
 python3 compositions/splice.py -in "{tempDir}{uid}_subset_128x128.csv" -dir "{downloadDir}{uid}/" -out "{outputDir}{uid}_08_splice.mp4" -cache -cd "{tempDir}{uid}_cache/" -ckey "{uid}_splice" -outframe "{tempDir}{uid}_splice_frames/frame.%s.png" -io 857000 -vo -debug -overwrite -verifyc -threads 2
+// poster
+python3 compositions/poster.py -in "{tempDir}{uid}_subset_128x128.csv" -dir "{downloadDir}{uid}/" -out "{outputDir}{uid}_poster.mp4" -cache -cd "{tempDir}{uid}_poster_cache/" -ckey "{uid}_poster" -outframe "{tempDir}{uid}_poster_frames/frame.%s.png" -width 3840 -height 2160 -res 2.0 -h1 "font=OpenSans-BoldItalic.ttf&size=112&margin=0.3&letterWidth=1.3" -overwrite -verifyc -recalc -debug
 // combiners
 python3 probe_sequence.py -in "{tempDir}{uid}_subset_128x128.csv"
 python3 make_sequence.py -in "{tempDir}{uid}_subset_128x128.csv" -dir "{downloadDir}{uid}/" -uid "{uid}" -verifyc -probe
 python3 combine_media.py -in "{sharedDir}manifests/{uid}.txt" -dir "{outputDir}" -out "{sharedDir}{outputDir}{uid}.mp4"
+ffmpeg -i "{sharedDir}output/{uid}.mp4" -af "volume=3.6dB" -c:v copy -c:a aac -b:a 192k "{outputDir}web/{uid}.mp4"
