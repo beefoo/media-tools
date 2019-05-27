@@ -7,6 +7,7 @@ import subprocess
 import sys
 
 from lib.io_utils import *
+from lib.processing_utils import *
 
 # input
 parser = argparse.ArgumentParser()
@@ -55,7 +56,7 @@ for i, line in enumerate(manifestLines):
     commands.append(command)
 
 for command in commands:
-    print(" ".join(command))
+    printCommand(command)
     if not a.PROBE:
         finished = subprocess.check_call(command)
 

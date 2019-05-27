@@ -32,7 +32,7 @@ parser.add_argument('-out', dest="OUTPUT_FILE", default="output/credits.mp4", he
 parser.add_argument('-debug', dest="DEBUG", action="store_true", help="Debug mode?")
 parser.add_argument('-ds', dest="DEBUG_SECONDS", default=120, type=int, help="Debug time in seconds")
 parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite existing frames?")
-parser.add_argument('-speed', dest="SCROLL_SPEED", default=3.0, type=float, help="How much to scroll per frame in px? assumes 30fps; assumes 1920x1080px")
+parser.add_argument('-speed', dest="SCROLL_SPEED", default=3, type=int, help="How much to scroll per frame in px? assumes 30fps; assumes 1920x1080px")
 
 parser.add_argument('-audio', dest="AUDIO_FILE", default="", help="Audio track to add to credits")
 parser.add_argument('-astart', dest="AUDIO_START", default=0, type=int, help="Audio start in ms")
@@ -46,8 +46,11 @@ aa["REAL_WIDTH"] = a.WIDTH
 aa["REAL_HEIGHT"] = a.HEIGHT
 aa["WIDTH"] = roundInt(a.WIDTH * a.RESIZE_RESOLUTION)
 aa["HEIGHT"] = roundInt(a.HEIGHT * a.RESIZE_RESOLUTION)
-aa["SCROLL_SPEED"] = a.SCROLL_SPEED * (a.WIDTH / 1920.0) / (a.FPS / 30.0)
+aa["SCROLL_SPEED"] = a.SCROLL_SPEED * (a.WIDTH / 1920.0)
 aa["MAX_TEXT_WIDTH"] = roundInt(a.MAX_TEXT_WIDTH * a.WIDTH) if 0 < a.MAX_TEXT_WIDTH <= 1.0 else a.WIDTH
+
+if a.SCROLL_SPEED % 1.0 > 0.0:
+    print("Warning: non-integer scroll speeds (%s) result in jitter effect" % a.SCROLL_SPEED)
 
 if len(a.OUTPUT_FRAME) < 1:
     aa["OUTPUT_FRAME"] = "tmp/%s_frames/frame.%%s.png" % getBasename(a.OUTPUT_FILE)
@@ -81,6 +84,7 @@ print("Making video frame sequence...")
 startMs = a.PAD_START
 endMs = durationMs - a.PAD_END
 debugFrame = msToFrame(a.DEBUG_SECONDS*1000, a.FPS)
+y = a.HEIGHT
 for f in range(totalFrames):
     frame = f + 1
     if a.DEBUG and frame != debugFrame:
@@ -90,8 +94,6 @@ for f in range(totalFrames):
     if ms <= startMs or ms > endMs:
         saveBlankFrame(filename, a.REAL_WIDTH, a.REAL_HEIGHT, bgColor=a.BG_COLOR, overwrite=a.OVERWRITE)
     else:
-        nprogress = norm(ms, (startMs, endMs), limit=True)
-        y = lerp((a.HEIGHT, -(th+a.HEIGHT)), nprogress)
         linesToImage(lines, filename, a.WIDTH, a.HEIGHT,
                         color=a.TEXT_COLOR,
                         bgColor=a.BG_COLOR,
@@ -99,6 +101,7 @@ for f in range(totalFrames):
                         tblockXOffset=TEXTBLOCK_X_OFFSET,
                         resizeResolution=a.RESIZE_RESOLUTION,
                         overwrite=a.OVERWRITE)
+        y -= a.SCROLL_SPEED
     printProgress(frame, totalFrames)
 
 audioFile = a.OUTPUT_FILE.replace(".mp4", ".mp3")
