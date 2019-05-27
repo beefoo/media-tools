@@ -20,7 +20,7 @@ parser.add_argument('-in', dest="INPUT_FILE", default="path/to/manifest.csv", he
 parser.add_argument('-dir', dest="MEDIA_DIRECTORY", default="output/", help="Input markdown file")
 parser.add_argument('-pad0', dest="PAD_START", default=2.0, type=float, help="Padding at start in s")
 parser.add_argument('-pad1', dest="PAD_END", default=1.0, type=float, help="Padding at end in s")
-parser.add_argument('-volume', dest="VOLUME", type=float, default=2.0, help="Adjust volume")
+parser.add_argument('-volume', dest="VOLUME", type=float, default=1.5, help="Adjust volume")
 parser.add_argument('-out', dest="OUTPUT_FILE", default="output/trailer.mp4", help="Output media file")
 parser.add_argument('-quality', dest="QUALITY", default="high", help="High quality is slower")
 parser.add_argument('-probe', dest="PROBE", action="store_true", help="Just view statistics")
