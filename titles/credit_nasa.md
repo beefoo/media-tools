@@ -1,3 +1,3 @@
-### All source films made available by
+### All source films created by
 ## The National Aeronautics
 ## and Space Administration
