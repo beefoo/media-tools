@@ -123,7 +123,7 @@ for file in range(FILE_COUNT):
         ms += row["dur"]
     outfilename = AUDIO_FILE.replace(".mp3", ".%s.mp3" % zeroPad(file+1, FILE_COUNT))
     if not os.path.isfile(outfilename) or OVERWRITE:
-        if not a.IMAGE_ONLY:
+        if not args.IMAGE_ONLY:
             mixAudio(instructions, ms+1000, outfilename)
     else:
         print("Already created %s" % outfilename)
