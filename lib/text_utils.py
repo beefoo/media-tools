@@ -108,7 +108,7 @@ def getCreditLines(line, a, lineType="li"):
     query = parseQueryString(queryStr, parseNumbers=True)
     sampleData = None if "sampledata" not in query else a.SAMPLE_DATA_DIR + query["sampledata"]
     metadata = None if "metadata" not in query else a.METADATA_DIR + query["metadata"]
-    sortBy = "text" if "sortBy" not in query else query["sortBy"]
+    sortBy = "ntext" if "sortBy" not in query else query["sortBy"]
     cols = 1 if "cols" not in query else int(query["cols"])
     if cols > 1:
         lineType = "col"
@@ -138,15 +138,16 @@ def getCreditLines(line, a, lineType="li"):
     for d in meta:
         fvalues = dict([(key, cleanText(d[key])) for key in keys])
         text = tmpl.substitute(fvalues)
-        lastWord = text.split()[-1]
-        ntext = normalizeText(text)
-        lines.append({
-            "type": lineType,
-            "text": text,
-            "ntext": ntext,
-            "lastWord": lastWord,
-            "customProps": query
-        })
+        if len(text) > 0:
+            lastWord = text.split()[-1]
+            ntext = normalizeText(text)
+            lines.append({
+                "type": lineType,
+                "text": text,
+                "ntext": ntext,
+                "lastWord": lastWord,
+                "customProps": query
+            })
 
     # make unique based on text
     lines = list({line["ntext"]:line for line in lines}.values())
