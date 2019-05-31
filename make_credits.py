@@ -87,9 +87,11 @@ debugFrame = msToFrame(a.DEBUG_SECONDS*1000, a.FPS)
 y = a.HEIGHT
 for f in range(totalFrames):
     frame = f + 1
-    if a.DEBUG and frame != debugFrame:
-        continue
     ms = frameToMs(frame, a.FPS)
+    if a.DEBUG and frame != debugFrame:
+        if ms > startMs:
+            y -= a.SCROLL_SPEED
+        continue
     filename = a.OUTPUT_FRAME % zeroPad(frame, totalFrames)
     if ms <= startMs or ms > endMs:
         saveBlankFrame(filename, a.REAL_WIDTH, a.REAL_HEIGHT, bgColor=a.BG_COLOR, overwrite=a.OVERWRITE)
