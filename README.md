@@ -40,7 +40,7 @@ Not all of these are required for individual scripts, but covers what's needed f
 
 ## Large collection workflow
 
-The scripts in this repository were mostly designed for analyzing/visualizing very large collections of media. Here's an example workflow:
+The scripts in this repository were mostly designed for analyzing/visualizing very large collections of media. These scripts are not for the faint of heart and could easily take a few days to run from start to finish. You would benefit from a powerful workstation built for gaming, computation, or video rendering (i.e. multiple cores, plenty of RAM, SSD, and a decent graphics card.) That said, here's an example workflow:
 
 ### 1. Metadata retrieval
 
@@ -102,7 +102,7 @@ python get_sample_features.py \
 -dir "tmp/sampledata/ia_fedflixnara/"
 ```
 
-### 6. Audio analysis
+### 6. View audio analysis
 
 Optionally, you can view the stats of the samples you created:
 
