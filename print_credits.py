@@ -18,6 +18,8 @@ parser.add_argument('-sf', dest="SAMPLE_FILE", default="tmp/sampledata.csv", hel
 parser.add_argument('-tmpl', dest="TEMPLATE", default="${title}", help="Template for printing")
 parser.add_argument('-sort', dest="SORT_BY", default="ntext", help="Either text for lastWord")
 a = parser.parse_args()
+aa = vars(a)
+aa["TEMPLATE"] = a.TEMPLATE.strip()
 
 _, meta = readCsv(a.INPUT_FILE)
 _, samples = readCsv(a.SAMPLE_FILE)
@@ -35,11 +37,14 @@ for d in meta:
     if len(text) > 0:
         lastWord = text.split()[-1]
         ntext = normalizeText(text)
-        lines.append({
+        line = {
             "text": text,
             "ntext": ntext,
             "lastWord": lastWord
-        })
+        }
+        if a.SORT_BY not in line and a.SORT_BY in fvalues:
+            line[a.SORT_BY] = fvalues[a.SORT_BY]
+        lines.append(line)
 
 # make unique based on text, then sort
 lines = list({line["text"]:line for line in lines}.values())
