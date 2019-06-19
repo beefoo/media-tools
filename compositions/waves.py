@@ -70,7 +70,7 @@ samples = addNormalizedValues(samples, "power", "nPower")
 for i, s in enumerate(samples):
     samples[i].update({
         "zindex": sampleCount-i,
-        "volume": lerp(a.VOLUME_RANGE, (1.0 - s["nDistanceFromCenter"]) * s["volumeMultiplier"])
+        "nvolume": (1.0 - s["nDistanceFromCenter"]) * s["volumeMultiplier"]
     })
 
 stepTime = logTime(stepTime, "Calculate clip properties")
@@ -110,8 +110,16 @@ for step in range(a.STEPS):
     for i, clip in enumerate(visibleClips):
         nprogress = 1.0 * i / visibleClipCount
         clipStartMs = ms + roundInt(a.WAVE_DUR * nprogress)
-        pivot = 0.1 # ease in the volume; clips at pivot are that loudest
-        volume = lerp((clip.props["volume"]*0.2, clip.props["volume"]), ease(nprogress/pivot)) if nprogress <= pivot else clip.props["volume"]
+
+        # ease in the volume; clips at pivot are that loudest
+        nvolume = clip.props["nvolume"]
+        pivot = 0.1
+        if nprogress <= pivot:
+            nvolume = lerp((nvolume*0.2, nvolume), ease(nprogress/pivot))
+
+        # make clips louder as we zoom in
+        nvolume *= nzoom
+        volume = lerp(a.VOLUME_RANGE, nvolume)
 
         # play clip
         if clip.props["playAudio"]:
