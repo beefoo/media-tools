@@ -77,7 +77,7 @@ def getRevertTween(a, ms, clipRevertStartMs, clipRevertDuration):
         revertDur = a.STRETCH_DURATION
     return (revertStart, revertDur)
 
-def stretchAndPlayClip(a, clips, ms, row, col, gridW, clipRevertStartMs, clipRevertDuration):
+def stretchAndPlayClip(a, clips, ms, row, col, gridW, clipRevertStartMs, clipRevertDuration, nstep):
     index = row * gridW + col
     clip = clips[index]
     clip.setState("isPlayable", True)
@@ -86,7 +86,9 @@ def stretchAndPlayClip(a, clips, ms, row, col, gridW, clipRevertStartMs, clipRev
     progress = 0.0
     elapsedMs = 0
     while progress <= 1.0:
-        volume = lerp(a.VOLUME_RANGE, 1.0-progress)
+        nvolume = 1.0-progress # get quieter as we stretch
+        nvolume *= (1.0-nstep) # get quieter as we zoom out
+        volume = lerp(a.VOLUME_RANGE, nvolume)
         stretchAmount = lerp((1.0, targetStretch), progress)
         clipMs = ms + elapsedMs
         clip.queuePlay(clipMs, {
@@ -129,8 +131,9 @@ for i in range(steps):
     colLeft = floorInt(midCol) - i
     colRight = ceilInt(midCol) + i
     clipRevertStartMs = revertStartMs + i * clipRevertStep
-    stretchAndPlayClip(a, clips, clipMs, rowIndex, colLeft, gridW, clipRevertStartMs, clipRevertDuration)
-    stretchAndPlayClip(a, clips, clipMs, rowIndex, colRight, gridW, clipRevertStartMs, clipRevertDuration)
+    nstep = 1.0 * i / (steps-1.0)
+    stretchAndPlayClip(a, clips, clipMs, rowIndex, colLeft, gridW, clipRevertStartMs, clipRevertDuration, nstep)
+    stretchAndPlayClip(a, clips, clipMs, rowIndex, colRight, gridW, clipRevertStartMs, clipRevertDuration, nstep)
 
 # move the rest of the clips out of the way as the middle row stretches
 midRow = (gridH-1) * 0.5
