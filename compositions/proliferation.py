@@ -36,7 +36,7 @@ parser.add_argument('-kfd', dest="KEYS_FOR_DISTANCE", default="tsne,tsne2", help
 parser.add_argument('-cscale', dest="CLIP_SCALE_AMOUNT", default=1.1, type=float, help="Amount to scale clip when playing")
 parser.add_argument('-mci', dest="MIN_CLIP_INTERVAL_MS", default=16, type=int, help="Minimum time between consecutive clips")
 parser.add_argument('-rw', dest="RING_WINDOW", default=1, type=int, help="How many rings to look at to determine pool of clips to choose from")
-parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.4,1.0", help="Volume range")
+parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.25,1.0", help="Volume range")
 a = parser.parse_args()
 parseVideoArgs(a)
 aa = vars(a)
@@ -87,6 +87,7 @@ ms = a.PAD_START
 
 scaleXs = [ms]
 scaleYs = [fromScale]
+volumes = []
 baseStepMs = a.BASE_STEP_MS * 4
 for step in range(END_RINGS):
     ring = step + 1
@@ -118,10 +119,11 @@ for step in range(END_RINGS):
 
     ringClipMs = 1.0 * ringDurMs / ringClipCount
 
-    # determine volume based on number of clips in the queue
+    # base volume on zoom level
     divide = max(1.0, math.sqrt(ringClipPlayCount / 4.0))
-    nvolume = lim(1.0 / divide)
+    nvolume = ease(1.0-1.0 * step / (END_RINGS-1), "expIn")
     volume = lerp(a.VOLUME_RANGE, nvolume)
+    volumes.append(volume)
 
     for j, clip in enumerate(ringClips):
         clipMs = roundInt(ringStartMs + j * ringClipMs)
@@ -161,6 +163,12 @@ tweenPivotMs = lerp((scaleXs[0], scaleXs[1]), pivot)
 # container.queueTween(scaleXs[0], tweenPivotMs-scaleXs[0], ("scale", scaleYs[0], tweenPivotScale, "expIn^9"))
 # container.queueTween(tweenPivotMs, scaleXs[-1]-tweenPivotMs, ("scale", tweenPivotScale, scaleYs[-1], "quadOut"))
 container.queueTween(tweenPivotMs, scaleXs[-1]-tweenPivotMs, ("scale", scaleYs[0], scaleYs[-1], "quadInOut"))
+
+# Debug volume
+# import matplotlib.pyplot as plt
+# plt.plot(np.arange(len(volumes)), volumes)
+# plt.show()
+# sys.exit()
 
 # See how well the expected scale to the actual tweened scale
 # container.vector.plotKeyframes("scale", additionalPlots=[([x/1000.0 for x in scaleXs], scaleYs)])
