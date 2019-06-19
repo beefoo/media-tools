@@ -66,7 +66,8 @@ def ringComparison(s):
 
 subbeats = 2**a.BEAT_DIVISIONS
 ringStepOffsetMs = 0
-rotationSteps = END_RINGS * max(1, roundInt(a.ROTATION_STEPS_OFFSET/2))
+# rotationSteps = END_RINGS * max(1, roundInt(a.ROTATION_STEPS_OFFSET/2))
+rotationSteps = END_RINGS
 ringStarts = []
 for step in range(END_RINGS):
     nstep = 1.0 * step / (END_RINGS-1)
