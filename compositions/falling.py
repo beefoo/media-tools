@@ -139,7 +139,7 @@ def dequeueClips(ms, clips, queue):
                     clip.queuePlay(playMs, {
                         "start": clip.props["audioStart"],
                         "dur": clip.props["audioDur"],
-                        "volume": lerp(a.VOLUME_RANGE, ndistance),
+                        "volume": lerp(a.VOLUME_RANGE, nvolume),
                         "fadeOut": clip.props["fadeOut"],
                         "fadeIn": clip.props["fadeIn"],
                         "pan": clip.props["pan"],
