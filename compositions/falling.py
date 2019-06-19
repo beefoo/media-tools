@@ -114,6 +114,8 @@ def getPosDelta(ms, containerW, containerH):
 
 def dequeueClips(ms, clips, queue):
     global a
+    global gridW
+    centerCol = (gridW-1) * 0.5
     indices = list(queue.keys())
 
     for cindex in indices:
@@ -130,6 +132,10 @@ def dequeueClips(ms, clips, queue):
                 clip.setState("lastPlayedMs", playMs)
                 # don't play the initial clips
                 if playMs > (a.PAD_START + a.DELAY_PLAY_MS):
+                    # play clips closer to horizontal center louder
+                    nvolume = 1.0 - lim(1.0 * abs(centerCol-clip.props["col"]) / a.MAX_COLUMN_DELTA)
+                    # play clips closer to the center of the current frame
+                    nvolume *= ndistance
                     clip.queuePlay(playMs, {
                         "start": clip.props["audioStart"],
                         "dur": clip.props["audioDur"],
