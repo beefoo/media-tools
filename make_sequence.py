@@ -25,12 +25,13 @@ a = parser.parse_args()
 
 SEQUENCE = a.SEQUENCE.strip().split(",")
 SEQUENCE_DB = a.SEQUENCE_DB.strip().split(",")
+seqLen = len(SEQUENCE)
 
 # No DB adjustments needed
 if len(SEQUENCE_DB) <= 0:
-    SEQUENCE_DB = [0.0 for v in range(len(SEQUENCE))]
+    SEQUENCE_DB = [0.0 for v in range(seqLen)]
 
-if len(SEQUENCE) != len(SEQUENCE_DB):
+if seqLen != len(SEQUENCE_DB):
     print("Error: DB list must be the same length as sequence")
     sys.exit()
 
@@ -71,6 +72,9 @@ for i, comp in enumerate(SEQUENCE):
         command.append('-verifyc')
     if a.OVERWRITE:
         command.append('-overwrite')
+    # don't pad the last one
+    if i >= (seqLen-1):
+        command += ['-pad1', '0']
     print(" ".join(command))
     if a.PROBE:
         continue

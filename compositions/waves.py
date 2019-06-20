@@ -36,7 +36,7 @@ parser.add_argument('-grid1', dest="END_GRID", default="32x32", help="End size o
 parser.add_argument('-steps', dest="STEPS", default=8, type=int, help="Number of waves/beats")
 parser.add_argument('-wd', dest="WAVE_DUR", default=16000, type=int, help="Wave duration in milliseconds")
 parser.add_argument('-bd', dest="BEAT_DUR", default=12000, type=int, help="Beat duration in milliseconds")
-parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.3,0.667", help="Volume range")
+parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.25,1.0", help="Volume range")
 a = parser.parse_args()
 parseVideoArgs(a)
 aa = vars(a)
