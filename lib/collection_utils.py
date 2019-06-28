@@ -88,6 +88,16 @@ def parseFilterString(str):
                 break
     return conditions
 
+def parseQueryString(str):
+    if len(str) <= 0:
+        return {}
+    conditionStrings = str.split("&")
+    conditions = {}
+    for cs in conditionStrings:
+        key, value = tuple(cs.split("="))
+        conditions[key] = value
+    return conditions
+
 def parseSortString(str):
     if len(str) <= 0:
         return []
