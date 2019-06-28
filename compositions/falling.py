@@ -39,7 +39,7 @@ parser.add_argument('-duration', dest="TARGET_DURATION", default=180, type=int, 
 parser.add_argument('-translate', dest="TRANSLATE_AMOUNT", default=0.5, type=float, help="Amount to translate clip as a percentage of height")
 parser.add_argument('-rotate', dest="ROTATE_AMOUNT", default=12.0, type=float, help="Max amount to rotate clip in degrees")
 parser.add_argument('-prad', dest="PLAY_RADIUS", default=8.0, type=float, help="Radius of cells/clips to play at any given time")
-parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.25,0.9", help="Volume range")
+parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.25,0.8", help="Volume range")
 parser.add_argument('-dpdur', dest="DELAY_PLAY_MS", default=1000, type=int, help="Don't play the first x ms of moving")
 a = parser.parse_args()
 parseVideoArgs(a)
@@ -133,7 +133,9 @@ def dequeueClips(ms, clips, queue):
                 # don't play the initial clips
                 if playMs > (a.PAD_START + a.DELAY_PLAY_MS):
                     # play clips closer to horizontal center louder
-                    nvolume = 1.0 - lim(1.0 * abs(centerCol-clip.props["col"]) / a.MAX_COLUMN_DELTA)
+                    # nvolume = 1.0 - lim(1.0 * abs(centerCol-clip.props["col"]) / a.MAX_COLUMN_DELTA)
+                    # play louder when xvelocity is faster
+                    nvolume = lim(abs(xVelocity) / 0.5)
                     # play clips closer to the center of the current frame
                     nvolume *= ndistance
                     clip.queuePlay(playMs, {
@@ -186,6 +188,7 @@ queue = {}
 xs = []
 ys = []
 prevXDelta = 0
+prevXVelocity = 0
 for f in range(totalFrames):
     frame = f + 1
     frameMs = startMs + frameToMs(frame, a.FPS)
@@ -198,6 +201,7 @@ for f in range(totalFrames):
     xVelocity = xDelta - prevXDelta # this number is positive if camera moves left
     nxVelocity = lim(xVelocity / VELOCITY_X_MAX, (-1.0, 1.0))
     prevXDelta = xDelta
+    # xs.append(nxVelocity)
     # xs.append(xVelocity)
     xs.append(xDelta)
     ys.append(yDelta)

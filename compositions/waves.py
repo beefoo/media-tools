@@ -36,7 +36,7 @@ parser.add_argument('-grid1', dest="END_GRID", default="32x32", help="End size o
 parser.add_argument('-steps', dest="STEPS", default=8, type=int, help="Number of waves/beats")
 parser.add_argument('-wd', dest="WAVE_DUR", default=16000, type=int, help="Wave duration in milliseconds")
 parser.add_argument('-bd', dest="BEAT_DUR", default=12000, type=int, help="Beat duration in milliseconds")
-parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.25,1.0", help="Volume range")
+parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.3,0.9", help="Volume range")
 a = parser.parse_args()
 parseVideoArgs(a)
 aa = vars(a)
@@ -98,6 +98,8 @@ for step in range(a.STEPS):
     currentScale = lerp((fromScale, toScale), nzoom)
     container.vector.setTransform(scale=(currentScale, currentScale))
 
+    nstepvolume = ease(1.0 * step / (a.STEPS-1))
+
     # play kick
     # sampler.queuePlay(ms, "kick", index=step, params={
     #     "volume": 1.5
@@ -106,19 +108,30 @@ for step in range(a.STEPS):
     visibleClips = [clip for clip in clips if clip.vector.isVisible(a.WIDTH, a.HEIGHT)]
     visibleClipCount = len(visibleClips)
 
+    # determine nDistanceFromCenter
+    distancesFromCenter = [0 for n in range(len(visibleClips))]
+    for i, clip in enumerate(visibleClips):
+        distanceFromCenter = distance(cCol, cRow, clip.props["col"], clip.props["row"])
+        clip.setState("distanceFromCenter", distanceFromCenter)
+        distancesFromCenter.append(distanceFromCenter)
+    drange = (min(distancesFromCenter), max(distancesFromCenter))
+    for i, clip in enumerate(visibleClips):
+        nDistanceFromCenter = norm(clip.getState("distanceFromCenter"), drange)
+        clip.setState("nDistanceFromCenter", nDistanceFromCenter)
+
     # play and render waves
     for i, clip in enumerate(visibleClips):
         nprogress = 1.0 * i / visibleClipCount
         clipStartMs = ms + roundInt(a.WAVE_DUR * nprogress)
 
         # ease in the volume; clips at pivot are that loudest
-        nvolume = clip.props["nvolume"]
+        nvolume = (1.0 - ease(clip.getState("nDistanceFromCenter"))) * clip.props["volumeMultiplier"]
         pivot = 0.1
         if nprogress <= pivot:
-            nvolume = lerp((nvolume*0.2, nvolume), ease(nprogress/pivot))
+            nvolume = lerp((nvolume*0.1, nvolume), ease(nprogress/pivot))
 
         # make clips louder as we zoom in
-        nvolume *= nzoom
+        nvolume *= nstepvolume
         volume = lerp(a.VOLUME_RANGE, nvolume)
 
         # play clip
