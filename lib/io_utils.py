@@ -224,10 +224,11 @@ def writeCsv(filename, arr, headings="auto", append=False, encoding="utf8"):
     f.close()
     print("Wrote %s rows to %s" % (len(arr), filename))
 
-def writeJSON(filename, data):
+def writeJSON(filename, data, verbose=True):
     with open(filename, 'w') as f:
         json.dump(data, f)
-        print("Wrote data to %s" % filename)
+        if verbose:
+            print("Wrote data to %s" % filename)
 
 def zeroPad(value, total):
     padding = getZeroPadding(total)
