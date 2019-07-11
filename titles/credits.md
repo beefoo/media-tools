@@ -14,13 +14,10 @@
 _
 _
 _
-### Part III: All source footage made provided by
-## The Cornell Lab of Ornithology's Macaulay Library
+### Part III: All source films created by
+## The National Aeronautics and Space Administration
 
-?margin=2.0
-### Footage shot by the following photographers:
-
-=${userDisplayName};sampledata=ml_bird_songs_subset_128x128.csv&metadata=ml_bird_songs.csv&sortBy=lastWord
+=${title};cols=4&sampledata=ia_hsfc_subset_128x128.csv&metadata=ia_hsfc.csv
 
 _
 _

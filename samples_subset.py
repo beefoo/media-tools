@@ -5,6 +5,7 @@ import inspect
 import math
 import os
 from pprint import pprint
+import random
 import sys
 
 from lib.collection_utils import *
@@ -26,6 +27,7 @@ parser.add_argument('-ffilter', dest="FILTER_PER_FILE", default="", help="Query 
 parser.add_argument('-flim', dest="LIMIT_PER_FILE", default=-1, type=int, help="Target total sample count per file, -1 for everything")
 
 parser.add_argument('-probe', dest="PROBE", action="store_true", help="Just show the stats")
+parser.add_argument('-shuffle', dest="SHUFFLE", action="store_true", help="Shuffle the samples")
 a = parser.parse_args()
 
 # Read files
@@ -75,7 +77,12 @@ for i, f in enumerate(files):
         samples = filterByQueryString(samples, a.FILTER_PER_FILE)
         sampleCount = len(samples)
         if limitPerFile > 0 and sampleCount > limitPerFile:
-            samples = sortByQueryString(samples, a.SORT_PER_FILE, limitPerFile)
+            if a.SHUFFLE:
+                random.seed(7)
+                random.shuffle(samples)
+                samples = samples[:limitPerFile]
+            else:
+                samples = sortByQueryString(samples, a.SORT_PER_FILE, limitPerFile)
         allSamples += samples
     printProgress(i+1, fileCount)
 
