@@ -174,7 +174,7 @@ def readCsv(filename, headings=False, doParseNumbers=True, skipLines=0, encoding
 def readJSON(filename):
     data = {}
     if os.path.isfile(filename):
-        with open(filename) as f:
+        with open(filename, encoding="utf8") as f:
             data = json.load(f)
     return data
 
