@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# python3 -m cProfile -s cumtime tests/profile.py
+# python3 -m cProfile -s cumtime tests/profileTest.py
 
 import argparse
 import inspect
