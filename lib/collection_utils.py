@@ -10,6 +10,9 @@ def addIndices(arr, keyName="index", startIndex=0):
         arr[i][keyName] = startIndex + i
     return arr
 
+def createLookup(arr, key):
+    return dict([(str(item[key]), item) for item in arr])
+
 def containsList(bucketList, needleList):
     return set(needleList).issubset(set(bucketList))
 
