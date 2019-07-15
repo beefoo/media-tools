@@ -57,9 +57,9 @@ if TYPE == "grid" and LIMIT < 0:
     LIMIT = GRID_W * GRID_H
     print("Limiting grid to %s x %s = %s" % (GRID_W, GRID_H, LIMIT))
 
-AUDIO_FILE = "sprites/sprite/%s/%s.mp3" % (UNIQUE_ID, UNIQUE_ID)
+AUDIO_FILE = "ui/sprites/sprite/%s/%s.mp3" % (UNIQUE_ID, UNIQUE_ID)
 MANIFEST_FILE = AUDIO_FILE.replace(".mp3", ".json")
-IMAGE_FILE = "sprites/sprite/%s/%s.png" % (UNIQUE_ID, UNIQUE_ID)
+IMAGE_FILE = "ui/sprites/sprite/%s/%s.png" % (UNIQUE_ID, UNIQUE_ID)
 CACHE_DIR = args.CACHE_DIR % UNIQUE_ID
 
 # Read files

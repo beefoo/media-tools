@@ -29,6 +29,7 @@ var App = (function() {
     var _this = this;
 
     this.currentCell = -1;
+    this.currentFileIndex = -1;
 
     var dataPromise = this.loadData();
     $.when(dataPromise).done(function(results){
@@ -59,6 +60,7 @@ var App = (function() {
       }
     });
     this.sprites = allSprites;
+    this.audioSpriteFiles = options.audioSpriteFiles;
 
     // _.each(options.audioSpriteFiles, function(fn, i){
     //   var audioFilename = "sprite/" + uid + "/" + fn;
@@ -101,12 +103,16 @@ var App = (function() {
 
   App.prototype.loadListeners = function(){
     var _this = this;
-    var listening = false;
+    var listening = true;
 
     $(window).on("resize", function(){ _this.onResize(); });
-    $(document).on("mousedown", function(e){ e.preventDefault(); listening = true; });
-    $(document).on("mouseup", function(e){ listening = false; });
-    $(document).on("mousemove", function(e){ if (listening) { _this.play(e); } });
+
+    // listening = false;
+    // $(document).on("mousedown", function(e){ e.preventDefault(); listening = true; });
+    // $(document).on("mouseup", function(e){ listening = false; });
+    // $(document).on("mousemove", function(e){ if (listening) { _this.play(e); } });
+
+    $(document).on("click", function(e){ _this.play(e); })
   };
 
   App.prototype.loadUI = function(options){
@@ -158,6 +164,7 @@ var App = (function() {
   };
 
   App.prototype.play = function(e){
+    var _this = this;
     var parentOffset = this.imageOffset;
     var x = e.pageX - parentOffset.left;
     var y = e.pageY - parentOffset.top;
@@ -175,13 +182,33 @@ var App = (function() {
 
     this.$label.css("transform", "translate3d("+cx+"px, "+cy+"px, 0)");
 
-    // play the cell if not already playing
+    // update cell
     if (this.currentCell !== id) {
       this.$label.attr("title", first.label);
-      var fileIndex = first.fileIndex;
-      // var sound = this.sounds[fileIndex];
-      // sound.play(""+id);
       this.currentCell = id;
+    }
+
+    var fileIndex = first.fileIndex;
+
+    // if file is not loaded, load and play
+    if (fileIndex !== this.currentFileIndex || !this.currentSound) {
+      this.currentFileIndex = fileIndex;
+      var audioFilename = "sprite/" + this.opt.uid + "/" + this.audioSpriteFiles[fileIndex];
+      var sprites = _.filter(this.sprites, function(s){ return s.fileIndex===fileIndex; });
+      sprites = _.map(sprites, function(s, i){ return [""+s.id, s.audioPosition]; });
+      sprites = _.object(sprites);
+      if (this.currentSound) this.currentSound.unload();
+      this.currentSound = new Howl({
+        src: [audioFilename],
+        sprite: sprites,
+        onload: function(){
+          console.log("Loaded "+audioFilename);
+          _this.currentSound.play(""+id);
+        }
+      });
+
+    } else {
+      this.currentSound.play(""+id);
     }
   };
 
