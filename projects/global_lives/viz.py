@@ -17,7 +17,12 @@ sys.path.insert(0,parentdir)
 from lib.math_utils import *
 from lib.io_utils import *
 
-headings, rows = readCsv("projects/global_lives/data/ia_globallives_subset.csv")
+parser = argparse.ArgumentParser()
+parser.add_argument('-in', dest="INPUT_FILE", default="projects/global_lives/data/ia_globallives_subset.csv", help="Input video csv file")
+parser.add_argument('-single', dest="SINGLE", action="store_true", help="Display single line?")
+a = parser.parse_args()
+
+headings, rows = readCsv(a.INPUT_FILE)
 collections = {}
 labels = []
 for i, r in enumerate(rows):
@@ -36,9 +41,12 @@ colors = iter(plt.cm.prism(np.linspace(0,1,len(labels))))
 for i, label in enumerate(labels):
     data = collections[label]
     color = next(colors)
-    h = 0.8 / len(data)
-    for j, d in enumerate(data):
-        ax.broken_barh([d], (i-0.4+h*j,h), color=color)
+    h = 0.8 if a.SINGLE else 0.8 / len(data)
+    if a.SINGLE:
+        ax.broken_barh(data, (i-0.4,h), color=color)
+    else:
+        for j, d in enumerate(data):
+            ax.broken_barh([d], (i-0.4+h*j,h), color=color)
 
 ax.set_yticks(range(len(labels)))
 ax.set_yticklabels(labels)

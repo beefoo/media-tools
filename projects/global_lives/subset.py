@@ -15,12 +15,14 @@ sys.path.insert(0,parentdir)
 from lib.io_utils import *
 from lib.math_utils import *
 
-INPUT_FILE = "projects/global_lives/data/ia_globallives_all.csv"
-COLLECTION_FILE = "projects/global_lives/data/ia_globallives_collections.csv"
-OUTPUT_FILE = "projects/global_lives/data/ia_globallives_subset.csv"
+parser = argparse.ArgumentParser()
+parser.add_argument('-in', dest="INPUT_FILE", default="projects/global_lives/data/ia_globallives_all.csv", help="Input video csv file")
+parser.add_argument('-co', dest="COLLECTION_FILE", default="projects/global_lives/data/ia_globallives_collections.csv", help="Input collection csv file")
+parser.add_argument('-out', dest="OUTPUT_FILE", default="projects/global_lives/data/ia_globallives_subset.csv", help="Output video csv file")
+a = parser.parse_args()
 
-vFieldNames, videos = readCsv(INPUT_FILE)
-cFieldNames, collections = readCsv(COLLECTION_FILE)
+vFieldNames, videos = readCsv(a.INPUT_FILE)
+cFieldNames, collections = readCsv(a.COLLECTION_FILE)
 vFieldNames = unionLists(vFieldNames, ["start", "end"])
 # cFieldNames = unionLists(cFieldNames, ["count"])
 collectionLookup = createLookup(collections, "id")
@@ -39,4 +41,4 @@ for i, v in enumerate(videos):
 videos = [v for v in videos if v["active"]]
 print("%s videos after filtering inactive" % len(videos))
 
-writeCsv(OUTPUT_FILE, videos, headings=vFieldNames)
+writeCsv(a.OUTPUT_FILE, videos, headings=vFieldNames)
