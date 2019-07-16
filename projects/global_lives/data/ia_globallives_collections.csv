@@ -1,20 +1,20 @@
-id,name,city,country,lon,lat,active
-pierrevallee,Pierre Vallee,Trois-Rivières,Canada,-72.55,46.35,1
-dusanlazic,Dušan Lazić,Vojka,Serbia,20.157118,44.928912,1
-zhannadosmailova,Zhanna Dosmailova,Vannovka,Kazakhstan,70.342118,42.53086,1
-basaktaner,Basak Taner,Istanbul,Turkey,28.955,41.013611,1
-laraaragon,Lara Aragon,Magaluf,Spain,2.5375,39.511,1
-jamesbullock,James Bullock,San Francisco,California,-122.416667,37.783333,0
-seunghwanseo,Seunghwan Seo,Seoul,South Korea,126.966667,37.566667,1
-ruminagashima,Rumi Nagashima,Tokyo,Japan,139.692222,35.689722,1
-ruixianfan,Ruixian Fan,Xi'an,China,108.954,34.265,1
-jamilajad,Jamila Jad,Beirut,Lebanon,35.513056,33.886944,1
-kailiu,Kai Liu,Anren,China,103.616101,30.515152,0
-prakashsingh,Prakash Singh,New Delhi,India,77.208889,28.613889,0
-mingmarlama,Mingmar Lama,Tsum Valley,Nepal,85.266667,27.766667,1
-abhaysingh,Abhay Singh,Barna,India,75.606157,27.104067,1
-muttukumar,Muttu Kumar,Hampi,India,76.462222,15.334444,1
-ivanmontano,Ivan Montano,Cali,Colombia,-76.522222,3.420556,1
-dadah,Dadah,Sarimukti,Indonesia,107.344755,-6.783341,1
-edithkaphuka,Edith Kaphuka,Ngwale Village,Malawi,35.333333,-15.383333,1
-raelfeliciano,Rael Feliciano,São Paulo,Brazil,-46.633333,-23.55,1
+id,url,name,city,country,lon,lat,gender,age,active
+pierrevallee,https://archive.org/details/pierrevallee,Pierre Vallee,Trois-Rivières,Canada,-72.55,46.35,m,40,1
+zhannadosmailova,https://archive.org/details/zhannadosmailova,Zhanna Dosmailova,Vannovka,Kazakhstan,70.342118,42.53086,f,5,1
+basaktaner,https://archive.org/details/basaktaner,Basak Taner,Istanbul,Turkey,28.955,41.013611,f,30,1
+laraaragon,https://archive.org/details/laraaragon,Lara Aragon,Magaluf,Spain,2.5375,39.511,f,35,1
+ruminagashima,https://archive.org/details/ruminagashima,Rumi Nagashima,Tokyo,Japan,139.692222,35.689722,f,22,1
+ruixianfan,https://archive.org/details/ruixianfan,Ruixian Fan,Xi'an,China,108.954,34.265,f,45,1
+jamilajad,https://archive.org/details/jamilajad,Jamila Jad,Beirut,Lebanon,35.513056,33.886944,f,9,1
+abhaysingh,https://archive.org/details/abhaysingh,Abhay Singh,Barna,India,75.606157,27.104067,m,60,1
+ivanmontano,https://archive.org/details/ivanmontano,Ivan Montano,Cali,Colombia,-76.522222,3.420556,m,45,1
+dadah,https://archive.org/details/dadah,Dadah,Sarimukti,Indonesia,107.344755,-6.783341,f,32,1
+edithkaphuka,https://archive.org/details/edithkaphuka,Edith Kaphuka,Ngwale Village,Malawi,35.333333,-15.383333,f,13,1
+raelfeliciano,https://archive.org/details/raelfeliciano,Rael Feliciano,São Paulo,Brazil,-46.633333,-23.55,m,23,1
+dusanlazic,https://archive.org/details/dusanlazic,Dušan Lazić,Vojka,Serbia,20.157118,44.928912,m,57,0
+seunghwanseo,https://archive.org/details/seunghwanseo,Seunghwan Seo,Seoul,South Korea,126.966667,37.566667,m,25,0
+mingmarlama,https://archive.org/details/mingmarlama,Mingmar Lama,Tsum Valley,Nepal,85.266667,27.766667,m,40,0
+muttukumar,https://archive.org/details/muttukumar,Muttu Kumar,Hampi,India,76.462222,15.334444,m,18,0
+jamesbullock,https://archive.org/details/jamesbullock,James Bullock,San Francisco,California,-122.416667,37.783333,m,56,0
+kailiu,https://archive.org/details/kailiu,Kai Liu,Anren,China,103.616101,30.515152,m,37,0
+prakashsingh,https://archive.org/details/prakashsingh,Prakash Singh,New Delhi,India,77.208889,28.613889,m,50,0

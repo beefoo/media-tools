@@ -32,7 +32,7 @@ for i, v in enumerate(videos):
     cid = v["collection"].split(",")[0]
     vcollection = collectionLookup[cid]
     videos[i]["collection"] = cid
-    videos[i]["active"] = (vcollection["active"] > 0)
+    videos[i]["active"] = vcollection["active"] > 0 and "life_story" not in v["filename"] and "behind_the_scene" not in v["filename"]
     videos[i]["start"] = roundInt(v["hh0"] * 3600 + v["mm0"] * 60 + v["ss0"])
     videos[i]["end"] = roundInt(v["hh1"] * 3600 + v["mm1"] * 60 + v["ss1"])
 
