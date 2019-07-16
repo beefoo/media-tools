@@ -51,6 +51,11 @@ if a.LIMIT > 0 and len(uIds) > a.LIMIT:
 def downloadMedia(uId):
     global a
 
+    existFns = getFilenames("%s.*" % (a.OUTPUT_DIR + uId))
+    if len(existFns) > 0 and not a.OVERWRITE:
+        print("%s already exists" % uId)
+        return None
+
     command = ['youtube-dl'] # We need -L because the URL redirects
     if not a.OVERWRITE:
         command += ['--no-overwrites']
