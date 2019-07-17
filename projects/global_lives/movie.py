@@ -23,7 +23,7 @@ from gllib import *
 parser = argparse.ArgumentParser()
 addVideoArgs(parser)
 parser.add_argument('-co', dest="COLLECTION_FILE", default="projects/global_lives/data/ia_globallives_collections.csv", help="Input collection csv file")
-parser.add_argument('-celld', dest="CELL_DURATION", default=5.0, type=float, help="Cell duration in minutes")
+parser.add_argument('-celld', dest="CELL_DURATION", default=15.0, type=float, help="Cell duration in minutes")
 a = parser.parse_args()
 parseVideoArgs(a)
 aa = vars(a)
@@ -38,12 +38,15 @@ collections = [c for c in collections if c["active"] > 0]
 collections = sorted(collections, key=lambda c: -c["lat"])
 collectionCount = len(collections)
 print("%s collections" % collectionCount)
+videos = prependAll(videos, ("filename", a.MEDIA_DIRECTORY))
 collections = addIndices(collections, "row")
 
 # break videos up into cells per collection
 cellsPerCollection = roundInt(24.0 * 60.0 / a.CELL_DURATION)
 print("Cells per collection: %s" % cellsPerCollection)
 collections = addCellsToCollections(collections, videos, cellsPerCollection)
+
+# collectionToImg(collections, "output/global_lives.png", cellsPerCollection)
 
 # custom clip to numpy array function to override default tweening logic
 def clipToNpArrGL(clip, ms, containerW, containerH, precision, parent, globalArgs={}):

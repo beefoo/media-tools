@@ -1,7 +1,9 @@
 
 import inspect
+from moviepy.editor import VideoFileClip
 import numpy as np
 import os
+from PIL import Image
 from pprint import pprint
 import sys
 
@@ -11,14 +13,17 @@ parentdir = os.path.dirname(currentdir)
 parentdir = os.path.dirname(parentdir)
 sys.path.insert(0,parentdir)
 
+from lib.collection_utils import *
 from lib.math_utils import *
+from lib.processing_utils import *
+from lib.video_utils import *
 
 def addCellsToCollections(collections, videos, cellsPerCollection):
     for i, c in enumerate(collections):
         cVideos = [v for v in videos if v["collection"] == c["id"]]
         cVideos = sorted(cVideos, key=lambda v: v["start"])
-        cTotalDur = sum([v["duration"] for v in cVideos])
-        durPerCell = roundInt(1.0 * cTotalDur / cellsPerCollection)
+        cTotalDur = int(sum([v["duration"] for v in cVideos]))
+        durPerCell = int(1.0 * cTotalDur / cellsPerCollection)
         print("%s has %s duration per cell" % (c["name"], formatSeconds(durPerCell)))
         cCells = []
         currentVideoIndex = 0
@@ -42,8 +47,6 @@ def addCellsToCollections(collections, videos, cellsPerCollection):
                         "filename": currentVideo["filename"],
                         "start": roundInt(currentVideoOffset * 1000),
                         "dur": int(durLeftInCell * 1000),
-                        "row": c["row"],
-                        "col": j
                     })
                     currentVideoOffset += durLeftInCell
                     cellDur += durLeftInCell
@@ -54,19 +57,51 @@ def addCellsToCollections(collections, videos, cellsPerCollection):
                         "filename": currentVideo["filename"],
                         "start": roundInt(currentVideoOffset * 1000),
                         "dur": int(durLeftInVideo * 1000),
-                        "row": c["row"],
-                        "col": j
                     })
                     currentVideoIndex += 1
                     currentVideoOffset = 0
                     cellDur += durLeftInVideo
             if cellDur < durPerCell * 0.9:
                 print("   Warning: Cell %s of %s is too small (%s)" % (j+1, cellsPerCollection, formatSeconds(cellDur)))
+            for k, cs in enumerate(cellSamples):
+                cellSamples[k]["row"] = c["row"]
+                cellSamples[k]["col"] = j
             cCells.append({
                 "row": c["row"],
                 "col": j,
                 "samples": cellSamples,
-                "dur": sum([cs["cellSamples"] for cs in cellSamples])
+                "dur": sum([cs["dur"] for cs in cellSamples])
             })
         collections[i]["cells"] = cCells
     return collections
+
+def collectionToImg(collections, filename, cellsPerCollection, imgH=1080, margin=1):
+    cCount = len(collections)
+    cellH = int(imgH / cCount)
+    aspectRatio = 640.0 / 360.0
+    cellW = roundInt(cellH * aspectRatio)
+    imgW = cellW * cellsPerCollection
+    im = Image.new(mode="RGB", size=(imgW, imgH), color=(0, 0, 0))
+
+    # take the first sample in each cell
+    clips = []
+    for c in collections:
+        for cell in c["cells"]:
+            clips.append(cell["samples"][0])
+    filenames = groupList(clips, "filename")
+    filecount = len(filenames)
+    for i, f in enumerate(filenames):
+        video = VideoFileClip(f["filename"], audio=False)
+        videoDur = video.duration
+        fclips = f["items"]
+        for fclip in fclips:
+            t = fclip["start"] + fclip["dur"]/2
+            clipImg = getVideoClipImage(video, videoDur, {"width": cellW-margin*2, "height": cellH-margin*2}, t)
+            x = fclip["col"] * cellW + margin
+            y = fclip["row"] * cellH + margin
+            im.paste(clipImg, (x, y))
+        video.reader.close()
+        del video
+        printProgress(i+1, filecount)
+    im.save(filename)
+    print("Saved %s" % filename)
