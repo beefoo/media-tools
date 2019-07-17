@@ -128,6 +128,9 @@ def findPeaks(data, distance=None, height=None, findMinima=True):
 def floorInt(n):
     return int(math.floor(n))
 
+def formatDecimal(n, precision=1):
+    return "{0}".format(str(round(n, precision) if n % 1 else int(n)))
+
 def formatNumber(n):
     return "{:,}".format(n)
 

@@ -91,13 +91,15 @@ def parseFilterString(str):
                 break
     return conditions
 
-def parseQueryString(str):
+def parseQueryString(str, doParseNumbers=False):
     if len(str) <= 0:
         return {}
     conditionStrings = str.split("&")
     conditions = {}
     for cs in conditionStrings:
         key, value = tuple(cs.split("="))
+        if doParseNumbers:
+            value = parseNumber(value)
         conditions[key] = value
     return conditions
 

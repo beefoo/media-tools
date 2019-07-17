@@ -4,6 +4,7 @@ import argparse
 import inspect
 import numpy as np
 import os
+from PIL import Image, ImageFont, ImageDraw
 from pprint import pprint
 import sys
 
@@ -17,6 +18,7 @@ from lib.collection_utils import *
 from lib.composition_utils import *
 from lib.math_utils import *
 from lib.io_utils import *
+from lib.text_utils import *
 from lib.video_utils import *
 from gllib import *
 
@@ -28,13 +30,20 @@ parser.add_argument('-ppf', dest="PIXELS_PER_FRAME", default=1.0, type=float, he
 parser.add_argument('-textfdur', dest="TEXT_FADE_DUR", default=1000, type=int, help="Duration text should fade in milliseconds")
 parser.add_argument('-textfdel', dest="TEXT_FADE_DELAY", default=500, type=int, help="Duration text should delay fade in milliseconds")
 parser.add_argument('-clipsmo', dest="CLIPS_MOVE_OFFSET", default=-1000, type=int, help="Offset the clips should start moving in in milliseconds")
-parser.add_argument('-clockh', dest="CLOCK_LABEL_HEIGHT", default=0.1, type=float, help="Clock label height as a percent of height")
+parser.add_argument('-clockh', dest="CLOCK_LABEL_HEIGHT", default=0.05, type=float, help="Clock label height as a percent of height")
+
+# Text options
+parser.add_argument('-fdir', dest="FONT_DIR", default="media/fonts/Open_Sans/", help="Directory of font files")
+parser.add_argument('-cotext', dest="COLLECTION_TEXT_PROPS", default="font=OpenSans-Light.ttf&size=36&letterSpacing=2", help="Text styles for collection labels (font, size, letter-width)")
+parser.add_argument('-cltext', dest="CLOCK_TEXT_PROPS", default="font=OpenSans-Regular.ttf&size=60&letterSpacing=2", help="Text styles for clock labels (font, size, letter-width)")
+parser.add_argument('-color', dest="TEXT_COLOR", default="#FFFFFF", help="Color of font")
+parser.add_argument('-talign', dest="TEXT_ALIGN", default="center", help="Default text align")
 a = parser.parse_args()
 parseVideoArgs(a)
 aa = vars(a)
-aa["ASPECT_RATIO"] = 1.0 * a.WIDTH / a.HEIGHT
 aa["CLOCK_LABEL_HEIGHT"] = roundInt(a.CLOCK_LABEL_HEIGHT * a.HEIGHT)
-aa["CLIP_AREA_HEIGHT"] = a.HEIGHT - a.CLOCK_LABEL_HEIGHT
+aa["CLIP_AREA_HEIGHT"] = a.HEIGHT - a.CLOCK_LABEL_HEIGHT * 2
+aa["CLIP_ASPECT_RATIO"] = 1.0 * a.WIDTH / a.CLIP_AREA_HEIGHT
 
 startTime = logTime()
 stepTime = startTime
@@ -57,7 +66,7 @@ collections = addCellsToCollections(collections, videos, cellsPerCollection)
 
 # calculate cell size and composition size and duration
 cellH = int(1.0 * a.CLIP_AREA_HEIGHT / collectionCount)
-cellW = roundInt(cellH * a.ASPECT_RATIO)
+cellW = roundInt(cellH * a.CLIP_ASPECT_RATIO)
 totalW = cellW * cellsPerCollection
 totalXDelta = totalW + a.WIDTH
 print("%s total pixel movement" % formatNumber(totalXDelta))
@@ -66,12 +75,27 @@ totalMoveMs = frameToMs(totalMoveFrames, a.FPS)
 print("Total movement duration: %s" % formatSeconds(totalMoveMs/1000.0))
 
 # calculate text durations
-textDurationMs = a.TEXT_FADE_DELAY * collectionCount + max(a.TEXT_FADE_DUR - a.TEXT_FADE_DELAY, 0)
+textDurationMs = a.TEXT_FADE_DELAY * collectionCount * 2 + max(a.TEXT_FADE_DUR - a.TEXT_FADE_DELAY, 0)
 moveStartMs = textDurationMs + a.CLIPS_MOVE_OFFSET
-durationMs = moveStartMs + totalMoveMs + moveStartMs
+durationMs = a.PAD_START + moveStartMs + totalMoveMs + textDurationMs
 print("Total duration: %s" % formatSeconds(durationMs/1000.0))
-sys.exit()
+oneScreenMs = frameToMs(a.WIDTH / a.PIXELS_PER_FRAME, a.FPS)
+textInStartMs = a.PAD_START
+textInEndMs = textInStartMs + moveStartMs + oneScreenMs
+textOutStartMs = moveStartMs + totalMoveMs - oneScreenMs
+textOutEndMs = textOutStartMs + textDurationMs
 
+# init text
+collectionTextProps = parseQueryString(a.COLLECTION_TEXT_PROPS, doParseNumbers=True)
+clockTextProps = parseQueryString(a.CLOCK_TEXT_PROPS, doParseNumbers=True)
+collectionFont = ImageFont.truetype(font=a.FONT_DIR + collectionTextProps["font"], size=collectionTextProps["size"], layout_engine=ImageFont.LAYOUT_RAQM)
+clockFont = ImageFont.truetype(font=a.FONT_DIR + clockTextProps["font"], size=clockTextProps["size"], layout_engine=ImageFont.LAYOUT_RAQM)
+aw, ah = collectionFont.getsize("A")
+textOffsetY = roundInt((cellH - ah) * 0.5)
+textMargin, _ = collectionFont.getsize("+")
+
+for i, c in enumerate(collections):
+    collections[i]["locLabel"] = "%s, %s" % (c["city"], c["country"])
 # create samples
 # add index
 # create clips
@@ -105,7 +129,52 @@ def clipToNpArrGL(clip, ms, containerW, containerH, precision, parent, globalArg
     ], dtype=np.int32)
 
 def preProcessGL(im, ms):
-    # Add text here
+    global a
+    global textInStartMs
+    global textInEndMs
+    global textOutStartMs
+    global textOutEndMs
+    global collectionTextProps
+    global collectionFont
+    global collections
+    global cellW
+    global textOffsetY
+    global textMargin
+
+    if im is None:
+        im = Image.new(mode="RGB", size=(a.WIDTH, a.HEIGHT), color=(0, 0, 0))
+    draw = ImageDraw.Draw(im)
+    textColor = hex2rgb(a.TEXT_COLOR)
+
+    isTextIn = textInStartMs <= ms <= textOutEndMs
+    isTextOut = textOutStartMs <= ms <= textOutEndMs
+    isTextIn = True
+
+    if isTextIn or isTextOut:
+        cx = a.WIDTH * 0.5
+        cCount = len(collections)
+        y0 = a.CLOCK_LABEL_HEIGHT
+        lsw = collectionTextProps["letterSpacing"]
+        for i, c in enumerate(collections):
+            alpha = 1.0
+            tx = cx - textMargin
+            ty = y0 + i * cellH + textOffsetY
+            for char in reversed(list(c["locLabel"])):
+                chw, chh = collectionFont.getsize(char)
+                tx -= chw
+                draw.text((tx, ty), char, font=collectionFont, fill=tuple([roundInt(v*alpha) for v in textColor]))
+                tx -= lsw
+            tx = cx + textMargin
+            alpha = 1.0
+            for char in list(c["name"]):
+                draw.text((tx, ty), char, font=collectionFont, fill=tuple([roundInt(v*alpha) for v in textColor]))
+                chw, chh = collectionFont.getsize(char)
+                tx += chw + lsw
+
     return im
+
+
+# testIm = preProcessGL(None, 0)
+# testIm.save("output/global_lives_text_test.png")
 
 # processComposition(a, clips, durationMs, stepTime=stepTime, startTime=startTime, customClipToArrFunction=clipToNpArrGL, preProcessingFunction=preProcessGL, renderOnTheFly=True)
