@@ -29,7 +29,7 @@ parser.add_argument('-celld', dest="CELL_DURATION", default=3.0, type=float, hel
 parser.add_argument('-ppf', dest="PIXELS_PER_FRAME", default=1.0, type=float, help="Number of pixels to move per frame")
 parser.add_argument('-textfdur', dest="TEXT_FADE_DUR", default=1000, type=int, help="Duration text should fade in milliseconds")
 parser.add_argument('-textfdel', dest="TEXT_FADE_DELAY", default=500, type=int, help="Duration text should delay fade in milliseconds")
-parser.add_argument('-clipsmo', dest="CLIPS_MOVE_OFFSET", default=-1000, type=int, help="Offset the clips should start moving in in milliseconds")
+parser.add_argument('-clipsmo', dest="CLIPS_MOVE_OFFSET", default=-4000, type=int, help="Offset the clips should start moving in in milliseconds")
 parser.add_argument('-clockh', dest="CLOCK_LABEL_HEIGHT", default=0.05, type=float, help="Clock label height as a percent of height")
 
 # Text options
@@ -80,6 +80,7 @@ moveStartMs = textDurationMs + a.CLIPS_MOVE_OFFSET
 durationMs = a.PAD_START + moveStartMs + totalMoveMs + textDurationMs
 print("Total duration: %s" % formatSeconds(durationMs/1000.0))
 oneScreenMs = frameToMs(a.WIDTH / a.PIXELS_PER_FRAME, a.FPS)
+print("One screen duration: %s" % formatSeconds(oneScreenMs/1000.0))
 textInStartMs = a.PAD_START
 textInEndMs = textInStartMs + moveStartMs + oneScreenMs
 textOutStartMs = moveStartMs + totalMoveMs - oneScreenMs
