@@ -76,8 +76,8 @@ def clipToNpArrGL(clip, ms, containerW, containerH, precision, parent, globalArg
         roundInt(props["brightness"] * precisionMultiplier)
     ], dtype=np.int32)
 
-def postProcessGL(im, ms):
+def preProcessGL(im, ms):
     # Add text here
     return im
 
-# processComposition(a, clips, durationMs, stepTime=stepTime, startTime=startTime, customClipToArrFunction=clipToNpArrGL, postProcessingFunction=postProcessGL)
+# processComposition(a, clips, durationMs, stepTime=stepTime, startTime=startTime, customClipToArrFunction=clipToNpArrGL, preProcessingFunction=preProcessGL)
