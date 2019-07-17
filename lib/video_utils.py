@@ -3,6 +3,7 @@
 from functools import partial
 from lib.cache_utils import *
 from lib.clip import *
+from lib.collection_utils import *
 from lib.gpu_utils import *
 from lib.math_utils import *
 from lib.processing_utils import *
@@ -128,7 +129,10 @@ def clipsToFrame(p, clips, pixelData, precision=3, customClipToArrFunction=None,
         im = Image.new(mode="RGBA", size=(width, height), color=(0, 0, 0, 255))
         if preProcessingFunction is not None:
             baseImage = preProcessingFunction(baseImage, ms)
-        im = clipsToFrameGPU(clipArr, width, height, pixelData, precision, baseImage=baseImage, gpuProgram=gpuProgram, globalArgs=globalArgs)
+        if pixelData is None:
+            im = clipsToFramePIL(clips, clipArr, width, height, precision, baseImage=baseImage, globalArgs=globalArgs)
+        else:
+            im = clipsToFrameGPU(clipArr, width, height, pixelData, precision, baseImage=baseImage, gpuProgram=gpuProgram, globalArgs=globalArgs)
         im = im.convert("RGB")
         # check to see if we're applying container-level effects
         if container is not None:
@@ -155,6 +159,41 @@ def clipsToFrame(p, clips, pixelData, precision=3, customClipToArrFunction=None,
         returnValue = im
 
     return returnValue
+
+def clipsToFramePIL(clips, clipArrs, width, height, precision=3, baseImage=None, globalArgs={}):
+    c = getValue(globalArgs, "colors", 3)
+    precisionMultiplier = int(10 ** precision)
+
+    validClips = []
+    for i in range(len(clipArrs)):
+        clip = clipArrToDict(clipArrs[i], precision)
+        # only take clips that are visible
+        if clip["width"] > 0.0 and clip["height"] > 0.0 and clip["alpha"] > 0.0:
+            clip["filename"] = clips[i].props["filename"]
+            clip["t"] = clips[i].props["start"] + int(clips[i].props["dur"] * clip["tn"])
+            validClips.append(clip)
+
+    if baseImage is None:
+        baseImage = Image.new(mode="RGB", size=(width, height), color=(0, 0, 0))
+    baseImage = baseImage.convert("RGBA")
+
+    filenames = groupList(validClips, "filename")
+    for i, f in enumerate(filenames):
+        video = VideoFileClip(f["filename"], audio=False)
+        videoDur = video.duration
+        fclips = f["items"]
+        for fclip in fclips:
+            clipImg = getVideoClipImage(video, videoDur, fclip)
+            clipImg = clipImg.convert("RGBA")
+            if fclip["alpha"] < 1.0:
+                clipImg.putalpha(round(fclip["alpha"]*255))
+            x = fclip["x"]
+            y = fclip["y"]
+            baseImage = pasteImage(baseImage, clipImg, x, y)
+        video.reader.close()
+        del video
+
+    return baseImage
 
 def clipsToFrameGPU(clips, width, height, clipsPixelData, precision=3, baseImage=None, gpuProgram=None, globalArgs={}):
     c = getValue(globalArgs, "colors", 3)
