@@ -131,7 +131,7 @@ def clipsToFrame(p, clips, pixelData, precision=3, customClipToArrFunction=None,
     if not fileExists:
         im = Image.new(mode="RGBA", size=(width, height), color=(0, 0, 0, 255))
         if preProcessingFunction is not None:
-            baseImage = preProcessingFunction(baseImage, ms)
+            baseImage = preProcessingFunction(baseImage, ms, globalArgs=globalArgs)
         if pixelData is None:
             im = clipsToFramePIL(clips, clipArr, width, height, precision, baseImage=baseImage, globalArgs=globalArgs)
         else:
@@ -145,7 +145,7 @@ def clipsToFrame(p, clips, pixelData, precision=3, customClipToArrFunction=None,
                 im = blurImage(im, blur)
         # check to see if there's post-processing to be done
         if postProcessingFunction is not None:
-            im = postProcessingFunction(im, ms)
+            im = postProcessingFunction(im, ms, globalArgs=globalArgs)
         # save if necessary
         if saveFrame:
             im.save(filename)

@@ -168,7 +168,7 @@ stepTime = logTime(stepTime, "Calculated sequence")
 # sort frames
 container.vector.sortFrames()
 
-def postProcessSlice(im, ms):
+def postProcessSlice(im, ms, globalArgs={}):
     global a
     global startMs
     global distanceToMove
