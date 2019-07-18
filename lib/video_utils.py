@@ -95,6 +95,7 @@ def clipsToFrame(p, clips, pixelData, precision=3, customClipToArrFunction=None,
     width = p["width"]
     height = p["height"]
 
+    frame = getValue(p, "frame", 1)
     ms = getValue(p, "ms", 0)
     overwrite = getValue(p, "overwrite", False)
     verbose = getValue(p, "verbose", False)
@@ -111,7 +112,9 @@ def clipsToFrame(p, clips, pixelData, precision=3, customClipToArrFunction=None,
     returnValue = None
 
     if not fileExists and saveFrame or not saveFrame or isSequential:
-        clipArr = clipsToNpArr(clips, ms, width, height, precision, customClipToArrFunction=customClipToArrFunction, globalArgs=globalArgs)
+        globalArgsCopy = globalArgs.copy()
+        globalArgsCopy["frame"] = frame
+        clipArr = clipsToNpArr(clips, ms, width, height, precision, customClipToArrFunction=customClipToArrFunction, globalArgs=globalArgsCopy)
         # Clip debug:
     #     pprint(clips[8124].props)
     #     clipArr = clipsToNpArr(clips, ms, width, height, precision, customClipToArrFunction=customClipToArrFunction, globalArgs=globalArgs)

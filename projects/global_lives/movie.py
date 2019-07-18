@@ -28,8 +28,8 @@ parser.add_argument('-co', dest="COLLECTION_FILE", default="projects/global_live
 parser.add_argument('-celldat', dest="CELL_FILE", default="projects/global_lives/data/ia_globallives_cells.csv", help="Input/output cell csv file")
 parser.add_argument('-celldur', dest="CELL_DURATION", default=3.0, type=float, help="Cell duration in minutes")
 parser.add_argument('-ppf', dest="PIXELS_PER_FRAME", default=1.0, type=float, help="Number of pixels to move per frame")
-parser.add_argument('-textfdur', dest="TEXT_FADE_DUR", default=1000, type=int, help="Duration text should fade in milliseconds")
-parser.add_argument('-textfdel', dest="TEXT_FADE_DELAY", default=500, type=int, help="Duration text should delay fade in milliseconds")
+parser.add_argument('-textfdur', dest="TEXT_FADE_DUR", default=3000, type=int, help="Duration text should fade in milliseconds")
+parser.add_argument('-textfdel', dest="TEXT_FADE_DELAY", default=300, type=int, help="Duration text should delay fade in milliseconds")
 parser.add_argument('-clipsmo', dest="CLIPS_MOVE_OFFSET", default=-4000, type=int, help="Offset the clips should start moving in in milliseconds")
 parser.add_argument('-clockh', dest="CLOCK_LABEL_HEIGHT", default=0.05, type=float, help="Clock label height as a percent of height")
 
@@ -80,14 +80,17 @@ print("Total movement duration: %s" % formatSeconds(totalMoveMs/1000.0))
 
 # calculate text durations
 textDurationMs = a.TEXT_FADE_DELAY * collectionCount * 2 + max(a.TEXT_FADE_DUR - a.TEXT_FADE_DELAY, 0)
-moveStartMs = textDurationMs + a.CLIPS_MOVE_OFFSET
-durationMs = a.PAD_START + moveStartMs + totalMoveMs + textDurationMs
+moveStartMs = a.PAD_START + textDurationMs + a.CLIPS_MOVE_OFFSET
+moveEndMs = moveStartMs + totalMoveMs
+durationMs = moveEndMs + textDurationMs
 print("Total duration: %s" % formatSeconds(durationMs/1000.0))
 oneScreenMs = frameToMs(a.WIDTH / a.PIXELS_PER_FRAME, a.FPS)
 print("One screen duration: %s" % formatSeconds(oneScreenMs/1000.0))
 textInStartMs = a.PAD_START
-textInEndMs = textInStartMs + moveStartMs + oneScreenMs
-textOutStartMs = moveStartMs + totalMoveMs - oneScreenMs
+textInEndMs = textInStartMs + textDurationMs
+textInEndVisibleMs = textInEndMs + oneScreenMs
+textOutStartMs = moveStartMs + totalMoveMs
+textOutStartVisibleMs = textOutStartMs - oneScreenMs
 textOutEndMs = textOutStartMs + textDurationMs
 
 # init text
@@ -101,6 +104,15 @@ textMargin, _ = collectionFont.getsize("+")
 
 for i, c in enumerate(collections):
     collections[i]["locLabel"] = "%s, %s" % (c["city"], c["country"])
+    collections[i]["titleSort"] = (abs((collectionCount-1) * 0.5 - i), i)
+collections = sorted(collections, key=lambda c: c["titleSort"])
+for i, c in enumerate(collections):
+    collections[i]["locFadeInStart"] = textInStartMs + i * 2 * a.TEXT_FADE_DELAY
+    collections[i]["nameFadeInStart"] = collections[i]["locFadeInStart"] + a.TEXT_FADE_DELAY
+    collections[i]["locFadeOutStart"] = textOutStartMs + (collectionCount-1-i) * 2 * a.TEXT_FADE_DELAY
+    collections[i]["nameFadeOutStart"] = collections[i]["locFadeOutStart"] + a.TEXT_FADE_DELAY
+collections = sorted(collections, key=lambda c: c["row"])
+
 # create samples
 # add index
 # create clips
@@ -108,9 +120,17 @@ for i, c in enumerate(collections):
 # custom clip to numpy array function to override default tweening logic
 def clipToNpArrGL(clip, ms, containerW, containerH, precision, parent, globalArgs={}):
     global a
+    global moveStartMs
+    global moveEndMs
+    global totalMoveMs
+
     x = y = w = h = tn = alpha = 0
+    frame = globalArgs["frame"]
 
     # determine position and size here
+    if moveStartMs <= ms <= moveEndMs:
+        nprogress = norm(ms, (moveStartMs, moveEndMs))
+        xOffset = -roundInt((frame-1) * a.PIXELS_PER_FRAME)
 
     customProps = {
         "pos": [x, y],
@@ -136,8 +156,8 @@ def clipToNpArrGL(clip, ms, containerW, containerH, precision, parent, globalArg
 def preProcessGL(im, ms):
     global a
     global textInStartMs
-    global textInEndMs
-    global textOutStartMs
+    global textInEndVisibleMs
+    global textOutStartVisibleMs
     global textOutEndMs
     global collectionTextProps
     global collectionFont
@@ -146,38 +166,58 @@ def preProcessGL(im, ms):
     global textOffsetY
     global textMargin
 
-    if im is None:
-        im = Image.new(mode="RGB", size=(a.WIDTH, a.HEIGHT), color=(0, 0, 0))
-    draw = ImageDraw.Draw(im)
-    textColor = hex2rgb(a.TEXT_COLOR)
-
-    isTextIn = textInStartMs <= ms <= textOutEndMs
-    isTextOut = textOutStartMs <= ms <= textOutEndMs
-    isTextIn = True
+    isTextIn = textInStartMs <= ms <= textInEndVisibleMs
+    isTextOut = textOutStartVisibleMs <= ms <= textOutEndMs
 
     if isTextIn or isTextOut:
+        if im is None:
+            im = Image.new(mode="RGB", size=(a.WIDTH, a.HEIGHT), color=(0, 0, 0))
+        draw = ImageDraw.Draw(im)
+        textColor = hex2rgb(a.TEXT_COLOR)
         cx = a.WIDTH * 0.5
         cCount = len(collections)
         y0 = a.CLOCK_LABEL_HEIGHT
         lsw = collectionTextProps["letterSpacing"]
         for i, c in enumerate(collections):
-            alpha = 1.0
-            tx = cx - textMargin
+            alpha = norm(ms, (c["locFadeInStart"], c["locFadeInStart"]+a.TEXT_FADE_DUR), limit=True) if isTextIn else 1.0-norm(ms, (c["locFadeOutStart"], c["locFadeOutStart"]+a.TEXT_FADE_DUR), limit=True)
             ty = y0 + i * cellH + textOffsetY
-            for char in reversed(list(c["locLabel"])):
-                chw, chh = collectionFont.getsize(char)
-                tx -= chw
-                draw.text((tx, ty), char, font=collectionFont, fill=tuple([roundInt(v*alpha) for v in textColor]))
-                tx -= lsw
-            tx = cx + textMargin
-            alpha = 1.0
-            for char in list(c["name"]):
-                draw.text((tx, ty), char, font=collectionFont, fill=tuple([roundInt(v*alpha) for v in textColor]))
-                chw, chh = collectionFont.getsize(char)
-                tx += chw + lsw
+            if alpha > 0.0:
+                alpha = ease(alpha)
+                tx = cx - textMargin
+                for char in reversed(list(c["locLabel"])):
+                    chw, chh = collectionFont.getsize(char)
+                    tx -= chw
+                    draw.text((tx, ty), char, font=collectionFont, fill=tuple([roundInt(v*alpha) for v in textColor]))
+                    tx -= lsw
+            alpha = norm(ms, (c["nameFadeInStart"], c["nameFadeInStart"]+a.TEXT_FADE_DUR), limit=True) if isTextIn else 1.0-norm(ms, (c["nameFadeOutStart"], c["nameFadeOutStart"]+a.TEXT_FADE_DUR), limit=True)
+            if alpha > 0.0:
+                alpha = ease(alpha)
+                tx = cx + textMargin
+                for char in list(c["name"]):
+                    draw.text((tx, ty), char, font=collectionFont, fill=tuple([roundInt(v*alpha) for v in textColor]))
+                    chw, chh = collectionFont.getsize(char)
+                    tx += chw + lsw
 
     return im
 
+# msPerFrame = frameToMs(1, a.FPS)
+# ms = textInStartMs
+# i = 1
+# outframefile = "tmp/global_lives_text_test_frames/frame.%s.png"
+# makeDirectories(outframefile)
+# removeFiles(outframefile % "*")
+# while ms <= textInEndMs:
+#     testIm = preProcessGL(None, ms)
+#     testIm.save(outframefile % zeroPad(i, 10000))
+#     ms += msPerFrame
+#     i += 1
+# ms = textOutStartMs
+# while ms <= textOutEndMs:
+#     testIm = preProcessGL(None, ms)
+#     testIm.save(outframefile % zeroPad(i, 10000))
+#     ms += msPerFrame
+#     i += 1
+# compileFrames(outframefile, a.FPS, "output/global_lives_text_test.mp4", getZeroPadding(10000))
 
 # testIm = preProcessGL(None, 0)
 # testIm.save("output/global_lives_text_test.png")
