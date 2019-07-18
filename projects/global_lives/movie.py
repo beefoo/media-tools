@@ -78,7 +78,8 @@ totalXDelta = totalW + a.WIDTH
 print("%s total pixel movement" % formatNumber(totalXDelta))
 totalMoveFrames = roundInt(totalXDelta / a.PIXELS_PER_FRAME)
 totalMoveMs = frameToMs(totalMoveFrames, a.FPS)
-cellMoveMs = roundInt(1.0 * totalMoveMs / cellsPerCollection)
+cellMoveFrames = 1.0 * cellW / a.PIXELS_PER_FRAME
+cellMoveMs = frameToMs(cellMoveFrames, a.FPS)
 print("Total movement duration: %s" % formatSeconds(totalMoveMs/1000.0))
 
 # calculate text durations
@@ -90,8 +91,9 @@ print("Total duration: %s" % formatSeconds(durationMs/1000.0))
 oneScreenMs = frameToMs(a.WIDTH / a.PIXELS_PER_FRAME, a.FPS)
 print("One screen duration: %s" % formatSeconds(oneScreenMs/1000.0))
 oneScreenDaySeconds = (1.0 * a.WIDTH / totalW) * (24 * 3600)
-print("One screen footage duration: %s" % formatSeconds(oneScreenDaySeconds))
 oneScreenDayMinutes = oneScreenDaySeconds / 60.0
+print("One screen footage duration: %s" % formatSeconds(oneScreenDaySeconds))
+print("One cell duration: %s" % formatSeconds(cellMoveMs/1000.0))
 
 if a.PROBE:
     sys.exit()
@@ -129,9 +131,32 @@ for i, c in enumerate(collections):
     collections[i]["nameFadeOutStart"] = collections[i]["locFadeOutStart"] + a.TEXT_FADE_DELAY
 collections = sorted(collections, key=lambda c: c["row"])
 
-# create samples
-# add index
-# create clips
+# determine relative powers per cell which will change the cell scale and volume over time
+minPower = 1.0 / cellsPerCollection
+for col in range(cellsPerCollection):
+    colPowers = [max(c["cells"][col]["npower"], minPower) for c in collections]
+    colPowerSum = sum(colPowers)
+    ny = 0
+    for j, c in enumerate(collections):
+        rnpower = 1.0 * colPowers[j] / colPowerSum
+        collections[j]["cells"][col]["nsize"] = rnpower
+        collections[j]["cells"][col]["ny"] = ny
+        ny += rnpower
+# collectionPowerToImg(collections, "output/global_lives_power.png", cellsPerCollection)
+# sys.exit()
+
+# create samples, clips
+samples = []
+for c in collections:
+    for cell in c["cells"]:
+        for s in cell["samples"]:
+            sample = s.copy()
+            sample["nsize"] = cell["nsize"]
+            sample["ny"] = cell["ny"]
+            sample["cellDur"] = cell["dur"]
+            samples.append(sample)
+samples = addIndices(samples)
+clips = samplesToClips(samples)
 
 # custom clip to numpy array function to override default tweening logic
 def clipToNpArrGL(clip, ms, containerW, containerH, precision, parent, globalArgs={}):
@@ -159,7 +184,13 @@ def clipToNpArrGL(clip, ms, containerW, containerH, precision, parent, globalArg
         h = cellH - a.CELL_MARGIN_Y * 2
         cellStartMs = clip.props["col"] * cellMoveMs + moveStartMs
         timeSinceStartMs = ms - cellStartMs
-        tn = 1.0 * (timeSinceStartMs % clip.props["dur"]) / clip.props["dur"]
+        # check to see if current clip is playing
+        cellMs = timeSinceStartMs % clip.props["cellDur"] # amount of time in cell
+        if clip.props["cellStart"] <= cellMs < clip.props["cellStart"] + clip.props["dur"]:
+            timeSinceStartMs -= clip.props["cellStart"]
+            tn = 1.0 * (timeSinceStartMs % clip.props["dur"]) / clip.props["dur"]
+        else:
+            x = y = w = h = tn = 0
 
     customProps = {
         "pos": [x, y],

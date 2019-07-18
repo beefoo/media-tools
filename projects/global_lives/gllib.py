@@ -3,7 +3,7 @@ import inspect
 from moviepy.editor import VideoFileClip
 import numpy as np
 import os
-from PIL import Image
+from PIL import Image, ImageDraw
 from pprint import pprint
 import sys
 
@@ -100,6 +100,7 @@ def addCellsToCollections(collections, videos, cellsPerCollection):
                         "filename": currentVideo["filename"],
                         "start": roundInt(currentVideoOffset * 1000),
                         "dur": int(durLeftInCell * 1000),
+                        "cellStart": cellDur
                     })
                     currentVideoOffset += durLeftInCell
                     cellDur += durLeftInCell
@@ -110,6 +111,7 @@ def addCellsToCollections(collections, videos, cellsPerCollection):
                         "filename": currentVideo["filename"],
                         "start": roundInt(currentVideoOffset * 1000),
                         "dur": int(durLeftInVideo * 1000),
+                        "cellStart": cellDur
                     })
                     currentVideoIndex += 1
                     currentVideoOffset = 0
@@ -127,6 +129,35 @@ def addCellsToCollections(collections, videos, cellsPerCollection):
             })
         collections[i]["cells"] = cCells
     return collections
+
+def collectionPowerToImg(collections, filename, cellsPerCollection):
+    cCount = len(collections)
+    rowH = 40
+    colW = 10
+    imgH = cCount * rowH
+    imgW = cellsPerCollection * colW
+    im = Image.new(mode="RGB", size=(imgW, imgH), color=(0, 0, 0))
+    draw = ImageDraw.Draw(im)
+
+    colors = [
+        (255, 0, 0),
+        (0, 255, 0),
+        (0, 0, 255),
+        (255, 0, 255),
+        (0, 255, 255)
+    ]
+    colorCount = len(colors)
+
+    for i, c in enumerate(collections):
+        color = colors[i % colorCount]
+        for j, cell in enumerate(c["cells"]):
+            x = j * colW
+            y = cell["ny"] * imgH
+            cellH = cell["nsize"] * imgH
+            draw.rectangle([x, y, x+colW, y+cellH], fill=color, outline=(0, 0, 0), width=1)
+
+    im.save(filename)
+    print("Saved %s" % filename)
 
 def collectionToImg(collections, filename, cellsPerCollection, imgH=1080, margin=1):
     cCount = len(collections)
