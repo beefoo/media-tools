@@ -25,7 +25,8 @@ from gllib import *
 parser = argparse.ArgumentParser()
 addVideoArgs(parser)
 parser.add_argument('-co', dest="COLLECTION_FILE", default="projects/global_lives/data/ia_globallives_collections.csv", help="Input collection csv file")
-parser.add_argument('-celld', dest="CELL_DURATION", default=3.0, type=float, help="Cell duration in minutes")
+parser.add_argument('-celldat', dest="CELL_FILE", default="projects/global_lives/data/ia_globallives_cells.csv", help="Input/output cell csv file")
+parser.add_argument('-celldur', dest="CELL_DURATION", default=3.0, type=float, help="Cell duration in minutes")
 parser.add_argument('-ppf', dest="PIXELS_PER_FRAME", default=1.0, type=float, help="Number of pixels to move per frame")
 parser.add_argument('-textfdur', dest="TEXT_FADE_DUR", default=1000, type=int, help="Duration text should fade in milliseconds")
 parser.add_argument('-textfdel', dest="TEXT_FADE_DELAY", default=500, type=int, help="Duration text should delay fade in milliseconds")
@@ -63,6 +64,9 @@ cellsPerCollection = roundInt(24.0 * 60.0 / a.CELL_DURATION)
 print("Cells per collection: %s" % cellsPerCollection)
 collections = addCellsToCollections(collections, videos, cellsPerCollection)
 # collectionToImg(collections, "output/global_lives.png", cellsPerCollection)
+
+makeDirectories(a.CELL_FILE)
+collections = addCellDataToCollections(collections, cellsPerCollection, a.CELL_FILE)
 
 # calculate cell size and composition size and duration
 cellH = int(1.0 * a.CLIP_AREA_HEIGHT / collectionCount)

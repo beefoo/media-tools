@@ -13,10 +13,63 @@ parentdir = os.path.dirname(currentdir)
 parentdir = os.path.dirname(parentdir)
 sys.path.insert(0,parentdir)
 
+from lib.audio_utils import *
 from lib.collection_utils import *
 from lib.math_utils import *
 from lib.processing_utils import *
 from lib.video_utils import *
+
+def addCellDataToCollections(collections, cellsPerCollection, cellFilename, updateData=False):
+    cells = []
+    cellFieldnames = []
+    cellsByCollection = None
+    cellDataLookup = None
+
+    if not updateData:
+        cellFieldnames, cells = readCsv(cellFilename)
+
+    cellFieldnames = unionLists(cellFieldnames, ["collection", "col", "power"])
+
+    if len(cells) > 1:
+        cellsByCollection = groupList(cells, "collection")
+
+    if cellsByCollection is not None and len(cellsByCollection) != len(collections):
+        print("Collection size mismatch: resetting cell data")
+        cellsByCollection = None
+
+    if cellsByCollection is not None:
+        cellDataLookup = createLookup(cellsByCollection, "collection")
+
+    dataUpdated = False
+    for i, c in enumerate(collections):
+        cdata = None
+        if cellDataLookup is not None:
+            cdata = cellDataLookup[c["id"]]
+            if len(cdata) != cellsPerCollection:
+                cdata = None
+            else:
+                cdata = sorted(cdata, key=lambda cell: cell["col"])
+        for j, cell in enumerate(c["cells"]):
+            if updateData or cdata is None:
+                cpower = getPowerFromSamples(cell["samples"])
+                collections[i]["cells"][j]["power"] = cpower
+                dataUpdated = True
+            else:
+                collections[i]["cells"][j]["power"] = cdata[j]["power"]
+        collections[i]["cells"] = addNormalizedValues(collections[i]["cells"], "power", "npower")
+
+    if updateData or dataUpdated:
+        cellData = []
+        for i, c in enumerate(collections):
+            for j, cell in enumerate(c["cells"]):
+                cellData.append({
+                    "collection": c["id"],
+                    "col": cell["col"],
+                    "power": cell["power"]
+                })
+        writeCsv(cellFilename, cellData, cellFieldnames)
+
+    return collections
 
 def addCellsToCollections(collections, videos, cellsPerCollection):
     for i, c in enumerate(collections):

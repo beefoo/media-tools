@@ -1,6 +1,7 @@
 import array
 import librosa
 import math
+from lib.collection_utils import *
 from lib.math_utils import *
 import numpy as np
 import os
@@ -241,20 +242,16 @@ def getFeatures(y, sr, start, dur=100, fft=2048, hop_length=512):
     # analyze just the sample
     y = getFrameRange(y, start, start+dur, sr)
 
-    stft = getStft(y, n_fft=fft, hop_length=hop_length)
+    power = getPower(y, fft=fft, hop_length=hop_length)
     hz, clarity, harmonics = getPitch(y, sr, fft=fft)
     # rolloff = librosa.feature.spectral_rolloff(y=y, sr=sr)[0]
     # flatness = librosa.feature.spectral_flatness(y=y)[0]
 
-    power = round(weightedMean(stft), 2)
     # flatness = round(weightedMean(flatness, weights=stft), 5)
     # hz = round(weightedMean(rolloff, weights=stft), 2)
     hz = round(hz, 2)
     clarity = round(clarity, 2)
     note = pitchToNote(hz)
-
-    if math.isinf(power):
-        power = -1
 
     # parse note
     octave = -1
@@ -384,7 +381,35 @@ def getPitch(y, sr, fft=2048):
 
     return pitch, clarity, harmonics
 
-def gePowerFromTimecodes(timecodes, method="max"):
+def getPower(y, fft=2048, hop_length=512):
+    stft = getStft(y, n_fft=fft, hop_length=hop_length)
+    power = round(weightedMean(stft), 2)
+    if math.isinf(power):
+        power = -1
+    return power
+
+def getPowerFromSamples(samples, fft=2048, hop_length=512):
+    filenames = groupList(samples, "filename")
+    powers = []
+    weights = []
+    for f in filenames:
+        fsamples = f["items"]
+        fn = getAudioFile(f["filename"])
+        y, sr = librosa.load(fn)
+        for s in fsamples:
+            sy = getFrameRange(y, s["start"], s["start"]+s["dur"], sr)
+            spower = getPower(sy, fft=fft, hop_length=hop_length)
+            powers.append(max(0, spower))
+            weights.append(s["dur"])
+    power = 0
+    if len(powers) == 1:
+        power = powers[0]
+    elif len(powers) > 2:
+        power = weightedMean(values, weights=weights)
+
+    return power
+
+def getPowerFromTimecodes(timecodes, method="max"):
     # add indices
     for i, t in enumerate(timecodes):
         if "index" not in t:
