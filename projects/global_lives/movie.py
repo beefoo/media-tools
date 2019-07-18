@@ -121,11 +121,12 @@ def clipToNpArrGL(clip, ms, containerW, containerH, precision, parent, globalArg
     global totalMoveMs
 
     x = y = w = h = tn = alpha = 0
+    frame = globalArgs["frame"]
 
     # determine position and size here
     if moveStartMs <= ms <= moveEndMs:
         nprogress = norm(ms, (moveStartMs, moveEndMs))
-        xOffset = -roundInt(nprogress * totalMoveMs)
+        xOffset = -roundInt((frame-1) * a.PIXELS_PER_FRAME)
 
     customProps = {
         "pos": [x, y],
