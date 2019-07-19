@@ -41,8 +41,9 @@ def addCellDataToCollections(collections, cellsPerCollection, cellFilename, upda
     if cellsByCollection is not None:
         cellDataLookup = createLookup(cellsByCollection, "collection")
         for i, c in enumerate(collections):
-            cdata = cellDataLookup[c["id"]]
+            cdata = cellDataLookup[c["id"]]["items"]
             if len(cdata) != cellsPerCollection:
+                print("Cell count mismatch in %s (%s != %s): resetting cell data" % (c["id"], len(cdata), cellsPerCollection))
                 cellsByCollection = None
                 break
             cdata = sorted(cdata, key=lambda cell: cell["col"])

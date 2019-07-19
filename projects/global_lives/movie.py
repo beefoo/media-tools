@@ -134,7 +134,7 @@ for i, c in enumerate(collections):
 collections = sorted(collections, key=lambda c: c["row"])
 
 # determine relative powers per cell which will change the cell scale and volume over time
-minPower = 1.0 / cellsPerCollection
+minPower = 1.0 / collectionCount
 cellWeights = []
 for col in range(cellsPerCollection):
     colPowers = [max(c["cells"][col]["npower"], minPower) for c in collections]
