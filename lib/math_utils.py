@@ -154,6 +154,11 @@ def getRandomColor(seed=None):
         c.append(random.randint(0, 255))
     return tuple(c)
 
+def getScaledValue(originalValue, scaleAmount, anchor):
+    distance = originalValue - anchor
+    sdistance = distance * scaleAmount
+    return (anchor + sdistance)
+
 def getValue(d, key, default):
     return d[key] if key in d else default
 

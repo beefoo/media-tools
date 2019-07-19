@@ -2,6 +2,7 @@
 
 import argparse
 import inspect
+import math
 import numpy as np
 import os
 from PIL import Image, ImageFont, ImageDraw
@@ -28,8 +29,8 @@ addVideoArgs(parser)
 parser.add_argument('-co', dest="COLLECTION_FILE", default="projects/global_lives/data/ia_globallives_collections.csv", help="Input collection csv file")
 parser.add_argument('-celldat', dest="CELL_FILE", default="projects/global_lives/data/ia_globallives_cells.csv", help="Input/output cell csv file")
 parser.add_argument('-celldur', dest="CELL_DURATION", default=3.0, type=float, help="Cell duration in minutes")
-parser.add_argument('-cellmx', dest="CELL_MARGIN_X", default=1, type=int, help="Cell x margin in pixels")
-parser.add_argument('-cellmy', dest="CELL_MARGIN_Y", default=2, type=int, help="Cell y margin in pixels")
+parser.add_argument('-cellmx', dest="CELL_MARGIN_X", default=2, type=int, help="Cell x margin in pixels")
+parser.add_argument('-cellmy', dest="CELL_MARGIN_Y", default=4, type=int, help="Cell y margin in pixels")
 parser.add_argument('-ppf', dest="PIXELS_PER_FRAME", default=1.0, type=float, help="Number of pixels to move per frame")
 parser.add_argument('-textfdur', dest="TEXT_FADE_DUR", default=3000, type=int, help="Duration text should fade in milliseconds")
 parser.add_argument('-textfdel', dest="TEXT_FADE_DELAY", default=300, type=int, help="Duration text should delay fade in milliseconds")
@@ -73,6 +74,7 @@ collections = addCellsToCollections(collections, videos, cellsPerCollection)
 # calculate cell size and composition size and duration
 cellH = int(1.0 * a.CLIP_AREA_HEIGHT / collectionCount)
 cellW = roundInt(cellH * a.CLIP_ASPECT_RATIO)
+print("Cell: %s x %s" % (cellW, cellH))
 totalW = cellW * cellsPerCollection
 totalXDelta = totalW + a.WIDTH
 print("%s total pixel movement" % formatNumber(totalXDelta))
@@ -129,12 +131,16 @@ collections = sorted(collections, key=lambda c: c["titleSort"])
 for i, c in enumerate(collections):
     collections[i]["locFadeInStart"] = textInStartMs + i * 2 * a.TEXT_FADE_DELAY
     collections[i]["nameFadeInStart"] = collections[i]["locFadeInStart"] + a.TEXT_FADE_DELAY
+    collections[i]["locFadeInOutStart"] = collections[i]["locFadeInStart"] + roundInt(oneScreenMs * 0.5)
+    collections[i]["nameFadeInOutStart"] = collections[i]["nameFadeInStart"] + roundInt(oneScreenMs * 0.5)
     collections[i]["locFadeOutStart"] = textOutStartMs + (collectionCount-1-i) * 2 * a.TEXT_FADE_DELAY
     collections[i]["nameFadeOutStart"] = collections[i]["locFadeOutStart"] + a.TEXT_FADE_DELAY
+    collections[i]["locFadeOutInStart"] = collections[i]["locFadeOutStart"] - roundInt(oneScreenMs * 0.5)
+    collections[i]["nameFadeOutInStart"] = collections[i]["nameFadeOutStart"] - roundInt(oneScreenMs * 0.5)
 collections = sorted(collections, key=lambda c: c["row"])
 
 # determine relative powers per cell which will change the cell scale and volume over time
-minPower = 1.0 / collectionCount
+minPower = 0.125 # make this number larger to make more even
 cellWeights = []
 for col in range(cellsPerCollection):
     colPowers = [max(c["cells"][col]["npower"], minPower) for c in collections]
@@ -162,6 +168,14 @@ for c in collections:
 samples = addIndices(samples)
 clips = samplesToClips(samples)
 
+# clip = clips[0]
+# print("%s, %s" % (clip.props["start"], clip.props["dur"]))
+# msPerFrame = frameToMs(1, a.FPS)
+# durStep = 1.0 * msPerFrame / clip.props["dur"]
+# for i in range(10):
+#     print(i * durStep)
+# sys.exit()
+
 def getCurrentWeights(ms):
     global a
     global moveStartMs
@@ -176,12 +190,10 @@ def getCurrentWeights(ms):
     equi = 1.0 / collectionCount
     w0 = [(equi, i*equi) for i in range(collectionCount)]
     w1 = w0[:]
+    nprogress = 0
 
     # lerp in the first entry
-    if moveStartMs <= ms < lerpStartMs:
-        w1 = cellWeights[0]
-        nprogress = norm(ms, (moveStartMs, lerpStartMs))
-    elif lerpStartMs <= ms < lerpEndMs:
+    if lerpStartMs <= ms <= lerpEndMs:
         lnprogress = norm(ms, (lerpStartMs, lerpEndMs))
         findex = lnprogress * wcount
         i0 = floorInt(findex)
@@ -189,10 +201,6 @@ def getCurrentWeights(ms):
         w0 = cellWeights[i0] if i0 < wcount else w0
         w1 = cellWeights[i1] if i1 < wcount else w1
         nprogress = findex - i0
-    # lerp out last entry
-    elif lerpEndMs <= ms < moveEndMs:
-        w0 = cellWeights[-1]
-        nprogress = norm(ms, (lerpEndMs, moveEndMs))
 
     # lerp the weights
     weights = []
@@ -221,19 +229,37 @@ def clipToNpArrGL(clip, ms, containerW, containerH, precision, parent, globalArg
 
     # determine position and size here
     if moveStartMs <= ms <= moveEndMs:
+        # get current weights based on audio levels
+        weights = getCurrentWeights(ms)
+        nsize, ny = weights[clip.props["row"]]
+
+        # get horizontal progress
         nprogress = norm(ms, (moveStartMs, moveEndMs))
         xOffset = -totalXDelta * nprogress
-        y = a.CLOCK_LABEL_HEIGHT + clip.props["row"] * cellH + a.CELL_MARGIN_Y
-        x = a.WIDTH + cellW * clip.props["col"] + a.CELL_MARGIN_X + xOffset
-        w = cellW - a.CELL_MARGIN_X * 2
-        h = cellH - a.CELL_MARGIN_Y * 2
+
+        # calculate size and position
+        y = a.CLOCK_LABEL_HEIGHT + ny * a.CLIP_AREA_HEIGHT + a.CELL_MARGIN_Y
+        # scale the clip row
+        sCellH = nsize * a.CLIP_AREA_HEIGHT
+        sCellW = max(cellW, sCellH * a.CLIP_ASPECT_RATIO)
+        h = sCellH - a.CELL_MARGIN_Y * 2
+        w = sCellW - a.CELL_MARGIN_X * 2
+
+        # scale the row around center anchor
+        anchorX = a.WIDTH * 0.5
+        scaleX = 1.0 * sCellW / cellW
+        newLeftX = getScaledValue(a.WIDTH + xOffset, scaleX, anchorX)
+        x = newLeftX + sCellW * clip.props["col"] + a.CELL_MARGIN_X
+
+        # determine clip time
         cellStartMs = clip.props["col"] * cellMoveMs + moveStartMs
         timeSinceStartMs = ms - cellStartMs
         # check to see if current clip is playing
-        cellMs = timeSinceStartMs % clip.props["cellDur"] # amount of time in cell
+        cellMs = 1.0 * timeSinceStartMs % clip.props["cellDur"] # amount of time in cell
         if clip.props["cellStart"] <= cellMs < clip.props["cellStart"] + clip.props["dur"]:
             timeSinceStartMs -= clip.props["cellStart"]
             tn = 1.0 * (timeSinceStartMs % clip.props["dur"]) / clip.props["dur"]
+            # tn = timeSinceStartMs % clip.props["dur"]
         else:
             x = y = w = h = tn = 0
 
@@ -258,6 +284,18 @@ def clipToNpArrGL(clip, ms, containerW, containerH, precision, parent, globalArg
         roundInt(props["brightness"] * precisionMultiplier)
     ], dtype=np.int32)
 
+def getTextAlpha(ms, c, prefix, fadeDur):
+    alpha = 0
+    if c["%sFadeInStart" % prefix] <= ms < c["%sFadeInOutStart" % prefix]:
+        alpha = norm(ms, (c["%sFadeInStart" % prefix], c["%sFadeInStart" % prefix]+fadeDur), limit=True)
+    elif c["%sFadeInOutStart" % prefix] <= ms < (c["%sFadeInOutStart" % prefix]+fadeDur):
+        alpha = 1.0 - norm(ms, (c["%sFadeInOutStart" % prefix], c["%sFadeInOutStart" % prefix]+fadeDur), limit=True)
+    elif c["%sFadeOutInStart" % prefix] <= ms < c["%sFadeOutStart" % prefix]:
+        alpha = norm(ms, (c["%sFadeOutInStart" % prefix], c["%sFadeOutInStart" % prefix]+fadeDur), limit=True)
+    elif c["%sFadeOutStart" % prefix] <= ms < (c["%sFadeOutStart" % prefix]+fadeDur):
+        alpha = 1.0 - norm(ms, (c["%sFadeOutStart" % prefix], c["%sFadeOutStart" % prefix]+fadeDur), limit=True)
+    return alpha
+
 def preProcessGL(im, ms, globalArgs={}):
     global a
     global textInStartMs
@@ -276,6 +314,8 @@ def preProcessGL(im, ms, globalArgs={}):
     # draw.rectangle([0, 0, a.WIDTH, a.CLOCK_LABEL_HEIGHT], fill="#0000FF")
     # draw.rectangle([0, a.HEIGHT-a.CLOCK_LABEL_HEIGHT, a.WIDTH, a.HEIGHT], fill="#00FF00")
 
+    weights = getCurrentWeights(ms)
+
     # render collection text in the beginning and end
     isTextIn = textInStartMs <= ms <= textInEndVisibleMs
     isTextOut = textOutStartVisibleMs <= ms <= textOutEndMs
@@ -288,10 +328,12 @@ def preProcessGL(im, ms, globalArgs={}):
         for i, c in enumerate(collections):
             # if i % 2 > 0:
             #     draw.rectangle([0, y0 + i * cellH, a.WIDTH, y0 + (i+1) * cellH], fill="#0000FF")
-            alpha = norm(ms, (c["locFadeInStart"], c["locFadeInStart"]+a.TEXT_FADE_DUR), limit=True) if isTextIn else 1.0-norm(ms, (c["locFadeOutStart"], c["locFadeOutStart"]+a.TEXT_FADE_DUR), limit=True)
+            nsize, ny = weights[i]
+            alpha = getTextAlpha(ms, c, "loc", a.TEXT_FADE_DUR)
+            sCellH = nsize * a.CLIP_AREA_HEIGHT
             labelW, labelH = collectionFont.getsize(c["locLabel"] + c["name"])
-            textOffsetY = roundInt((cellH - labelH) * 0.33)
-            ty = y0 + i * cellH + textOffsetY
+            textOffsetY = roundInt((sCellH - labelH) * 0.33)
+            ty = y0 + ny * a.CLIP_AREA_HEIGHT + textOffsetY
             if alpha > 0.0:
                 alpha = ease(alpha)
                 tx = cx - textMargin
@@ -300,7 +342,7 @@ def preProcessGL(im, ms, globalArgs={}):
                     tx -= chw
                     draw.text((tx, ty), char, font=collectionFont, fill=tuple([roundInt(v*alpha) for v in textColor]))
                     tx -= lsw
-            alpha = norm(ms, (c["nameFadeInStart"], c["nameFadeInStart"]+a.TEXT_FADE_DUR), limit=True) if isTextIn else 1.0-norm(ms, (c["nameFadeOutStart"], c["nameFadeOutStart"]+a.TEXT_FADE_DUR), limit=True)
+            alpha = getTextAlpha(ms, c, "name", a.TEXT_FADE_DUR)
             if alpha > 0.0:
                 alpha = ease(alpha)
                 tx = cx + textMargin
@@ -327,6 +369,13 @@ def preProcessGL(im, ms, globalArgs={}):
     lsw = clockTextProps["letterSpacing"]
     ty = 0
     ty1 = a.HEIGHT - a.CLOCK_LABEL_HEIGHT
+    nsizeTop, _ = weights[0]
+    nsizeBottom, _ = weights[-1]
+    sCellWTop = max(cellW, nsizeTop * a.CLIP_AREA_HEIGHT * a.CLIP_ASPECT_RATIO)
+    sCellWBottom = max(cellW, nsizeBottom * a.CLIP_AREA_HEIGHT * a.CLIP_ASPECT_RATIO)
+    scaleTop = 1.0 * sCellWTop / cellW
+    scaleBottom = 1.0 * sCellWBottom / cellW
+    anchorX = a.WIDTH * 0.5
     for i in range(tSteps):
         minute = 1.0 * (i + tStart)
         day = 24.0 * 60.0
@@ -338,20 +387,26 @@ def preProcessGL(im, ms, globalArgs={}):
             elif minute == noon:
                 label = "NOON"
             cx = norm(minute, (tLeft, tRight)) * a.WIDTH
+            cxTop = getScaledValue(cx, scaleTop, anchorX)
+            cxBottom = getScaledValue(cx, scaleBottom, anchorX)
             chars = list(label)
             labelW, labelH = clockFont.getsize(label)
             labelW += lsw * (len(chars)-1)
-            tx = cx - labelW * 0.5
+            txTop = cxTop - labelW * 0.5
+            txBottom = cxBottom - labelW * 0.5
             clockTextOffsetY = roundInt((a.CLOCK_LABEL_HEIGHT - labelH) * 0.33)
             for char in chars:
-                draw.text((tx, ty+clockTextOffsetY), char, font=clockFont, fill=a.TEXT_COLOR)
-                draw.text((tx, ty1+clockTextOffsetY), char, font=clockFont, fill=a.TEXT_COLOR)
+                draw.text((txTop, ty+clockTextOffsetY), char, font=clockFont, fill=a.TEXT_COLOR)
+                draw.text((txBottom, ty1+clockTextOffsetY), char, font=clockFont, fill=a.TEXT_COLOR)
                 chw, chh = clockFont.getsize(char)
-                tx += chw + lsw
+                txTop += chw + lsw
+                txBottom += chw + lsw
 
     return im
 
+# durationMs = textInEndMs
 durationMs = textInEndVisibleMs
+# durationMs = textInEndVisibleMs + oneScreenMs * 2
 # totalFrames = msToFrame(durationMs, a.FPS)
 # outframefile = "tmp/global_lives_text_test_frames/frame.%s.png"
 # makeDirectories(outframefile)

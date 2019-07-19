@@ -108,8 +108,7 @@ def addCellsToCollections(collections, videos, cellsPerCollection):
                     cellSamples.append({
                         "filename": currentVideo["filename"],
                         "start": roundInt(currentVideoOffset * 1000),
-                        "dur": int(durLeftInCell * 1000),
-                        "cellStart": cellDur
+                        "dur": int(durLeftInCell * 1000)
                     })
                     currentVideoOffset += durLeftInCell
                     cellDur += durLeftInCell
@@ -119,23 +118,25 @@ def addCellsToCollections(collections, videos, cellsPerCollection):
                     cellSamples.append({
                         "filename": currentVideo["filename"],
                         "start": roundInt(currentVideoOffset * 1000),
-                        "dur": int(durLeftInVideo * 1000),
-                        "cellStart": cellDur
+                        "dur": int(durLeftInVideo * 1000)
                     })
                     currentVideoIndex += 1
                     currentVideoOffset = 0
                     cellDur += durLeftInVideo
             if cellDur < durPerCell * 0.9:
                 print("   Warning: Cell %s of %s is too small (%s)" % (j+1, cellsPerCollection, formatSeconds(cellDur)))
+            cellStart = 0
             for k, cs in enumerate(cellSamples):
                 cellSamples[k]["index"] = k
                 cellSamples[k]["row"] = c["row"]
                 cellSamples[k]["col"] = j
+                cellSamples[k]["cellStart"] = cellStart
+                cellStart += cs["dur"]
             cCells.append({
                 "row": c["row"],
                 "col": j,
                 "samples": cellSamples,
-                "dur": sum([cs["dur"] for cs in cellSamples])
+                "dur": cellStart
             })
         collections[i]["cells"] = cCells
     return collections

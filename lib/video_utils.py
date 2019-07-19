@@ -13,7 +13,7 @@ from multiprocessing import Pool
 from multiprocessing.dummy import Pool as ThreadPool
 import numpy as np
 import os
-from PIL import Image, ImageFilter
+from PIL import Image, ImageDraw, ImageFilter
 from pprint import pprint
 import subprocess
 import sys
@@ -111,21 +111,12 @@ def clipsToFrame(p, clips, pixelData, precision=3, customClipToArrFunction=None,
     clipArr = None
     returnValue = None
 
+    globalArgsCopy = globalArgs.copy()
+    globalArgsCopy["frame"] = frame
+    globalArgsCopy["debug"] = debug
+
     if not fileExists and saveFrame or not saveFrame or isSequential:
-        globalArgsCopy = globalArgs.copy()
-        globalArgsCopy["frame"] = frame
         clipArr = clipsToNpArr(clips, ms, width, height, precision, customClipToArrFunction=customClipToArrFunction, globalArgs=globalArgsCopy)
-        # Clip debug:
-    #     pprint(clips[8124].props)
-    #     clipArr = clipsToNpArr(clips, ms, width, height, precision, customClipToArrFunction=customClipToArrFunction, globalArgs=globalArgs)
-    #     print("---")
-    #     pprint(clipArr[8124])
-    # sys.exit()
-        # Time debug:
-        # debugFilename = "tmp/debug.%s.%s.txt" % (os.path.basename(filename), ms)
-        # debugArr = clipArr[:,5].astype(int)
-        # np.savetxt(debugFilename, debugArr, fmt='%i')
-    # sys.exit()
 
     # frame does not exist, create frame image
     if not fileExists:
@@ -133,7 +124,7 @@ def clipsToFrame(p, clips, pixelData, precision=3, customClipToArrFunction=None,
         if preProcessingFunction is not None:
             baseImage = preProcessingFunction(baseImage, ms, globalArgs=globalArgs)
         if pixelData is None:
-            im = clipsToFramePIL(clips, clipArr, width, height, precision, baseImage=baseImage, globalArgs=globalArgs)
+            im = clipsToFramePIL(clips, clipArr, width, height, precision, baseImage=baseImage, globalArgs=globalArgsCopy)
         else:
             im = clipsToFrameGPU(clipArr, width, height, pixelData, precision, baseImage=baseImage, gpuProgram=gpuProgram, globalArgs=globalArgs)
         im = im.convert("RGB")
@@ -164,7 +155,7 @@ def clipsToFrame(p, clips, pixelData, precision=3, customClipToArrFunction=None,
     return returnValue
 
 def clipsToFramePIL(clips, clipArrs, width, height, precision=3, baseImage=None, globalArgs={}):
-    c = getValue(globalArgs, "colors", 3)
+    debug = getValue(globalArgs, "debug", False)
     precisionMultiplier = int(10 ** precision)
 
     validClips = []
@@ -173,28 +164,40 @@ def clipsToFramePIL(clips, clipArrs, width, height, precision=3, baseImage=None,
         # only take clips that are visible
         if clip["width"] > 0.0 and clip["height"] > 0.0 and clip["alpha"] > 0.0:
             clip["filename"] = clips[i].props["filename"]
-            clip["t"] = clips[i].props["start"] + int(clips[i].props["dur"] * clip["tn"])
+            clip["t"] = clips[i].props["start"] + clips[i].props["dur"] * clip["tn"]
+            # clip["t"] = clips[i].props["start"] + clip["tn"]
             validClips.append(clip)
 
     if baseImage is None:
         baseImage = Image.new(mode="RGB", size=(width, height), color=(0, 0, 0))
     baseImage = baseImage.convert("RGBA")
 
-    filenames = groupList(validClips, "filename")
-    for i, f in enumerate(filenames):
-        video = VideoFileClip(f["filename"], audio=False)
-        videoDur = video.duration
-        fclips = f["items"]
-        for fclip in fclips:
-            clipImg = getVideoClipImage(video, videoDur, fclip)
-            clipImg = clipImg.convert("RGBA")
-            if fclip["alpha"] < 1.0:
-                clipImg.putalpha(round(fclip["alpha"]*255))
-            x = fclip["x"]
-            y = fclip["y"]
-            baseImage = pasteImage(baseImage, clipImg, x, y)
-        video.reader.close()
-        del video
+    if debug:
+        draw = ImageDraw.Draw(baseImage)
+        for clip in validClips:
+            x = clip["x"]
+            y = clip["y"]
+            w = clip["width"]
+            h = clip["height"]
+            c = roundInt(clip["alpha"] * 255)
+            color = (c, c, c)
+            draw.rectangle([x, y, x+w, y+h], fill=color)
+    else:
+        filenames = groupList(validClips, "filename")
+        for i, f in enumerate(filenames):
+            video = VideoFileClip(f["filename"], audio=False)
+            videoDur = video.duration
+            fclips = f["items"]
+            for fclip in fclips:
+                clipImg = getVideoClipImage(video, videoDur, fclip)
+                clipImg = clipImg.convert("RGBA")
+                if fclip["alpha"] < 1.0:
+                    clipImg.putalpha(round(fclip["alpha"]*255))
+                x = fclip["x"]
+                y = fclip["y"]
+                baseImage = pasteImage(baseImage, clipImg, x, y)
+            video.reader.close()
+            del video
 
     return baseImage
 
