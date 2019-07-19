@@ -133,15 +133,19 @@ collections = sorted(collections, key=lambda c: c["row"])
 
 # determine relative powers per cell which will change the cell scale and volume over time
 minPower = 1.0 / cellsPerCollection
+cellWeights = []
 for col in range(cellsPerCollection):
     colPowers = [max(c["cells"][col]["npower"], minPower) for c in collections]
     colPowerSum = sum(colPowers)
     ny = 0
+    cellWeight = []
     for j, c in enumerate(collections):
         rnpower = 1.0 * colPowers[j] / colPowerSum
         collections[j]["cells"][col]["nsize"] = rnpower
         collections[j]["cells"][col]["ny"] = ny
+        cellWeight.append((rnpower, ny))
         ny += rnpower
+    cellWeights.append(cellWeight)
 # collectionPowerToImg(collections, "output/global_lives_power.png", cellsPerCollection)
 # sys.exit()
 
@@ -151,8 +155,6 @@ for c in collections:
     for cell in c["cells"]:
         for s in cell["samples"]:
             sample = s.copy()
-            sample["nsize"] = cell["nsize"]
-            sample["ny"] = cell["ny"]
             sample["cellDur"] = cell["dur"]
             samples.append(sample)
 samples = addIndices(samples)
@@ -170,6 +172,7 @@ def clipToNpArrGL(clip, ms, containerW, containerH, precision, parent, globalArg
     global cellH
     global cellW
     global cellMoveMs
+    global cellWeights
 
     x = y = w = h = tn = 0
     alpha = 1.0
