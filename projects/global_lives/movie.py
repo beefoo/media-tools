@@ -94,12 +94,14 @@ oneScreenDaySeconds = (1.0 * a.WIDTH / totalW) * (24 * 3600)
 oneScreenDayMinutes = oneScreenDaySeconds / 60.0
 print("One screen footage duration: %s" % formatSeconds(oneScreenDaySeconds))
 print("One cell duration: %s" % formatSeconds(cellMoveMs/1000.0))
+totalWidthMoveMs = totalMoveMs - oneScreenMs
 
 if a.PROBE:
     sys.exit()
 
+makeDirectories([a.OUTPUT_FRAME, a.OUTPUT_FILE, a.CELL_FILE])
+
 # Add audio analysis to cells
-makeDirectories(a.CELL_FILE)
 collections = addCellDataToCollections(collections, cellsPerCollection, a.CELL_FILE)
 
 # Calculations for text timing
@@ -160,6 +162,47 @@ for c in collections:
 samples = addIndices(samples)
 clips = samplesToClips(samples)
 
+def getCurrentWeights(ms):
+    global a
+    global moveStartMs
+    global moveEndMs
+    global cellWeights
+    global collectionCount
+    global totalWidthMoveMs
+
+    wcount = len(cellWeights)
+    lerpStartMs = moveStartMs + oneScreenMs * 0.5
+    lerpEndMs = lerpStartMs + totalWidthMoveMs
+    equi = 1.0 / collectionCount
+    w0 = [(equi, i*equi) for i in range(collectionCount)]
+    w1 = w0[:]
+
+    # lerp in the first entry
+    if moveStartMs <= ms < lerpStartMs:
+        w1 = cellWeights[0]
+        nprogress = norm(ms, (moveStartMs, lerpStartMs))
+    elif lerpStartMs <= ms < lerpEndMs:
+        lnprogress = norm(ms, (lerpStartMs, lerpEndMs))
+        findex = lnprogress * wcount
+        i0 = floorInt(findex)
+        i1 = ceilInt(findex)
+        w0 = cellWeights[i0] if i0 < wcount else w0
+        w1 = cellWeights[i1] if i1 < wcount else w1
+        nprogress = findex - i0
+    # lerp out last entry
+    elif lerpEndMs <= ms < moveEndMs:
+        w0 = cellWeights[-1]
+        nprogress = norm(ms, (lerpEndMs, moveEndMs))
+
+    # lerp the weights
+    weights = []
+    nprogress = ease(nprogress)
+    for i in range(collectionCount):
+        nsize = lerp((w0[i][0], w1[i][0]), nprogress)
+        ny = lerp((w0[i][1], w1[i][1]), nprogress)
+        weights.append((nsize, ny))
+    return weights
+
 # custom clip to numpy array function to override default tweening logic
 def clipToNpArrGL(clip, ms, containerW, containerH, precision, parent, globalArgs={}):
     global a
@@ -172,7 +215,6 @@ def clipToNpArrGL(clip, ms, containerW, containerH, precision, parent, globalArg
     global cellH
     global cellW
     global cellMoveMs
-    global cellWeights
 
     x = y = w = h = tn = 0
     alpha = 1.0
@@ -309,7 +351,7 @@ def preProcessGL(im, ms, globalArgs={}):
 
     return im
 
-# durationMs = textInEndVisibleMs
+durationMs = textInEndVisibleMs
 # totalFrames = msToFrame(durationMs, a.FPS)
 # outframefile = "tmp/global_lives_text_test_frames/frame.%s.png"
 # makeDirectories(outframefile)
@@ -325,4 +367,4 @@ def preProcessGL(im, ms, globalArgs={}):
 # testIm = preProcessGL(None, roundInt(textInEndVisibleMs - oneScreenMs*0.5))
 # testIm.save("output/global_lives_text_test.png")
 
-# processComposition(a, clips, durationMs, stepTime=stepTime, startTime=startTime, customClipToArrFunction=clipToNpArrGL, preProcessingFunction=preProcessGL, renderOnTheFly=True)
+processComposition(a, clips, durationMs, stepTime=stepTime, startTime=startTime, customClipToArrFunction=clipToNpArrGL, preProcessingFunction=preProcessGL, renderOnTheFly=True)
