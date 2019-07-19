@@ -24,6 +24,7 @@ def addCellDataToCollections(collections, cellsPerCollection, cellFilename, upda
     cellFieldnames = []
     cellsByCollection = None
     cellDataLookup = None
+    cCount = len(collections)
 
     if not updateData:
         cellFieldnames, cells = readCsv(cellFilename)
@@ -33,32 +34,35 @@ def addCellDataToCollections(collections, cellsPerCollection, cellFilename, upda
     if len(cells) > 1:
         cellsByCollection = groupList(cells, "collection")
 
-    if cellsByCollection is not None and len(cellsByCollection) != len(collections):
+    if cellsByCollection is not None and len(cellsByCollection) != cCount:
         print("Collection size mismatch: resetting cell data")
         cellsByCollection = None
 
     if cellsByCollection is not None:
         cellDataLookup = createLookup(cellsByCollection, "collection")
-
-    dataUpdated = False
-    for i, c in enumerate(collections):
-        cdata = None
-        if cellDataLookup is not None:
+        for i, c in enumerate(collections):
             cdata = cellDataLookup[c["id"]]
             if len(cdata) != cellsPerCollection:
-                cdata = None
-            else:
-                cdata = sorted(cdata, key=lambda cell: cell["col"])
-        for j, cell in enumerate(c["cells"]):
-            if updateData or cdata is None:
-                cpower = getPowerFromSamples(cell["samples"])
-                collections[i]["cells"][j]["power"] = cpower
-                dataUpdated = True
-            else:
+                cellsByCollection = None
+                break
+            cdata = sorted(cdata, key=lambda cell: cell["col"])
+            for j, cell in enumerate(c["cells"]):
                 collections[i]["cells"][j]["power"] = cdata[j]["power"]
-        collections[i]["cells"] = addNormalizedValues(collections[i]["cells"], "power", "npower")
 
-    if updateData or dataUpdated:
+    if cellsByCollection is None or updateData:
+        for i, c in enumerate(collections):
+            print("Collection %s processing..." % (i+1))
+            samples = flattenList([cell["samples"] for cell in c["cells"]])
+            samples = getPowerFromSamples(samples)
+            for s in samples:
+                collections[i]["cells"][s["col"]]["samples"][s["index"]]["power"] = s["power"]
+            for j, cell in enumerate(collections[i]["cells"]):
+                values = [s["power"] for s in cell["samples"]]
+                weights = [s["dur"] for s in cell["samples"]]
+                cpower = weightedMean(values, weights=weights)
+                collections[i]["cells"][j]["power"] = cpower
+            printProgress(i+1, cCount)
+
         cellData = []
         for i, c in enumerate(collections):
             for j, cell in enumerate(c["cells"]):
@@ -68,6 +72,10 @@ def addCellDataToCollections(collections, cellsPerCollection, cellFilename, upda
                     "power": cell["power"]
                 })
         writeCsv(cellFilename, cellData, cellFieldnames)
+
+    # add normalized power
+    for i, c in enumerate(collections):
+        collections[i]["cells"] = addNormalizedValues(collections[i]["cells"], "power", "npower")
 
     return collections
 
@@ -119,6 +127,7 @@ def addCellsToCollections(collections, videos, cellsPerCollection):
             if cellDur < durPerCell * 0.9:
                 print("   Warning: Cell %s of %s is too small (%s)" % (j+1, cellsPerCollection, formatSeconds(cellDur)))
             for k, cs in enumerate(cellSamples):
+                cellSamples[k]["index"] = k
                 cellSamples[k]["row"] = c["row"]
                 cellSamples[k]["col"] = j
             cCells.append({

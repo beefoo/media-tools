@@ -56,6 +56,9 @@ def filterWhere(arr, filters):
 
     return arr
 
+def flattenList(arr):
+    return [item for sublist in arr for item in sublist]
+
 def getCounts(arr, key):
     counter = collections.Counter([v[key] for v in arr])
     return counter.most_common()

@@ -14,7 +14,7 @@ def printCommand(command):
                 pcommand[i] = '"'+p+'"'
     print(" ".join(pcommand))
 
-def printProgress(step, total):
+def printProgress(step, total, prepend=""):
     sys.stdout.write('\r')
-    sys.stdout.write("%s%%" % round(1.0*step/total*100,2))
+    sys.stdout.write("%s%s%%" % (prepend, round(1.0*step/total*100,2)))
     sys.stdout.flush()

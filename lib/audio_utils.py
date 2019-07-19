@@ -3,6 +3,7 @@ import librosa
 import math
 from lib.collection_utils import *
 from lib.math_utils import *
+from lib.processing_utils import *
 import numpy as np
 import os
 from pprint import pprint
@@ -389,25 +390,21 @@ def getPower(y, fft=2048, hop_length=512):
     return power
 
 def getPowerFromSamples(samples, fft=2048, hop_length=512):
+    samples = addIndices(samples, "_i")
     filenames = groupList(samples, "filename")
-    powers = []
-    weights = []
-    for f in filenames:
+    filecount = len(filenames)
+    for i, f in enumerate(filenames):
         fsamples = f["items"]
         fn = getAudioFile(f["filename"])
+        print("  Reading %s..." % fn)
         y, sr = librosa.load(fn)
+        print("  Getting %s samples from %s" % (len(fsamples), fn))
         for s in fsamples:
             sy = getFrameRange(y, s["start"], s["start"]+s["dur"], sr)
             spower = getPower(sy, fft=fft, hop_length=hop_length)
-            powers.append(max(0, spower))
-            weights.append(s["dur"])
-    power = 0
-    if len(powers) == 1:
-        power = powers[0]
-    elif len(powers) > 2:
-        power = weightedMean(values, weights=weights)
-
-    return power
+            samples[s["_i"]]["power"] = spower
+        printProgress(i+1, filecount, "  ")
+    return samples
 
 def getPowerFromTimecodes(timecodes, method="max"):
     # add indices
