@@ -259,10 +259,10 @@ def processComposition(a, clips, videoDurationMs, sampler=None, stepTime=False, 
     audioDurationMs = getAudioSequenceDuration(audioSequence)
     durationMs = max(videoDurationMs, audioDurationMs) + a.PAD_END
 
-    if excerpted:
-        videoDurationMs = excerptDurMs
-        audioDurationMs = excerptDurMs
-        durationMs = excerptDurMs + a.PAD_END
+    # if excerpted:
+    #     videoDurationMs = excerptDurMs
+    #     audioDurationMs = excerptDurMs
+    #     durationMs = excerptDurMs + a.PAD_END
 
     print("Video time: %s" % formatSeconds(videoDurationMs/1000.0))
     print("Audio time: %s" % formatSeconds(audioDurationMs/1000.0))

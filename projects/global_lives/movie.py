@@ -51,6 +51,7 @@ aa = vars(a)
 aa["CLOCK_LABEL_HEIGHT"] = roundInt(a.CLOCK_LABEL_HEIGHT * a.HEIGHT)
 aa["CLIP_AREA_HEIGHT"] = a.HEIGHT - a.CLOCK_LABEL_HEIGHT * 2
 aa["CLIP_ASPECT_RATIO"] = 1.0 * a.WIDTH / a.CLIP_AREA_HEIGHT
+aa["PRECISION"] = 6
 
 startTime = logTime()
 stepTime = startTime
@@ -168,6 +169,8 @@ for c in collections:
 samples = addIndices(samples)
 clips = samplesToClips(samples)
 
+# pprint(samples[0])
+# sys.exit()
 # clip = clips[0]
 # print("%s, %s" % (clip.props["start"], clip.props["dur"]))
 # msPerFrame = frameToMs(1, a.FPS)
