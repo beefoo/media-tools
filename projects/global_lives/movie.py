@@ -42,6 +42,7 @@ parser.add_argument('-fdir', dest="FONT_DIR", default="media/fonts/Open_Sans/", 
 parser.add_argument('-cotext', dest="COLLECTION_TEXT_PROPS", default="font=OpenSans-Light.ttf&size=36&letterSpacing=2", help="Text styles for collection labels (font, size, letter-width)")
 parser.add_argument('-cltext', dest="CLOCK_TEXT_PROPS", default="font=OpenSans-Bold.ttf&size=24&letterSpacing=2", help="Text styles for clock labels (font, size, letter-width)")
 parser.add_argument('-color', dest="TEXT_COLOR", default="#FFFFFF", help="Color of font")
+parser.add_argument('-ccolor', dest="CLOCK_TEXT_COLOR", default="#DDDDDD", help="Color of font")
 parser.add_argument('-talign', dest="TEXT_ALIGN", default="center", help="Default text align")
 parser.add_argument('-clock', dest="CLOCK_INTERVAL", default=15.0, type=float, help="How often to display clock in minutes")
 
@@ -169,6 +170,37 @@ for c in collections:
 samples = addIndices(samples)
 clips = samplesToClips(samples)
 
+# Create clock cells
+clockCellCount = roundInt(24.0 * 60 / a.CLOCK_INTERVAL)
+clockCellW = 1.0 * totalW / clockCellCount
+clockCells = []
+noon = 12.0 * 60.0
+for i in range(clockCellCount):
+    minute = i * a.CLOCK_INTERVAL
+    clabel = formatClockTime(minute*60)
+    if i == 0:
+        clabel = "MIDNIGHT"
+    elif minute == noon:
+        clabel = "NOON"
+
+    chars = list(clabel)
+    _, labelH = clockFont.getsize(clabel)
+    labelW = 0
+    labelChars = []
+    for char in chars:
+        chw, chh = clockFont.getsize(char)
+        labelChars.append((char, chw))
+        labelW += chw + clockTextProps["letterSpacing"]
+    labelW -= clockTextProps["letterSpacing"]
+
+    clockCells.append({
+        "col": i,
+        "label": clabel,
+        "labelW": labelW,
+        "labelH": labelH,
+        "labelChars": labelChars
+    })
+
 # pprint(samples[0])
 # sys.exit()
 # clip = clips[0]
@@ -218,6 +250,39 @@ def getCurrentWeights(ms):
         weights.append((nsize, ny))
     return weights
 
+def getCellPositionAndSize(ms, row, col, myCellW="auto", margin=0):
+    global a
+    global clipW
+    global moveStartMs
+    global moveEndMs
+    global totalXDelta
+
+    # get row weights at time
+    weights = getCurrentWeights(ms)
+    nsize, ny = weights[row]
+
+    # get horizontal progress
+    nprogress = norm(ms, (moveStartMs, moveEndMs))
+    xOffset = -totalXDelta * nprogress
+
+    # determine clip scale since we limit how small the clip can shrink to
+    sCellH = nsize * a.CLIP_AREA_HEIGHT
+    sCellW = max(cellW, sCellH * a.CLIP_ASPECT_RATIO)
+
+    # calculate size and position
+    y = a.CLOCK_LABEL_HEIGHT + ny * a.CLIP_AREA_HEIGHT + a.CELL_MARGIN_Y
+    h = sCellH - a.CELL_MARGIN_Y * 2
+
+    # scale the row around center anchor
+    anchorX = a.WIDTH * 0.5
+    scaleX = 1.0 * sCellW / cellW
+    newLeftX = getScaledValue(a.WIDTH + xOffset, scaleX, anchorX)
+    newCellW = sCellW if myCellW == "auto" else myCellW * scaleX
+    x = newLeftX + newCellW * col + margin
+    w = newCellW - margin * 2
+
+    return (x, y, w, h)
+
 # custom clip to numpy array function to override default tweening logic
 def clipToNpArrGL(clip, ms, containerW, containerH, precision, parent, globalArgs={}):
     global a
@@ -236,27 +301,7 @@ def clipToNpArrGL(clip, ms, containerW, containerH, precision, parent, globalArg
 
     # determine position and size here
     if moveStartMs <= ms <= moveEndMs:
-        # get current weights based on audio levels
-        weights = getCurrentWeights(ms)
-        nsize, ny = weights[clip.props["row"]]
-
-        # get horizontal progress
-        nprogress = norm(ms, (moveStartMs, moveEndMs))
-        xOffset = -totalXDelta * nprogress
-
-        # calculate size and position
-        y = a.CLOCK_LABEL_HEIGHT + ny * a.CLIP_AREA_HEIGHT + a.CELL_MARGIN_Y
-        # scale the clip row
-        sCellH = nsize * a.CLIP_AREA_HEIGHT
-        sCellW = max(cellW, sCellH * a.CLIP_ASPECT_RATIO)
-        h = sCellH - a.CELL_MARGIN_Y * 2
-        w = sCellW - a.CELL_MARGIN_X * 2
-
-        # scale the row around center anchor
-        anchorX = a.WIDTH * 0.5
-        scaleX = 1.0 * sCellW / cellW
-        newLeftX = getScaledValue(a.WIDTH + xOffset, scaleX, anchorX)
-        x = newLeftX + sCellW * clip.props["col"] + a.CELL_MARGIN_X
+        x, y, w, h = getCellPositionAndSize(ms, clip.props["row"], clip.props["col"], margin=a.CELL_MARGIN_X)
 
         # determine clip time
         cellStartMs = clip.props["col"] * cellMoveMs + moveStartMs
@@ -302,6 +347,20 @@ def getTextAlpha(ms, c, prefix, fadeDur):
     elif c["%sFadeOutStart" % prefix] <= ms < (c["%sFadeOutStart" % prefix]+fadeDur):
         alpha = 1.0 - norm(ms, (c["%sFadeOutStart" % prefix], c["%sFadeOutStart" % prefix]+fadeDur), limit=True)
     return alpha
+
+def drawClockTime(draw, cc, x, y, pad=2):
+    global a
+    global clockFont
+    global clockTextProps
+
+    if -(cc["labelW"] + pad) <= x <= a.WIDTH + cc["labelW"] + pad:
+        lsw = clockTextProps["letterSpacing"]
+        tx = x - cc["labelW"] * 0.5
+        clockTextOffsetY = roundInt((a.CLOCK_LABEL_HEIGHT - cc["labelH"]) * 0.33)
+        ty = y + clockTextOffsetY
+        for char, charW in cc["labelChars"]:
+            draw.text((tx, ty), char, font=clockFont, fill=a.CLOCK_TEXT_COLOR)
+            tx += charW + lsw
 
 def preProcessGL(im, ms, globalArgs={}):
     global a
@@ -359,61 +418,22 @@ def preProcessGL(im, ms, globalArgs={}):
                     tx += chw + lsw
 
     # render clock
-    global moveStartMs
-    global moveEndMs
-    global totalMoveMs
-    global oneScreenDayMinutes
-    global clockFont
-    global clockTextProps
+    global clockCells
+    global clockCellW
 
-    nprogress = norm(ms, (moveStartMs, moveEndMs))
-    elapsedDayMinutes = nprogress * 24 * 60
-    tRight = elapsedDayMinutes
-    tLeft = elapsedDayMinutes - oneScreenDayMinutes
-    pad = 2
-    tStart = roundInt(tLeft) - pad
-    tSteps = roundInt(tRight - tLeft) + pad*2
-    lsw = clockTextProps["letterSpacing"]
-    ty = 0
-    ty1 = a.HEIGHT - a.CLOCK_LABEL_HEIGHT
-    nsizeTop, _ = weights[0]
-    nsizeBottom, _ = weights[-1]
-    sCellWTop = max(cellW, nsizeTop * a.CLIP_AREA_HEIGHT * a.CLIP_ASPECT_RATIO)
-    sCellWBottom = max(cellW, nsizeBottom * a.CLIP_AREA_HEIGHT * a.CLIP_ASPECT_RATIO)
-    scaleTop = 1.0 * sCellWTop / cellW
-    scaleBottom = 1.0 * sCellWBottom / cellW
-    anchorX = a.WIDTH * 0.5
-    for i in range(tSteps):
-        minute = 1.0 * (i + tStart)
-        day = 24.0 * 60.0
-        if minute % a.CLOCK_INTERVAL < 1 and 0 <= minute <= day:
-            label = formatClockTime(minute*60)
-            noon = 12.0 * 60.0
-            if minute == 0.0 or minute == day:
-                label = "MIDNIGHT"
-            elif minute == noon:
-                label = "NOON"
-            cx = norm(minute, (tLeft, tRight)) * a.WIDTH
-            cxTop = getScaledValue(cx, scaleTop, anchorX)
-            cxBottom = getScaledValue(cx, scaleBottom, anchorX)
-            chars = list(label)
-            labelW, labelH = clockFont.getsize(label)
-            labelW += lsw * (len(chars)-1)
-            txTop = cxTop - labelW * 0.5
-            txBottom = cxBottom - labelW * 0.5
-            clockTextOffsetY = roundInt((a.CLOCK_LABEL_HEIGHT - labelH) * 0.33)
-            for char in chars:
-                draw.text((txTop, ty+clockTextOffsetY), char, font=clockFont, fill=a.TEXT_COLOR)
-                draw.text((txBottom, ty1+clockTextOffsetY), char, font=clockFont, fill=a.TEXT_COLOR)
-                chw, chh = clockFont.getsize(char)
-                txTop += chw + lsw
-                txBottom += chw + lsw
+    yTop = 0
+    yBottom = a.HEIGHT - a.CLOCK_LABEL_HEIGHT
+    for cc in clockCells:
+        xTop, _y, _w, _h = getCellPositionAndSize(ms, row=0, col=cc["col"], myCellW=clockCellW)
+        xBottom, _y, _w, _h = getCellPositionAndSize(ms, row=-1, col=cc["col"], myCellW=clockCellW)
+        drawClockTime(draw, cc, xTop, yTop)
+        drawClockTime(draw, cc, xBottom, yBottom)
 
     return im
 
 # durationMs = textInEndMs
 # durationMs = textInEndVisibleMs
-durationMs = textInEndVisibleMs + oneScreenMs
+durationMs = textInEndVisibleMs + oneScreenMs * 0
 # totalFrames = msToFrame(durationMs, a.FPS)
 # outframefile = "tmp/global_lives_text_test_frames/frame.%s.png"
 # makeDirectories(outframefile)
@@ -426,7 +446,8 @@ durationMs = textInEndVisibleMs + oneScreenMs
 #     printProgress(frame, totalFrames)
 # compileFrames(outframefile, a.FPS, "output/global_lives_text_test.mp4", getZeroPadding(totalFrames))
 
-# testIm = preProcessGL(None, roundInt(textInEndVisibleMs - oneScreenMs*0.5))
+# testIm = preProcessGL(None, roundInt(textInEndVisibleMs + oneScreenMs*0.33))
 # testIm.save("output/global_lives_text_test.png")
+# sys.exit()
 
 processComposition(a, clips, durationMs, stepTime=stepTime, startTime=startTime, customClipToArrFunction=clipToNpArrGL, preProcessingFunction=preProcessGL, renderOnTheFly=True)
