@@ -188,6 +188,7 @@ def getCurrentWeights(ms):
     global totalWidthMoveMs
 
     wcount = len(cellWeights)
+    transitionStartMs = moveStartMs + oneScreenMs * 0.25
     lerpStartMs = moveStartMs + oneScreenMs * 0.5
     lerpEndMs = lerpStartMs + totalWidthMoveMs
     equi = 1.0 / collectionCount
@@ -196,7 +197,10 @@ def getCurrentWeights(ms):
     nprogress = 0
 
     # lerp in the first entry
-    if lerpStartMs <= ms <= lerpEndMs:
+    if transitionStartMs <= ms < lerpStartMs:
+        w1 = cellWeights[0]
+        nprogress = norm(ms, (transitionStartMs, lerpStartMs))
+    elif lerpStartMs <= ms < lerpEndMs:
         lnprogress = norm(ms, (lerpStartMs, lerpEndMs))
         findex = lnprogress * wcount
         i0 = floorInt(findex)
@@ -408,8 +412,8 @@ def preProcessGL(im, ms, globalArgs={}):
     return im
 
 # durationMs = textInEndMs
-durationMs = textInEndVisibleMs
-# durationMs = textInEndVisibleMs + oneScreenMs * 2
+# durationMs = textInEndVisibleMs
+durationMs = textInEndVisibleMs + oneScreenMs
 # totalFrames = msToFrame(durationMs, a.FPS)
 # outframefile = "tmp/global_lives_text_test_frames/frame.%s.png"
 # makeDirectories(outframefile)
