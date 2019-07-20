@@ -281,7 +281,10 @@ def getCellPositionAndSize(ms, row, col, myCellW="auto", margin=0):
     x = newLeftX + newCellW * col + margin
     w = newCellW - margin * 2
 
-    return (x, y, w, h)
+    # make alpha relative to max weight
+    alpha = ease(nsize / max([w[0] for w in weights]))
+
+    return (x, y, w, h, alpha)
 
 # custom clip to numpy array function to override default tweening logic
 def clipToNpArrGL(clip, ms, containerW, containerH, precision, parent, globalArgs={}):
@@ -301,7 +304,7 @@ def clipToNpArrGL(clip, ms, containerW, containerH, precision, parent, globalArg
 
     # determine position and size here
     if moveStartMs <= ms <= moveEndMs:
-        x, y, w, h = getCellPositionAndSize(ms, clip.props["row"], clip.props["col"], margin=a.CELL_MARGIN_X)
+        x, y, w, h, alpha = getCellPositionAndSize(ms, clip.props["row"], clip.props["col"], margin=a.CELL_MARGIN_X)
 
         # determine clip time
         cellStartMs = clip.props["col"] * cellMoveMs + moveStartMs
@@ -424,8 +427,8 @@ def preProcessGL(im, ms, globalArgs={}):
     yTop = 0
     yBottom = a.HEIGHT - a.CLOCK_LABEL_HEIGHT
     for cc in clockCells:
-        xTop, _y, _w, _h = getCellPositionAndSize(ms, row=0, col=cc["col"], myCellW=clockCellW)
-        xBottom, _y, _w, _h = getCellPositionAndSize(ms, row=-1, col=cc["col"], myCellW=clockCellW)
+        xTop, _y, _w, _h, _alpha = getCellPositionAndSize(ms, row=0, col=cc["col"], myCellW=clockCellW)
+        xBottom, _y, _w, _h, _alpha = getCellPositionAndSize(ms, row=-1, col=cc["col"], myCellW=clockCellW)
         drawClockTime(draw, cc, xTop, yTop)
         drawClockTime(draw, cc, xBottom, yBottom)
 
