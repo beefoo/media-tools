@@ -237,6 +237,8 @@ def getGLAudioSequence(collections, cellsPerCollection, sequenceStart, cellMs, o
     cCount = len(collections)
     playSamples = []
     for i in range(cellsPerCollection):
+        isFirstCell = (i == 0)
+        isLastCell = (i >= cellsPerCollection-1)
         weights = [0 for j in range(cCount)]
         for j, c in enumerate(collections):
             weights[j] = (c["cells"][i]["nsize"], j)
@@ -276,15 +278,33 @@ def getGLAudioSequence(collections, cellsPerCollection, sequenceStart, cellMs, o
                     start += offsetMs
                     start -= a.PAD_AUDIO
                     ms -= a.PAD_AUDIO
-                    dur += a.PAD_AUDIO
+                    dur = sample["dur"] - offsetMs + a.PAD_AUDIO
                     fadeIn = a.PAD_AUDIO
-                    cellStart += sample["dur"]
+                    cellStart += dur
                 # otherwise, we're the last sample in the cell, just add padding to the end
                 elif si >= (csampleLen-1):
                     dur += a.PAD_AUDIO
                     fadeOut = a.PAD_AUDIO
                 else:
                     cellStart += sample["dur"]
+
+                # adjust the starts for beginning cells
+                if isFirstCell and si <= 0:
+                    start -= offsetMs
+                    ms -= offsetMs
+                    start += a.PAD_AUDIO
+                    ms += a.PAD_AUDIO
+                    dur = offsetMs + cellMs + a.PAD_AUDIO
+                    fadeIn = offsetMs
+                    if csampleLen > 1:
+                        dur = sample["dur"] + a.PAD_AUDIO
+                        cellStart += offsetMs
+
+                # adjust the ends for the ending cells
+                if isLastCell and si >= (csampleLen-1):
+                    dur += offsetMs
+                    dur -= (a.PAD_AUDIO * 2)
+                    fadeOut = offsetMs
 
                 # check bounds
                 start = max(0, start)
