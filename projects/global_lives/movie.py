@@ -390,6 +390,7 @@ def preProcessGL(im, ms, globalArgs={}):
     global collectionFont
     global collections
     global cellW
+    global cellH
     global textMargin
 
     if im is None:
@@ -412,12 +413,10 @@ def preProcessGL(im, ms, globalArgs={}):
         for i, c in enumerate(collections):
             # if i % 2 > 0:
             #     draw.rectangle([0, y0 + i * cellH, a.WIDTH, y0 + (i+1) * cellH], fill="#0000FF")
-            nsize, ny = weights[i]
             alpha = getTextAlpha(ms, c, "loc", a.TEXT_FADE_DUR)
-            sCellH = nsize * a.CLIP_AREA_HEIGHT
             labelW, labelH = collectionFont.getsize(c["locLabel"] + c["name"])
-            textOffsetY = roundInt((sCellH - labelH) * 0.33)
-            ty = y0 + ny * a.CLIP_AREA_HEIGHT + textOffsetY
+            textOffsetY = roundInt((cellH - labelH) * 0.33)
+            ty = y0 + i * cellH + textOffsetY
             if alpha > 0.0:
                 alpha = ease(alpha)
                 tx = cx - textMargin
