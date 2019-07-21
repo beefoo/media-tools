@@ -185,7 +185,9 @@ def clipsToFrameOnTheFly(clips, clipArrs, width, height, precision=3, baseImage=
         validClips = addIndices(validClips, "_index")
         filenames = groupList(validClips, "filename")
         clipsPixelData = [[] for i in range(len(validClips))]
+        fcount = len(filenames)
         for i, f in enumerate(filenames):
+            print(" %s" % os.path.basename(f["filename"]))
             video = VideoFileClip(f["filename"], audio=False)
             videoDur = video.duration
             fclips = f["items"]
@@ -195,6 +197,7 @@ def clipsToFrameOnTheFly(clips, clipArrs, width, height, precision=3, baseImage=
                 clipsPixelData[fclip["_index"]] = [pixels]
             video.reader.close()
             del video
+            printProgress(i+1, fcount, prefix=" ")
         baseImage = clipsToFrameGPU(validClipArrs, width, height, clipsPixelData, precision, baseImage, globalArgs=globalArgs)
 
     return baseImage
