@@ -142,6 +142,8 @@ def addCellsToCollections(collections, videos, cellsPerCollection):
                 "samples": cellSamples,
                 "dur": cellStart
             })
+            if len(cellSamples) > 2:
+                print(len(cellSamples))
         collections[i]["cells"] = cCells
     return collections
 
@@ -150,16 +152,18 @@ def addQueueToSamples(combinedSamples, queue):
         return combinedSamples
     first = queue[0]
     last = queue[-1]
-    end = last["start"] + last["dur"]
     newSample = {}
-    if len(queue) < 2:
+    if len(queue) <= 1:
         newSample = first.copy()
     else:
         newSample = {
-            "filename": f["filename"],
-            "col": first["col"],
+            "filename": first["filename"],
+            "ms": first["ms"],
             "start": first["start"],
-            "dur": end - first["start"],
+            "dur": last["end"] - first["start"],
+            "end": last["end"],
+            "fadeIn": first["fadeIn"],
+            "fadeOut": last["fadeOut"],
             "volumes": [(q["start"]-first["start"], q["volume"]) for q in queue]
         }
     combinedSamples.append(newSample)
@@ -231,12 +235,11 @@ def getGLAudioSequence(collections, cellsPerCollection, sequenceStart, cellMs, o
     for i in range(cellsPerCollection):
         weights = [0 for j in range(cCount)]
         for j, c in enumerate(collections):
-            weights[j] = (c["cells"][i]["power"], i)
+            weights[j] = (c["cells"][i]["nsize"], j)
         sweights = sorted(weights, key=lambda w: w[0], reverse=True)
         sweights = sweights[:a.MAX_TRACKS_PER_CELL]
-        # # start and end time of cell in the sequence
-        # cellSeqStartMs = sequenceStart + offsetMs + i * cellMs
-        # cellSeqEndMs = cellSeqStartMs + cellMs
+        # start time of cell in the sequence
+        cellSeqStartMs = sequenceStart + offsetMs + i * cellMs
         # start and end time in the cell itself
         cellStartMs = offsetMs
         cellEndMs = cellStartMs + cellMs
@@ -244,34 +247,58 @@ def getGLAudioSequence(collections, cellsPerCollection, sequenceStart, cellMs, o
             playWeight = 1.0 - 1.0 * j / (a.MAX_TRACKS_PER_CELL - 1)
             nvolume = ease(playWeight)
             volume = lerp(a.VOLUME_RANGE, nvolume)
-            for sample in collections[w[1]]["cells"][i]["samples"]:
-                # Check to see if sample is playing during this window
-                if sample["cellStart"] > cellEndMs or sample["cellEnd"] < cellStartMs:
-                    continue
+            csamples = collections[w[1]]["cells"][i]["samples"]
+            # ensure samples are in bounds
+            csamples = [cs for cs in csamples if cs["cellStart"] <= cellEndMs and cs["cellEnd"] >= cellStartMs]
+            csampleLen = len(csamples)
+            cellStart = 0
+            for si, sample in enumerate(csamples):
                 psample = sample.copy()
 
-                # determine start
-                start = sample["start"] + offsetMs - a.PADDING
-                deltaStart = 0
-                if cellStartMs > sample["cellStart"]:
-                    deltaStart = cellStartMs - sample["cellStart"]
-                    start += deltaStart
-                start = max(0, start)
+                # offset the start
+                start = sample["start"]
+                dur = sample["dur"]
+                fadeIn = fadeOut = 10
+                ms = cellSeqStartMs + cellStart
+                # if there's just one sample, just make it the length of one cell plus padding
+                if csampleLen <= 1:
+                    start += offsetMs
+                    start -= a.PAD_AUDIO
+                    ms -= a.PAD_AUDIO
+                    dur = cellMs + a.PAD_AUDIO * 2
+                    fadeIn = fadeOut = a.PAD_AUDIO
+                # we're the first sample in the cell, just add padding to the beginning
+                elif si <= 0:
+                    start += offsetMs
+                    start -= a.PAD_AUDIO
+                    ms -= a.PAD_AUDIO
+                    dur += a.PAD_AUDIO
+                    fadeIn = a.PAD_AUDIO
+                    cellStart += sample["dur"]
+                # otherwise, we're the last sample in the cell, just add padding to the end
+                elif si >= (csampleLen-1):
+                    dur += a.PAD_AUDIO
+                    fadeOut = a.PAD_AUDIO
+                else:
+                    cellStart += sample["dur"]
 
-                # determine end
-                dur = sample["dur"]-deltaStart
-                if sample["cellEnd"] > cellEndMs:
-                    deltaEnd = sample["cellEnd"] - cellEndMs
-                    dur -= deltaEnd
-                dur += a.PAD_AUDIO * 2
+                # check bounds
+                start = max(0, start)
                 end = start + dur
                 end = min(end, sample["videoDur"])
                 dur = end - start
+                if dur < 100:
+                    continue
+                fadeIn = min(fadeIn, roundInt(dur*0.5))
+                fadeOut = min(fadeOut, roundInt(dur*0.5))
 
-                psample["ms"] = sequenceStart
+                psample["ms"] = ms
                 psample["volume"] = volume
                 psample["start"] = start
                 psample["dur"] = dur
+                psample["end"] = end
+                psample["fadeIn"] = fadeIn
+                psample["fadeOut"] = fadeOut
                 playSamples.append(psample)
 
     # combine samples that overlap
@@ -281,8 +308,10 @@ def getGLAudioSequence(collections, cellsPerCollection, sequenceStart, cellMs, o
         fsamples = sorted(f["items"], key=lambda s: s["start"])
         queue = []
         for j, s in enumerate(fsamples):
-            if len(queue) < 1 or (queue[-1]["start"] + queue[-1]["dur"]) >= s["start"]:
+            # queue is empty or overlaps with the last item in queue
+            if len(queue) < 1 or queue[-1]["end"] >= s["start"]:
                 queue.append(s)
+            # otherwise, add the queue to combined samples, and reset queue
             else:
                 combinedSamples = addQueueToSamples(combinedSamples, queue)
                 queue = [s]
@@ -291,9 +320,32 @@ def getGLAudioSequence(collections, cellsPerCollection, sequenceStart, cellMs, o
 
     # add audio properties
     for i, s in enumerate(combinedSamples):
-        combinedSamples[i]["ms"] = sequenceStart - a.PAD_AUDIO + roundInt(s["col"] * cellMs)
-        combinedSamples[i]["fadeIn"] = min(a.PAD_AUDIO, int(s["dur"] * 0.5))
-        combinedSamples[i]["fadeOut"] = min(a.PAD_AUDIO, int(s["dur"] * 0.5))
         combinedSamples[i]["matchDb"] = a.MATCH_DB
+        # combinedSamples[i]["reverb"] = a.REVERB
 
     return combinedSamples
+
+def visualizeGLAudioSequence(audioSequence, videos):
+    import matplotlib.pyplot as plt
+
+    videoLookup = createLookup(videos, "filename")
+    for i, s in enumerate(audioSequence):
+        audioSequence[i]["collection"] = videoLookup[s["filename"]]["collection"]
+
+    collections = groupList(audioSequence, "collection")
+    labels = [c["collection"] for c in collections]
+
+    fig, ax = plt.subplots(figsize=(24,12))
+    colors = iter(plt.cm.prism(np.linspace(0,1,len(collections))))
+    for i, c in enumerate(collections):
+        data = [(step["ms"]/60000.0, step["dur"]/60000.0) for step in c["items"]]
+        color = next(colors)
+        h = 0.8
+        margin = 0.4
+        ax.broken_barh(data, (i-margin,h), color=color)
+
+    ax.set_yticks(range(len(labels)))
+    ax.set_yticklabels(labels)
+    ax.set_xlabel("time [minutes]")
+    plt.tight_layout()
+    plt.show()

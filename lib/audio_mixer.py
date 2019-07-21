@@ -1,4 +1,5 @@
 from lib.audio_utils import *
+from lib.collection_utils import *
 from lib.math_utils import *
 import os
 from pydub import AudioSegment
@@ -93,8 +94,22 @@ def mixAudio(instructions, duration, outfilename, sfx=True, sampleWidth=4, sampl
 
 def plotAudioSequence(seq):
     import matplotlib.pyplot as plt
-    filenames = unique([(s["filename"], s["start"]) for s in seq])
-    xs = [s["ms"]/1000.0 for s in seq]
-    ys = [filenames.index((s["filename"], s["start"]))+1 for s in seq]
-    plt.scatter(xs, ys, s=4)
+    import numpy as np
+
+    filenames = groupList(seq, "filename")
+    labels = [f["filename"] for f in filenames]
+
+    fig, ax = plt.subplots(figsize=(24,12))
+    colors = iter(plt.cm.prism(np.linspace(0,1,len(filenames))))
+    for i, f in enumerate(filenames):
+        data = [(step["ms"]/60000.0, step["dur"]/60000.0) for step in f["items"]]
+        color = next(colors)
+        h = 0.8
+        margin = 0.4
+        ax.broken_barh(data, (i-margin,h), color=color)
+
+    ax.set_yticks(range(len(labels)))
+    # ax.set_yticklabels(labels)
+    ax.set_xlabel("time [minutes]")
+    plt.tight_layout()
     plt.show()

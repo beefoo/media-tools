@@ -33,7 +33,7 @@ parser.add_argument('-cellmx', dest="CELL_MARGIN_X", default=2, type=int, help="
 parser.add_argument('-cellmy', dest="CELL_MARGIN_Y", default=4, type=int, help="Cell y margin in pixels")
 parser.add_argument('-ppf', dest="PIXELS_PER_FRAME", default=1.0, type=float, help="Number of pixels to move per frame")
 parser.add_argument('-textfdur', dest="TEXT_FADE_DUR", default=3000, type=int, help="Duration text should fade in milliseconds")
-parser.add_argument('-textfdel', dest="TEXT_FADE_DELAY", default=300, type=int, help="Duration text should delay fade in milliseconds")
+parser.add_argument('-textfdel', dest="TEXT_FADE_DELAY", default=500, type=int, help="Duration text should delay fade in milliseconds")
 parser.add_argument('-clipsmo', dest="CLIPS_MOVE_OFFSET", default=-4000, type=int, help="Offset the clips should start moving in in milliseconds")
 parser.add_argument('-clockh', dest="CLOCK_LABEL_HEIGHT", default=0.05, type=float, help="Clock label height as a percent of height")
 
@@ -113,7 +113,6 @@ makeDirectories([a.OUTPUT_FRAME, a.OUTPUT_FILE, a.CELL_FILE])
 
 # Add audio analysis to cells
 collections = addCellDataToCollections(collections, cellsPerCollection, a.CELL_FILE)
-collections = addAudioSamplesToCollections(collections, cellsPerCollection, a)
 
 # Calculations for text timing
 textInStartMs = a.PAD_START
@@ -210,10 +209,11 @@ for i in range(clockCellCount):
 
 # Create audio sequence
 sequenceStart = moveStartMs
-offsetMs = roundInt(oneScreenMs * 0.5) # amount of time it takes for clip to move from right side of screen (when the video starts playing) to center
+offsetMs = oneScreenMs * 0.5 # amount of time it takes for clip to move from right side of screen (when the video starts playing) to center
 audioSequence = getGLAudioSequence(collections, cellsPerCollection, sequenceStart, cellMoveMsF, offsetMs, a)
 # from lib.audio_mixer import *
 # plotAudioSequence(audioSequence)
+# visualizeGLAudioSequence(audioSequence, videos)
 # sys.exit()
 
 # pprint(samples[0])
