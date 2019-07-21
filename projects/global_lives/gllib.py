@@ -108,7 +108,8 @@ def addCellsToCollections(collections, videos, cellsPerCollection):
                     cellSamples.append({
                         "filename": currentVideo["filename"],
                         "start": roundInt(currentVideoOffset * 1000),
-                        "dur": int(durLeftInCell * 1000)
+                        "dur": int(durLeftInCell * 1000),
+                        "videoDur": int(currentVideo["duration"] * 1000)
                     })
                     currentVideoOffset += durLeftInCell
                     cellDur += durLeftInCell
@@ -118,7 +119,8 @@ def addCellsToCollections(collections, videos, cellsPerCollection):
                     cellSamples.append({
                         "filename": currentVideo["filename"],
                         "start": roundInt(currentVideoOffset * 1000),
-                        "dur": int(durLeftInVideo * 1000)
+                        "dur": int(durLeftInVideo * 1000),
+                        "videoDur": int(currentVideo["duration"] * 1000)
                     })
                     currentVideoIndex += 1
                     currentVideoOffset = 0
@@ -131,6 +133,8 @@ def addCellsToCollections(collections, videos, cellsPerCollection):
                 cellSamples[k]["row"] = c["row"]
                 cellSamples[k]["col"] = j
                 cellSamples[k]["cellStart"] = cellStart
+                cellSamples[k]["end"] = cs["start"] + cs["dur"]
+                cellSamples[k]["cellEnd"] = cellStart + cs["dur"]
                 cellStart += cs["dur"]
             cCells.append({
                 "row": c["row"],
@@ -140,6 +144,26 @@ def addCellsToCollections(collections, videos, cellsPerCollection):
             })
         collections[i]["cells"] = cCells
     return collections
+
+def addQueueToSamples(combinedSamples, queue):
+    if len(queue) < 1:
+        return combinedSamples
+    first = queue[0]
+    last = queue[-1]
+    end = last["start"] + last["dur"]
+    newSample = {}
+    if len(queue) < 2:
+        newSample = first.copy()
+    else:
+        newSample = {
+            "filename": f["filename"],
+            "col": first["col"],
+            "start": first["start"],
+            "dur": end - first["start"],
+            "volumes": [(q["start"]-first["start"], q["volume"]) for q in queue]
+        }
+    combinedSamples.append(newSample)
+    return combinedSamples
 
 def collectionPowerToImg(collections, filename, cellsPerCollection):
     cCount = len(collections)
@@ -200,3 +224,76 @@ def collectionToImg(collections, filename, cellsPerCollection, imgH=1080, margin
         printProgress(i+1, filecount)
     im.save(filename)
     print("Saved %s" % filename)
+
+def getGLAudioSequence(collections, cellsPerCollection, sequenceStart, cellMs, offsetMs, a):
+    cCount = len(collections)
+    playSamples = []
+    for i in range(cellsPerCollection):
+        weights = [0 for j in range(cCount)]
+        for j, c in enumerate(collections):
+            weights[j] = (c["cells"][i]["power"], i)
+        sweights = sorted(weights, key=lambda w: w[0], reverse=True)
+        sweights = sweights[:a.MAX_TRACKS_PER_CELL]
+        # # start and end time of cell in the sequence
+        # cellSeqStartMs = sequenceStart + offsetMs + i * cellMs
+        # cellSeqEndMs = cellSeqStartMs + cellMs
+        # start and end time in the cell itself
+        cellStartMs = offsetMs
+        cellEndMs = cellStartMs + cellMs
+        for j, w in enumerate(sweights):
+            playWeight = 1.0 - 1.0 * j / (a.MAX_TRACKS_PER_CELL - 1)
+            nvolume = ease(playWeight)
+            volume = lerp(a.VOLUME_RANGE, nvolume)
+            for sample in collections[w[1]]["cells"][i]["samples"]:
+                # Check to see if sample is playing during this window
+                if sample["cellStart"] > cellEndMs or sample["cellEnd"] < cellStartMs:
+                    continue
+                psample = sample.copy()
+
+                # determine start
+                start = sample["start"] + offsetMs - a.PADDING
+                deltaStart = 0
+                if cellStartMs > sample["cellStart"]:
+                    deltaStart = cellStartMs - sample["cellStart"]
+                    start += deltaStart
+                start = max(0, start)
+
+                # determine end
+                dur = sample["dur"]-deltaStart
+                if sample["cellEnd"] > cellEndMs:
+                    deltaEnd = sample["cellEnd"] - cellEndMs
+                    dur -= deltaEnd
+                dur += a.PAD_AUDIO * 2
+                end = start + dur
+                end = min(end, sample["videoDur"])
+                dur = end - start
+
+                psample["ms"] = sequenceStart
+                psample["volume"] = volume
+                psample["start"] = start
+                psample["dur"] = dur
+                playSamples.append(psample)
+
+    # combine samples that overlap
+    combinedSamples = []
+    filenames = groupList(playSamples, "filename")
+    for f in filenames:
+        fsamples = sorted(f["items"], key=lambda s: s["start"])
+        queue = []
+        for j, s in enumerate(fsamples):
+            if len(queue) < 1 or (queue[-1]["start"] + queue[-1]["dur"]) >= s["start"]:
+                queue.append(s)
+            else:
+                combinedSamples = addQueueToSamples(combinedSamples, queue)
+                queue = [s]
+        if len(queue) > 0:
+            combinedSamples = addQueueToSamples(combinedSamples, queue)
+
+    # add audio properties
+    for i, s in enumerate(combinedSamples):
+        combinedSamples[i]["ms"] = sequenceStart - a.PAD_AUDIO + roundInt(s["col"] * cellMs)
+        combinedSamples[i]["fadeIn"] = min(a.PAD_AUDIO, int(s["dur"] * 0.5))
+        combinedSamples[i]["fadeOut"] = min(a.PAD_AUDIO, int(s["dur"] * 0.5))
+        combinedSamples[i]["matchDb"] = a.MATCH_DB
+
+    return combinedSamples

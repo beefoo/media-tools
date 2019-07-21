@@ -37,6 +37,11 @@ parser.add_argument('-textfdel', dest="TEXT_FADE_DELAY", default=300, type=int, 
 parser.add_argument('-clipsmo', dest="CLIPS_MOVE_OFFSET", default=-4000, type=int, help="Offset the clips should start moving in in milliseconds")
 parser.add_argument('-clockh', dest="CLOCK_LABEL_HEIGHT", default=0.05, type=float, help="Clock label height as a percent of height")
 
+# Audio option
+parser.add_argument('-maxtpc', dest="MAX_TRACKS_PER_CELL", default=3, type=int, help="How many audio tracks can play at any given time cell")
+parser.add_argument('-padaudio', dest="PAD_AUDIO", default=2000, type=int, help="Pad the beginning and end of audio in milliseconds")
+parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.33,1.0", help="Volume range")
+
 # Text options
 parser.add_argument('-fdir', dest="FONT_DIR", default="media/fonts/Open_Sans/", help="Directory of font files")
 parser.add_argument('-cotext', dest="COLLECTION_TEXT_PROPS", default="font=OpenSans-Light.ttf&size=36&letterSpacing=2", help="Text styles for collection labels (font, size, letter-width)")
@@ -84,6 +89,7 @@ totalMoveFrames = roundInt(totalXDelta / a.PIXELS_PER_FRAME)
 totalMoveMs = frameToMs(totalMoveFrames, a.FPS)
 cellMoveFrames = 1.0 * cellW / a.PIXELS_PER_FRAME
 cellMoveMs = frameToMs(cellMoveFrames, a.FPS)
+cellMoveMsF = frameToMs(cellMoveFrames, a.FPS, roundResult=False)
 print("Total movement duration: %s" % formatSeconds(totalMoveMs/1000.0))
 
 # calculate text durations
@@ -107,6 +113,7 @@ makeDirectories([a.OUTPUT_FRAME, a.OUTPUT_FILE, a.CELL_FILE])
 
 # Add audio analysis to cells
 collections = addCellDataToCollections(collections, cellsPerCollection, a.CELL_FILE)
+collections = addAudioSamplesToCollections(collections, cellsPerCollection, a)
 
 # Calculations for text timing
 textInStartMs = a.PAD_START
@@ -200,6 +207,14 @@ for i in range(clockCellCount):
         "labelH": labelH,
         "labelChars": labelChars
     })
+
+# Create audio sequence
+sequenceStart = moveStartMs
+offsetMs = roundInt(oneScreenMs * 0.5) # amount of time it takes for clip to move from right side of screen (when the video starts playing) to center
+audioSequence = getGLAudioSequence(collections, cellsPerCollection, sequenceStart, cellMoveMsF, offsetMs, a)
+# from lib.audio_mixer import *
+# plotAudioSequence(audioSequence)
+# sys.exit()
 
 # pprint(samples[0])
 # sys.exit()
@@ -307,7 +322,7 @@ def clipToNpArrGL(clip, ms, containerW, containerH, precision, parent, globalArg
         x, y, w, h, alpha = getCellPositionAndSize(ms, clip.props["row"], clip.props["col"], margin=a.CELL_MARGIN_X)
 
         # determine clip time
-        cellStartMs = clip.props["col"] * cellMoveMs + moveStartMs
+        cellStartMs = roundInt(clip.props["col"] * cellMoveMsF) + moveStartMs
         timeSinceStartMs = ms - cellStartMs
         # check to see if current clip is playing
         cellMs = 1.0 * timeSinceStartMs % clip.props["cellDur"] # amount of time in cell
@@ -436,7 +451,7 @@ def preProcessGL(im, ms, globalArgs={}):
 
 # durationMs = textInEndMs
 # durationMs = textInEndVisibleMs
-durationMs = textInEndVisibleMs + oneScreenMs * 0
+durationMs = textInEndVisibleMs + oneScreenMs * 2
 # totalFrames = msToFrame(durationMs, a.FPS)
 # outframefile = "tmp/global_lives_text_test_frames/frame.%s.png"
 # makeDirectories(outframefile)
@@ -453,4 +468,9 @@ durationMs = textInEndVisibleMs + oneScreenMs * 0
 # testIm.save("output/global_lives_text_test.png")
 # sys.exit()
 
-processComposition(a, clips, durationMs, stepTime=stepTime, startTime=startTime, customClipToArrFunction=clipToNpArrGL, preProcessingFunction=preProcessGL, renderOnTheFly=True)
+processComposition(a, clips, durationMs, stepTime=stepTime, startTime=startTime,
+    # audioSequence=audioSequence,
+    customClipToArrFunction=clipToNpArrGL,
+    preProcessingFunction=preProcessGL,
+    renderOnTheFly=True
+)

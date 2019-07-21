@@ -229,7 +229,7 @@ def limitAudioClips(samples, maxAudioClips, keyName, invert=False, keepFirst=64,
         samples[i]["playAudio"] = (s["index"] in indicesToKeep)
     return samples
 
-def processComposition(a, clips, videoDurationMs, sampler=None, stepTime=False, startTime=False, customClipToArrFunction=None, containsAlphaClips=False, isSequential=False, customClipToArrCalcFunction=None, baseImage=None, container=None, postProcessingFunction=None, preProcessingFunction=None, renderOnTheFly=False):
+def processComposition(a, clips, videoDurationMs, sampler=None, stepTime=False, startTime=False, customClipToArrFunction=None, containsAlphaClips=False, isSequential=False, customClipToArrCalcFunction=None, baseImage=None, container=None, postProcessingFunction=None, preProcessingFunction=None, renderOnTheFly=False, audioSequence=None):
 
     # get audio sequence
     samplerClips = sampler.getClips() if sampler is not None else []
@@ -241,8 +241,9 @@ def processComposition(a, clips, videoDurationMs, sampler=None, stepTime=False, 
         logTime(startTime, "Total execution time")
         return True
 
-    audioSequence = clipsToSequence(clips + samplerClips)
-    stepTime = logTime(stepTime, "Processed audio clip sequence")
+    if audioSequence is None:
+        audioSequence = clipsToSequence(clips + samplerClips)
+        stepTime = logTime(stepTime, "Processed audio clip sequence")
 
     # plotAudioSequence(audioSequence)
     # sys.exit()
