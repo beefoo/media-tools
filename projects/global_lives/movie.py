@@ -58,6 +58,7 @@ aa["CLOCK_LABEL_HEIGHT"] = roundInt(a.CLOCK_LABEL_HEIGHT * a.HEIGHT)
 aa["CLIP_AREA_HEIGHT"] = a.HEIGHT - a.CLOCK_LABEL_HEIGHT * 2
 aa["CLIP_ASPECT_RATIO"] = 1.0 * a.WIDTH / a.CLIP_AREA_HEIGHT
 aa["PRECISION"] = 6
+aa["ALPHA_RANGE"] = (0.667, 1.0)
 
 startTime = logTime()
 stepTime = startTime
