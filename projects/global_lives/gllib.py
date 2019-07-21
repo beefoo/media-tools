@@ -76,7 +76,12 @@ def addCellDataToCollections(collections, cellsPerCollection, cellFilename, upda
 
     # add normalized power
     for i, c in enumerate(collections):
-        collections[i]["cells"] = addNormalizedValues(collections[i]["cells"], "power", "npower")
+        cells = addNormalizedValues(collections[i]["cells"], "power", "npower")
+        cells = sorted(cells, key=lambda cell: cell["npower"])
+        cells = addIndices(cells, "powerIndex")
+        cells = addNormalizedValues(cells, "powerIndex", "npowerIndex")
+        cells = sorted(cells, key=lambda cell: cell["col"])
+        collections[i]["cells"] = cells
 
     return collections
 
@@ -347,5 +352,23 @@ def visualizeGLAudioSequence(audioSequence, videos):
     ax.set_yticks(range(len(labels)))
     ax.set_yticklabels(labels)
     ax.set_xlabel("time [minutes]")
+    plt.tight_layout()
+    plt.show()
+
+def visualizeGLPower(collections):
+    import matplotlib.pyplot as plt
+    cCount = len(collections)
+    ncols = 4
+    nrows = ceilInt(1.0 * cCount / ncols)
+    fig, ax = plt.subplots(nrows, ncols)
+
+    for i, row in enumerate(ax):
+        for j, col in enumerate(row):
+            index = i * ncols + j
+            c = collections[index]
+            x = [cell["col"] for cell in c["cells"]]
+            y = [cell["npowerIndex"] for cell in c["cells"]]
+            col.set_title(c["name"])
+            col.plot(x, y)
     plt.tight_layout()
     plt.show()

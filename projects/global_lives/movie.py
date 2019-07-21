@@ -152,7 +152,7 @@ collections = sorted(collections, key=lambda c: c["row"])
 minPower = 0.125 # make this number larger to make more even
 cellWeights = []
 for col in range(cellsPerCollection):
-    colPowers = [max(c["cells"][col]["npower"], minPower) for c in collections]
+    colPowers = [max(c["cells"][col]["npowerIndex"], minPower) for c in collections]
     colPowerSum = sum(colPowers)
     ny = 0
     cellWeight = []
@@ -163,6 +163,8 @@ for col in range(cellsPerCollection):
         cellWeight.append((rnpower, ny))
         ny += rnpower
     cellWeights.append(cellWeight)
+# visualizeGLPower(collections)
+# sys.exit()
 # collectionPowerToImg(collections, "output/global_lives_power.png", cellsPerCollection)
 # sys.exit()
 
