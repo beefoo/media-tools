@@ -296,7 +296,7 @@ def processComposition(a, clips, videoDurationMs, sampler=None, stepTime=False, 
         if excerpted and (ms < excerptStartMs or ms > excerptEndMs):
             continue
         elif excerpted:
-            frame -= excerptFrameStart
+            frame -= excerptFrameStart + 1
         videoFrames.append({
             "frame": frame,
             "filename": a.OUTPUT_FRAME % zeroPad(frame, totalFrames),
