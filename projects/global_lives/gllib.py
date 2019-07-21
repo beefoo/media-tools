@@ -76,8 +76,7 @@ def addCellDataToCollections(collections, cellsPerCollection, cellFilename, upda
 
     # add normalized power
     for i, c in enumerate(collections):
-        cells = addNormalizedValues(collections[i]["cells"], "power", "npower")
-        cells = sorted(cells, key=lambda cell: cell["npower"])
+        cells = sorted(collections[i]["cells"], key=lambda cell: cell["power"])
         cells = addIndices(cells, "powerIndex")
         cells = addNormalizedValues(cells, "powerIndex", "npowerIndex")
         cells = sorted(cells, key=lambda cell: cell["col"])
@@ -169,7 +168,7 @@ def addQueueToSamples(combinedSamples, queue):
             "end": last["end"],
             "fadeIn": first["fadeIn"],
             "fadeOut": last["fadeOut"],
-            "volumes": [(q["start"]-first["start"], q["volume"]) for q in queue]
+            "volume": max([q["volume"] for q in queue])
         }
     combinedSamples.append(newSample)
     return combinedSamples
@@ -314,7 +313,7 @@ def getGLAudioSequence(collections, cellsPerCollection, sequenceStart, cellMs, o
         queue = []
         for j, s in enumerate(fsamples):
             # queue is empty or overlaps with the last item in queue
-            if len(queue) < 1 or queue[-1]["end"] >= s["start"]:
+            if len(queue) < 1 or queue[-1]["end"] >= s["start"] and s["volume"]==queue[-1]["volume"]:
                 queue.append(s)
             # otherwise, add the queue to combined samples, and reset queue
             else:
