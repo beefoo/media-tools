@@ -296,7 +296,8 @@ def processComposition(a, clips, videoDurationMs, sampler=None, stepTime=False, 
         if excerpted and (ms < excerptStartMs or ms > excerptEndMs):
             continue
         elif excerpted:
-            frame -= excerptFrameStart + 1
+            frame -= excerptFrameStart
+            frame += 1
         videoFrames.append({
             "frame": frame,
             "filename": a.OUTPUT_FRAME % zeroPad(frame, totalFrames),
@@ -329,7 +330,8 @@ def processComposition(a, clips, videoDurationMs, sampler=None, stepTime=False, 
             "resizeMode": a.RESIZE_MODE,
             "baseImage": baseImage,
             "container": container,
-            "recalculateClipSizes": a.RECALC_CLIP_SIZE
+            "recalculateClipSizes": a.RECALC_CLIP_SIZE,
+            "vthreads": a.VIDEO_THREADS
         }
         clipsPixelData = None
         if not renderOnTheFly:

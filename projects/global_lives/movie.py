@@ -36,6 +36,7 @@ parser.add_argument('-textfdur', dest="TEXT_FADE_DUR", default=3000, type=int, h
 parser.add_argument('-textfdel', dest="TEXT_FADE_DELAY", default=500, type=int, help="Duration text should delay fade in milliseconds")
 parser.add_argument('-clipsmo', dest="CLIPS_MOVE_OFFSET", default=-4000, type=int, help="Offset the clips should start moving in in milliseconds")
 parser.add_argument('-clockh', dest="CLOCK_LABEL_HEIGHT", default=0.05, type=float, help="Clock label height as a percent of height")
+parser.add_argument('-vthreads', dest="VIDEO_THREADS", default=8, type=int, help="Concurrent threads for reading video files to extract clip pixels")
 
 # Audio option
 parser.add_argument('-maxtpc', dest="MAX_TRACKS_PER_CELL", default=3, type=int, help="How many audio tracks can play at any given time cell")

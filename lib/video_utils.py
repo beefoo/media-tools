@@ -156,6 +156,7 @@ def clipsToFrame(p, clips, pixelData, precision=3, customClipToArrFunction=None,
 
 def clipsToFrameOnTheFly(clips, clipArrs, width, height, precision=3, baseImage=None, globalArgs={}):
     debug = getValue(globalArgs, "debug", False)
+    vthreads = getValue(globalArgs, "vthreads", 1)
     precisionMultiplier = int(10 ** precision)
 
     validClips = []
@@ -184,20 +185,15 @@ def clipsToFrameOnTheFly(clips, clipArrs, width, height, precision=3, baseImage=
     else:
         validClips = addIndices(validClips, "_index")
         filenames = groupList(validClips, "filename")
+        threads = getThreadCount(min(len(filenames), vthreads))
+        pool = ThreadPool(threads)
+        pixelData = pool.map(samplesToPixels, filenames)
+        pool.close()
+        pool.join()
         clipsPixelData = [[] for i in range(len(validClips))]
-        fcount = len(filenames)
-        for i, f in enumerate(filenames):
-            print(" %s" % os.path.basename(f["filename"]))
-            video = VideoFileClip(f["filename"], audio=False)
-            videoDur = video.duration
-            fclips = f["items"]
-            for fclip in fclips:
-                clipImg = getVideoClipImage(video, videoDur, {"width": ceilInt(fclip["width"]), "height": ceilInt(fclip["height"]), "t": fclip["t"]})
-                pixels = np.array(clipImg)
-                clipsPixelData[fclip["_index"]] = [pixels]
-            video.reader.close()
-            del video
-            printProgress(i+1, fcount, prefix=" ")
+        for pd in pixelData:
+            for i, pixels in pd:
+                clipsPixelData[i] = [pixels]
         baseImage = clipsToFrameGPU(validClipArrs, width, height, clipsPixelData, precision, baseImage, globalArgs=globalArgs)
 
     return baseImage
@@ -721,6 +717,7 @@ def parseVideoArgs(args):
     d["VOLUME_RANGE"] = tuple([float(v) for v in args.VOLUME_RANGE.strip().split(",")]) if "VOLUME_RANGE" in d else (0.0, 1.0)
     d["ALPHA_RANGE"] =  tuple([float(v) for v in args.ALPHA_RANGE.strip().split(",")])
     d["BRIGHTNESS_RANGE"] =  tuple([float(v) for v in args.BRIGHTNESS_RANGE.strip().split(",")])
+    d["VIDEO_THREADS"] = args.VIDEO_THREADS if "VIDEO_THREADS" in d else 1
     if args.OUTPUT_SINGLE_FRAME > 0:
         d["VIDEO_ONLY"] = True
 
@@ -797,6 +794,19 @@ def rotatePixels(pixels, angle, resize=None):
         im = resizeCanvas(im, cw, ch)
     im = rotateImage(im, angle)
     return np.array(im)
+
+def samplesToPixels(f):
+    video = VideoFileClip(f["filename"], audio=False)
+    videoDur = video.duration
+    fclips = f["items"]
+    pixelData = [0 for i in range(len(fclips))]
+    for i, fclip in enumerate(fclips):
+        clipImg = getVideoClipImage(video, videoDur, {"width": ceilInt(fclip["width"]), "height": ceilInt(fclip["height"]), "t": fclip["t"]})
+        pixels = np.array(clipImg)
+        pixelData[i] = (fclip["_index"], pixels)
+    video.reader.close()
+    del video
+    return pixelData
 
 def saveBlankFrame(fn, width, height, bgColor="#000000", overwrite=False):
     if os.path.isfile(fn) and not overwrite:
