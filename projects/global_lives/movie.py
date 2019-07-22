@@ -41,7 +41,7 @@ parser.add_argument('-vthreads', dest="VIDEO_THREADS", default=8, type=int, help
 # Audio option
 parser.add_argument('-maxtpc', dest="MAX_TRACKS_PER_CELL", default=3, type=int, help="How many audio tracks can play at any given time cell")
 parser.add_argument('-padaudio', dest="PAD_AUDIO", default=2000, type=int, help="Pad the beginning and end of audio in milliseconds")
-parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.33,1.0", help="Volume range")
+parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.25,0.667", help="Volume range")
 
 # Text options
 parser.add_argument('-fdir', dest="FONT_DIR", default="media/fonts/Open_Sans/", help="Directory of font files")
@@ -60,6 +60,7 @@ aa["CLIP_AREA_HEIGHT"] = a.HEIGHT - a.CLOCK_LABEL_HEIGHT * 2
 aa["CLIP_ASPECT_RATIO"] = 1.0 * a.WIDTH / a.CLIP_AREA_HEIGHT
 aa["PRECISION"] = 6
 aa["ALPHA_RANGE"] = (0.667, 1.0)
+aa["MASTER_DB"] = -1.5
 
 startTime = logTime()
 stepTime = startTime
