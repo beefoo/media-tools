@@ -109,10 +109,8 @@ print("One screen footage duration: %s" % formatSeconds(oneScreenDaySeconds))
 print("One cell duration: %s" % formatSeconds(cellMoveMs/1000.0))
 totalWidthMoveMs = totalMoveMs - oneScreenMs
 
-if a.PROBE:
-    sys.exit()
-
-makeDirectories([a.OUTPUT_FRAME, a.OUTPUT_FILE, a.CELL_FILE])
+if not a.PROBE:
+    makeDirectories([a.OUTPUT_FRAME, a.OUTPUT_FILE, a.CELL_FILE])
 
 # Add audio analysis to cells
 collections = addCellDataToCollections(collections, cellsPerCollection, a.CELL_FILE)

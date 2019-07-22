@@ -255,15 +255,13 @@ def processComposition(a, clips, videoDurationMs, sampler=None, stepTime=False, 
     excerptEndMs = (excerptStartMs + excerptDurMs) if excerpted else False
     excerptFrameStart = msToFrame(excerptStartMs, a.FPS) if excerpted else False
     if excerpted:
+        videoDurationMs = excerptDurMs
         audioSequence = [s for s in audioSequence if excerptStartMs <= s["ms"] <= excerptEndMs]
+        for i, s in enumerate(audioSequence):
+            audioSequence[i]["ms"] = s["ms"] - excerptStartMs
 
     audioDurationMs = getAudioSequenceDuration(audioSequence)
     durationMs = max(videoDurationMs, audioDurationMs) + a.PAD_END
-
-    # if excerpted:
-    #     videoDurationMs = excerptDurMs
-    #     audioDurationMs = excerptDurMs
-    #     durationMs = excerptDurMs + a.PAD_END
 
     print("Video time: %s" % formatSeconds(videoDurationMs/1000.0))
     print("Audio time: %s" % formatSeconds(audioDurationMs/1000.0))
@@ -290,14 +288,16 @@ def processComposition(a, clips, videoDurationMs, sampler=None, stepTime=False, 
     # get frame sequence
     videoFrames = []
     print("Making video frame sequence...")
+    frameStart, frameEnd = a.FRAME_RANGE
+    if frameEnd < 0:
+        frameEnd = totalFrames
     for f in range(totalFrames):
         frame = f + 1
         ms = frameToMs(frame, a.FPS)
-        if excerpted and (ms < excerptStartMs or ms > excerptEndMs):
+        if excerpted:
+            ms = frameToMs(excerptFrameStart + f, a.FPS)
+        if not (frameStart <= frame <= frameEnd):
             continue
-        elif excerpted:
-            frame -= excerptFrameStart
-            frame += 1
         videoFrames.append({
             "frame": frame,
             "filename": a.OUTPUT_FRAME % zeroPad(frame, totalFrames),
@@ -341,7 +341,7 @@ def processComposition(a, clips, videoDurationMs, sampler=None, stepTime=False, 
             removeFiles(a.OUTPUT_FRAME % "*")
         processFrames(videoFrames, clips, clipsPixelData, threads=a.THREADS, precision=a.PRECISION, customClipToArrFunction=customClipToArrFunction, postProcessingFunction=postProcessingFunction, preProcessingFunction=preProcessingFunction, globalArgs=globalArgs)
 
-    if not a.AUDIO_ONLY and a.OUTPUT_SINGLE_FRAME < 1:
+    if not a.AUDIO_ONLY and a.OUTPUT_SINGLE_FRAME < 1 and frameStart <= 1:
         audioFile = a.AUDIO_OUTPUT_FILE if not a.VIDEO_ONLY and os.path.isfile(a.AUDIO_OUTPUT_FILE) else False
         quality = "medium" if a.DEBUG else "high"
         compileFrames(a.OUTPUT_FRAME, a.FPS, a.OUTPUT_FILE, getZeroPadding(totalFrames), audioFile=audioFile, quality=quality)

@@ -59,6 +59,7 @@ def addVideoArgs(parser):
     parser.add_argument('-io', dest="CLIP_INITIAL_OFFSET", default=0, type=int, help="Milliseconds to offset the initial clip state for continuity between compositions")
     parser.add_argument('-probe', dest="PROBE", action="store_true", help="Just spit out duration info?")
     parser.add_argument('-frame', dest="OUTPUT_SINGLE_FRAME", default=-1, type=int, help="Output only a single frame (indicated frame number)")
+    parser.add_argument('-frange', dest="FRAME_RANGE", default="1,-1", help="Frame range to render")
 
 def alphaMask(im, mask):
     w, h = im.size
@@ -717,6 +718,7 @@ def parseVideoArgs(args):
     d["VOLUME_RANGE"] = tuple([float(v) for v in args.VOLUME_RANGE.strip().split(",")]) if "VOLUME_RANGE" in d else (0.0, 1.0)
     d["ALPHA_RANGE"] =  tuple([float(v) for v in args.ALPHA_RANGE.strip().split(",")])
     d["BRIGHTNESS_RANGE"] =  tuple([float(v) for v in args.BRIGHTNESS_RANGE.strip().split(",")])
+    d["FRAME_RANGE"] =  tuple([int(v) for v in args.FRAME_RANGE.strip().split(",")])
     d["VIDEO_THREADS"] = args.VIDEO_THREADS if "VIDEO_THREADS" in d else 1
     if args.OUTPUT_SINGLE_FRAME > 0:
         d["VIDEO_ONLY"] = True
