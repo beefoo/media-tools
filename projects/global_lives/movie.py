@@ -30,7 +30,7 @@ parser.add_argument('-co', dest="COLLECTION_FILE", default="projects/global_live
 parser.add_argument('-celldat', dest="CELL_FILE", default="projects/global_lives/data/ia_globallives_cells.csv", help="Input/output cell csv file")
 parser.add_argument('-celldur', dest="CELL_DURATION", default=3.0, type=float, help="Cell duration in minutes")
 parser.add_argument('-cellmx', dest="CELL_MARGIN_X", default=2, type=int, help="Cell x margin in pixels")
-parser.add_argument('-cellmy', dest="CELL_MARGIN_Y", default=4, type=int, help="Cell y margin in pixels")
+parser.add_argument('-cellmy', dest="CELL_MARGIN_Y", default=2, type=int, help="Cell y margin in pixels")
 parser.add_argument('-ppf', dest="PIXELS_PER_FRAME", default=1.0, type=float, help="Number of pixels to move per frame")
 parser.add_argument('-textfdur', dest="TEXT_FADE_DUR", default=3000, type=int, help="Duration text should fade in milliseconds")
 parser.add_argument('-textfdel', dest="TEXT_FADE_DELAY", default=500, type=int, help="Duration text should delay fade in milliseconds")
@@ -60,7 +60,7 @@ aa["CLIP_AREA_HEIGHT"] = a.HEIGHT - a.CLOCK_LABEL_HEIGHT * 2
 aa["CLIP_ASPECT_RATIO"] = 1.0 * a.WIDTH / a.CLIP_AREA_HEIGHT
 aa["PRECISION"] = 6
 aa["ALPHA_RANGE"] = (0.667, 1.0)
-aa["MASTER_DB"] = -1.5
+# aa["MASTER_DB"] = -1.5
 
 startTime = logTime()
 stepTime = startTime
@@ -175,6 +175,10 @@ for c in collections:
         for s in cell["samples"]:
             sample = s.copy()
             sample["cellDur"] = cell["dur"]
+            # if 0 < s["cellStart"] < 60000:
+            #     cellStartMs = roundInt(cell["col"] * cellMoveMsF) + moveStartMs
+            #     cellEndMs = cellStartMs + oneScreenMs
+            #     print("%s:%s %s - %s" % (c["name"], cell["col"], formatSeconds(cellStartMs/1000.0), formatSeconds(cellEndMs/1000.0)))
             samples.append(sample)
 samples = addIndices(samples)
 clips = samplesToClips(samples)
@@ -299,8 +303,12 @@ def getCellPositionAndSize(ms, row, col, myCellW="auto", margin=0):
     x = newLeftX + newCellW * col + margin
     w = newCellW - margin * 2
 
-    # make alpha relative to max weight
-    alpha = ease(nsize / max([w[0] for w in weights]))
+    # make alpha relative to max weight and distance from center
+    nweight = ease(nsize / max([w[0] for w in weights]))
+    cx = x + w * 0.5
+    distanceFromCenter = min(abs(anchorX - cx), anchorX)
+    nDistanceFromCenter = ease(1.0 - 1.0 * distanceFromCenter / anchorX)
+    alpha = (nweight + nDistanceFromCenter) * 0.5
 
     return (x, y, w, h, alpha)
 
