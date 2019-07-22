@@ -454,7 +454,7 @@ def preProcessGL(im, ms, globalArgs={}):
 
 # durationMs = textInEndMs
 # durationMs = textInEndVisibleMs
-durationMs = textInEndVisibleMs + oneScreenMs * 2
+# durationMs = textInEndVisibleMs + oneScreenMs * 2
 # totalFrames = msToFrame(durationMs, a.FPS)
 # outframefile = "tmp/global_lives_text_test_frames/frame.%s.png"
 # makeDirectories(outframefile)
@@ -472,7 +472,7 @@ durationMs = textInEndVisibleMs + oneScreenMs * 2
 # sys.exit()
 
 processComposition(a, clips, durationMs, stepTime=stepTime, startTime=startTime,
-    # audioSequence=audioSequence,
+    audioSequence=audioSequence,
     customClipToArrFunction=clipToNpArrGL,
     preProcessingFunction=preProcessGL,
     renderOnTheFly=True
