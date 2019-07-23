@@ -41,7 +41,7 @@ parser.add_argument('-vthreads', dest="VIDEO_THREADS", default=8, type=int, help
 # Audio option
 parser.add_argument('-maxtpc', dest="MAX_TRACKS_PER_CELL", default=2, type=int, help="How many audio tracks can play at any given time cell")
 parser.add_argument('-padaudio', dest="PAD_AUDIO", default=2000, type=int, help="Pad the beginning and end of audio in milliseconds")
-parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.2,0.6", help="Volume range")
+parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.333,0.667", help="Volume range")
 
 # Text options
 parser.add_argument('-fdir', dest="FONT_DIR", default="media/fonts/Open_Sans/", help="Directory of font files")
