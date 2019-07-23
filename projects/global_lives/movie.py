@@ -30,7 +30,7 @@ parser.add_argument('-co', dest="COLLECTION_FILE", default="projects/global_live
 parser.add_argument('-celldat', dest="CELL_FILE", default="projects/global_lives/data/ia_globallives_cells.csv", help="Input/output cell csv file")
 parser.add_argument('-celldur', dest="CELL_DURATION", default=3.0, type=float, help="Cell duration in minutes")
 parser.add_argument('-cellmx', dest="CELL_MARGIN_X", default=2, type=int, help="Cell x margin in pixels")
-parser.add_argument('-cellmy', dest="CELL_MARGIN_Y", default=2, type=int, help="Cell y margin in pixels")
+parser.add_argument('-cellmy', dest="CELL_MARGIN_Y", default=4, type=int, help="Cell y margin in pixels")
 parser.add_argument('-ppf', dest="PIXELS_PER_FRAME", default=1.0, type=float, help="Number of pixels to move per frame")
 parser.add_argument('-textfdur', dest="TEXT_FADE_DUR", default=3000, type=int, help="Duration text should fade in milliseconds")
 parser.add_argument('-textfdel', dest="TEXT_FADE_DELAY", default=500, type=int, help="Duration text should delay fade in milliseconds")
@@ -39,9 +39,9 @@ parser.add_argument('-clockh', dest="CLOCK_LABEL_HEIGHT", default=0.05, type=flo
 parser.add_argument('-vthreads', dest="VIDEO_THREADS", default=8, type=int, help="Concurrent threads for reading video files to extract clip pixels")
 
 # Audio option
-parser.add_argument('-maxtpc', dest="MAX_TRACKS_PER_CELL", default=3, type=int, help="How many audio tracks can play at any given time cell")
+parser.add_argument('-maxtpc', dest="MAX_TRACKS_PER_CELL", default=2, type=int, help="How many audio tracks can play at any given time cell")
 parser.add_argument('-padaudio', dest="PAD_AUDIO", default=2000, type=int, help="Pad the beginning and end of audio in milliseconds")
-parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.25,0.667", help="Volume range")
+parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.2,0.6", help="Volume range")
 
 # Text options
 parser.add_argument('-fdir', dest="FONT_DIR", default="media/fonts/Open_Sans/", help="Directory of font files")
@@ -59,7 +59,7 @@ aa["CLOCK_LABEL_HEIGHT"] = roundInt(a.CLOCK_LABEL_HEIGHT * a.HEIGHT)
 aa["CLIP_AREA_HEIGHT"] = a.HEIGHT - a.CLOCK_LABEL_HEIGHT * 2
 aa["CLIP_ASPECT_RATIO"] = 1.0 * a.WIDTH / a.CLIP_AREA_HEIGHT
 aa["PRECISION"] = 6
-aa["ALPHA_RANGE"] = (0.667, 1.0)
+aa["ALPHA_RANGE"] = (0.33, 1.0)
 # aa["MASTER_DB"] = -1.5
 
 startTime = logTime()
@@ -304,11 +304,11 @@ def getCellPositionAndSize(ms, row, col, myCellW="auto", margin=0):
     w = newCellW - margin * 2
 
     # make alpha relative to max weight and distance from center
-    nweight = ease(nsize / max([w[0] for w in weights]))
+    nweight = ease(nsize / max([w[0] for w in weights]), "cubicInOut")
     cx = x + w * 0.5
     distanceFromCenter = min(abs(anchorX - cx), anchorX)
-    nDistanceFromCenter = ease(1.0 - 1.0 * distanceFromCenter / anchorX)
-    alpha = (nweight + nDistanceFromCenter) * 0.5
+    nDistanceFromCenter = ease(1.0 - 1.0 * distanceFromCenter / anchorX, "cubicInOut")
+    alpha = nweight * nDistanceFromCenter
 
     return (x, y, w, h, alpha)
 
