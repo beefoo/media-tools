@@ -289,8 +289,10 @@ def processComposition(a, clips, videoDurationMs, sampler=None, stepTime=False, 
     videoFrames = []
     print("Making video frame sequence...")
     frameStart, frameEnd = a.FRAME_RANGE
-    if frameEnd < 0:
-        frameEnd = totalFrames
+    if frameStart <= 0:
+        frameStart = totalFrames + frameStart
+    if frameEnd <= 0:
+        frameEnd = totalFrames + frameEnd
     for f in range(totalFrames):
         frame = f + 1
         ms = frameToMs(frame, a.FPS)

@@ -59,7 +59,7 @@ def addVideoArgs(parser):
     parser.add_argument('-io', dest="CLIP_INITIAL_OFFSET", default=0, type=int, help="Milliseconds to offset the initial clip state for continuity between compositions")
     parser.add_argument('-probe', dest="PROBE", action="store_true", help="Just spit out duration info?")
     parser.add_argument('-frame', dest="OUTPUT_SINGLE_FRAME", default=-1, type=int, help="Output only a single frame (indicated frame number)")
-    parser.add_argument('-frange', dest="FRAME_RANGE", default="1,-1", help="Frame range to render")
+    parser.add_argument('-frange', dest="FRAME_RANGE", default="1,0", help="Frame range to render")
 
 def alphaMask(im, mask):
     w, h = im.size
