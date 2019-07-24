@@ -223,14 +223,9 @@ audioSequence = getGLAudioSequence(collections, cellsPerCollection, sequenceStar
 # visualizeGLAudioSequence(audioSequence, videos)
 # sys.exit()
 
-# pprint(samples[0])
-# sys.exit()
-# clip = clips[0]
-# print("%s, %s" % (clip.props["start"], clip.props["dur"]))
-# msPerFrame = frameToMs(1, a.FPS)
-# durStep = 1.0 * msPerFrame / clip.props["dur"]
-# for i in range(10):
-#     print(i * durStep)
+# for s in audioSequence:
+#     if s["ms"] < 2332000 < s["ms"] + s["dur"]:
+#         print(s["filename"])
 # sys.exit()
 
 def getCurrentWeights(ms):
