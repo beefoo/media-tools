@@ -810,13 +810,14 @@ def samplesToPixels(f):
     del video
     return pixelData
 
-def saveBlankFrame(fn, width, height, bgColor="#000000", overwrite=False):
+def saveBlankFrame(fn, width, height, bgColor="#000000", overwrite=False, verbose=True):
     if os.path.isfile(fn) and not overwrite:
         print("%s already exists." % fn)
         return
     im = Image.new('RGB', (width, height), bgColor)
     im.save(fn)
-    print("Saved %s" % fn)
+    if verbose:
+        print("Saved %s" % fn)
 
 def updateAlpha(im, alpha):
     im = im.convert("RGBA")
