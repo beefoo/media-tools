@@ -317,6 +317,7 @@ def getGLAudioSequence(collections, cellsPerCollection, sequenceStart, cellMs, o
                 fadeOut = min(fadeOut, roundInt(dur*0.5))
 
                 psample["ms"] = ms
+                psample["nvolume"] = nvolume
                 psample["volume"] = volume
                 psample["start"] = start
                 psample["dur"] = dur

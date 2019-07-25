@@ -37,6 +37,8 @@ parser.add_argument('-textfdel', dest="TEXT_FADE_DELAY", default=500, type=int, 
 parser.add_argument('-clipsmo', dest="CLIPS_MOVE_OFFSET", default=-4000, type=int, help="Offset the clips should start moving in in milliseconds")
 parser.add_argument('-clockh', dest="CLOCK_LABEL_HEIGHT", default=0.05, type=float, help="Clock label height as a percent of height")
 parser.add_argument('-vthreads', dest="VIDEO_THREADS", default=8, type=int, help="Concurrent threads for reading video files to extract clip pixels")
+parser.add_argument('-cliplw', dest="CLIP_OUTLINE_WIDTH", default=3, type=int, help="Line width of clip border when playing")
+parser.add_argument('-cliplc', dest="CLIP_OUTLINE_COLOR", default="#AAAAAA", help="Line color of clip border when playing")
 
 # Audio option
 parser.add_argument('-maxtpc', dest="MAX_TRACKS_PER_CELL", default=2, type=int, help="How many audio tracks can play at any given time cell")
@@ -59,7 +61,8 @@ aa["CLOCK_LABEL_HEIGHT"] = roundInt(a.CLOCK_LABEL_HEIGHT * a.HEIGHT)
 aa["CLIP_AREA_HEIGHT"] = a.HEIGHT - a.CLOCK_LABEL_HEIGHT * 2
 aa["CLIP_ASPECT_RATIO"] = 1.0 * a.WIDTH / a.CLIP_AREA_HEIGHT
 aa["PRECISION"] = 6
-aa["ALPHA_RANGE"] = (0.5, 1.0)
+aa["BRIGHTNESS_RANGE"] = (0.1, 1.0)
+aa["CLIP_OUTLINE_COLOR"] = hex2rgb(a.CLIP_OUTLINE_COLOR)
 # aa["MASTER_DB"] = -1.5
 
 startTime = logTime()
@@ -223,6 +226,17 @@ audioSequence = getGLAudioSequence(collections, cellsPerCollection, sequenceStar
 # visualizeGLAudioSequence(audioSequence, videos)
 # sys.exit()
 
+playClips = []
+for s in audioSequence:
+    playClips.append({
+        "start": s["ms"],
+        "end": s["ms"] + s["dur"],
+        "nvolume": s["nvolume"],
+        "row": s["row"],
+        "col": s["col"]
+    })
+playClips = sorted(playClips, key=lambda c: c["start"])
+
 # for s in audioSequence:
 #     if s["ms"] < 2332000 < s["ms"] + s["dur"]:
 #         print(s["filename"])
@@ -298,14 +312,14 @@ def getCellPositionAndSize(ms, row, col, myCellW="auto", margin=0):
     x = newLeftX + newCellW * col + margin
     w = newCellW - margin * 2
 
-    # make alpha relative to max weight and distance from center
+    # make brightness relative to max weight and distance from center
     nweight = ease(nsize / max([w[0] for w in weights]), "cubicInOut")
     cx = x + w * 0.5
     distanceFromCenter = min(abs(anchorX - cx), anchorX)
     nDistanceFromCenter = ease(1.0 - 1.0 * distanceFromCenter / anchorX, "cubicInOut")
-    alpha = nweight * nDistanceFromCenter
+    brightness = nweight * nDistanceFromCenter
 
-    return (x, y, w, h, alpha)
+    return (x, y, w, h, brightness)
 
 # custom clip to numpy array function to override default tweening logic
 def clipToNpArrGL(clip, ms, containerW, containerH, precision, parent, globalArgs={}):
@@ -321,11 +335,11 @@ def clipToNpArrGL(clip, ms, containerW, containerH, precision, parent, globalArg
     global cellMoveMs
 
     x = y = w = h = tn = 0
-    alpha = 1.0
+    brightness = 1.0
 
     # determine position and size here
     if moveStartMs <= ms <= moveEndMs:
-        x, y, w, h, alpha = getCellPositionAndSize(ms, clip.props["row"], clip.props["col"], margin=a.CELL_MARGIN_X)
+        x, y, w, h, brightness = getCellPositionAndSize(ms, clip.props["row"], clip.props["col"], margin=a.CELL_MARGIN_X)
 
         # determine clip time
         cellStartMs = roundInt(clip.props["col"] * cellMoveMsF) + moveStartMs
@@ -338,6 +352,8 @@ def clipToNpArrGL(clip, ms, containerW, containerH, precision, parent, globalArg
             # tn = timeSinceStartMs % clip.props["dur"]
         else:
             x = y = w = h = tn = 0
+
+    brightness = lerp(a.BRIGHTNESS_RANGE, brightness)
 
     customProps = {
         "pos": [x, y],
@@ -352,12 +368,12 @@ def clipToNpArrGL(clip, ms, containerW, containerH, precision, parent, globalArg
         roundInt(props["y"] * precisionMultiplier),
         roundInt(props["width"] * precisionMultiplier),
         roundInt(props["height"] * precisionMultiplier),
-        roundInt(alpha * precisionMultiplier),
+        roundInt(props["alpha"] * precisionMultiplier),
         roundInt(tn * precisionMultiplier),
         roundInt(props["zindex"]),
         roundInt(props["rotation"] * precisionMultiplier),
         roundInt(props["blur"] * precisionMultiplier),
-        roundInt(props["brightness"] * precisionMultiplier)
+        roundInt(brightness * precisionMultiplier)
     ], dtype=np.int32)
 
 def getTextAlpha(ms, c, prefix, fadeDur):
@@ -454,6 +470,34 @@ def preProcessGL(im, ms, globalArgs={}):
 
     return im
 
+def postProcessGL(im, ms, globalArgs={}):
+    global a
+    global playClips
+
+    width, height = im.size
+    stagingImg = Image.new(mode="RGBA", size=(width, height), color=(0, 0, 0, 0))
+    draw = ImageDraw.Draw(stagingImg)
+    drawn = False
+
+    for clip in playClips:
+        if clip["start"] <= ms < clip["end"]:
+            x, y, w, h, brightness = getCellPositionAndSize(ms, clip["row"], clip["col"], margin=a.CELL_MARGIN_X)
+            nprogress = norm(ms, (clip["start"], clip["end"]))
+            alpha = easeSinInOutBell(nprogress)
+            color = tuple(a.CLIP_OUTLINE_COLOR + [roundInt(alpha*255.0)])
+            draw.rectangle([x, y, x+w, y+h], fill=None, outline=color, width=a.CLIP_OUTLINE_WIDTH)
+            drawn = True
+
+        elif ms < clip["start"]:
+            break
+
+    if drawn:
+        im = im.convert("RGBA")
+        im = Image.alpha_composite(im, stagingImg)
+        im = im.convert("RGB")
+
+    return im
+
 # durationMs = textInEndMs
 # durationMs = textInEndVisibleMs
 # durationMs = textInEndVisibleMs + oneScreenMs * 2
@@ -477,5 +521,6 @@ processComposition(a, clips, durationMs, stepTime=stepTime, startTime=startTime,
     audioSequence=audioSequence,
     customClipToArrFunction=clipToNpArrGL,
     preProcessingFunction=preProcessGL,
+    postProcessingFunction=postProcessGL,
     renderOnTheFly=True
 )
