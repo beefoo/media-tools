@@ -37,8 +37,9 @@ parser.add_argument('-textfdel', dest="TEXT_FADE_DELAY", default=500, type=int, 
 parser.add_argument('-clipsmo', dest="CLIPS_MOVE_OFFSET", default=-4000, type=int, help="Offset the clips should start moving in in milliseconds")
 parser.add_argument('-clockh', dest="CLOCK_LABEL_HEIGHT", default=0.05, type=float, help="Clock label height as a percent of height")
 parser.add_argument('-vthreads', dest="VIDEO_THREADS", default=8, type=int, help="Concurrent threads for reading video files to extract clip pixels")
-parser.add_argument('-cliplw', dest="CLIP_OUTLINE_WIDTH", default=3, type=int, help="Line width of clip border when playing")
+parser.add_argument('-cliplw', dest="CLIP_OUTLINE_WIDTH", default=4, type=int, help="Line width of clip border when playing")
 parser.add_argument('-cliplc', dest="CLIP_OUTLINE_COLOR", default="#AAAAAA", help="Line color of clip border when playing")
+parser.add_argument('-cliplmar', dest="CLIP_OUTLINE_MAX_ALPHA_RANGE", default="0.5,1.0", help="Line max alpha range of clip border when playing")
 
 # Audio option
 parser.add_argument('-maxtpc', dest="MAX_TRACKS_PER_CELL", default=2, type=int, help="How many audio tracks can play at any given time cell")
@@ -63,6 +64,7 @@ aa["CLIP_ASPECT_RATIO"] = 1.0 * a.WIDTH / a.CLIP_AREA_HEIGHT
 aa["PRECISION"] = 6
 aa["BRIGHTNESS_RANGE"] = (0.1, 1.0)
 aa["CLIP_OUTLINE_COLOR"] = hex2rgb(a.CLIP_OUTLINE_COLOR)
+aa["CLIP_OUTLINE_MAX_ALPHA_RANGE"] = tuple([float(v) for v in a.CLIP_OUTLINE_MAX_ALPHA_RANGE.strip().split(",")])
 # aa["MASTER_DB"] = -1.5
 
 startTime = logTime()
@@ -236,6 +238,7 @@ for s in audioSequence:
         "col": s["col"]
     })
 playClips = sorted(playClips, key=lambda c: c["start"])
+playClipCount = len(playClips)
 
 # for s in audioSequence:
 #     if s["ms"] < 2332000 < s["ms"] + s["dur"]:
@@ -473,26 +476,41 @@ def preProcessGL(im, ms, globalArgs={}):
 def postProcessGL(im, ms, globalArgs={}):
     global a
     global playClips
+    global playClipCount
 
+    rr = 2 # resize resolution
     width, height = im.size
-    stagingImg = Image.new(mode="RGBA", size=(width, height), color=(0, 0, 0, 0))
+    stagingImg = Image.new(mode="RGBA", size=(width*rr, height*rr), color=(0, 0, 0, 0))
     draw = ImageDraw.Draw(stagingImg)
     drawn = False
-
-    for clip in playClips:
+    deleted = 0
+    for i, clip in enumerate(playClips):
         if clip["start"] <= ms < clip["end"]:
             x, y, w, h, brightness = getCellPositionAndSize(ms, clip["row"], clip["col"], margin=a.CELL_MARGIN_X)
+            x, y, w, h = (x*rr, y*rr, w*rr, h*rr)
             nprogress = norm(ms, (clip["start"], clip["end"]))
             alpha = easeSinInOutBell(nprogress)
+            maxAlpha = lerp(a.CLIP_OUTLINE_MAX_ALPHA_RANGE, clip["nvolume"])
+            alpha *= maxAlpha
             color = tuple(a.CLIP_OUTLINE_COLOR + [roundInt(alpha*255.0)])
             draw.rectangle([x, y, x+w, y+h], fill=None, outline=color, width=a.CLIP_OUTLINE_WIDTH)
             drawn = True
 
+        # we've played all the clips we could; break the loop
         elif ms < clip["start"]:
             break
 
+        # we've played this clip already; delete it
+        else:
+            deleted += 1
+
+    if deleted > 0:
+        del playClips[:deleted]
+        playClipCount -= deleted
+
     if drawn:
         im = im.convert("RGBA")
+        stagingImg = stagingImg.resize((width, height), resample=Image.LANCZOS)
         im = Image.alpha_composite(im, stagingImg)
         im = im.convert("RGB")
 
