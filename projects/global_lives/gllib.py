@@ -350,20 +350,22 @@ def getGLAudioSequence(collections, cellsPerCollection, sequenceStart, cellMs, o
 
     return combinedSamples
 
-def visualizeGLAudioSequence(audioSequence, videos):
+def visualizeGLAudioSequence(audioSequence, collections, videos):
     import matplotlib.pyplot as plt
 
     videoLookup = createLookup(videos, "filename")
     for i, s in enumerate(audioSequence):
         audioSequence[i]["collection"] = videoLookup[s["filename"]]["collection"]
 
-    collections = groupList(audioSequence, "collection")
-    labels = [c["collection"] for c in collections]
+    seqByCollection = groupList(audioSequence, "collection")
+    collectionLookup = createLookup(seqByCollection, "collection")
+    labels = [c["name"] for c in reversed(collections)]
 
     fig, ax = plt.subplots(figsize=(24,12))
-    colors = iter(plt.cm.prism(np.linspace(0,1,len(collections))))
-    for i, c in enumerate(collections):
-        data = [(step["ms"]/60000.0, step["dur"]/60000.0) for step in c["items"]]
+    colors = iter(plt.cm.prism(np.linspace(0,1,len(seqByCollection))))
+    for i, c in enumerate(reversed(collections)):
+        cdata = collectionLookup[c["id"]]
+        data = [(step["ms"]/60000.0, step["dur"]/60000.0) for step in cdata["items"]]
         color = next(colors)
         h = 0.8
         margin = 0.4
@@ -372,13 +374,13 @@ def visualizeGLAudioSequence(audioSequence, videos):
     ax.set_yticks(range(len(labels)))
     ax.set_yticklabels(labels)
     ax.set_xlabel("time [minutes]")
-    plt.tight_layout()
+    # plt.tight_layout()
     plt.show()
 
 def visualizeGLPower(collections):
     import matplotlib.pyplot as plt
     cCount = len(collections)
-    ncols = 4
+    ncols = 3
     nrows = ceilInt(1.0 * cCount / ncols)
     fig, ax = plt.subplots(nrows, ncols)
 
@@ -388,7 +390,9 @@ def visualizeGLPower(collections):
             c = collections[index]
             x = [cell["col"] for cell in c["cells"]]
             y = [cell["npowerIndex"] for cell in c["cells"]]
+            col.xaxis.set_visible(False)
+            col.yaxis.set_visible(False)
             col.set_title(c["name"])
             col.plot(x, y)
-    plt.tight_layout()
+    # plt.tight_layout()
     plt.show()

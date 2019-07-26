@@ -225,7 +225,7 @@ offsetMs = oneScreenMs * 0.5 # amount of time it takes for clip to move from rig
 audioSequence = getGLAudioSequence(collections, cellsPerCollection, sequenceStart, cellMoveMsF, offsetMs, a)
 # from lib.audio_mixer import *
 # plotAudioSequence(audioSequence)
-# visualizeGLAudioSequence(audioSequence, videos)
+# visualizeGLAudioSequence(audioSequence, collections, videos)
 # sys.exit()
 
 playClips = []
