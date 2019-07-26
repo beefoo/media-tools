@@ -30,6 +30,7 @@ addVideoArgs(parser)
 parser.add_argument('-co', dest="COLLECTION_FILE", default="projects/global_lives/data/ia_globallives_collections.csv", help="Input collection csv file")
 parser.add_argument('-celldat', dest="CELL_FILE", default="projects/global_lives/data/ia_globallives_cells.csv", help="Input/output cell csv file")
 parser.add_argument('-celldur', dest="CELL_DURATION", default=3.0, type=float, help="Cell duration in minutes")
+parser.add_argument('-cdebug', dest="DEBUG_COLLECTION", default=-1, type=int, help="Debug a specific cell")
 
 # Layout options
 parser.add_argument('-clipw', dest="CLIP_WIDTH", default=0.333, type=float, help="Clip width as a percentage of width")
@@ -37,9 +38,11 @@ parser.add_argument('-targetl', dest="TARGET_LINES", default=10, type=int, help=
 parser.add_argument('-creditw', dest="CREDIT_WIDTH", default=0.333, type=float, help="Credit width as a percentage of width")
 
 # Timing options
-parser.add_argument('-creditdur', dest="CREDIT_DURATION", default=8000, type=int, help="Credit duration in milliseconds")
+parser.add_argument('-creditdur', dest="CREDIT_DURATION", default=5000, type=int, help="Credit duration in milliseconds")
 parser.add_argument('-fadedur', dest="FADE_DURATION", default=1000, type=int, help="Fade duration in milliseconds")
 parser.add_argument('-paddur', dest="PAD_DURATION", default=0, type=int, help="Time between credits")
+parser.add_argument('-celloffsets', dest="CELL_OFFSETS", default="1,0,0,0,0,30,0,0,30,2,0,0", help="For manually selecting which cell to play")
+
 
 # Text options
 parser.add_argument('-fdir', dest="FONT_DIR", default="media/fonts/Open_Sans/", help="Directory of font files")
@@ -66,6 +69,7 @@ aa["CLIP_X"] = a.MARGIN_X + NUDGE_X
 aa["CLIP_Y"] = (a.HEIGHT - a.CLIP_HEIGHT) * 0.5
 aa["CREDIT_CX"] = a.MARGIN_X * 2 + a.CLIP_WIDTH + a.CREDIT_WIDTH*0.5 - NUDGE_X
 aa["TEXT_COLOR"] = hex2rgb(a.TEXT_COLOR)
+aa["CELL_OFFSETS"] = [int(v) for v in a.CELL_OFFSETS.strip().split(",")]
 
 startTime = logTime()
 stepTime = startTime
@@ -143,11 +147,15 @@ for i, c in enumerate(collections):
     collections[i]["groups"] = groups
 durationMs = ms
 
+if a.DEBUG_COLLECTION > 0:
+    debugCollection = collections[a.DEBUG_COLLECTION-1]
+    aa["OUTPUT_SINGLE_FRAME"] = msToFrame(lerp((debugCollection["fadeInEnd"], debugCollection["fadeOutStart"]), 0.5), a.FPS)
+
 clips = []
 for i, c in enumerate(collections):
     cdur = c["dur"]
     cells = sorted(c["cells"], key=lambda c: c["powerIndex"], reverse=True)
-    loudestCell = cells[0]
+    loudestCell = cells[a.CELL_OFFSETS[i]]
     csample = loudestCell["samples"][0]
     csampleStart = csample["start"]
     csampleDur = cdur
