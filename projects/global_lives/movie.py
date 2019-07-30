@@ -46,6 +46,7 @@ parser.add_argument('-playing', dest="PLAYING_AT", default="", help="Print what 
 parser.add_argument('-maxtpc', dest="MAX_TRACKS_PER_CELL", default=2, type=int, help="How many audio tracks can play at any given time cell")
 parser.add_argument('-padaudio', dest="PAD_AUDIO", default=2000, type=int, help="Pad the beginning and end of audio in milliseconds")
 parser.add_argument('-volr', dest="VOLUME_RANGE", default="0.333,0.667", help="Volume range")
+parser.add_argument('-maxmdb', dest="MAX_MATCH_DB", default=6, type=int, help="Max delta decibels when matching decibels")
 
 # Text options
 parser.add_argument('-fdir', dest="FONT_DIR", default="media/fonts/Open_Sans/", help="Directory of font files")
@@ -245,7 +246,7 @@ if len(a.PLAYING_AT) > 0:
     msAt = timecodeToMs(a.PLAYING_AT)
     for s in audioSequence:
         if s["ms"] < msAt < s["ms"] + s["dur"]:
-            print(s["filename"])
+            print("%s (%s to %s at volume %s)" % (s["filename"], formatSeconds(s["start"]/1000.0), formatSeconds((s["start"]+s["dur"])/1000.0), s["volume"]))
     sys.exit()
 
 def getCurrentWeights(ms):

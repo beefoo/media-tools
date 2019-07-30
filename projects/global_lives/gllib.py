@@ -345,8 +345,9 @@ def getGLAudioSequence(collections, cellsPerCollection, sequenceStart, cellMs, o
 
     # add audio properties
     for i, s in enumerate(combinedSamples):
-        # combinedSamples[i]["matchDb"] = a.MATCH_DB
-        combinedSamples[i]["maxDb"] = a.MAX_DB
+        combinedSamples[i]["matchDb"] = a.MATCH_DB
+        combinedSamples[i]["maxMatchDb"] = a.MAX_MATCH_DB
+        # combinedSamples[i]["maxDb"] = a.MAX_DB
         # combinedSamples[i]["reverb"] = a.REVERB
 
     return combinedSamples
