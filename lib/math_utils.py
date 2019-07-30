@@ -268,7 +268,12 @@ def roundInt(n):
     return int(round(n))
 
 def timecodeToMs(tc):
-    hours, minutes, seconds = tuple([float(v) for v in tc.split(":")])
+    t = tuple([float(v) for v in tc.split(":")])
+    hours = minutes = seconds = 0
+    if len(t)==3:
+        hours, minutes, seconds = t
+    elif len(t)==2:
+        minutes, seconds = t
     seconds = seconds + minutes * 60 + hours * 3600
     return roundInt(seconds*1000)
 

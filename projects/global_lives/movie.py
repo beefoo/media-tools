@@ -40,6 +40,7 @@ parser.add_argument('-vthreads', dest="VIDEO_THREADS", default=8, type=int, help
 parser.add_argument('-cliplw', dest="CLIP_OUTLINE_WIDTH", default=4, type=int, help="Line width of clip border when playing")
 parser.add_argument('-cliplc', dest="CLIP_OUTLINE_COLOR", default="#AAAAAA", help="Line color of clip border when playing")
 parser.add_argument('-cliplmar', dest="CLIP_OUTLINE_MAX_ALPHA_RANGE", default="0.5,1.0", help="Line max alpha range of clip border when playing")
+parser.add_argument('-playing', dest="PLAYING_AT", default="", help="Print what files are playing at mm:ss")
 
 # Audio option
 parser.add_argument('-maxtpc', dest="MAX_TRACKS_PER_CELL", default=2, type=int, help="How many audio tracks can play at any given time cell")
@@ -240,10 +241,12 @@ for s in audioSequence:
 playClips = sorted(playClips, key=lambda c: c["start"])
 playClipCount = len(playClips)
 
-# for s in audioSequence:
-#     if s["ms"] < 2332000 < s["ms"] + s["dur"]:
-#         print(s["filename"])
-# sys.exit()
+if len(a.PLAYING_AT) > 0:
+    msAt = timecodeToMs(a.PLAYING_AT)
+    for s in audioSequence:
+        if s["ms"] < msAt < s["ms"] + s["dur"]:
+            print(s["filename"])
+    sys.exit()
 
 def getCurrentWeights(ms):
     global a
