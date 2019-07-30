@@ -212,6 +212,9 @@ for i in range(clockCellCount):
         labelChars.append((char, chw))
         labelW += chw + clockTextProps["letterSpacing"]
     labelW -= clockTextProps["letterSpacing"]
+    # print("%s: %s" % (clabel, labelW))
+    if labelW % 2 == 0:
+        labelW -= 1
 
     clockCells.append({
         "col": i,
