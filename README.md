@@ -1,6 +1,6 @@
 # Media tools
 
-This is my personal "Swiss army knife" of working with (usually large) collections of media. It is made up of a number of scripts that downloads media, extracts samples from arbitrary media, extracts features from those samples, and recombines them in various ways. For example, this will sort an audio file by frequency:
+This is my personal "Swiss army knife" for working with (usually large) collections of media. It is made up of a number of scripts that downloads media, extracts samples from that media, extracts features from those samples, and recombines them in various ways. For example, this will sort an audio file by frequency:
 
 ```
 python sort_audio.py -in "media/sample/sonata.mp3" -sort "hz=asc" -out "output/sonata_sorted_by_hz.mp3"
