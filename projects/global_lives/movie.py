@@ -147,8 +147,8 @@ collections = sorted(collections, key=lambda c: c["titleSort"])
 for i, c in enumerate(collections):
     collections[i]["locFadeInStart"] = textInStartMs + i * 2 * a.TEXT_FADE_DELAY
     collections[i]["nameFadeInStart"] = collections[i]["locFadeInStart"] + a.TEXT_FADE_DELAY
-    collections[i]["locFadeInOutStart"] = collections[i]["locFadeInStart"] + roundInt(oneScreenMs * 0.5)
-    collections[i]["nameFadeInOutStart"] = collections[i]["nameFadeInStart"] + roundInt(oneScreenMs * 0.5)
+    collections[i]["locFadeInOutStart"] = collections[i]["locFadeInStart"] + roundInt(oneScreenMs * 0.25)
+    collections[i]["nameFadeInOutStart"] = collections[i]["nameFadeInStart"] + roundInt(oneScreenMs * 0.25)
     collections[i]["locFadeOutStart"] = textOutStartMs + (collectionCount-1-i) * 2 * a.TEXT_FADE_DELAY
     collections[i]["nameFadeOutStart"] = collections[i]["locFadeOutStart"] + a.TEXT_FADE_DELAY
     collections[i]["locFadeOutInStart"] = collections[i]["locFadeOutStart"] - roundInt(oneScreenMs * 0.5)
