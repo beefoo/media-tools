@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
 import argparse
+from lib.audio_utils import *
 from lib.io_utils import *
 from lib.math_utils import *
-import librosa
 from matplotlib import pyplot as plt
 from multiprocessing import Pool
 from multiprocessing.dummy import Pool as ThreadPool
@@ -20,8 +20,8 @@ parser.add_argument('-pattern', dest="PATTERN", default="([a-z\-]+)\_([A-Z]s?)([
 parser.add_argument('-features', dest="PATTERN_FEATURES", default="group,note,octave,note_dur,dynamic,articulation", help="Features that the pattern maps to")
 parser.add_argument('-out', dest="OUTPUT_FILE", default="media/sampler/double-bass.csv", help="CSV output file")
 parser.add_argument('-append', dest="APPEND", default=1, type=int, help="Append to existing data?")
-parser.add_argument('-overwrite', dest="OVERWRITE", default=0, type=int, help="Overwrite existing data?")
-parser.add_argument('-plot', dest="PLOT", default=0, type=int, help="Show plot?")
+parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite existing data?")
+parser.add_argument('-plot', dest="PLOT", action="store_true", help="Show plot?")
 args = parser.parse_args()
 
 # Parse arguments
@@ -30,8 +30,8 @@ OUTPUT_FILE = args.OUTPUT_FILE
 PATTERN = args.PATTERN
 PATTERN_FEATURES = args.PATTERN_FEATURES.split(",")
 APPEND = args.APPEND > 0
-OVERWRITE = args.OVERWRITE > 0
-PLOT = args.PLOT > 0
+OVERWRITE = args.OVERWRITE
+PLOT = args.PLOT
 
 # Read files
 files = getFilenames(INPUT_FILES)
@@ -77,8 +77,7 @@ def getFeatures(row):
         row[feature] = matches.group(j+1)
 
     if "dur" not in row or OVERWRITE:
-        duration = int(librosa.get_duration(filename=row["filepath"])*1000)
-        row["dur"] = duration
+        row["dur"] = getDurationFromAudioFile(row["filepath"])
         row["start"] = 0
     sys.stdout.write('\r')
     sys.stdout.write("%s%%" % round(1.0*progress/(fileCount-1)*100,1))
