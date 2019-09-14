@@ -17,6 +17,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-in', dest="INPUT_FILE", default="path/to/*.h2drumkit", help="Input file pattern")
 parser.add_argument('-out', dest="OUTPUT_DIR", default="tmp/h2drumkit/", help="Path to output directory")
 parser.add_argument('-threads', dest="THREADS", default=3, type=int, help="Number of concurrent threads, -1 for all available")
+parser.add_argument('-format', dest="OUTPUT_FORMAT", default="wav", help="Output format, e.g. wav, mp3, etc")
 parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite existing wavs?")
 a = parser.parse_args()
 
@@ -48,13 +49,13 @@ def drumKitToWavs(filename):
         tnames = tar.getnames()
         tar.extractall(extractPath)
 
-    print("Converting flac to wav...")
+    print("Converting flac to %s..." % a.OUTPUT_FORMAT)
     for tname in tnames:
         if not tname.endswith(".flac"):
             continue
         flacfile = extractPath + tname
         flacbasename = getBasename(tname)
-        wavfile = a.OUTPUT_DIR + basename + "__" + flacbasename + ".wav"
+        wavfile = a.OUTPUT_DIR + basename + "__" + flacbasename + "." + a.OUTPUT_FORMAT
         flacToWav(flacfile, wavfile)
 
     # Delete temporary dir
