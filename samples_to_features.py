@@ -19,7 +19,7 @@ import sys
 parser = argparse.ArgumentParser()
 parser.add_argument('-in', dest="INPUT_FILE", default="tmp/samples.csv", help="Input file")
 parser.add_argument('-dir', dest="MEDIA_DIRECTORY", default="media/sample/", help="Input file")
-parser.add_argument('-out', dest="OUTPUT_FILE", default="tmp/samples_features.csv", help="CSV output file")
+parser.add_argument('-out', dest="OUTPUT_FILE", default="", help="CSV output file")
 parser.add_argument('-append', dest="APPEND", default=1, type=int, help="Append to existing data?")
 parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite existing data?")
 parser.add_argument('-plot', dest="PLOT", action="store_true", help="Show plot?")
@@ -29,7 +29,7 @@ args = parser.parse_args()
 # Parse arguments
 INPUT_FILE = args.INPUT_FILE
 MEDIA_DIRECTORY = args.MEDIA_DIRECTORY
-OUTPUT_FILE = args.OUTPUT_FILE
+OUTPUT_FILE = args.OUTPUT_FILE if len(args.OUTPUT_FILE) > 0 else args.INPUT_FILE
 APPEND = args.APPEND > 0
 OVERWRITE = args.OVERWRITE
 PLOT = args.PLOT
