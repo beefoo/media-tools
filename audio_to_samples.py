@@ -25,6 +25,7 @@ parser.add_argument('-dir', dest="MEDIA_DIRECTORY", default="media/downloads/ia_
 parser.add_argument('-samples', dest="SAMPLES", default=-1, type=int, help="Max samples to produce per media file, -1 for all")
 parser.add_argument('-min', dest="MIN_DUR", default=80, type=int, help="Minimum sample duration in ms")
 parser.add_argument('-max', dest="MAX_DUR", default=1000, type=int, help="Maximum sample duration in ms, -1 for no max")
+parser.add_argument('-delta', dest="ONSET_DELTA", default=0.07, type=float, help="Onset delta; must be larger than 0")
 parser.add_argument('-out', dest="OUTPUT_FILE", default="tmp/samples.csv", help="CSV output file")
 parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite existing data?")
 
@@ -42,6 +43,7 @@ MEDIA_DIRECTORY = args.MEDIA_DIRECTORY
 SAMPLES = args.SAMPLES
 MIN_DUR = args.MIN_DUR
 MAX_DUR = args.MAX_DUR
+ONSET_DELTA = args.ONSET_DELTA
 OUTPUT_FILE = args.OUTPUT_FILE
 OVERWRITE = args.OVERWRITE
 MULTIFILE_OUTPUT = ("%s" in OUTPUT_FILE)
@@ -89,7 +91,7 @@ progress = 0
 
 def getSamples(fn, sampleCount=-1):
     print("Retrieving samples for %s..." % fn)
-    sampleData, y, sr = getAudioSamples(fn, min_dur=MIN_DUR, max_dur=MAX_DUR, fft=FFT, hop_length=HOP_LEN)
+    sampleData, y, sr = getAudioSamples(fn, min_dur=MIN_DUR, max_dur=MAX_DUR, fft=FFT, hop_length=HOP_LEN, delta=ONSET_DELTA)
     print("Found %s samples in %s." % (len(sampleData), fn))
 
     if len(sampleData) > 0:

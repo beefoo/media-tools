@@ -169,7 +169,7 @@ def getAudioFile(fn, samplerate=48000):
     #     fn = target
     return fn
 
-def getAudioSamples(fn, min_dur=50, max_dur=-1, fft=2048, hop_length=512, backtrack=True, superFlux=True, y=None, sr=None):
+def getAudioSamples(fn, min_dur=50, max_dur=-1, fft=2048, hop_length=512, backtrack=True, superFlux=True, y=None, sr=None, delta=0.07):
     basename = os.path.basename(fn)
     fn = getAudioFile(fn)
 
@@ -192,11 +192,11 @@ def getAudioSamples(fn, min_dur=50, max_dur=-1, fft=2048, hop_length=512, backtr
         max_size = 3
         S = librosa.feature.melspectrogram(y, sr=sr, n_fft=fft, hop_length=hop_length, fmin=fmin, fmax=fmax, n_mels=n_mels)
         odf = librosa.onset.onset_strength(S=librosa.power_to_db(S, ref=np.max), sr=sr, hop_length=hop_length, lag=lag, max_size=max_size)
-        onsets = librosa.onset.onset_detect(onset_envelope=odf, sr=sr, hop_length=hop_length, backtrack=backtrack)
+        onsets = librosa.onset.onset_detect(onset_envelope=odf, sr=sr, hop_length=hop_length, backtrack=backtrack, delta=delta)
 
     # retrieve onsets using default method
     else:
-        onsets = librosa.onset.onset_detect(y=y, sr=sr, hop_length=hop_length, backtrack=backtrack)
+        onsets = librosa.onset.onset_detect(y=y, sr=sr, hop_length=hop_length, backtrack=backtrack, delta=delta)
 
     times = [int(round(1.0 * hop_length * onset / sr * 1000)) for onset in onsets]
     # add the end of the audio

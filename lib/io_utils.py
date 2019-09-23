@@ -23,6 +23,11 @@ except:
     pass
     # print("reload operation not supported, skipping...")
 
+def appendToBasename(fn, appendString):
+    extLen = len(getFileExt(fn))
+    i = len(fn) - extLen
+    return fn[:i] + appendString + fn[i:]
+
 def downloadBinaryFile(url, filename, overwrite=False):
     if os.path.isfile(filename) and not overwrite:
         print("%s already exists." % filename)
