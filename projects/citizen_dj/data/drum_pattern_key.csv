@@ -1,0 +1,18 @@
+symbol,name,type
+k,kick,instrument
+s,snare,instrument
+h,hi-hat,instrument
+ho,hi-hat open,instrument
+hc,hi-hat closed,instrument
+r,rim,instrument
+c,crash,instrument
+y,ride cymbal,instrument
+yl,ride cymbal bell,instrument
+t,tom 1,instrument
+tt,tom 2,instrument
+ttt,tom 3,instrument
+a,accented,style
+3,triple,style
+g,ghosted,style
+b,buzzed,style
+d,delayed,style
