@@ -241,6 +241,14 @@ def getDurationFromAudioFile(fn):
     return duration
 
 def getFeatures(y, sr, start, dur=100, fft=2048, hop_length=512):
+    if dur <= 0:
+        return {
+            "power": -1,
+            "hz": -1,
+            "clarity": -1,
+            "note": "-",
+            "octave": -1
+        }
     # analyze just the sample
     y = getFrameRange(y, start, start+dur, sr)
 
