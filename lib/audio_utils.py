@@ -110,7 +110,7 @@ def applyAudioProperties(audio, props, sfx=True, fxPad=3000):
 
 # Note: sample_width -> bit_depth conversions: 1->8, 2->16, 3->24, 4->32
 # 24/32 bit depth and 48K sample rates are industry standards
-def getAudio(filename, sampleWidth=4, sampleRate=48000, channels=2):
+def getAudio(filename, sampleWidth=4, sampleRate=48000, channels=2, verbose=True):
     # A hack: always read files at 16-bit depth because Sox does not support more than that
     sampleWidth = 2
     audiofilename = getAudioFile(filename)
@@ -118,15 +118,18 @@ def getAudio(filename, sampleWidth=4, sampleRate=48000, channels=2):
     audio = AudioSegment.from_file(audiofilename, format=fformat)
     # convert to stereo
     if audio.channels != channels:
-        print("Warning: channels changed to %s from %s in %s" % (channels, audio.channels, filename))
+        if verbose:
+            print("Warning: channels changed to %s from %s in %s" % (channels, audio.channels, filename))
         audio = audio.set_channels(channels)
     # convert sample width
     if audio.sample_width != sampleWidth:
-        print("Warning: sample width changed to %s from %s in %s" % (sampleWidth, audio.sample_width, filename))
+        if verbose:
+            print("Warning: sample width changed to %s from %s in %s" % (sampleWidth, audio.sample_width, filename))
         audio = audio.set_sample_width(sampleWidth)
     # convert sample rate
     if audio.frame_rate != sampleRate:
-        print("Warning: frame rate changed to %s from %s in %s" % (sampleRate, audio.frame_rate, filename))
+        if verbose:
+            print("Warning: frame rate changed to %s from %s in %s" % (sampleRate, audio.frame_rate, filename))
         audio = audio.set_frame_rate(sampleRate)
     return audio
 

@@ -12,6 +12,7 @@ parentdir = os.path.dirname(currentdir)
 parentdir = os.path.dirname(parentdir)
 sys.path.insert(0,parentdir)
 
+from lib.audio_utils import *
 from lib.collection_utils import *
 from lib.io_utils import *
 from lib.math_utils import *
@@ -36,6 +37,8 @@ if "auto" not in fieldNames:
     for i, row in enumerate(rows):
         rows[i]["auto"] = 0
 
+rows = addIndices(rows)
+
 # group drumkits by drumkit name
 rows = prependAll(rows, ("filename", a.MEDIA_DIR, "filepath"))
 drumGroups = groupList(rows, "drumkit")
@@ -46,6 +49,7 @@ patternKeyGroups = groupList(patternKey, "type")
 patternKeyLookup = createLookup(patternKeyGroups, "type")
 instrumentSymbols = sorted([i["symbol"] for i in patternKeyLookup["instrument"]["items"]], key=lambda s: -len(s))
 styleSymbols = [i["symbol"] for i in patternKeyLookup["style"]["items"]]
+styleLookup = createLookup(patternKeyLookup["style"]["items"], "symbol")
 
 # retrieve all unique instruments
 symbols = []
@@ -115,17 +119,28 @@ for drum in drumGroups:
         fname = appendToBasename(baseInstrument["filepath"], "_"+d["symbol"])
         # check if we need to generate a new file
         if (d["symbol"] not in dsymbols or dlookup[d["symbol"]]["auto"] > 0) and (a.OVERWRITE or not os.path.isfile(fname)):
-            print(fname)
+            # print(fname)
+            updateIndex = -1
+            if d["symbol"] in dsymbols and dlookup[d["symbol"]]["auto"] > 0:
+                updateIndex = dlookup[d["symbol"]]["index"]
             modifiers.append({
                 "source": baseInstrument,
                 "modifiers": d["modifiers"],
-                "filepath": fname
+                "filepath": fname,
+                "updateIndex": updateIndex
             })
-    print("=====")
+    # print("=====")
 
-# print("Generating %s files" % len(modifiers))
-# addRows = []
-# for m in modifiers:
-#     print(m["filepath"])
+print("Generating %s files" % len(modifiers))
+addRows = []
+for m in modifiers:
+    sourceAudio = getAudio(m["source"]["filepath"], verbose=False)
+    print(sourceAudio.max_dBFS)
+    # for mod in m["modifiers"]:
+    #     if mod in styleLookup:
+    #         style = styleLookup[mod]
+    #         if style["volume"] != "":
+    #
+    # print(m["filepath"])
 
 # writeCsv(OUTPUT_FILE, rows, headings=fieldNames)
