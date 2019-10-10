@@ -17,23 +17,24 @@ import sys
 parser = argparse.ArgumentParser()
 parser.add_argument('-in', dest="INPUT_FILE", default="tmp/samples.csv", help="Input file pattern")
 parser.add_argument('-dir', dest="MEDIA_DIRECTORY", default="media/sample/", help="Input file")
-parser.add_argument('-out', dest="OUTPUT_DIR", default="output/", help="Output dir; leave blank if overwriting original files")
+parser.add_argument('-out', dest="OUTPUT_DIR", default="output/normalize/", help="Output dir")
 parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite existing audio?")
 parser.add_argument('-plot', dest="PLOT", action="store_true", help="Plot the data?")
 parser.add_argument('-threads', dest="THREADS", default=4, type=int, help="Number of threads")
-parser.add_argument('-db', dest="TARGET_DB", default=-15, type=float, help="Target median decibels")
-parser.add_argument('-mindb', dest="MIN_DB", default=-24, type=float, help="Target minumum decibels")
+parser.add_argument('-db', dest="TARGET_DB", default=-14, type=float, help="Target median decibels")
+parser.add_argument('-mindb', dest="MIN_DB", default=-22, type=float, help="Target minimum decibels")
 parser.add_argument('-maxdb', dest="MAX_DB", default=-6, type=float, help="Target maximum decibels")
 parser.add_argument('-group', dest="GROUP_BY", default="", help="Group files by key; leave blank for no grouping")
 a = parser.parse_args()
 
 # Parse arguments
-OVERWRITE_SELF = len(a.OUTPUT_DIR) < 1
 HAS_GROUPS = len(a.GROUP_BY) > 0
 
-if OVERWRITE_SELF and not a.OVERWRITE:
-    print("Enter an output directory or add --ovewrite to overwrite self")
+if a.MEDIA_DIRECTORY == a.OUTPUT_DIR:
+    print("Input and output directory cannot be the same")
     sys.exit()
+
+makeDirectories(a.OUTPUT_DIR)
 
 # Read files
 fieldNames, files, fileCount = getFilesFromString(a)
@@ -44,24 +45,34 @@ if HAS_GROUPS:
 else:
     fileGroups = [{ "items": files }]
 
-def getDecibel(filename):
+def getDecibel(p):
+    index, filename = p
     audio = getAudio(filename, verbose=False)
-    return audio.dBFS
+    return (index, audio.dBFS)
 
 plotData = []
-for group in fileGroups:
+convertProps = []
+for i, group in enumerate(fileGroups):
     title = group[a.GROUP_BY] if HAS_GROUPS else "audio"
     print("Processing %s group..." % title)
-    filenames = [item["filename"] for item in group["items"]]
+    itemprops = [(j, item["filename"]) for j, item in enumerate(group["items"])]
 
     pool = ThreadPool(getThreadCount(a.THREADS))
-    dbs = pool.map(getDecibel, filenames)
+    results = pool.map(getDecibel, itemprops)
     pool.close()
     pool.join()
 
-    medianDb = statistics.median(dbs)
+    medianDb = statistics.median([r[1] for r in results])
     print("Median dB: %s" % medianDb)
     print("=====")
+
+    for j, db in results:
+        deltaDb = db - medianDb
+        targetDb = a.TARGET_DB + deltaDb
+        targetDb = lim(targetDb, (a.MIN_DB, a.MAX_DB))
+        sourceFile = group["items"][j]["filename"]
+        destFile = a.OUTPUT_DIR + os.path.basename(sourceFile)
+        convertProps.append((sourceFile, targetDb, destFile))
 
     if a.PLOT:
         plotData.append({
@@ -93,3 +104,17 @@ if a.PLOT:
     plt.tight_layout()
     plt.show()
     sys.exit()
+
+def changeVolume(p):
+    sourceFile, targetDb, destFile = p
+    audio = getAudio(sourceFile, verbose=False)
+    audio = matchDb(audio, targetDb)
+    format = destFile.split(".")[-1]
+    audio.export(destFile, format=format)
+
+print("Converting audio...")
+pool = ThreadPool(getThreadCount(a.THREADS))
+results = pool.map(changeVolume, convertProps)
+pool.close()
+pool.join()
+print("Done.")

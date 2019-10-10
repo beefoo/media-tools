@@ -458,9 +458,9 @@ def makeBlankAudio(duration, fn, sampleWidth=4, sampleRate=48000, channels=2):
     baseAudio.export(fn, format=format)
     print("Created blank audio: %s" % fn)
 
-def matchDb(audio, targetDb, maxMatchDb=-1):
+def matchDb(audio, targetDb, maxMatchDb=None):
     deltaDb = targetDb - audio.dBFS
-    if maxMatchDb > 0:
+    if maxMatchDb is not None:
         deltaDb = min(deltaDb, maxMatchDb)
     return audio.apply_gain(deltaDb)
 
