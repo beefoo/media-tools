@@ -12,6 +12,7 @@ parentdir = os.path.dirname(currentdir)
 parentdir = os.path.dirname(parentdir)
 sys.path.insert(0,parentdir)
 
+from lib.audio_mixer import *
 from lib.audio_utils import *
 from lib.collection_utils import *
 from lib.io_utils import *
@@ -22,6 +23,8 @@ parser.add_argument('-pfile', dest="PATTERN_FILE", default="projects/citizen_dj/
 parser.add_argument('-pkfile', dest="PATTERN_KEY_FILE", default="projects/citizen_dj/data/drum_pattern_key.csv", help="Input pattern key csv file")
 parser.add_argument('-sfile', dest="SAMPLE_FILE", default="projects/citizen_dj/data/drum_machines.csv", help="Input samples csv file")
 parser.add_argument('-dir', dest="MEDIA_DIR", default="path/to/media/", help="Input collection csv file")
+parser.add_argument('-mindb', dest="MIN_DB", default=-22, type=float, help="Target minimum decibels")
+parser.add_argument('-maxdb', dest="MAX_DB", default=-6, type=float, help="Target maximum decibels")
 parser.add_argument('-out', dest="OUTPUT_FILE", default="", help="Output samples csv file; leave blank if same as input file")
 parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite existing media files?")
 a = parser.parse_args()
@@ -124,6 +127,7 @@ for drum in drumGroups:
             if d["symbol"] in dsymbols and dlookup[d["symbol"]]["auto"] > 0:
                 updateIndex = dlookup[d["symbol"]]["index"]
             modifiers.append({
+                "instrument": d["symbol"],
                 "source": baseInstrument,
                 "modifiers": d["modifiers"],
                 "filepath": fname,
@@ -135,12 +139,78 @@ print("Generating %s files" % len(modifiers))
 addRows = []
 for m in modifiers:
     sourceAudio = getAudio(m["source"]["filepath"], verbose=False)
-    print(sourceAudio.max_dBFS)
-    # for mod in m["modifiers"]:
-    #     if mod in styleLookup:
-    #         style = styleLookup[mod]
-    #         if style["volume"] != "":
-    #
+    destAudio = m["filepath"]
+    updateIndex = m["updateIndex"]
+
+    for mod in m["modifiers"]:
+        if mod in styleLookup:
+            style = styleLookup[mod]
+            # adjusting volume
+            if style["volume"] > 1 or style["volume"] < 1:
+                targetDb = lim(sourceAudio.dBFS + volumeToDb(style["volume"]), (a.MIN_DB, a.MAX_DB))
+                if targetDb > 0.0 or targetDb < 0.0:
+                    sourceAudio = matchDb(sourceAudio, targetDb)
+
+            # create multiples (e.g. buzz or triples)
+            elif style["count"] > 1 and style["offset"] > 0:
+                clipDur = m["source"]["dur"]
+                offset = min(clipDur, style["offset"])
+                newDur = clipDur + offset * (style["count"] - 1)
+                clipFadeOut = clipDur - offset
+                instructions = []
+                ms = 0
+                for i in range(style["count"]):
+                    n = 1.0 * i / (style["count"] - 1)
+                    volume = lerp((style["volume_from"], style["volume_to"]), n)
+                    fadeOut = 0
+                    if n < 1.0 and clipFadeOut > 0.0:
+                        fadeOut = clipFadeOut
+                    instructions.append({
+                        "ms": ms,
+                        "start": 0,
+                        "dur": clipDur,
+                        "db": volumeToDb(volume),
+                        "fadeOut": fadeOut
+                    })
+                    ms += offset
+                segments = [{
+                    "id": (0, clipDur),
+                    "start": 0,
+                    "dur": clipDur,
+                    "audio": sourceAudio
+                }]
+                sourceAudio = makeTrack(newDur, instructions, segments)
+
+            else:
+                print("Warning: nothing to modify for %s" % mod)
+
+        else:
+            print("Error: %s modifier not found" % mod)
+
+    format = destAudio.split(".")[-1]
+    sourceAudio.export(destAudio, format=format)
+    print("Created %s" % destAudio)
+    # sys.exit()
+
+    # get new duration and power
+    dur = getDurationFromAudioFile(destAudio)
+    features = getFeaturesFromSamples(destAudio, [{"start": 0, "dur": dur}])
+    power = features[0]["power"]
+
+    # add new row if necessary
+    if updateIndex < 0:
+        row = m["source"].copy()
+        row["filename"] = os.path.basename(destAudio)
+        row["dur"] = dur
+        row["power"] = power
+        row["instrument"] = m["instrument"]
+        row["auto"] = 1
+        rows.append(row)
+
+    else:
+        rows[updateIndex]["dur"] = dur
+        rows[updateIndex]["power"] = power
+
     # print(m["filepath"])
 
-# writeCsv(OUTPUT_FILE, rows, headings=fieldNames)
+writeCsv(OUTPUT_FILE, rows, headings=fieldNames)
