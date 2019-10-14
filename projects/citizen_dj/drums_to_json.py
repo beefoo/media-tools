@@ -48,7 +48,7 @@ for group in groups:
 
 jsonOut = {
     "drums": data,
-    "itemHeadings": a.PROPS
+    "itemHeadings": PROPS
 }
 
 makeDirectories(a.OUTPUT_FILE)
