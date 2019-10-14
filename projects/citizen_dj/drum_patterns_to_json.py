@@ -85,6 +85,7 @@ for group in patternGroups:
         barsData.append(barData)
     groupData.append({
         "groupIndex": index,
+        "bpm": bars[0]["bpm"],
         "bars": barsData
     })
 
