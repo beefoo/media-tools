@@ -197,6 +197,11 @@ def removeFiles(listOrString):
 def replaceWhitespace(string, replaceWith=" "):
     return re.sub('\s+', replaceWith, string).strip() if isinstance(string, str) else string
 
+def replaceFileExtension(fn, newExt):
+    extLen = len(getFileExt(fn))
+    i = len(fn) - extLen
+    return fn[:i] + newExt
+
 def supportsEncoding():
     return sys.version_info >= (3, 0)
 
