@@ -29,6 +29,7 @@ patternKey = filterWhere(patternKey, ("active", 0, ">"))
 patternKeyGroups = groupList(patternKey, "type")
 patternKeyLookup = createLookup(patternKeyGroups, "type")
 instrumentSymbols = sorted([i["symbol"] for i in patternKeyLookup["instrument"]["items"]], key=lambda s: -len(s))
+instrumentLookup = createLookup(patternKeyLookup["instrument"]["items"], "symbol")
 styleSymbols = [i["symbol"] for i in patternKeyLookup["style"]["items"]]
 styleLookup = createLookup(patternKeyLookup["style"]["items"], "symbol")
 
@@ -66,7 +67,7 @@ groupMeta = sorted(unique([r["groupId"] for r in patterns]))
 # pprint(groupMeta)
 patternGroups = groupList(patterns, "groupId")
 
-groupData = []
+patternData = []
 for group in patternGroups:
     index = groupMeta.index(group["groupId"])
     bars = sorted(group["items"], key=lambda g: g["bar"])
@@ -83,15 +84,37 @@ for group in patternGroups:
                         instruments.append(symbol)
             barData.append(instruments)
         barsData.append(barData)
-    groupData.append({
-        "groupIndex": index,
-        "bpm": bars[0]["bpm"],
-        "bars": barsData
-    })
+    row = list(groupMeta[index])
+    row.append(bars[0]["bpm"])
+    row.append(barsData)
+    patternData.append(row)
+
+patternKeyData = {}
+for s in validSymbols:
+    label = ""
+    for ss in instrumentSymbols:
+        if ss == s:
+            label = instrumentLookup[s]["name"]
+            break
+        elif ss != s and s.startswith(ss):
+            label = instrumentLookup[ss]["name"]
+            mparts = s[len(ss):].split()
+            styleStrings = []
+            for part in mparts:
+                if part in styleSymbols:
+                    styleString = styleLookup[part]["name"]
+                    styleStrings.append(styleString)
+            if len(styleStrings) > 0:
+                label += " (%s)" % ", ".join(styleStrings)
+            break
+    patternKeyData[s] = label
+# pprint(patternKeyData)
+# sys.exit()
 
 jsonOut = {
-    "meta": groupMeta,
-    "bars": groupData
+    "patterns": patternData,
+    "patternKey": patternKeyData,
+    "itemHeadings": ["artist", "title", "year", "category", "bpm", "bars"]
 }
 
 makeDirectories(a.OUTPUT_FILE)
