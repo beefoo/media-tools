@@ -154,7 +154,7 @@ for m in modifiers:
             # create multiples (e.g. buzz or triples)
             elif style["count"] > 1 and style["offset"] > 0:
                 clipDur = m["source"]["dur"]
-                offset = min(clipDur, style["offset"])
+                offset = style["offset"]
                 newDur = clipDur + offset * (style["count"] - 1)
                 clipFadeOut = clipDur - offset
                 instructions = []

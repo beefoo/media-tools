@@ -1,373 +1,373 @@
 filename,start,dur,drumkit,instrument_key,instrument,priority,auto,manual,power
 Akai_MPC-X__49crash.wav,0,2265,Akai MPC,crash,c,,0,0,7.17
+Akai_MPC-X__49crash_cg.wav,0,2265,Akai MPC,crash,cg,,1,0,2.87
 Akai_MPC-X__44hat_pedal.wav,0,71,Akai MPC,hat_pedal,h,,0,0,4.83
+Akai_MPC-X__44hat_pedal_ha.wav,0,71,Akai MPC,hat_pedal,ha,,1,0,10
 Akai_MPC-X__42hat_closed.wav,0,90,Akai MPC,hat_closed,hc,,0,0,1.95
+Akai_MPC-X__44hat_pedal_hg.wav,0,71,Akai MPC,hat_pedal,hg,,1,0,2.24
 Akai_MPC-X__46hat_open.wav,0,416,Akai MPC,hat_open,ho,1,0,0,6.73
 Akai_MPC-X__52_hat_open.wav,0,634,Akai MPC,hat_open,ho,,0,0,2.67
 Akai_MPC-X__36kick.wav,0,217,Akai MPC,kick,k,1,0,0,5.42
 Akai_MPC-X__35kick.wav,0,241,Akai MPC,kick,k,,0,0,17.02
+Akai_MPC-X__36kick_ka.wav,0,217,Akai MPC,kick,ka,1,1,0,12.98
+Akai_MPC-X__36kick_kg.wav,0,217,Akai MPC,kick,kg,1,1,0,2.74
 Akai_MPC-X__37rimshot.wav,0,279,Akai MPC,rimshot,r,,0,0,4.2
+Akai_MPC-X__37rimshot_ra.wav,0,279,Akai MPC,rimshot,ra,,1,0,8.33
+Akai_MPC-X__37rimshot_rg.wav,0,279,Akai MPC,rimshot,rg,,1,0,2.95
 Akai_MPC-X__60_snare.wav,0,95,Akai MPC,snare,s,1,0,0,7.44
-Akai_MPC-X__38snare.wav,0,391,Akai MPC,snare,s,,0,0,6.67
 Akai_MPC-X__40snare.wav,0,600,Akai MPC,snare,s,,0,0,14.47
+Akai_MPC-X__38snare.wav,0,391,Akai MPC,snare,s,,0,0,6.67
+Akai_MPC-X__60_snare_sa.wav,0,95,Akai MPC,snare,sa,1,1,0,14.78
+Akai_MPC-X__60_snare_sb.wav,0,195,Akai MPC,snare,sb,1,1,0,3.13
+Akai_MPC-X__60_snare_sg.wav,0,95,Akai MPC,snare,sg,1,1,0,2.65
 Akai_MPC-X__47tom_high.wav,0,500,Akai MPC,tom_high,t,,0,0,11.17
+Akai_MPC-X__47tom_high_ta.wav,0,500,Akai MPC,tom_high,ta,,1,0,15.93
+Akai_MPC-X__47tom_high_tb.wav,0,600,Akai MPC,tom_high,tb,,1,0,9.47
 Akai_MPC-X__45tom_mid.wav,0,500,Akai MPC,tom_mid,tt,,0,0,12.24
 Akai_MPC-X__41tom_low.wav,0,482,Akai MPC,tom_low,ttt,1,0,0,8.14
 Akai_MPC-X__43tom_low.wav,0,500,Akai MPC,tom_low,ttt,,0,0,8.29
+Akai_MPC-X__41tom_low_ttta.wav,0,482,Akai MPC,tom_low,ttta,1,1,0,14.15
 Akai_MPC-X__59cymbal.wav,0,2358,Akai MPC,cymbal,y,,0,0,2.43
+Akai_MPC-X__59cymbal_ya.wav,0,2358,Akai MPC,cymbal,ya,,1,0,5.73
+Akai_MPC-X__59cymbal_yg.wav,0,2358,Akai MPC,cymbal,yg,,1,0,2.44
 Akai_MPC-X__51ride.wav,0,1499,Akai MPC,ride,yl,,0,0,5.22
+Akai_MPC-X__76woodblock_high.wav,0,135,Akai MPC,woodblock_high,,,0,0,6.99
 Akai_MPC-X__54_stickhit.wav,0,356,Akai MPC,stickhit,,,0,0,8.33
 Akai_MPC-X__77woodblock_low.wav,0,123,Akai MPC,woodblock_low,,,0,0,7.26
-Akai_MPC-X__76woodblock_high.wav,0,135,Akai MPC,woodblock_high,,,0,0,6.99
-Akai_MPC-X__39clap.wav,0,401,Akai MPC,clap,,,0,0,10.13
 Akai_MPC-X__63conga.wav,0,193,Akai MPC,conga,,,0,0,14.69
 Akai_MPC-X__75_stick.wav,0,116,Akai MPC,stick,,,0,0,5.72
+Akai_MPC-X__39clap.wav,0,401,Akai MPC,clap,,,0,0,10.13
 Emu_Sp12__57crash.wav,0,465,E-mu SP-12,crash,c,,0,0,9.36
-Emu_Sp12__46hat_o_modified_h.wav,0,504,E-mu SP-12,hat,h,,0,1,1.81
+Emu_Sp12__57crash_cg.wav,0,465,E-mu SP-12,crash,cg,,1,0,2.62
+Emu_Sp12__46hat_o_modified_h.wav,0,504,E-mu SP-12,hat,h,,0,1,2.7
+Emu_Sp12__46hat_o_modified_h_ha.wav,0,433,E-mu SP-12,hat,ha,,1,1,6.77
 Emu_Sp12__42_hihat_c.wav,0,358,E-mu SP-12,hihat_c,hc,,0,0,2.59
+Emu_Sp12__46hat_o_modified_h_hg.wav,0,433,E-mu SP-12,hat,hg,,1,1,2.7
 Emu_Sp12__46hat_o.wav,0,684,E-mu SP-12,hat_o,ho,,0,0,4.93
 Emu_Sp12__49modular_kick.wav,0,731,E-mu SP-12,modular_kick,k,1,0,0,10.21
 Emu_Sp12__64kick.wav,0,248,E-mu SP-12,kick,k,2,0,0,10.97
 Emu_Sp12__35bass1.wav,0,364,E-mu SP-12,bass1,k,3,0,0,7.7
 Emu_Sp12__36bass.wav,0,565,E-mu SP-12,bass,k,4,0,0,4.79
+Emu_Sp12__49modular_kick_ka.wav,0,731,E-mu SP-12,modular_kick,ka,1,1,0,17.79
+Emu_Sp12__49modular_kick_kg.wav,0,731,E-mu SP-12,modular_kick,kg,1,1,0,2.98
 Emu_Sp12__37rim.wav,0,304,E-mu SP-12,rim,r,,0,0,2.89
+Emu_Sp12__37rim_ra.wav,0,304,E-mu SP-12,rim,ra,,1,0,5.96
+Emu_Sp12__37rim_rg.wav,0,304,E-mu SP-12,rim,rg,,1,0,2.9
 Emu_Sp12__38snare.wav,0,624,E-mu SP-12,snare,s,1,0,0,5.3
 Emu_Sp12__63snare.wav,0,484,E-mu SP-12,snare,s,2,0,0,8.17
 Emu_Sp12__65snare3.wav,0,744,E-mu SP-12,snare3,s,3,0,0,4.53
 Emu_Sp12__76snare.wav,0,311,E-mu SP-12,snare,s,4,0,0,10.03
 Emu_Sp12__62snare.wav,0,618,E-mu SP-12,snare,s,5,0,0,6.34
 Emu_Sp12__40esnare_big.wav,0,430,E-mu SP-12,esnare_big,s,6,0,0,9.09
-Emu_Sp12__39snare_e.wav,0,376,E-mu SP-12,snare_e,s,,0,0,9.72
-Emu_Sp12__61snare.wav,0,624,E-mu SP-12,snare,s,,0,0,5.3
 Emu_Sp12__55esnare.wav,0,553,E-mu SP-12,esnare,s,,0,0,7.91
+Emu_Sp12__61snare.wav,0,624,E-mu SP-12,snare,s,,0,0,5.3
+Emu_Sp12__39snare_e.wav,0,376,E-mu SP-12,snare_e,s,,0,0,9.72
+Emu_Sp12__38snare_sa.wav,0,624,E-mu SP-12,snare,sa,1,1,0,10.61
+Emu_Sp12__38snare_sb.wav,0,724,E-mu SP-12,snare,sb,1,1,0,4.66
+Emu_Sp12__38snare_sg.wav,0,624,E-mu SP-12,snare,sg,1,1,0,2.93
 Emu_Sp12__50tom_high.wav,0,389,E-mu SP-12,tom_high,t,1,0,0,6.12
 Emu_Sp12__66doomtom.wav,0,401,E-mu SP-12,doomtom,t,2,0,0,8.99
+Emu_Sp12__50tom_high_ta.wav,0,389,E-mu SP-12,tom_high,ta,1,1,0,12.67
+Emu_Sp12__50tom_high_tb.wav,0,489,E-mu SP-12,tom_high,tb,1,1,0,4.78
 Emu_Sp12__43tom.wav,0,496,E-mu SP-12,tom,tt,1,0,0,9.35
 Emu_Sp12__45tom_mid.wav,0,660,E-mu SP-12,tom_mid,tt,,0,0,8.99
 Emu_Sp12__41tom_low.wav,0,890,E-mu SP-12,tom_low,ttt,,0,0,5.01
+Emu_Sp12__41tom_low_ttta.wav,0,890,E-mu SP-12,tom_low,ttta,,1,0,10.92
 Emu_Sp12__51modular_flick.wav,0,45,E-mu SP-12,modular_flick,y,,0,0,2.91
+Emu_Sp12__51modular_flick_ya.wav,0,45,E-mu SP-12,modular_flick,ya,,1,0,7.41
+Emu_Sp12__51modular_flick_yg.wav,0,45,E-mu SP-12,modular_flick,yg,,1,0,2.91
 Emu_Sp12__53modular_zip.wav,0,107,E-mu SP-12,modular_zip,yl,,0,0,4.05
-Emu_Sp12__67clank.wav,0,197,E-mu SP-12,clank,,,0,0,5.85
-Emu_Sp12__48guitar-riff.wav,0,844,E-mu SP-12,guitar-riff,,,0,0,6.28
-Emu_Sp12__58modular_synslap.wav,0,524,E-mu SP-12,modular_synslap,,,0,0,3.22
-Emu_Sp12__71syncord2.wav,0,1642,E-mu SP-12,syncord2,,,0,0,7.14
-Emu_Sp12__52electro2.wav,0,563,E-mu SP-12,electro2,,,0,0,8.3
-Emu_Sp12__69synbass.wav,0,486,E-mu SP-12,synbass,,,0,0,6.95
-Emu_Sp12__77_zap.wav,0,457,E-mu SP-12,zap,,,0,0,8.94
-Emu_Sp12__72syncord.wav,0,1795,E-mu SP-12,syncord,,,0,0,7.15
-Emu_Sp12__68doink.wav,0,139,E-mu SP-12,doink,,,0,0,8.63
+Emu_Sp12__56modular_plonk.wav,0,137,E-mu SP-12,modular_plonk,,,0,0,7.06
 Emu_Sp12__47guitar-hit.wav,0,208,E-mu SP-12,guitar-hit,,,0,0,5.21
+Emu_Sp12__48guitar-riff.wav,0,844,E-mu SP-12,guitar-riff,,,0,0,6.28
+Emu_Sp12__69synbass.wav,0,486,E-mu SP-12,synbass,,,0,0,6.95
 Emu_Sp12__54modular_wobbles.wav,0,1356,E-mu SP-12,modular_wobbles,,,0,0,5.72
+Emu_Sp12__58modular_synslap.wav,0,524,E-mu SP-12,modular_synslap,,,0,0,3.22
+Emu_Sp12__77_zap.wav,0,457,E-mu SP-12,zap,,,0,0,8.94
+Emu_Sp12__71syncord2.wav,0,1642,E-mu SP-12,syncord2,,,0,0,7.14
+Emu_Sp12__72syncord.wav,0,1795,E-mu SP-12,syncord,,,0,0,7.15
+Emu_Sp12__52electro2.wav,0,563,E-mu SP-12,electro2,,,0,0,8.3
+Emu_Sp12__80electric_champagne.wav,0,488,E-mu SP-12,electric_champagne,,,0,0,6.7
+Emu_Sp12__68doink.wav,0,139,E-mu SP-12,doink,,,0,0,8.63
 Emu_Sp12__44pedal_hat.wav,0,329,E-mu SP-12,pedal_hat,,,0,0,4.87
 Emu_Sp12__81_modular_alert.wav,0,1105,E-mu SP-12,modular_alert,,,0,0,9.31
-Emu_Sp12__80electric_champagne.wav,0,488,E-mu SP-12,electric_champagne,,,0,0,6.7
-Emu_Sp12__56modular_plonk.wav,0,137,E-mu SP-12,modular_plonk,,,0,0,7.06
+Emu_Sp12__67clank.wav,0,197,E-mu SP-12,clank,,,0,0,5.85
 Linn_LM1__52china.wav,0,1365,Linn LM-1,china,c,,0,0,7.51
-Linn_LM1__46hat_open_modified_h.wav,0,552,Linn LM-1,hat,h,,0,1,1.85
-Linn_LM1__46hat_open_modified_hc.wav,0,312,Linn LM-1,hat_closed,hc,,0,1,1.42
+Linn_LM1__52china_cg.wav,0,1365,Linn LM-1,china,cg,,1,0,2.82
+Linn_LM1__46hat_open_modified_h.wav,0,552,Linn LM-1,hat,h,,0,1,2.78
+Linn_LM1__46hat_open_modified_h_ha.wav,0,484,Linn LM-1,hat,ha,,1,1,6.94
+Linn_LM1__46hat_open_modified_hc.wav,0,312,Linn LM-1,hat_closed,hc,,0,1,2.62
+Linn_LM1__46hat_open_modified_h_hg.wav,0,484,Linn LM-1,hat,hg,,1,1,2.42
 Linn_LM1__46hat_open.wav,0,682,Linn LM-1,hat_open,ho,,0,0,5.98
 Linn_LM1__35kick.wav,0,170,Linn LM-1,kick,k,1,0,0,8.63
 Linn_LM1__36kick.wav,0,170,Linn LM-1,kick,k,,0,0,11.37
+Linn_LM1__35kick_ka.wav,0,170,Linn LM-1,kick,ka,1,1,0,16.18
+Linn_LM1__35kick_kg.wav,0,170,Linn LM-1,kick,kg,1,1,0,2.93
 Linn_LM1__37rimshot.wav,0,170,Linn LM-1,rimshot,r,,0,0,4.73
+Linn_LM1__37rimshot_ra.wav,0,170,Linn LM-1,rimshot,ra,,1,0,10.88
+Linn_LM1__37rimshot_rg.wav,0,170,Linn LM-1,rimshot,rg,,1,0,3.12
 Linn_LM1__38snare.wav,0,170,Linn LM-1,snare,s,1,0,0,8.38
 Linn_LM1__40snare.wav,0,170,Linn LM-1,snare,s,,0,0,7.09
+Linn_LM1__38snare_sa.wav,0,170,Linn LM-1,snare,sa,1,1,0,16.22
+Linn_LM1__38snare_sb.wav,0,270,Linn LM-1,snare,sb,1,1,0,4.45
+Linn_LM1__38snare_sg.wav,0,170,Linn LM-1,snare,sg,1,1,0,3.11
 Linn_LM1__41tom.wav,0,341,Linn LM-1,tom,t,,0,0,10.29
+Linn_LM1__41tom_ta.wav,0,341,Linn LM-1,tom,ta,,1,0,16.73
+Linn_LM1__41tom_tb.wav,0,441,Linn LM-1,tom,tb,,1,0,7.3
 Linn_LM1__45tom.wav,0,341,Linn LM-1,tom,tt,,0,0,9.28
 Linn_LM1__48tom.wav,0,341,Linn LM-1,tom,ttt,,0,0,8.63
+Linn_LM1__48tom_ttta.wav,0,341,Linn LM-1,tom,ttta,,1,0,16.5
 Linn_LM1__51ride.wav,0,1365,Linn LM-1,ride,y,,0,0,4.4
+Linn_LM1__51ride_ya.wav,0,1365,Linn LM-1,ride,ya,,1,0,10.37
+Linn_LM1__51ride_yg.wav,0,1365,Linn LM-1,ride,yg,,1,0,2.75
+Linn_LM1__70maracas.wav,0,170,Linn LM-1,maracas,,,0,0,2.85
 Linn_LM1__73_clap.wav,0,85,Linn LM-1,clap,,,0,0,10.33
+Linn_LM1__60bongo.wav,0,341,Linn LM-1,bongo,,,0,0,5.08
+Linn_LM1__69shake.wav,0,85,Linn LM-1,shake,,,0,0,4.29
+Linn_LM1__74_snap.wav,0,341,Linn LM-1,snap,,,0,0,2.71
+Linn_LM1__56cowbell.wav,0,170,Linn LM-1,cowbell,,,0,0,7.73
 Linn_LM1__39clap.wav,0,170,Linn LM-1,clap,,,0,0,7.46
 Linn_LM1__54tamborine.wav,0,170,Linn LM-1,tamborine,,,0,0,6
-Linn_LM1__74_snap.wav,0,341,Linn LM-1,snap,,,0,0,2.71
-Linn_LM1__69shake.wav,0,85,Linn LM-1,shake,,,0,0,4.29
-Linn_LM1__70maracas.wav,0,170,Linn LM-1,maracas,,,0,0,2.85
-Linn_LM1__56cowbell.wav,0,170,Linn LM-1,cowbell,,,0,0,7.73
-Linn_LM1__60bongo.wav,0,341,Linn LM-1,bongo,,,0,0,5.08
 Linn_Linndrum__57crash_cymbal.wav,0,1225,LinnDrum,crash_cymbal,c,,0,0,6.58
+Linn_Linndrum__57crash_cymbal_cg.wav,0,1225,LinnDrum,crash_cymbal,cg,,1,0,2.81
 Linn_Linndrum__44hat_pedal.wav,0,101,LinnDrum,hat_pedal,h,,0,0,5.96
+Linn_Linndrum__44hat_pedal_ha.wav,0,101,LinnDrum,hat_pedal,ha,,1,0,12.69
 Linn_Linndrum__42hat_closed.wav,0,51,LinnDrum,hat_closed,hc,,0,0,5.82
+Linn_Linndrum__44hat_pedal_hg.wav,0,101,LinnDrum,hat_pedal,hg,,1,0,2.6
 Linn_Linndrum__46hat_open.wav,0,606,LinnDrum,hat_open,ho,,0,0,5.39
 Linn_Linndrum__35kick.wav,0,91,LinnDrum,kick,k,1,0,0,12.34
 Linn_Linndrum__36kick.wav,0,91,LinnDrum,kick,k,,0,0,11.99
+Linn_Linndrum__35kick_ka.wav,0,91,LinnDrum,kick,ka,1,1,0,15.83
+Linn_Linndrum__35kick_kg.wav,0,91,LinnDrum,kick,kg,1,1,0,2.52
 Linn_Linndrum__37rim.wav,0,86,LinnDrum,rim,r,,0,0,7.76
+Linn_Linndrum__37rim_ra.wav,0,86,LinnDrum,rim,ra,,1,0,16.32
+Linn_Linndrum__37rim_rg.wav,0,86,LinnDrum,rim,rg,,1,0,3.19
 Linn_Linndrum__38snare.wav,0,86,LinnDrum,snare,s,1,0,0,9.69
-Linn_Linndrum__48_snare-alt.wav,0,138,LinnDrum,snare-alt,s,,0,0,7.29
-Linn_Linndrum__49_snare-alt.wav,0,136,LinnDrum,snare-alt,s,,0,0,8.09
 Linn_Linndrum__40snare.wav,0,132,LinnDrum,snare,s,,0,0,10.57
-Linn_Linndrum__43_snare-alt.wav,0,164,LinnDrum,snare-alt,s,,0,0,7.35
+Linn_Linndrum__49_snare-alt.wav,0,136,LinnDrum,snare-alt,s,,0,0,8.09
+Linn_Linndrum__48_snare-alt.wav,0,138,LinnDrum,snare-alt,s,,0,0,7.29
 Linn_Linndrum__53_snare-alt.wav,0,152,LinnDrum,snare-alt,s,,0,0,8.23
-Linn_Linndrum__52_snare-alt.wav,0,157,LinnDrum,snare-alt,s,,0,0,6.72
-Linn_Linndrum__50_snare-alt.wav,0,126,LinnDrum,snare-alt,s,,0,0,9.22
 Linn_Linndrum__45_snare-alt.wav,0,137,LinnDrum,snare-alt,s,,0,0,5.58
+Linn_Linndrum__43_snare-alt.wav,0,164,LinnDrum,snare-alt,s,,0,0,7.35
+Linn_Linndrum__50_snare-alt.wav,0,126,LinnDrum,snare-alt,s,,0,0,9.22
+Linn_Linndrum__52_snare-alt.wav,0,157,LinnDrum,snare-alt,s,,0,0,6.72
+Linn_Linndrum__38snare_sa.wav,0,86,LinnDrum,snare,sa,1,1,0,16.98
+Linn_Linndrum__38snare_sb.wav,0,186,LinnDrum,snare,sb,1,1,0,3.86
+Linn_Linndrum__38snare_sg.wav,0,86,LinnDrum,snare,sg,1,1,0,3.17
 Linn_Linndrum__47tom_high.wav,0,390,LinnDrum,tom_high,t,,0,0,9.44
+Linn_Linndrum__47tom_high_ta.wav,0,390,LinnDrum,tom_high,ta,,1,0,17.22
+Linn_Linndrum__47tom_high_tb.wav,0,490,LinnDrum,tom_high,tb,,1,0,6.7
 Linn_Linndrum__41tom_floor.wav,0,348,LinnDrum,tom_floor,ttt,,0,0,8.84
+Linn_Linndrum__41tom_floor_ttta.wav,0,348,LinnDrum,tom_floor,ttta,,1,0,16.92
 Linn_Linndrum__51ride.wav,0,1251,LinnDrum,ride,y,,0,0,4.38
-Linn_Linndrum__56cowbell.wav,0,81,LinnDrum,cowbell,,,0,0,11.5
-Linn_Linndrum__54tamborine.wav,0,158,LinnDrum,tamborine,,,0,0,4.23
-Linn_Linndrum__39clap.wav,0,137,LinnDrum,clap,,,0,0,8.67
+Linn_Linndrum__51ride_ya.wav,0,1251,LinnDrum,ride,ya,,1,0,10.56
+Linn_Linndrum__51ride_yg.wav,0,1251,LinnDrum,ride,yg,,1,0,2.72
 Linn_Linndrum__58vibraslap.wav,0,163,LinnDrum,vibraslap,,,0,0,2.39
+Linn_Linndrum__39clap.wav,0,137,LinnDrum,clap,,,0,0,8.67
 Linn_Linndrum__69casaba.wav,0,84,LinnDrum,casaba,,,0,0,5.77
+Linn_Linndrum__54tamborine.wav,0,158,LinnDrum,tamborine,,,0,0,4.23
+Linn_Linndrum__56cowbell.wav,0,81,LinnDrum,cowbell,,,0,0,11.5
 Oberheim_Dmx__49crash_cymbal.wav,0,952,Oberheim DMX,crash_cymbal,c,,0,0,5.33
-Oberheim_Dmx__46hat_open_modifed_h.wav,0,312,Oberheim DMX,hat,h,,0,1,2.12
+Oberheim_Dmx__49crash_cymbal_cg.wav,0,952,Oberheim DMX,crash_cymbal,cg,,1,0,2.8
+Oberheim_Dmx__46hat_open_modifed_h.wav,0,312,Oberheim DMX,hat,h,,0,1,4.39
+Oberheim_Dmx__46hat_open_modifed_h_ha.wav,0,241,Oberheim DMX,hat,ha,,1,1,10.37
 Oberheim_Dmx__42hat_closed.wav,0,168,Oberheim DMX,hat_closed,hc,,0,0,4.26
+Oberheim_Dmx__46hat_open_modifed_h_hg.wav,0,241,Oberheim DMX,hat,hg,,1,1,2.66
 Oberheim_Dmx__46hat_open.wav,0,202,Oberheim DMX,hat_open,ho,1,0,0,7.36
 Oberheim_Dmx__77_hat_open_double.wav,0,174,Oberheim DMX,hat_open_double,ho,,0,0,4.83
 Oberheim_Dmx__76_hat_openAlt.wav,0,174,Oberheim DMX,hat_openAlt,ho,,0,0,4.66
 Oberheim_Dmx__35kick.wav,0,141,Oberheim DMX,kick,k,1,0,0,9.33
 Oberheim_Dmx__61_kick_alt.wav,0,112,Oberheim DMX,kick_alt,k,,0,0,12.86
 Oberheim_Dmx__36kick.wav,0,200,Oberheim DMX,kick,k,,0,0,7.72
+Oberheim_Dmx__35kick_ka.wav,0,141,Oberheim DMX,kick,ka,1,1,0,15.96
+Oberheim_Dmx__35kick_kg.wav,0,141,Oberheim DMX,kick,kg,1,1,0,3.03
 Oberheim_Dmx__37rim.wav,0,107,Oberheim DMX,rim,r,1,0,0,4.97
 Oberheim_Dmx__75_rim2.wav,0,83,Oberheim DMX,rim2,r,,0,0,6.2
+Oberheim_Dmx__37rim_ra.wav,0,107,Oberheim DMX,rim,ra,1,1,0,10.66
+Oberheim_Dmx__37rim_rg.wav,0,107,Oberheim DMX,rim,rg,1,1,0,3.31
 Oberheim_Dmx__38snare.wav,0,150,Oberheim DMX,snare,s,1,0,0,7.42
 Oberheim_Dmx__40snare.wav,0,124,Oberheim DMX,snare,s,,0,0,9.24
 Oberheim_Dmx__62_snare_alt.wav,0,140,Oberheim DMX,snare_alt,s,,0,0,10.11
+Oberheim_Dmx__38snare_sa.wav,0,150,Oberheim DMX,snare,sa,1,1,0,14.9
+Oberheim_Dmx__38snare_sb.wav,0,250,Oberheim DMX,snare,sb,1,1,0,3.93
+Oberheim_Dmx__38snare_sg.wav,0,150,Oberheim DMX,snare,sg,1,1,0,3.19
 Oberheim_Dmx__47tom_high.wav,0,448,Oberheim DMX,tom_high,t,,0,0,7.97
+Oberheim_Dmx__47tom_high_ta.wav,0,448,Oberheim DMX,tom_high,ta,,1,0,17.1
+Oberheim_Dmx__47tom_high_tb.wav,0,548,Oberheim DMX,tom_high,tb,,1,0,5.99
 Oberheim_Dmx__45tom_low.wav,0,442,Oberheim DMX,tom_low,tt,,0,0,7.65
 Oberheim_Dmx__41tom_floor.wav,0,710,Oberheim DMX,tom_floor,ttt,1,0,0,10.9
 Oberheim_Dmx__43tom_lowest.wav,0,453,Oberheim DMX,tom_lowest,ttt,,0,0,8.47
+Oberheim_Dmx__41tom_floor_ttta.wav,0,710,Oberheim DMX,tom_floor,ttta,1,1,0,16.86
 Oberheim_Dmx__51ride.wav,0,594,Oberheim DMX,ride,y,1,0,0,3.98
 Oberheim_Dmx__59_cymbal_mute.wav,0,185,Oberheim DMX,cymbal_mute,y,,0,0,6.85
-Oberheim_Dmx__54tambourine.wav,0,93,Oberheim DMX,tambourine,,,0,0,5.32
-Oberheim_Dmx__70maraca.wav,0,132,Oberheim DMX,maraca,,,0,0,11.62
-Oberheim_Dmx__69cabasa.wav,0,106,Oberheim DMX,cabasa,,,0,0,5.31
-Oberheim_Dmx__39clap.wav,0,136,Oberheim DMX,clap,,,0,0,8.82
-Oberheim_Dmx__81_tamborineAlt.wav,0,127,Oberheim DMX,tamborineAlt,,,0,0,5.88
-Oberheim_Dmx__65timbale_high.wav,0,308,Oberheim DMX,timbale_high,,,0,0,6.66
+Oberheim_Dmx__51ride_ya.wav,0,594,Oberheim DMX,ride,ya,1,1,0,9.57
+Oberheim_Dmx__51ride_yg.wav,0,594,Oberheim DMX,ride,yg,1,1,0,3.03
 Oberheim_Dmx__73_cabasa2.wav,0,134,Oberheim DMX,cabasa2,,,0,0,6.76
 Oberheim_Dmx__55splash.wav,0,1387,Oberheim DMX,splash,,,0,0,6.49
+Oberheim_Dmx__54tambourine.wav,0,93,Oberheim DMX,tambourine,,,0,0,5.32
+Oberheim_Dmx__69cabasa.wav,0,106,Oberheim DMX,cabasa,,,0,0,5.31
+Oberheim_Dmx__81_tamborineAlt.wav,0,127,Oberheim DMX,tamborineAlt,,,0,0,5.88
 Oberheim_Dmx__66timbale_low.wav,0,218,Oberheim DMX,timbale_low,,,0,0,8.28
+Oberheim_Dmx__65timbale_high.wav,0,308,Oberheim DMX,timbale_high,,,0,0,6.66
+Oberheim_Dmx__70maraca.wav,0,132,Oberheim DMX,maraca,,,0,0,11.62
+Oberheim_Dmx__39clap.wav,0,136,Oberheim DMX,clap,,,0,0,8.82
 Roland_CR79__52crash.wav,0,354,Roland CR-78,crash,c,1,0,0,9.42
 Roland_CR79__49crash.wav,0,342,Roland CR-78,crash,c,2,0,0,4.72
 Roland_CR79__57crash.wav,0,26,Roland CR-78,crash,c,,0,0,12.98
-Roland_CR79__46hat_open_modified_h.wav,0,264,Roland CR-78,hat,h,,0,1,1.63
+Roland_CR79__52crash_cg.wav,0,354,Roland CR-78,crash,cg,1,1,0,2.92
+Roland_CR79__46hat_open_modified_h.wav,0,264,Roland CR-78,hat,h,,0,1,3.97
+Roland_CR79__46hat_open_modified_h_ha.wav,0,192,Roland CR-78,hat,ha,,1,1,9.47
 Roland_CR79__42hat_closed.wav,0,58,Roland CR-78,hat_closed,hc,,0,0,2.36
+Roland_CR79__46hat_open_modified_h_hg.wav,0,192,Roland CR-78,hat,hg,,1,1,2.96
 Roland_CR79__46hat_open.wav,0,193,Roland CR-78,hat_open,ho,,0,0,4.77
 Roland_CR79__36kick.wav,0,112,Roland CR-78,kick,k,1,0,0,17.55
 Roland_CR79__55_kick_low.wav,0,128,Roland CR-78,kick_low,k,2,0,0,16.74
 Roland_CR79__79_bassdrop.wav,0,128,Roland CR-78,bassdrop,k,3,0,0,16.74
 Roland_CR79__35kickpump.wav,0,744,Roland CR-78,kickpump,k,,0,0,10.47
+Roland_CR79__36kick_ka.wav,0,112,Roland CR-78,kick,ka,1,1,0,18.49
+Roland_CR79__36kick_kg.wav,0,112,Roland CR-78,kick,kg,1,1,0,3.19
 Roland_CR79__37rimshot.wav,0,7,Roland CR-78,rimshot,r,,0,0,11.2
+Roland_CR79__37rimshot_ra.wav,0,7,Roland CR-78,rimshot,ra,,1,0,12.34
+Roland_CR79__37rimshot_rg.wav,0,7,Roland CR-78,rimshot,rg,,1,0,2.27
 Roland_CR79__39_snare.wav,0,69,Roland CR-78,snare,s,1,0,0,13.39
 Roland_CR79__38snare.wav,0,744,Roland CR-78,snare,s,2,0,0,2.37
 Roland_CR79__40snaresnare.wav,0,335,Roland CR-78,snaresnare,s,,0,0,5.48
+Roland_CR79__39_snare_sa.wav,0,69,Roland CR-78,snare,sa,1,1,0,14.55
+Roland_CR79__39_snare_sb.wav,0,169,Roland CR-78,snare,sb,1,1,0,4.7
+Roland_CR79__39_snare_sg.wav,0,69,Roland CR-78,snare,sg,1,1,0,2.47
 Roland_CR79__50tom_hi.wav,0,744,Roland CR-78,tom_hi,t,1,0,0,4.53
 Roland_CR79__47tom_mid.wav,0,163,Roland CR-78,tom_mid,t,,0,0,15.33
+Roland_CR79__50tom_hi_ta.wav,0,744,Roland CR-78,tom_hi,ta,1,1,0,8.35
+Roland_CR79__50tom_hi_tb.wav,0,844,Roland CR-78,tom_hi,tb,1,1,0,4.83
 Roland_CR79__45tom_mid.wav,0,744,Roland CR-78,tom_mid,tt,,0,0,3.53
 Roland_CR79__43tom_low.wav,0,744,Roland CR-78,tom_low,ttt,,0,0,5.32
+Roland_CR79__43tom_low_ttta.wav,0,744,Roland CR-78,tom_low,ttta,,1,0,8.25
 Roland_CR79__51ride.wav,0,408,Roland CR-78,ride,y,,0,0,2.89
+Roland_CR79__51ride_ya.wav,0,408,Roland CR-78,ride,ya,,1,0,7.2
+Roland_CR79__51ride_yg.wav,0,408,Roland CR-78,ride,yg,,1,0,2.89
 Roland_CR79__54tamborine.wav,0,1305,Roland CR-78,tamborine,yl,,0,0,4.04
-Roland_CR79__75clave.wav,0,53,Roland CR-78,clave,,,0,0,3.97
-Roland_CR79__64conga_low.wav,0,992,Roland CR-78,conga_low,,,0,0,1.54
-Roland_CR79__44_blop.wav,0,61,Roland CR-78,blop,,,0,0,5.41
-Roland_CR79__73guiro_short.wav,0,176,Roland CR-78,guiro_short,,,0,0,6.37
-Roland_CR79__62conga_high_mute.wav,0,992,Roland CR-78,conga_high_mute,,,0,0,1.7
-Roland_CR79__76woodblock.wav,0,8,Roland CR-78,woodblock,,,0,0,10.8
-Roland_CR79__74guiro_long.wav,0,1670,Roland CR-78,guiro_long,,,0,0,4.41
-Roland_CR79__56cowbell.wav,0,132,Roland CR-78,cowbell,,,0,0,11.32
-Roland_CR79__60bongo_hi.wav,0,177,Roland CR-78,bongo_hi,,,0,0,15.95
 Roland_CR79__67agogo_hi.wav,0,23,Roland CR-78,agogo_hi,,,0,0,13.97
-Roland_CR79__63conga_high.wav,0,992,Roland CR-78,conga_high,,,0,0,2.28
+Roland_CR79__75clave.wav,0,53,Roland CR-78,clave,,,0,0,3.97
+Roland_CR79__76woodblock.wav,0,8,Roland CR-78,woodblock,,,0,0,10.8
+Roland_CR79__44_blop.wav,0,61,Roland CR-78,blop,,,0,0,5.41
+Roland_CR79__60bongo_hi.wav,0,177,Roland CR-78,bongo_hi,,,0,0,15.95
 Roland_CR79__68agogo_lo.wav,0,26,Roland CR-78,agogo_lo,,,0,0,14.07
+Roland_CR79__74guiro_long.wav,0,1670,Roland CR-78,guiro_long,,,0,0,4.41
+Roland_CR79__62conga_high_mute.wav,0,992,Roland CR-78,conga_high_mute,,,0,0,1.7
+Roland_CR79__56cowbell.wav,0,132,Roland CR-78,cowbell,,,0,0,11.32
+Roland_CR79__64conga_low.wav,0,992,Roland CR-78,conga_low,,,0,0,1.54
+Roland_CR79__73guiro_short.wav,0,176,Roland CR-78,guiro_short,,,0,0,6.37
+Roland_CR79__63conga_high.wav,0,992,Roland CR-78,conga_high,,,0,0,2.28
 Roland_Tr-808_full__57crash_cymbal.wav,0,3500,Roland TR-808,crash_cymbal,c,1,0,0,2.53
 Roland_Tr-808_full__49crash_cymbal.wav,0,3500,Roland TR-808,crash_cymbal,c,,0,0,2.41
+Roland_Tr-808_full__57crash_cymbal_cg.wav,0,3500,Roland TR-808,crash_cymbal,cg,1,1,0,2.53
 Roland_Tr-808_full__46hat_open.wav,0,250,Roland TR-808,hat_open,h,,0,0,7.21
+Roland_Tr-808_full__46hat_open_ha.wav,0,250,Roland TR-808,hat_open,ha,,1,0,14.65
 Roland_Tr-808_full__42hat_closed.wav,0,82,Roland TR-808,hat_closed,hc,,0,0,11.69
+Roland_Tr-808_full__46hat_open_hg.wav,0,250,Roland TR-808,hat_open,hg,,1,0,2.65
 Roland_Tr-808_full__44hat_pedal.wav,0,389,Roland TR-808,hat_pedal,ho,1,0,0,8.07
 Roland_Tr-808_full__70_hat_open.wav,0,183,Roland TR-808,hat_open,ho,,0,0,11.63
 Roland_Tr-808_full__36kick.wav,0,1772,Roland TR-808,kick,k,1,0,0,17.27
 Roland_Tr-808_full__35kick.wav,0,1000,Roland TR-808,kick,k,2,0,0,3.82
-Roland_Tr-808_full__74_bass.wav,0,1000,Roland TR-808,bass,k,,0,0,4.49
 Roland_Tr-808_full__73_bass.wav,0,1000,Roland TR-808,bass,k,,0,0,6.19
+Roland_Tr-808_full__74_bass.wav,0,1000,Roland TR-808,bass,k,,0,0,4.49
+Roland_Tr-808_full__36kick_ka.wav,0,1772,Roland TR-808,kick,ka,1,1,0,17.33
+Roland_Tr-808_full__36kick_kg.wav,0,1772,Roland TR-808,kick,kg,1,1,0,2.75
 Roland_Tr-808_full__37rim.wav,0,16,Roland TR-808,rim,r,,0,0,10.2
+Roland_Tr-808_full__37rim_ra.wav,0,16,Roland TR-808,rim,ra,,1,0,12.83
+Roland_Tr-808_full__37rim_rg.wav,0,16,Roland TR-808,rim,rg,,1,0,2.21
 Roland_Tr-808_full__40snare.wav,0,80,Roland TR-808,snare,s,1,0,0,10.66
 Roland_Tr-808_full__38snare.wav,0,92,Roland TR-808,snare,s,,0,0,11.16
+Roland_Tr-808_full__40snare_sa.wav,0,80,Roland TR-808,snare,sa,1,1,0,15.02
+Roland_Tr-808_full__40snare_sb.wav,0,180,Roland TR-808,snare,sb,1,1,0,4.08
+Roland_Tr-808_full__40snare_sg.wav,0,80,Roland TR-808,snare,sg,1,1,0,3.13
 Roland_Tr-808_full__50tom_highest.wav,0,125,Roland TR-808,tom_highest,t,1,0,0,15.8
 Roland_Tr-808_full__48tom_higher.wav,0,139,Roland TR-808,tom_higher,t,,0,0,16.09
+Roland_Tr-808_full__50tom_highest_ta.wav,0,125,Roland TR-808,tom_highest,ta,1,1,0,17.59
+Roland_Tr-808_full__50tom_highest_tb.wav,0,225,Roland TR-808,tom_highest,tb,1,1,0,7
 Roland_Tr-808_full__45tom_low.wav,0,141,Roland TR-808,tom_low,tt,1,0,0,15.15
 Roland_Tr-808_full__47tom_high.wav,0,237,Roland TR-808,tom_high,tt,,0,0,15.41
 Roland_Tr-808_full__41tom_floor.wav,0,261,Roland TR-808,tom_floor,ttt,1,0,0,14.59
 Roland_Tr-808_full__43tom_lowest.wav,0,179,Roland TR-808,tom_lowest,ttt,,0,0,15.23
+Roland_Tr-808_full__41tom_floor_ttta.wav,0,261,Roland TR-808,tom_floor,ttta,1,1,0,17.04
 Roland_Tr-808_full__51ride.wav,0,2217,Roland TR-808,ride,y,,0,0,5.15
+Roland_Tr-808_full__51ride_ya.wav,0,2217,Roland TR-808,ride,ya,,1,0,11.41
+Roland_Tr-808_full__51ride_yg.wav,0,2217,Roland TR-808,ride,yg,,1,0,2.76
 Roland_Tr-808_full__53ridebell.wav,0,1172,Roland TR-808,ridebell,yl,1,0,0,2.84
 Roland_Tr-808_full__59_electricbell.wav,0,1500,Roland TR-808,electricbell,yl,,0,0,1.9
 Roland_Tr-808_full__39clap.wav,0,230,Roland TR-808,clap,,,0,0,7.27
-Roland_Tr-808_full__61bongo_low.wav,0,500,Roland TR-808,bongo_low,,,0,0,7.35
-Roland_Tr-808_full__76woodblock_high.wav,0,500,Roland TR-808,woodblock_high,,,0,0,4.29
-Roland_Tr-808_full__56cowbell_high.wav,0,199,Roland TR-808,cowbell_high,,,0,0,8.63
-Roland_Tr-808_full__79_conga_note.wav,0,500,Roland TR-808,conga_note,,,0,0,7.22
-Roland_Tr-808_full__58_clap.wav,0,172,Roland TR-808,clap,,,0,0,5.16
-Roland_Tr-808_full__67agogo_high.wav,0,500,Roland TR-808,agogo_high,,,0,0,5.87
-Roland_Tr-808_full__68agogo_low.wav,0,500,Roland TR-808,agogo_low,,,0,0,5.23
-Roland_Tr-808_full__63conga_high.wav,0,226,Roland TR-808,conga_high,,,0,0,15.73
-Roland_Tr-808_full__81_woodblock_open.wav,0,500,Roland TR-808,woodblock_open,,,0,0,4.6
-Roland_Tr-808_full__69casaba.wav,0,250,Roland TR-808,casaba,,,0,0,2.35
-Roland_Tr-808_full__54_shaker.wav,0,40,Roland TR-808,shaker,,,0,0,5.54
-Roland_Tr-808_full__78cuica_muted.wav,0,122,Roland TR-808,cuica_muted,,,0,0,15.57
-Roland_Tr-808_full__64conga_low.wav,0,175,Roland TR-808,conga_low,,,0,0,15.18
-Roland_Tr-808_full__72_clap.wav,0,2000,Roland TR-808,clap,,,0,0,1.55
-Roland_Tr-808_full__75clave.wav,0,250,Roland TR-808,clave,,,0,0,3.61
-Roland_Tr-808_full__80woodblock_closed.wav,0,122,Roland TR-808,woodblock_closed,,,0,0,15.47
-Roland_Tr-808_full__77woodblock_low.wav,0,500,Roland TR-808,woodblock_low,,,0,0,6.34
-Roland_Tr-808_full__71_xylophone_high_note.wav,0,1500,Roland TR-808,xylophone_high_note,,,0,0,1.9
-Roland_Tr-808_full__55splash.wav,0,4000,Roland TR-808,splash,,,0,0,2.51
-Roland_Tr-808_full__52china.wav,0,4000,Roland TR-808,china,,,0,0,1.69
-Roland_Tr-808_full__60bongo_high.wav,0,250,Roland TR-808,bongo_high,,,0,0,3.01
 Roland_Tr-808_full__65timbale_high.wav,0,500,Roland TR-808,timbale_high,,,0,0,10.32
-Roland_Tr-808_full__62conga_highest.wav,0,114,Roland TR-808,conga_highest,,,0,0,16.25
+Roland_Tr-808_full__64conga_low.wav,0,175,Roland TR-808,conga_low,,,0,0,15.18
+Roland_Tr-808_full__81_woodblock_open.wav,0,500,Roland TR-808,woodblock_open,,,0,0,4.6
+Roland_Tr-808_full__56cowbell_high.wav,0,199,Roland TR-808,cowbell_high,,,0,0,8.63
+Roland_Tr-808_full__54_shaker.wav,0,40,Roland TR-808,shaker,,,0,0,5.54
+Roland_Tr-808_full__63conga_high.wav,0,226,Roland TR-808,conga_high,,,0,0,15.73
+Roland_Tr-808_full__80woodblock_closed.wav,0,122,Roland TR-808,woodblock_closed,,,0,0,15.47
+Roland_Tr-808_full__78cuica_muted.wav,0,122,Roland TR-808,cuica_muted,,,0,0,15.57
+Roland_Tr-808_full__67agogo_high.wav,0,500,Roland TR-808,agogo_high,,,0,0,5.87
+Roland_Tr-808_full__69casaba.wav,0,250,Roland TR-808,casaba,,,0,0,2.35
+Roland_Tr-808_full__76woodblock_high.wav,0,500,Roland TR-808,woodblock_high,,,0,0,4.29
+Roland_Tr-808_full__75clave.wav,0,250,Roland TR-808,clave,,,0,0,3.61
+Roland_Tr-808_full__72_clap.wav,0,2000,Roland TR-808,clap,,,0,0,1.55
 Roland_Tr-808_full__66timbale_low.wav,0,500,Roland TR-808,timbale_low,,,0,0,7.35
+Roland_Tr-808_full__61bongo_low.wav,0,500,Roland TR-808,bongo_low,,,0,0,7.35
+Roland_Tr-808_full__60bongo_high.wav,0,250,Roland TR-808,bongo_high,,,0,0,3.01
+Roland_Tr-808_full__55splash.wav,0,4000,Roland TR-808,splash,,,0,0,2.51
+Roland_Tr-808_full__58_clap.wav,0,172,Roland TR-808,clap,,,0,0,5.16
+Roland_Tr-808_full__77woodblock_low.wav,0,500,Roland TR-808,woodblock_low,,,0,0,6.34
+Roland_Tr-808_full__79_conga_note.wav,0,500,Roland TR-808,conga_note,,,0,0,7.22
+Roland_Tr-808_full__52china.wav,0,4000,Roland TR-808,china,,,0,0,1.69
+Roland_Tr-808_full__71_xylophone_high_note.wav,0,1500,Roland TR-808,xylophone_high_note,,,0,0,1.9
+Roland_Tr-808_full__62conga_highest.wav,0,114,Roland TR-808,conga_highest,,,0,0,16.25
+Roland_Tr-808_full__68agogo_low.wav,0,500,Roland TR-808,agogo_low,,,0,0,5.23
 Roland_TB909__57crashy.wav,0,409,Roland TR-909,crashy,c,,0,0,3.13
+Roland_TB909__57crashy_cg.wav,0,409,Roland TR-909,crashy,cg,,1,0,3.13
 Roland_TB909__46hihat.wav,0,147,Roland TR-909,hihat,h,1,0,0,3.5
 Roland_TB909__59_electricHat.wav,0,186,Roland TR-909,electricHat,h,,0,0,3.84
+Roland_TB909__46hihat_ha.wav,0,147,Roland TR-909,hihat,ha,1,1,0,8.59
 Roland_TB909__42hihat.wav,0,83,Roland TR-909,hihat,hc,,0,0,2.26
+Roland_TB909__46hihat_hg.wav,0,147,Roland TR-909,hihat,hg,1,1,0,3.15
 Roland_TB909__44hihatc.wav,0,320,Roland TR-909,hihatc,ho,,0,0,1.51
 Roland_TB909__36kick.wav,0,283,Roland TR-909,kick,k,1,0,0,13.25
 Roland_TB909__35kick.wav,0,306,Roland TR-909,kick,k,,0,0,10.77
+Roland_TB909__36kick_ka.wav,0,283,Roland TR-909,kick,ka,1,1,0,16.4
+Roland_TB909__36kick_kg.wav,0,283,Roland TR-909,kick,kg,1,1,0,2.89
 Roland_TB909__37rim.wav,0,28,Roland TR-909,rim,r,,0,0,5.78
+Roland_TB909__37rim_ra.wav,0,28,Roland TR-909,rim,ra,,1,0,11.06
+Roland_TB909__37rim_rg.wav,0,28,Roland TR-909,rim,rg,,1,0,2.52
 Roland_TB909__40snare.wav,0,98,Roland TR-909,snare,s,1,0,0,6.65
-Roland_TB909__38snare.wav,0,381,Roland TR-909,snare,s,,0,0,3.44
 Roland_TB909__75_snare.wav,0,205,Roland TR-909,snare,s,,0,0,4.2
+Roland_TB909__38snare.wav,0,381,Roland TR-909,snare,s,,0,0,3.44
+Roland_TB909__40snare_sa.wav,0,98,Roland TR-909,snare,sa,1,1,0,13.61
+Roland_TB909__40snare_sb.wav,0,198,Roland TR-909,snare,sb,1,1,0,2.83
+Roland_TB909__40snare_sg.wav,0,98,Roland TR-909,snare,sg,1,1,0,2.65
 Roland_TB909__48_electricTomHighest.wav,0,375,Roland TR-909,electricTomHighest,t,1,0,0,11.23
 Roland_TB909__43_electricTom.wav,0,360,Roland TR-909,electricTom,t,,0,0,6.2
 Roland_TB909__45_electricTom.wav,0,78,Roland TR-909,electricTom,t,,0,0,7.57
+Roland_TB909__48_electricTomHighest_ta.wav,0,375,Roland TR-909,electricTomHighest,ta,1,1,0,16.24
+Roland_TB909__48_electricTomHighest_tb.wav,0,475,Roland TR-909,electricTomHighest,tb,1,1,0,8.37
 Roland_TB909__50_electricTomHigher.wav,0,156,Roland TR-909,electricTomHigher,tt,,0,0,8.42
 Roland_TB909__47_electricTomHigh.wav,0,435,Roland TR-909,electricTomHigh,ttt,,0,0,10.2
-Roland_TB909__73_splash_zap.wav,0,359,Roland TR-909,splash_zap,y,,0,0,3.9
-Roland_TB909__53ridebell.wav,0,313,Roland TR-909,ridebell,yl,,0,0,5.43
-Roland_TB909__65_tomboy.wav,0,452,Roland TR-909,tomboy,,,0,0,11.97
-Roland_TB909__67agogo.wav,0,81,Roland TR-909,agogo,,,0,0,7.9
-Roland_TB909__74_low_hit.wav,0,151,Roland TR-909,low_hit,,,0,0,3.66
-Roland_TB909__70_bassy.wav,0,110,Roland TR-909,bassy,,,0,0,13.37
-Roland_TB909__60_noise_hi.wav,0,206,Roland TR-909,noise_hi,,,0,0,3.25
-Roland_TB909__58vibraslap.wav,0,220,Roland TR-909,vibraslap,,,0,0,9.46
-Roland_TB909__71_bottle.wav,0,131,Roland TR-909,bottle,,,0,0,7.87
-Roland_TB909__66agogo.wav,0,87,Roland TR-909,agogo,,,0,0,8.66
-Roland_TB909__63congo.wav,0,9,Roland TR-909,congo,,,0,0,6.89
-Roland_TB909__52_zap_hit.wav,0,372,Roland TR-909,zap_hit,,,0,0,7.02
-Roland_TB909__56cowbell.wav,0,396,Roland TR-909,cowbell,,,0,0,10.78
-Roland_TB909__55_splash.wav,0,1520,Roland TR-909,splash,,,0,0,3.5
-Roland_TB909__80triangle.wav,0,222,Roland TR-909,triangle,,,0,0,8.45
-Roland_TB909__79_blop.wav,0,117,Roland TR-909,blop,,,0,0,6.65
-Roland_TB909__64congo.wav,0,78,Roland TR-909,congo,,,0,0,5.29
-Roland_TB909__61_noise_low.wav,0,348,Roland TR-909,noise_low,,,0,0,8.28
-Roland_TB909__81triangle.wav,0,554,Roland TR-909,triangle,,,0,0,5.43
-Roland_TB909__78_blop.wav,0,86,Roland TR-909,blop,,,0,0,7.97
-Akai_MPC-X__49crash_cg.wav,0,2265,Akai MPC,crash,cg,,1,0,2.87
-Akai_MPC-X__44hat_pedal_ha.wav,0,71,Akai MPC,hat_pedal,ha,,1,0,10.0
-Akai_MPC-X__44hat_pedal_hg.wav,0,71,Akai MPC,hat_pedal,hg,,1,0,2.24
-Akai_MPC-X__36kick_ka.wav,0,217,Akai MPC,kick,ka,1,1,0,12.98
-Akai_MPC-X__36kick_kg.wav,0,217,Akai MPC,kick,kg,1,1,0,2.74
-Akai_MPC-X__37rimshot_ra.wav,0,279,Akai MPC,rimshot,ra,,1,0,8.33
-Akai_MPC-X__37rimshot_rg.wav,0,279,Akai MPC,rimshot,rg,,1,0,2.95
-Akai_MPC-X__60_snare_sa.wav,0,95,Akai MPC,snare,sa,1,1,0,14.78
-Akai_MPC-X__60_snare_sb.wav,0,127,Akai MPC,snare,sb,1,1,0,6.88
-Akai_MPC-X__60_snare_sg.wav,0,95,Akai MPC,snare,sg,1,1,0,2.65
-Akai_MPC-X__47tom_high_ta.wav,0,500,Akai MPC,tom_high,ta,,1,0,15.93
-Akai_MPC-X__47tom_high_tb.wav,0,532,Akai MPC,tom_high,tb,,1,0,11.77
-Akai_MPC-X__41tom_low_ttta.wav,0,482,Akai MPC,tom_low,ttta,1,1,0,14.15
-Akai_MPC-X__59cymbal_ya.wav,0,2358,Akai MPC,cymbal,ya,,1,0,5.73
-Akai_MPC-X__59cymbal_yg.wav,0,2358,Akai MPC,cymbal,yg,,1,0,2.44
-Emu_Sp12__57crash_cg.wav,0,465,E-mu SP-12,crash,cg,,1,0,2.62
-Emu_Sp12__46hat_o_modified_h_ha.wav,0,504,E-mu SP-12,hat,ha,,1,1,4.51
-Emu_Sp12__46hat_o_modified_h_hg.wav,0,504,E-mu SP-12,hat,hg,,1,1,1.81
-Emu_Sp12__49modular_kick_ka.wav,0,731,E-mu SP-12,modular_kick,ka,1,1,0,17.79
-Emu_Sp12__49modular_kick_kg.wav,0,731,E-mu SP-12,modular_kick,kg,1,1,0,2.98
-Emu_Sp12__37rim_ra.wav,0,304,E-mu SP-12,rim,ra,,1,0,5.96
-Emu_Sp12__37rim_rg.wav,0,304,E-mu SP-12,rim,rg,,1,0,2.9
-Emu_Sp12__38snare_sa.wav,0,624,E-mu SP-12,snare,sa,1,1,0,10.61
-Emu_Sp12__38snare_sb.wav,0,656,E-mu SP-12,snare,sb,1,1,0,6.64
-Emu_Sp12__38snare_sg.wav,0,624,E-mu SP-12,snare,sg,1,1,0,2.93
-Emu_Sp12__50tom_high_ta.wav,0,389,E-mu SP-12,tom_high,ta,1,1,0,12.67
-Emu_Sp12__50tom_high_tb.wav,0,421,E-mu SP-12,tom_high,tb,1,1,0,6.97
-Emu_Sp12__41tom_low_ttta.wav,0,890,E-mu SP-12,tom_low,ttta,,1,0,10.92
-Emu_Sp12__51modular_flick_ya.wav,0,45,E-mu SP-12,modular_flick,ya,,1,0,7.41
-Emu_Sp12__51modular_flick_yg.wav,0,45,E-mu SP-12,modular_flick,yg,,1,0,2.91
-Linn_LM1__52china_cg.wav,0,1365,Linn LM-1,china,cg,,1,0,2.82
-Linn_LM1__46hat_open_modified_h_ha.wav,0,552,Linn LM-1,hat,ha,,1,1,4.61
-Linn_LM1__46hat_open_modified_h_hg.wav,0,552,Linn LM-1,hat,hg,,1,1,1.72
-Linn_LM1__35kick_ka.wav,0,170,Linn LM-1,kick,ka,1,1,0,16.18
-Linn_LM1__35kick_kg.wav,0,170,Linn LM-1,kick,kg,1,1,0,2.93
-Linn_LM1__37rimshot_ra.wav,0,170,Linn LM-1,rimshot,ra,,1,0,10.88
-Linn_LM1__37rimshot_rg.wav,0,170,Linn LM-1,rimshot,rg,,1,0,3.12
-Linn_LM1__38snare_sa.wav,0,170,Linn LM-1,snare,sa,1,1,0,16.22
-Linn_LM1__38snare_sb.wav,0,202,Linn LM-1,snare,sb,1,1,0,7.42
-Linn_LM1__38snare_sg.wav,0,170,Linn LM-1,snare,sg,1,1,0,3.11
-Linn_LM1__41tom_ta.wav,0,341,Linn LM-1,tom,ta,,1,0,16.73
-Linn_LM1__41tom_tb.wav,0,373,Linn LM-1,tom,tb,,1,0,11.91
-Linn_LM1__48tom_ttta.wav,0,341,Linn LM-1,tom,ttta,,1,0,16.5
-Linn_LM1__51ride_ya.wav,0,1365,Linn LM-1,ride,ya,,1,0,10.37
-Linn_LM1__51ride_yg.wav,0,1365,Linn LM-1,ride,yg,,1,0,2.75
-Linn_Linndrum__57crash_cymbal_cg.wav,0,1225,LinnDrum,crash_cymbal,cg,,1,0,2.81
-Linn_Linndrum__44hat_pedal_ha.wav,0,101,LinnDrum,hat_pedal,ha,,1,0,12.69
-Linn_Linndrum__44hat_pedal_hg.wav,0,101,LinnDrum,hat_pedal,hg,,1,0,2.6
-Linn_Linndrum__35kick_ka.wav,0,91,LinnDrum,kick,ka,1,1,0,15.83
-Linn_Linndrum__35kick_kg.wav,0,91,LinnDrum,kick,kg,1,1,0,2.52
-Linn_Linndrum__37rim_ra.wav,0,86,LinnDrum,rim,ra,,1,0,16.32
-Linn_Linndrum__37rim_rg.wav,0,86,LinnDrum,rim,rg,,1,0,3.19
-Linn_Linndrum__38snare_sa.wav,0,86,LinnDrum,snare,sa,1,1,0,16.98
-Linn_Linndrum__38snare_sb.wav,0,118,LinnDrum,snare,sb,1,1,0,9.98
-Linn_Linndrum__38snare_sg.wav,0,86,LinnDrum,snare,sg,1,1,0,3.17
-Linn_Linndrum__47tom_high_ta.wav,0,390,LinnDrum,tom_high,ta,,1,0,17.22
-Linn_Linndrum__47tom_high_tb.wav,0,422,LinnDrum,tom_high,tb,,1,0,8.13
-Linn_Linndrum__41tom_floor_ttta.wav,0,348,LinnDrum,tom_floor,ttta,,1,0,16.92
-Linn_Linndrum__51ride_ya.wav,0,1251,LinnDrum,ride,ya,,1,0,10.56
-Linn_Linndrum__51ride_yg.wav,0,1251,LinnDrum,ride,yg,,1,0,2.72
-Oberheim_Dmx__49crash_cymbal_cg.wav,0,952,Oberheim DMX,crash_cymbal,cg,,1,0,2.8
-Oberheim_Dmx__46hat_open_modifed_h_ha.wav,0,312,Oberheim DMX,hat,ha,,1,1,5.01
-Oberheim_Dmx__46hat_open_modifed_h_hg.wav,0,312,Oberheim DMX,hat,hg,,1,1,1.46
-Oberheim_Dmx__35kick_ka.wav,0,141,Oberheim DMX,kick,ka,1,1,0,15.96
-Oberheim_Dmx__35kick_kg.wav,0,141,Oberheim DMX,kick,kg,1,1,0,3.03
-Oberheim_Dmx__37rim_ra.wav,0,107,Oberheim DMX,rim,ra,1,1,0,10.66
-Oberheim_Dmx__37rim_rg.wav,0,107,Oberheim DMX,rim,rg,1,1,0,3.31
-Oberheim_Dmx__38snare_sa.wav,0,150,Oberheim DMX,snare,sa,1,1,0,14.9
-Oberheim_Dmx__38snare_sb.wav,0,182,Oberheim DMX,snare,sb,1,1,0,8.31
-Oberheim_Dmx__38snare_sg.wav,0,150,Oberheim DMX,snare,sg,1,1,0,3.19
-Oberheim_Dmx__47tom_high_ta.wav,0,448,Oberheim DMX,tom_high,ta,,1,0,17.1
-Oberheim_Dmx__47tom_high_tb.wav,0,480,Oberheim DMX,tom_high,tb,,1,0,8.2
-Oberheim_Dmx__41tom_floor_ttta.wav,0,710,Oberheim DMX,tom_floor,ttta,1,1,0,16.86
-Oberheim_Dmx__51ride_ya.wav,0,594,Oberheim DMX,ride,ya,1,1,0,9.57
-Oberheim_Dmx__51ride_yg.wav,0,594,Oberheim DMX,ride,yg,1,1,0,3.03
-Roland_CR79__52crash_cg.wav,0,354,Roland CR-78,crash,cg,1,1,0,2.92
-Roland_CR79__46hat_open_modified_h_ha.wav,0,264,Roland CR-78,hat,ha,,1,1,3.89
-Roland_CR79__46hat_open_modified_h_hg.wav,0,264,Roland CR-78,hat,hg,,1,1,1.42
-Roland_CR79__36kick_ka.wav,0,112,Roland CR-78,kick,ka,1,1,0,18.49
-Roland_CR79__36kick_kg.wav,0,112,Roland CR-78,kick,kg,1,1,0,3.19
-Roland_CR79__37rimshot_ra.wav,0,7,Roland CR-78,rimshot,ra,,1,0,12.34
-Roland_CR79__37rimshot_rg.wav,0,7,Roland CR-78,rimshot,rg,,1,0,2.27
-Roland_CR79__39_snare_sa.wav,0,69,Roland CR-78,snare,sa,1,1,0,14.55
-Roland_CR79__39_snare_sb.wav,0,101,Roland CR-78,snare,sb,1,1,0,10.72
-Roland_CR79__39_snare_sg.wav,0,69,Roland CR-78,snare,sg,1,1,0,2.47
-Roland_CR79__50tom_hi_ta.wav,0,744,Roland CR-78,tom_hi,ta,1,1,0,8.35
-Roland_CR79__50tom_hi_tb.wav,0,776,Roland CR-78,tom_hi,tb,1,1,0,3.79
-Roland_CR79__43tom_low_ttta.wav,0,744,Roland CR-78,tom_low,ttta,,1,0,8.25
-Roland_CR79__51ride_ya.wav,0,408,Roland CR-78,ride,ya,,1,0,7.2
-Roland_CR79__51ride_yg.wav,0,408,Roland CR-78,ride,yg,,1,0,2.89
-Roland_Tr-808_full__57crash_cymbal_cg.wav,0,3500,Roland TR-808,crash_cymbal,cg,1,1,0,2.53
-Roland_Tr-808_full__46hat_open_ha.wav,0,250,Roland TR-808,hat_open,ha,,1,0,14.65
-Roland_Tr-808_full__46hat_open_hg.wav,0,250,Roland TR-808,hat_open,hg,,1,0,2.65
-Roland_Tr-808_full__36kick_ka.wav,0,1772,Roland TR-808,kick,ka,1,1,0,17.33
-Roland_Tr-808_full__36kick_kg.wav,0,1772,Roland TR-808,kick,kg,1,1,0,2.75
-Roland_Tr-808_full__37rim_ra.wav,0,16,Roland TR-808,rim,ra,,1,0,12.83
-Roland_Tr-808_full__37rim_rg.wav,0,16,Roland TR-808,rim,rg,,1,0,2.21
-Roland_Tr-808_full__40snare_sa.wav,0,80,Roland TR-808,snare,sa,1,1,0,15.02
-Roland_Tr-808_full__40snare_sb.wav,0,112,Roland TR-808,snare,sb,1,1,0,9.68
-Roland_Tr-808_full__40snare_sg.wav,0,80,Roland TR-808,snare,sg,1,1,0,3.13
-Roland_Tr-808_full__50tom_highest_ta.wav,0,125,Roland TR-808,tom_highest,ta,1,1,0,17.59
-Roland_Tr-808_full__50tom_highest_tb.wav,0,157,Roland TR-808,tom_highest,tb,1,1,0,12.57
-Roland_Tr-808_full__41tom_floor_ttta.wav,0,261,Roland TR-808,tom_floor,ttta,1,1,0,17.04
-Roland_Tr-808_full__51ride_ya.wav,0,2217,Roland TR-808,ride,ya,,1,0,11.41
-Roland_Tr-808_full__51ride_yg.wav,0,2217,Roland TR-808,ride,yg,,1,0,2.76
-Roland_TB909__57crashy_cg.wav,0,409,Roland TR-909,crashy,cg,,1,0,3.13
-Roland_TB909__46hihat_ha.wav,0,147,Roland TR-909,hihat,ha,1,1,0,8.59
-Roland_TB909__46hihat_hg.wav,0,147,Roland TR-909,hihat,hg,1,1,0,3.15
-Roland_TB909__36kick_ka.wav,0,283,Roland TR-909,kick,ka,1,1,0,16.4
-Roland_TB909__36kick_kg.wav,0,283,Roland TR-909,kick,kg,1,1,0,2.89
-Roland_TB909__37rim_ra.wav,0,28,Roland TR-909,rim,ra,,1,0,11.06
-Roland_TB909__37rim_rg.wav,0,28,Roland TR-909,rim,rg,,1,0,2.52
-Roland_TB909__40snare_sa.wav,0,98,Roland TR-909,snare,sa,1,1,0,13.61
-Roland_TB909__40snare_sb.wav,0,130,Roland TR-909,snare,sb,1,1,0,6.53
-Roland_TB909__40snare_sg.wav,0,98,Roland TR-909,snare,sg,1,1,0,2.65
-Roland_TB909__48_electricTomHighest_ta.wav,0,375,Roland TR-909,electricTomHighest,ta,1,1,0,16.24
-Roland_TB909__48_electricTomHighest_tb.wav,0,407,Roland TR-909,electricTomHighest,tb,1,1,0,11.91
 Roland_TB909__47_electricTomHigh_ttta.wav,0,435,Roland TR-909,electricTomHigh,ttta,,1,0,16.42
+Roland_TB909__73_splash_zap.wav,0,359,Roland TR-909,splash_zap,y,,0,0,3.9
 Roland_TB909__73_splash_zap_ya.wav,0,359,Roland TR-909,splash_zap,ya,,1,0,9.29
 Roland_TB909__73_splash_zap_yg.wav,0,359,Roland TR-909,splash_zap,yg,,1,0,3.12
+Roland_TB909__53ridebell.wav,0,313,Roland TR-909,ridebell,yl,,0,0,5.43
+Roland_TB909__52_zap_hit.wav,0,372,Roland TR-909,zap_hit,,,0,0,7.02
+Roland_TB909__64congo.wav,0,78,Roland TR-909,congo,,,0,0,5.29
+Roland_TB909__81triangle.wav,0,554,Roland TR-909,triangle,,,0,0,5.43
+Roland_TB909__71_bottle.wav,0,131,Roland TR-909,bottle,,,0,0,7.87
+Roland_TB909__61_noise_low.wav,0,348,Roland TR-909,noise_low,,,0,0,8.28
+Roland_TB909__78_blop.wav,0,86,Roland TR-909,blop,,,0,0,7.97
+Roland_TB909__79_blop.wav,0,117,Roland TR-909,blop,,,0,0,6.65
+Roland_TB909__66agogo.wav,0,87,Roland TR-909,agogo,,,0,0,8.66
+Roland_TB909__67agogo.wav,0,81,Roland TR-909,agogo,,,0,0,7.9
+Roland_TB909__58vibraslap.wav,0,220,Roland TR-909,vibraslap,,,0,0,9.46
+Roland_TB909__63congo.wav,0,9,Roland TR-909,congo,,,0,0,6.89
+Roland_TB909__74_low_hit.wav,0,151,Roland TR-909,low_hit,,,0,0,3.66
+Roland_TB909__55_splash.wav,0,1520,Roland TR-909,splash,,,0,0,3.5
+Roland_TB909__56cowbell.wav,0,396,Roland TR-909,cowbell,,,0,0,10.78
+Roland_TB909__70_bassy.wav,0,110,Roland TR-909,bassy,,,0,0,13.37
+Roland_TB909__60_noise_hi.wav,0,206,Roland TR-909,noise_hi,,,0,0,3.25
+Roland_TB909__80triangle.wav,0,222,Roland TR-909,triangle,,,0,0,8.45
+Roland_TB909__65_tomboy.wav,0,452,Roland TR-909,tomboy,,,0,0,11.97
