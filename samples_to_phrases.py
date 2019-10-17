@@ -22,6 +22,9 @@ parser.add_argument('-msd', dest="MAX_SAMPLE_DUR", default=5, type=float, help="
 parser.add_argument('-clarity', dest="CLARITY_THRESHOLD", default=0.4, type=float, help="Mean should be above this clarity")
 parser.add_argument('-power', dest="POWER_THRESHOLD", default=0.125, type=float, help="Mean be above this power")
 parser.add_argument('-buffer', dest="BUFFER_SIZE", default=4, type=int, help="Analyze this many samples")
+parser.add_argument('-maxc', dest="MIN_PHRASE_CLARITY", default=30.0, type=float, help="Minimum clarity of a phrase")
+parser.add_argument('-maxp', dest="MAX_PHRASES", default=-1, type=int, help="Maximum phrases to retrieve; -1 for all")
+parser.add_argument('-maxs', dest="MAX_SAMPLES", default=-1, type=int, help="Maximum samples to retrieve; -1 for all")
 parser.add_argument('-out', dest="OUTPUT_FILE", default="output/phrases.csv", help="Output csv file")
 a = parser.parse_args()
 aa = vars(a)
@@ -36,6 +39,14 @@ fieldNames, samples = readCsv(a.INPUT_FILE)
 # samples = addIndices(samples)
 samples = addNormalizedValues(samples, "clarity", "nclarity")
 samples = addNormalizedValues(samples, "power", "npower")
+
+def getPhraseFeatures(samples, clarityKey="clarity", powerKey="power"):
+    # weights = [s["dur"] for s in samples]
+    # clarity = np.average([s[clarityKey] for s in samples], weights=weights)
+    # power = np.average([s[powerKey] for s in samples], weights=weights)
+    clarity = np.median([s[clarityKey] for s in samples])
+    power = np.median([s[powerKey] for s in samples])
+    return (clarity, power)
 
 def addPhrase(phrases, phrase):
     global a
@@ -62,10 +73,14 @@ def addPhrase(phrases, phrase):
     maxDur = a.MAX_DUR if a.MAX_DUR > 0 else dur
     # check for valid duration
     if a.MIN_DUR <= dur <= maxDur:
+        clarity, power = getPhraseFeatures(phrase)
         phrases.append({
+            "filename": phrase[0]["filename"],
             "start": start,
             "dur": dur,
             "count": len(phrase),
+            "clarity": clarity,
+            "power": power,
             "samples": phrase
         })
 
@@ -98,18 +113,46 @@ for i, s in enumerate(samples):
     if len(currentPhrase) > a.BUFFER_SIZE:
         buffer = currentPhrase[-a.BUFFER_SIZE:]
 
-    # weight the averages based on duration of sample
-    weights = [b["dur"] for b in buffer]
-    meanClarity = np.average([b["nclarity"] for b in buffer], weights=weights)
-    meanPower = np.average([b["npower"] for b in buffer], weights=weights)
+    clarity, power = getPhraseFeatures(buffer, "nclarity", "npower")
 
     # we've reached the end of a phrase, add it
-    if meanClarity < a.CLARITY_THRESHOLD or meanPower < a.POWER_THRESHOLD:
+    if clarity < a.CLARITY_THRESHOLD or power < a.POWER_THRESHOLD:
         phrases = addPhrase(phrases, currentPhrase)
         currentPhrase = []
 
 # Add the last phrase
 phrases = addPhrase(phrases, currentPhrase)
+if len(phrases) < 1:
+    print("No phrases found")
+    sys.exit()
 
-for phrase in phrases:
-    print("%s -> %s (%s)" % (formatSeconds(phrase["start"]/1000.0), formatSeconds(phrase["start"]/1000.0+phrase["dur"]/1000.0), phrase["count"]))
+# Filter based on clarity
+phrases = [p for p in phrases if p["clarity"] >= a.MIN_PHRASE_CLARITY]
+if len(phrases) < 1:
+    print("No phrases with clarity > %s" % a.MIN_PHRASE_CLARITY)
+    sys.exit()
+
+phrases = sorted(phrases, key=lambda s: -s["clarity"])
+
+if a.MAX_PHRASES > 0 and len(phrases) > a.MAX_PHRASES:
+    phrases = phrases[:a.MAX_PHRASES]
+
+if a.MAX_SAMPLES > 0:
+    sampleTotal = 0
+    validPhrases = []
+    for p in phrases:
+        sampleTotal += p["count"]
+        if sampleTotal > a.MAX_SAMPLES:
+            break
+        validPhrases.append(p)
+    phrases = validPhrases[:]
+
+phrases = addIndices(phrases, "rank", 1)
+phrases = sorted(phrases, key=lambda s: s["start"])
+
+print("Found %s valid phrases" % len(phrases))
+
+runningTotal = 0
+for i, phrase in enumerate(phrases):
+    runningTotal += phrase["count"]
+    print("%s. %s -> %s dur[%s] count[%s] clarity[%s] power[%s] total[%s] rank[%s]" % (i+1, formatSeconds(phrase["start"]/1000.0), formatSeconds(phrase["start"]/1000.0+phrase["dur"]/1000.0), formatSeconds(phrase["dur"]/1000.0), phrase["count"], round(phrase["clarity"], 2), round(phrase["power"], 2), runningTotal, phrase["rank"]))
