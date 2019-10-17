@@ -23,6 +23,7 @@ from lib.video_utils import *
 parser = argparse.ArgumentParser()
 parser.add_argument('-in', dest="INPUT_FILE", default="path/to/item.mp4", help="Input media file")
 parser.add_argument('-sdata', dest="SAMPLE_DATA_FILE", default="path/to/sampledata.csv", help="Input csv sampldata file")
+parser.add_argument('-pdata', dest="PHRASE_DATA_FILE", default="", help="Input csv phrase data file; blank if none")
 parser.add_argument('-outframe', dest="OUTPUT_FRAME", default="tmp/item_viz/frame.%s.png", help="Temporary output frames pattern")
 parser.add_argument('-width', dest="WIDTH", default=1280, type=int, help="Output video width")
 parser.add_argument('-height', dest="HEIGHT", default=720, type=int, help="Output video height")
@@ -38,8 +39,14 @@ a = parser.parse_args()
 aa = vars(a)
 
 MARGIN = min(roundInt(a.HEIGHT * 0.1), 20)
+PHRASE_HEIGHT = MARGIN * 2
 
 fieldNames, sampledata = readCsv(a.SAMPLE_DATA_FILE)
+phrasedata = []
+if len(a.PHRASE_DATA_FILE) > 0:
+    _, phrasedata = readCsv(a.PHRASE_DATA_FILE)
+    phrasedata = addNormalizedValues(phrasedata, "clarity", "nclarity")
+hasPhrases = len(phrasedata) > 0
 makeDirectories([a.OUTPUT_FRAME, a.OUTPUT_FILE])
 
 # determine video properties from the first clip
@@ -70,6 +77,8 @@ ty = vy + vh + MARGIN
 # Assign times, colors, and dimensions to sampledata
 sy = ty + fheight + MARGIN
 maxSHeight = a.HEIGHT - sy - MARGIN * 0.5
+if hasPhrases:
+    maxSHeight = a.HEIGHT - PHRASE_HEIGHT - sy - MARGIN
 if maxSHeight < 10:
     print("Data height too small")
     sys.exit()
@@ -91,6 +100,16 @@ for i, s in enumerate(sampledata):
     sampledata[i]["sW"] = roundInt(totalSequenceWidth * nw)
     sampledata[i]["sH"] = myH
 
+# calculate dimensions for phrase data
+for i, p in enumerate(phrasedata):
+    nx = p["start"] / 1000.0 / duration
+    nw = p["dur"] / 1000.0 / duration
+    phrasedata[i]["sY"] = roundInt(sy + maxSHeight + MARGIN)
+    phrasedata[i]["sW"] = roundInt(totalSequenceWidth * nw)
+    phrasedata[i]["sX"] = roundInt(totalSequenceWidth * nx)
+    phrasedata[i]["sH"] = roundInt(PHRASE_HEIGHT)
+    phrasedata[i]["color"] = getColorGradientValue(p["nclarity"])
+
 # Generate annotation frames
 frameProps = []
 totalFrames = msToFrame(roundInt(duration*1000), fps)
@@ -102,7 +121,7 @@ for i in range(totalFrames):
         "filename": filename
     })
 
-def doFrame(p, totalFrames, sampledata):
+def doFrame(p, totalFrames, drawData):
     global a
     global MARGIN
     global cx
@@ -128,7 +147,7 @@ def doFrame(p, totalFrames, sampledata):
     draw.text((tx, ty), timestring, font=font, fill=(255, 255, 255))
 
     xoffset = lerp((seqX0, seqX1), nprogress)
-    for s in sampledata:
+    for s in drawData:
         if s["sH"] <= 0:
             continue
         x0 = s["sX"] + xoffset
@@ -148,9 +167,11 @@ def doFrame(p, totalFrames, sampledata):
 if a.OVERWRITE:
     removeFiles(a.OUTPUT_FRAME % "*")
 
+drawData = sampledata + phrasedata
+
 threads = getThreadCount(a.THREADS)
 pool = ThreadPool(threads)
-pclipsToFrame = partial(doFrame, totalFrames=totalFrames, sampledata=sampledata)
+pclipsToFrame = partial(doFrame, totalFrames=totalFrames, drawData=drawData)
 pool.map(pclipsToFrame, frameProps)
 pool.close()
 pool.join()
