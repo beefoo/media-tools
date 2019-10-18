@@ -19,6 +19,7 @@ parser.add_argument('-groups', dest="GROUPS", default="", help="Comma-separated 
 parser.add_argument('-filter', dest="FILTER", default="", help="Filter string")
 parser.add_argument('-sort', dest="SORT", default="", help="Sort string")
 parser.add_argument('-limit', dest="LIMIT", default=-1, type=int, help="Limit the number of results; -1 for all")
+parser.add_argument('-light', dest="LIGHT", action="store_true", help="Output the data in a 'light' format")
 parser.add_argument('-out', dest="OUTPUT_FILE", default="output/samples.json", help="Output json file")
 a = parser.parse_args()
 # Parse arguments
@@ -46,7 +47,7 @@ if a.LIMIT > 0 and len(rows) > a.LIMIT:
     rowCount = len(rows)
     print("%s rows after limiting" % rowCount)
 
-GROUPS = [p for p in a.GROUPS.strip().split(",")]
+GROUPS = [p for p in a.GROUPS.strip().split(",")] if len(a.GROUPS) > 0 else []
 groups = None
 if len(GROUPS) > 0:
     groups = {}
@@ -62,9 +63,18 @@ for r in rows:
         else:
             item[p] = r[p]
     items.append(item)
+jsonOut = {}
 
-jsonOut = {
-    "groups": groups,
-    "items": items
-}
+if a.LIGHT:
+    json["itemHeadings"] = PROPS
+    jrows = []
+    for r in rows:
+        jrows.append([r[p] for p in PROPS])
+    json["items"] = jrows
+else:
+    json["items"] = items
+
+if groups is not None:
+    json["groups"] = groups
+
 writeJSON(a.OUTPUT_FILE, jsonOut)
