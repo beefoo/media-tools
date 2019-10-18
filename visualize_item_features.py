@@ -108,7 +108,7 @@ for i, p in enumerate(phrasedata):
     phrasedata[i]["sW"] = roundInt(totalSequenceWidth * nw)
     phrasedata[i]["sX"] = roundInt(totalSequenceWidth * nx)
     phrasedata[i]["sH"] = roundInt(PHRASE_HEIGHT)
-    phrasedata[i]["color"] = getColorGradientValue(p["nclarity"])
+    phrasedata[i]["color"] = getColorGradientValue(lerp((0.5, 1.0), p["nclarity"]))
 
 # Generate annotation frames
 frameProps = []
