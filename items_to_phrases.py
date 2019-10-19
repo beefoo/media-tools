@@ -3,6 +3,8 @@
 import argparse
 import inspect
 import math
+from multiprocessing import Pool
+from multiprocessing.dummy import Pool as ThreadPool
 import numpy as np
 import os
 from pprint import pprint

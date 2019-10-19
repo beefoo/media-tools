@@ -37,6 +37,9 @@ aa["MAX_SAMPLE_DUR"] = roundInt(a.MAX_SAMPLE_DUR * 1000)
 # Read files
 fieldNames, samples = readCsv(a.INPUT_FILE)
 
+# Make sure output dirs exist
+makeDirectories(a.OUTPUT_FILE)
+
 # samples = addIndices(samples)
 samples = addNormalizedValues(samples, "clarity", "nclarity")
 samples = addNormalizedValues(samples, "power", "npower")
