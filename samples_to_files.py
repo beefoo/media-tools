@@ -69,6 +69,7 @@ def samplesToFiles(p):
         newSample["sourceFilename"] = os.path.basename(fn)
         newSample["sourceStart"] = sample["start"]
         newSample["filename"] = os.path.basename(outfilename)
+        newSample["id"] = getBasename(outfilename)
         newSample["start"] = 0
         newSample["dur"] = sdur
         newSamples.append(newSample)
@@ -96,7 +97,7 @@ pool.close()
 pool.join()
 
 if len(a.OUTPUT_DATA_FILE) > 0:
-    for h in ["sourceFilename", "sourceStart"]:
+    for h in ["id", "sourceFilename", "sourceStart"]:
         if h not in fieldNames:
             fieldNames.append(h)
     newSamples = flattenList(data)
