@@ -63,18 +63,18 @@ for r in rows:
         else:
             item[p] = r[p]
     items.append(item)
-jsonOut = {}
 
+jsonOut = {}
 if a.LIGHT:
-    json["itemHeadings"] = PROPS
+    jsonOut["itemHeadings"] = PROPS
     jrows = []
     for r in rows:
         jrows.append([r[p] for p in PROPS])
-    json["items"] = jrows
+    jsonOut["items"] = jrows
 else:
-    json["items"] = items
+    jsonOut["items"] = items
 
 if groups is not None:
-    json["groups"] = groups
+    jsonOut["groups"] = groups
 
 writeJSON(a.OUTPUT_FILE, jsonOut)
