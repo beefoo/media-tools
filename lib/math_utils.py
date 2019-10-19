@@ -140,10 +140,12 @@ def formatDecimal(n, precision=1):
 def formatNumber(n):
     return "{:,}".format(n)
 
-def formatSeconds(s):
+def formatSeconds(s, separator=":", retainHours=False):
     tString = time.strftime('%H:%M:%S', time.gmtime(s))
-    if tString.startswith("00:"):
+    if tString.startswith("00:") and not retainHours:
         tString = tString[3:]
+    if separator != ":":
+        tString = tString.replace(":", separator)
     return tString
 
 def getRandomColor(seed=None):

@@ -67,6 +67,7 @@ def getFilenames(fileString):
     return files
 
 def getFilesFromString(a):
+    aa = vars(a)
     # Read files
     files = []
     fieldNames = []
@@ -78,8 +79,7 @@ def getFilesFromString(a):
         files = [{"filename": f} for f in getFilenames(a.INPUT_FILE)]
     fileCount = len(files)
 
-    # Filter out files with no filename, duration, or audio
-    if fromManifest:
+    if fromManifest and "MEDIA_DIRECTORY" in aa:
         files = prependAll(files, ("filename", a.MEDIA_DIRECTORY))
 
     return (fieldNames, files, fileCount)
