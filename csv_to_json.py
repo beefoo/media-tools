@@ -77,4 +77,5 @@ else:
 if groups is not None:
     jsonOut["groups"] = groups
 
+makeDirectories(a.OUTPUT_FILE)
 writeJSON(a.OUTPUT_FILE, jsonOut)
