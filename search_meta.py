@@ -19,6 +19,7 @@ parser.add_argument('-features', dest="OUTPUT_KEY", default="collection", help="
 parser.add_argument('-out', dest="OUTPUT_FILE", default="", help="CSV output file; leave blank if update the same file")
 parser.add_argument('-probe', dest="PROBE", action="store_true", help="Show plot?")
 parser.add_argument('-verbose', dest="VERBOSE", action="store_true", help="Verbose messaging?")
+parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite value if it already exists?")
 a = parser.parse_args()
 
 # Parse arguments
@@ -50,6 +51,10 @@ for i, row in enumerate(rows):
         noMatchCount += 1
     else:
         matched[i] = True
+
+    # check to see if we can overwrite
+    if not a.OVERWRITE and OUTPUT_KEY in row and row[OUTPUT_KEY] != "":
+        continue
 
     rows[i][OUTPUT_KEY] = match
 

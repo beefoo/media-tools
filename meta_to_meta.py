@@ -17,6 +17,7 @@ parser.add_argument('-pattern', dest="PATTERN", default=".*([0-2]\d):?([0-5]\d):
 parser.add_argument('-features', dest="PATTERN_FEATURES", default="hh0,mm0,ss0,hh1,mm1,ss1", help="Features that the pattern maps to")
 parser.add_argument('-out', dest="OUTPUT_FILE", default="", help="CSV output file; leave blank if update the same file")
 parser.add_argument('-probe', dest="PROBE", action="store_true", help="Show plot?")
+parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite value if it already exists?")
 a = parser.parse_args()
 
 # Parse arguments
@@ -43,10 +44,16 @@ for i, row in enumerate(rows):
     matches = pattern.match(row[COLUMN_KEY])
 
     if not matches:
-        print("Did not match: %s" % row[COLUMN_KEY])
+        # if a.PROBE:
+        #     print("Did not match: %s" % row[COLUMN_KEY])
         noMatchCount += 1
+    elif a.PROBE:
+        print("Matched %s" % row[COLUMN_KEY])
 
     for j, feature in enumerate(PATTERN_FEATURES):
+        # check to see if we can overwrite
+        if feature in row and not a.OVERWRITE and len(row[feature]) > 0:
+            continue
         if matches:
             rows[i][feature] = matches.group(j+1)
         else:
@@ -54,6 +61,7 @@ for i, row in enumerate(rows):
 
     printProgress(i+1, rowCount)
 
+print("Matched %s files" % (rowCount-noMatchCount))
 print("Did not match %s files" % noMatchCount)
 
 if a.PROBE:
