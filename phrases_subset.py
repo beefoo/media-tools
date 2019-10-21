@@ -27,9 +27,10 @@ parser.add_argument('-probe', dest="PROBE", action="store_true", help="Just show
 a = parser.parse_args()
 
 # Read files
-files = []
-
 fieldNames, files = readCsv(a.INPUT_FILE)
+if "phrases" not in fieldNames:
+    fieldNames.append("phrases")
+
 samples = []
 phrases = []
 sampleFieldnames = []
@@ -37,8 +38,8 @@ for i, f in enumerate(files):
     _fieldNames, fsamples = readCsv(a.SAMPLE_INPUT_DIR + f["filename"] + ".csv")
     sampleFieldnames = unionLists(sampleFieldnames, _fieldNames)
     _, fphrases = readCsv(a.PHRASE_INPUT_DIR + f["filename"] + ".csv")
-    files[i]["samples"] = fsamples
-    files[i]["phrases"] = fphrases
+    # files[i]["fsamples"] = fsamples
+    # files[i]["fphrases"] = fphrases
     samples += fsamples
     phrases += fphrases
 
@@ -81,7 +82,13 @@ print("Found %s valid samples" % sampleCount)
 validFileCount = len(unique([s["filename"] for s in validSamples]))
 print("Found %s unique files" % validFileCount)
 
+# get phrase counts
+for i, file in enumerate(files):
+    files[i]['phrases'] = len(unique([s["phrase"] for s in validSamples if s["filename"]==file["filename"]]))
+
 if a.PROBE:
     sys.exit()
 
-writeCsv(a.OUTPUT_FILE, validSamples, headings=sampleFieldnames)
+# writeCsv(a.OUTPUT_FILE, validSamples, headings=sampleFieldnames)
+
+writeCsv(a.INPUT_FILE, files, headings=fieldNames)
