@@ -68,7 +68,7 @@ jsonOut = {}
 if a.LIGHT:
     jsonOut["itemHeadings"] = PROPS
     jrows = []
-    for r in rows:
+    for r in items:
         jrows.append([r[p] for p in PROPS])
     jsonOut["items"] = jrows
 else:
