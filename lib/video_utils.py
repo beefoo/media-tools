@@ -480,7 +480,10 @@ def getMediaTypes(filename):
     if os.path.isfile(filename):
         command = ['ffprobe', '-loglevel', 'error', '-show_entries', 'stream=codec_type', '-of', 'csv=p=0', filename]
         # print(" ".join(command))
-        result = [line.decode("utf-8") for line in subprocess.check_output(command).splitlines()]
+        try:
+            result = [line.decode("utf-8") for line in subprocess.check_output(command).splitlines()]
+        except subprocess.CalledProcessError:
+            result = []
     return result
 
 def getSolidPixels(color, width=100, height=100):

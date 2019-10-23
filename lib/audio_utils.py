@@ -239,8 +239,11 @@ def getDurationFromAudioData(y, sr):
 def getDurationFromAudioFile(fn):
     duration = 0
     if os.path.isfile(fn):
-        y, sr = librosa.load(getAudioFile(fn))
-        duration = int(getDurationFromAudioData(y, sr) * 1000)
+        try:
+            y, sr = librosa.load(getAudioFile(fn))
+            duration = int(getDurationFromAudioData(y, sr) * 1000)
+        except audioop.error:
+            duration = 0
     return duration
 
 def getFeatures(y, sr, start, dur=100, fft=2048, hop_length=512):
