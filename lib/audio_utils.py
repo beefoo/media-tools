@@ -1,4 +1,5 @@
 import array
+import audioop
 import librosa
 import math
 from lib.collection_utils import *
