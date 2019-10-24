@@ -22,7 +22,7 @@ parser.add_argument('-msd', dest="MAX_SAMPLE_DUR", default=5, type=float, help="
 parser.add_argument('-clarity', dest="CLARITY_THRESHOLD", default=0.4, type=float, help="Mean should be above this clarity")
 parser.add_argument('-power', dest="POWER_THRESHOLD", default=0.125, type=float, help="Mean be above this power")
 parser.add_argument('-buffer', dest="BUFFER_SIZE", default=4, type=int, help="Analyze this many samples")
-parser.add_argument('-maxc', dest="MIN_PHRASE_CLARITY", default=30.0, type=float, help="Minimum clarity of a phrase")
+parser.add_argument('-minc', dest="MIN_PHRASE_CLARITY", default=30.0, type=float, help="Minimum clarity of a phrase")
 parser.add_argument('-maxp', dest="MAX_PHRASES", default=-1, type=int, help="Maximum phrases to retrieve; -1 for all")
 parser.add_argument('-maxs', dest="MAX_SAMPLES", default=-1, type=int, help="Maximum samples to retrieve; -1 for all")
 parser.add_argument('-out', dest="OUTPUT_FILE", default="output/phrases.csv", help="Output csv file")

@@ -44,7 +44,7 @@ def getItemPhrases(item):
     if len(a.PARAMS) > 0:
         params = parseQueryString(a.PARAMS)
         for key in params:
-            command += ['-'+key, params[key]]
+            command += ['-'+key, str(params[key])]
 
     if a.PROBE:
         command += ['-probe']
