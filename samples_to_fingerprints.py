@@ -23,6 +23,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-in', dest="INPUT_FILE", default="tmp/samples.csv", help="Input file")
 parser.add_argument('-dir', dest="AUDIO_DIRECTORY", default="media/sample/", help="Input file")
 parser.add_argument('-out', dest="OUTPUT_FILE", default="tmp/features.p", help="Output file")
+parser.add_argument('-cellw', dest="CELL_W", default=32, type=int, help="Width of each cell")
+parser.add_argument('-cellh', dest="CELL_H", default=32, type=int, help="Height of each cell")
 parser.add_argument('-threads', dest="THREADS", default=4, type=int, help="Number of threads")
 a = parser.parse_args()
 
@@ -48,6 +50,7 @@ progress = 0
 
 # Adapted from: https://github.com/kylemcdonald/AudioNotebooks/blob/master/Samples%20to%20Fingerprints.ipynb
 def getFingerPrint(y, sr, start, dur, n_fft=2048, hop_length=512, window=None, use_logamp=False):
+    global a
     # take at most one second
     dur = min(dur, 1000)
 
@@ -58,8 +61,8 @@ def getFingerPrint(y, sr, start, dur, n_fft=2048, hop_length=512, window=None, u
 
     reduce_rows = 10 # how many frequency bands to average into one
     reduce_cols = 1 # how many time steps to average into one
-    crop_rows = 32 # limit how many frequency bands to use
-    crop_cols = 32 # limit how many time steps to use
+    crop_rows = a.CELL_H # limit how many frequency bands to use
+    crop_cols = a.CELL_W # limit how many time steps to use
 
     if not window:
         window = np.hanning(n_fft)
@@ -112,6 +115,6 @@ else:
 
 data = flattenList(data)
 data = sorted(data, key=lambda d: d["index"])
-fingerprints = [d["fingerprints"] for d in data]
+fingerprints = [d["fingerprint"] for d in data]
 saveCacheFile(a.OUTPUT_FILE, fingerprints, overwrite=True)
 print("Done.")
