@@ -97,7 +97,7 @@ def doTSNE(p):
 
     # load audio
     fn = getAudioFile(fn)
-    y, sr = librosa.load(fn)
+    y, sr = loadAudioData(fn)
     for sample in samples:
         featureVector = getFeatureVector(y, sr, sample["start"], sample["dur"])
         featureVectors.append({

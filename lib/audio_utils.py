@@ -60,7 +60,7 @@ def addFx(sound, effects, pad=3000, fade_in=100, fade_out=100):
     return newSound
 
 def analyzeAudio(fn, start=0, dur=250, findSamples=False):
-    y, sr = librosa.load(fn)
+    y, sr = loadAudioData(fn)
     if findSamples:
         samples, y, sr = getAudioSamples(fn, y=y, sr=sr)
         if len(samples) > 0:
@@ -204,7 +204,7 @@ def getAudioSamples(fn, min_dur=50, max_dur=-1, fft=2048, hop_length=512, backtr
     # load audio
     if y is None or sr is None:
         try:
-            y, sr = librosa.load(fn)
+            y, sr = loadAudioData(fn)
             duration = int(getDurationFromAudioData(y, sr) * 1000)
         except audioop.error:
             duration = 0
@@ -275,7 +275,7 @@ def getDurationFromAudioFile(fn, accurate=False):
     if os.path.isfile(fn):
         if accurate:
             try:
-                y, sr = librosa.load(getAudioFile(fn))
+                y, sr = loadAudioData(getAudioFile(fn))
                 duration = int(getDurationFromAudioData(y, sr) * 1000)
             except audioop.error:
                 duration = 0
@@ -338,7 +338,7 @@ def getFeaturesFromSamples(filename, samples, y=None, sr=None):
     # load audio
     if y is None or sr is None:
         fn = getAudioFile(filename)
-        y, sr = librosa.load(fn)
+        y, sr = loadAudioData(fn)
 
     features = []
     for i, sample in enumerate(samples):
@@ -430,7 +430,7 @@ def getPowerFromSamples(samples, fft=2048, hop_length=512):
         fsamples = f["items"]
         fn = getAudioFile(f["filename"])
         print("  Reading %s..." % fn)
-        y, sr = librosa.load(fn)
+        y, sr = loadAudioData(fn)
         print("  Getting %s samples from %s" % (len(fsamples), fn))
         for s in fsamples:
             sy = getFrameRange(y, s["start"], s["start"]+s["dur"], sr)
@@ -449,7 +449,7 @@ def getPowerFromTimecodes(timecodes, method="max"):
     powerData = {}
     # get features for each timecode in file
     for filename in filenames:
-        y, sr = librosa.load(getAudioFile(filename))
+        y, sr = loadAudioData(getAudioFile(filename))
         duration = int(getDurationFromAudioData(y, sr) * 1000)
         stft = getStft(y)
         maxStft = 1
@@ -470,6 +470,9 @@ def getPowerFromTimecodes(timecodes, method="max"):
 
 def getStft(y, n_fft=2048, hop_length=512):
     return librosa.feature.rmse(S=librosa.stft(y, n_fft=n_fft, hop_length=hop_length))[0]
+
+def loadAudioData(fn, sr=None):
+    return librosa.load(fn, sr=sr)
 
 def makeBlankAudio(duration, fn, sampleWidth=4, sampleRate=48000, channels=2):
     baseAudio = AudioSegment.silent(duration=duration, frame_rate=sampleRate)

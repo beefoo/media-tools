@@ -89,7 +89,7 @@ def processFile(p):
 
     # load audio
     fn = getAudioFile(p["filename"])
-    y, sr = librosa.load(fn, sr=None)
+    y, sr = loadAudioData(fn)
     for sample in p["samples"]:
         fingerprint = getFingerPrint(y, sr, sample["start"], sample["dur"])
         fingerprints.append({
