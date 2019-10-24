@@ -9,6 +9,7 @@ import numpy as np
 import os
 from PIL import Image
 from pprint import pprint
+import pydub
 from pydub import AudioSegment
 from pysndfx import AudioEffectsChain
 import re
@@ -138,8 +139,14 @@ def getAudio(filename, sampleWidth=4, sampleRate=48000, channels=2, verbose=True
     # A hack: always read files at 16-bit depth because Sox does not support more than that
     sampleWidth = 2
     audiofilename = getAudioFile(filename)
-    fformat = audiofilename.split(".")[-1].lower()
-    audio = AudioSegment.from_file(audiofilename, format=fformat)
+    # fformat = audiofilename.split(".")[-1].lower()
+    # audio = AudioSegment.from_file(audiofilename, format=fformat)
+    try:
+        audio = AudioSegment.from_file(audiofilename)
+    # https://github.com/jiaaro/pydub/issues/415
+    except pydub.exceptions.CouldntDecodeError:
+        audio = AudioSegment.from_file_using_temporary_files(audiofilename)
+
     # convert to stereo
     if audio.channels != channels:
         if verbose:
