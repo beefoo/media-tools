@@ -464,7 +464,10 @@ def getDurationFromFile(filename, accurate=False):
                 result = 0
         else:
             command = ['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', filename]
-            result = subprocess.check_output(command).strip()
+            try:
+                result = subprocess.check_output(command).strip()
+            except subprocess.CalledProcessError:
+                result = 0
     return float(result)
 
 def getEmptyVideoClipImage(clip):

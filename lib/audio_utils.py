@@ -237,14 +237,22 @@ def getDurationFromAudioData(y, sr):
     ylen = len(y)
     return 1.0 * ylen / sr
 
-def getDurationFromAudioFile(fn):
+def getDurationFromAudioFile(fn, accurate=False):
     duration = 0
     if os.path.isfile(fn):
-        try:
-            y, sr = librosa.load(getAudioFile(fn))
-            duration = int(getDurationFromAudioData(y, sr) * 1000)
-        except audioop.error:
-            duration = 0
+        if accurate:
+            try:
+                y, sr = librosa.load(getAudioFile(fn))
+                duration = int(getDurationFromAudioData(y, sr) * 1000)
+            except audioop.error:
+                duration = 0
+        else:
+            command = ['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', fn]
+            try:
+                duration = subprocess.check_output(command).strip()
+            except subprocess.CalledProcessError:
+                duration = 0
+            duration = float(duration)
     return duration
 
 def getFeatures(y, sr, start, dur=100, fft=2048, hop_length=512):
