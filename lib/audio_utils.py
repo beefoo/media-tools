@@ -7,11 +7,11 @@ from lib.math_utils import *
 from lib.processing_utils import *
 import numpy as np
 import os
+from PIL import Image
 from pprint import pprint
 from pydub import AudioSegment
 from pysndfx import AudioEffectsChain
 import re
-# from skimage.measure import block_reduce
 import subprocess
 import sys
 
@@ -109,6 +109,23 @@ def applyAudioProperties(audio, props, sfx=True, fxPad=3000):
             audio = addFx(audio, effects, pad=fxPad)
     return audio
 
+def audioFeaturesToImage(featureVectors, filename, cols, rows, width, height):
+    pixels = np.zeros((rows, cols), dtype=np.uint8)
+    cellW = int(1.0 * width / cols)
+    cellH = int(1.0 * height / rows)
+    for row in range(rows):
+        for col in range(cols):
+            index = row * cols + col
+            featureVector = featureVectors[index]
+            featurePixels = np.zeros((cellH, cellW), dtype=np.uint8)
+            x0 = col * cellW
+            x1 = x0 + cellW
+            y0 = row * cellH
+            y1 = y0 + cellH
+            pixels[y0:y1, x0:x1] = featurePixels
+    im = Image.fromarray(pixels, mode="L")
+    im.save(filename)
+
 # Note: sample_width -> bit_depth conversions: 1->8, 2->16, 3->24, 4->32
 # 24/32 bit depth and 48K sample rates are industry standards
 def getAudio(filename, sampleWidth=4, sampleRate=48000, channels=2, verbose=True):
@@ -176,14 +193,24 @@ def getAudioFile(fn, samplerate=48000):
 def getAudioSamples(fn, min_dur=50, max_dur=-1, fft=2048, hop_length=512, backtrack=True, superFlux=True, y=None, sr=None, delta=0.07):
     basename = os.path.basename(fn)
     fn = getAudioFile(fn)
+    duration = 0
 
     # load audio
     if y is None or sr is None:
-        y, sr = librosa.load(fn)
+        try:
+            y, sr = librosa.load(fn)
+            duration = int(getDurationFromAudioData(y, sr) * 1000)
+        except audioop.error:
+            duration = 0
+            y = None
+            sr = None
+
     # maxVal = y.max()
     # if maxVal != 0:
     #     y /= maxVal
-    duration = int(getDurationFromAudioData(y, sr) * 1000)
+
+    if duration <= 0:
+        return ([], y, sr)
 
     # retrieve onsets using superflux method
     # https://librosa.github.io/librosa/auto_examples/plot_superflux.html#sphx-glr-auto-examples-plot-superflux-py
@@ -318,30 +345,6 @@ def getFeaturesFromSamples(filename, samples, y=None, sr=None):
         sys.stdout.flush()
 
     return features
-
-# Adapted from: https://github.com/kylemcdonald/AudioNotebooks/blob/master/Samples%20to%20Fingerprints.ipynb
-def getFingerPrint(y, start, dur, n_fft=2048, hop_length=512, window=None, use_logamp=False):
-    reduce_rows = 10 # how many frequency bands to average into one
-    reduce_cols = 1 # how many time steps to average into one
-    crop_rows = 32 # limit how many frequency bands to use
-    crop_cols = 32 # limit how many time steps to use
-
-    if not window:
-        window = np.hanning(n_fft)
-    S = librosa.stft(y, n_fft=n_fft, hop_length=hop_length, window=window)
-    amp = np.abs(S)
-    if reduce_rows > 1 or reduce_cols > 1:
-        amp = block_reduce(amp, (reduce_rows, reduce_cols), func=np.mean)
-    if amp.shape[1] < crop_cols:
-        amp = np.pad(amp, ((0, 0), (0, crop_cols-amp.shape[1])), 'constant')
-    amp = amp[:crop_rows, :crop_cols]
-    if use_logamp:
-        amp = librosa.logamplitude(amp**2)
-    amp -= amp.min()
-    if amp.max() > 0:
-        amp /= amp.max()
-    amp = np.flipud(amp) # for visualization, put low frequencies on bottom
-    return amp
 
 # Taken from: https://github.com/ml4a/ml4a-guides/blob/master/notebooks/audio-tsne.ipynb
 def getFeatureVector(y, sr, start, dur):

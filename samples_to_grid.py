@@ -42,6 +42,7 @@ for p in OUT_PROPS:
 
 # Sort and limit
 if sampleCount > GRID_COUNT:
+    print("Too many samples... sorting and limiting")
     samples = sortByQueryString(samples, a.SORT)
     samples = samples[:GRID_COUNT]
 elif sampleCount < GRID_COUNT:
