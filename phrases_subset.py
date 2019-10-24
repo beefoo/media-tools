@@ -89,6 +89,5 @@ for i, file in enumerate(files):
 if a.PROBE:
     sys.exit()
 
-# writeCsv(a.OUTPUT_FILE, validSamples, headings=sampleFieldnames)
-
+writeCsv(a.OUTPUT_FILE, validSamples, headings=sampleFieldnames)
 writeCsv(a.INPUT_FILE, files, headings=fieldNames)
