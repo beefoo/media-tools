@@ -73,4 +73,4 @@ pool.close()
 pool.join()
 
 rows = sorted(rows, key=lambda r: r["filename"])
-writeCsv(INPUT_FILE, rows, headings=fieldNames)
+writeCsv(OUTPUT_FILE, rows, headings=fieldNames)
