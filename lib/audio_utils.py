@@ -109,22 +109,28 @@ def applyAudioProperties(audio, props, sfx=True, fxPad=3000):
             audio = addFx(audio, effects, pad=fxPad)
     return audio
 
-def audioFeaturesToImage(featureVectors, filename, cols, rows, width, height):
-    pixels = np.zeros((rows, cols), dtype=np.uint8)
+def audioFingerprintsToImage(fingerprints, filename, cols, rows, width, height):
+    pixels = np.zeros((height, width), dtype=np.uint8)
     cellW = int(1.0 * width / cols)
     cellH = int(1.0 * height / rows)
+    dmismatch = False
     for row in range(rows):
         for col in range(cols):
             index = row * cols + col
-            featureVector = featureVectors[index]
-            featurePixels = np.zeros((cellH, cellW), dtype=np.uint8)
+            fingerprint = np.round(np.array(fingerprints[index]) * 255.0)
+            fingerprint = fingerprint.astype(np.uint8)
+            fh, fw = fingerprint.shape
+            if fh != cellH or fw != cellW:
+                dmismatch = True
             x0 = col * cellW
             x1 = x0 + cellW
             y0 = row * cellH
             y1 = y0 + cellH
-            pixels[y0:y1, x0:x1] = featurePixels
+            pixels[y0:y1, x0:x1] = fingerprint
     im = Image.fromarray(pixels, mode="L")
     im.save(filename)
+    if dmismatch:
+        print("Warning: fingerprint dimensions differs from cell dimensions")
 
 # Note: sample_width -> bit_depth conversions: 1->8, 2->16, 3->24, 4->32
 # 24/32 bit depth and 48K sample rates are industry standards
