@@ -16,12 +16,14 @@ filename = "D:/landscapes/downloads/ia_fedflixnara/gov.archives.arc.54752_512kb.
 
 y = []
 offset=0.0
+# sr=22050
 sr=None
 mono=True
 offset=0.0
 duration=None
 dtype=np.float32
 res_type='kaiser_best'
+# res_type='scipy'
 
 def buf_to_float(x, n_bytes=2, dtype=np.float32):
     # Invert the scale of the data
@@ -86,21 +88,26 @@ def resample(y, orig_sr, target_sr, res_type='kaiser_best', fix=True, scale=Fals
     if orig_sr == target_sr:
         return y
 
+    print("Ratio...")
     ratio = float(target_sr) / orig_sr
 
     n_samples = int(np.ceil(y.shape[-1] * ratio))
 
+    print("Resample..")
     if res_type == 'scipy':
         y_hat = scipy.signal.resample(y, n_samples, axis=-1)
     else:
         y_hat = resampy.resample(y, orig_sr, target_sr, filter=res_type, axis=-1)
 
     if fix:
+        print("Fix...")
         y_hat = fix_length(y_hat, n_samples, **kwargs)
 
     if scale:
+        print("Scale..")
         y_hat /= np.sqrt(ratio)
 
+    print("Contiguous...")
     return np.ascontiguousarray(y_hat, dtype=y.dtype)
 
 print("Opening file...")
