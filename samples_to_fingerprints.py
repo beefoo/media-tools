@@ -3,6 +3,7 @@
 # https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html
 
 import argparse
+import audioread
 from lib.audio_utils import *
 from lib.cache_utils import *
 from lib.collection_utils import *
@@ -51,6 +52,8 @@ progress = 0
 # Adapted from: https://github.com/kylemcdonald/AudioNotebooks/blob/master/Samples%20to%20Fingerprints.ipynb
 def getFingerPrint(y, sr, start, dur, n_fft=2048, hop_length=512, window=None, use_logamp=False):
     global a
+    if len(y) < 1:
+        return np.zeros((a.CELL_H, a.CELL_W))
     # take at most one second
     dur = min(dur, 1000)
 
@@ -89,7 +92,11 @@ def processFile(p):
 
     # load audio
     fn = getAudioFile(p["filename"])
-    y, sr = loadAudioData(fn)
+    try:
+        y, sr = loadAudioData(fn)
+    except audioread.macca.MacError:
+        y = []
+        sr = 48000
     for sample in p["samples"]:
         fingerprint = getFingerPrint(y, sr, sample["start"], sample["dur"])
         fingerprints.append({
