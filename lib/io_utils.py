@@ -89,8 +89,17 @@ def getFilesInDir(dirname):
 
 def getJSONFromURL(url):
     print("Downloading %s" % url)
-    r = requests.get(url)
-    return r.json()
+    data = False
+    try:
+        r = requests.get(url)
+        data = r.json()
+    except json.decoder.JSONDecodeError:
+        print("Decode error for %s" % url)
+        # r = requests.get(url)
+        # print(r.content)
+        # sys.exit()
+        data = False
+    return data
 
 def getNestedValue(d, string):
     parts = string.split(".")
