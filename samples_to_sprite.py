@@ -12,6 +12,7 @@ from lib.audio_mixer import *
 from lib.audio_utils import *
 from lib.clip import *
 from lib.collection_utils import *
+from lib.color_utils import *
 from lib.composition_utils import *
 from lib.io_utils import *
 from lib.math_utils import *
@@ -41,6 +42,7 @@ parser.add_argument('-log', dest="LOG", default=0, type=int, help="Display using
 parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite existing?")
 parser.add_argument('-probe', dest="PROBE", action="store_true", help="Just display durations?")
 parser.add_argument('-image', dest="IMAGE_ONLY", action="store_true", help="Just output image with no audio?")
+parser.add_argument('-colorful', dest="COLORFUL_IMAGES", action="store_true", help="Add background color to images?")
 args = parser.parse_args()
 
 # Parse arguments
@@ -199,9 +201,20 @@ if OVERWRITE or not os.path.isfile(IMAGE_FILE):
         if loaded:
             # order the fingerprints according to row order
             sortedFingerprints = []
+            bgcolors = None
+
+            if args.COLORFUL_IMAGES:
+                bgcolors = []
+
             for i, row in enumerate(rows):
                 sortedFingerprints.append(fingerprints[row["index"]])
-            audioFingerprintsToImage(sortedFingerprints, IMAGE_FILE, cols=GRID_W, rows=GRID_H, width=IMAGE_W, height=IMAGE_H)
+                if args.COLORFUL_IMAGES:
+                    hue = norm(math.log(max(0.001, row["hz"])), (math.log(20), math.log(2000)), limit=True)
+                    saturation = norm(row["clarity"], (24, 34), limit=True)
+                    value = norm(row["power"], (0, 2), limit=True)
+                    rgb = hsvToRgb((hue, saturation, value))
+                    bgcolors.append(rgb)
+            audioFingerprintsToImage(sortedFingerprints, IMAGE_FILE, cols=GRID_W, rows=GRID_H, width=IMAGE_W, height=IMAGE_H, bgcolors=bgcolors)
         else:
             print("Could not load cache file %s" % args.CACHE_FILE)
     else:

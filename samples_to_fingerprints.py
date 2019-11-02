@@ -27,6 +27,7 @@ parser.add_argument('-out', dest="OUTPUT_FILE", default="tmp/features.p", help="
 parser.add_argument('-cellw', dest="CELL_W", default=32, type=int, help="Width of each cell")
 parser.add_argument('-cellh', dest="CELL_H", default=32, type=int, help="Height of each cell")
 parser.add_argument('-threads', dest="THREADS", default=4, type=int, help="Number of threads")
+parser.add_argument('-log', dest="USE_LOG", action="store_true", help="Use log for fingerprint?")
 a = parser.parse_args()
 
 # Read files
@@ -77,7 +78,7 @@ def getFingerPrint(y, sr, start, dur, n_fft=2048, hop_length=512, window=None, u
         amp = np.pad(amp, ((0, 0), (0, crop_cols-amp.shape[1])), 'constant')
     amp = amp[:crop_rows, :crop_cols]
     if use_logamp:
-        amp = librosa.logamplitude(amp**2)
+        amp = librosa.amplitude_to_db(amp**2)
     amp -= amp.min()
     if amp.max() > 0:
         amp /= amp.max()
@@ -87,6 +88,7 @@ def getFingerPrint(y, sr, start, dur, n_fft=2048, hop_length=512, window=None, u
 def processFile(p):
     global progress
     global rowCount
+    global a
 
     fingerprints = []
 
@@ -98,7 +100,7 @@ def processFile(p):
         y = []
         sr = 48000
     for sample in p["samples"]:
-        fingerprint = getFingerPrint(y, sr, sample["start"], sample["dur"])
+        fingerprint = getFingerPrint(y, sr, sample["start"], sample["dur"], use_logamp=a.USE_LOG)
         fingerprints.append({
             "index": sample["index"],
             "fingerprint": fingerprint

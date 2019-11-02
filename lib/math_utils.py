@@ -263,6 +263,21 @@ def pseudoRandom(seed, range=(0, 1), isInt=False):
         value = roundInt(value)
     return value
 
+def resizeMatrix(mat, shape):
+    mh = mat.shape[0]
+    mw = mat.shape[1]
+    resizedFp = np.zeros(shape, dtype=mat.dtype)
+    h = shape[0]
+    w = shape[1]
+    for y in range(h):
+        for x in range(w):
+            ny = 1.0 * y / (h-1.0)
+            nx = 1.0 * x / (w-1.0)
+            i = roundInt(ny * (mh-1))
+            j = roundInt(nx * (mw-1))
+            resizedFp[y, x] = mat[i, j]
+    return resizedFp
+
 def roundToNearest(n, nearest):
     return 1.0 * round(1.0*n/nearest) * nearest
 

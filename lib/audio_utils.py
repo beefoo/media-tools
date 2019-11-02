@@ -110,11 +110,13 @@ def applyAudioProperties(audio, props, sfx=True, fxPad=3000):
             audio = addFx(audio, effects, pad=fxPad)
     return audio
 
-def audioFingerprintsToImage(fingerprints, filename, cols, rows, width, height):
+def audioFingerprintsToImage(fingerprints, filename, cols, rows, width, height, bgcolors=None):
     pixels = np.zeros((height, width), dtype=np.uint8)
+    bgpixels = None
+    if bgcolors is not None:
+        bgpixels = np.zeros((height, width, 3), dtype=np.uint8)
     cellW = int(1.0 * width / cols)
     cellH = int(1.0 * height / rows)
-    dmismatch = False
     for row in range(rows):
         for col in range(cols):
             index = row * cols + col
@@ -122,16 +124,22 @@ def audioFingerprintsToImage(fingerprints, filename, cols, rows, width, height):
             fingerprint = fingerprint.astype(np.uint8)
             fh, fw = fingerprint.shape
             if fh != cellH or fw != cellW:
-                dmismatch = True
+                fingerprint = resizeMatrix(fingerprint, (cellH, cellW))
             x0 = col * cellW
             x1 = x0 + cellW
             y0 = row * cellH
             y1 = y0 + cellH
             pixels[y0:y1, x0:x1] = fingerprint
+            if bgpixels is not None:
+                bgpixels[y0:y1, x0:x1] = bgcolors[index]
     im = Image.fromarray(pixels, mode="L")
+    if bgpixels is not None:
+        bgIm = Image.fromarray(bgpixels, mode="RGB")
+        overlayIm = Image.new(mode="RGB", size=(height, height), color=(0, 0, 0))
+        im = Image.composite(bgIm, overlayIm, im)
     im.save(filename)
-    if dmismatch:
-        print("Warning: fingerprint dimensions differs from cell dimensions")
+    # if dmismatch:
+    #     print("Warning: fingerprint dimensions differs from cell dimensions")
 
 # Note: sample_width -> bit_depth conversions: 1->8, 2->16, 3->24, 4->32
 # 24/32 bit depth and 48K sample rates are industry standards

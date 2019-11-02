@@ -1,5 +1,7 @@
+import colorsys
 from lib.math_utils import *
 import numpy as np
+
 
 def getColorGradient(name="inferno", multiply=255, toInt=True):
     data = []
@@ -532,3 +534,9 @@ def getColorGradientValue(nvalue, name="inferno", easingFunction="linear"):
     clen = len(cdata)
     cindex = roundInt(nvalue * (clen-1))
     return tuple(cdata[cindex])
+
+def hsvToRgb(hsv):
+    # assumes hsv is float between zero and 1
+    h, s, v = hsv
+    r, g, b = colorsys.hsv_to_rgb(h, s, v)
+    return (roundInt(r*255.0), roundInt(g*255.0), roundInt(b*255.0))
