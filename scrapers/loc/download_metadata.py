@@ -61,7 +61,8 @@ print("Reading query data...")
 items = []
 for fn in filenames:
     items += readJSON(fn)
-print("Read %s items" % len(items))
+itemCount = len(items)
+print("Read %s items" % itemCount)
 
 # Don't do threading to avoid rate limit error
 # print("Downloading metadata...")
@@ -71,8 +72,9 @@ print("Read %s items" % len(items))
 # pool.join()
 # print("Done.")
 
-for item in items:
+for i, item in enumerate(items):
     status = processItem(item)
+    printProgress(i+1, itemCount)
     if status == "exists":
         continue
     elif status == "error":
