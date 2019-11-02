@@ -5,11 +5,10 @@ import csv
 import inspect
 import json
 import math
-from multiprocessing import Pool
-from multiprocessing.dummy import Pool as ThreadPool
 import os
 from pprint import pprint
 import sys
+import time
 
 # add parent directory to sys path to import relative modules
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
@@ -22,11 +21,11 @@ from lib.processing_utils import *
 
 # input
 parser = argparse.ArgumentParser()
-parser.add_argument('-query', dest="QUERY_URL", default="https://www.loc.gov/audio/?fa=access-restricted:false%7Conline-format:audio&q=%22No+known+restrictions%22+OR+%22No+known+copyright+restriction%22+OR+%22The+maps+in+the+Map+Collections+materials+were+either+published+prior+to+1922%22+OR+%22Library+is+not+aware+of+any+copyrights%22&st=gallery&fo=json", help="Query. See reference: https://libraryofcongress.github.io/data-exploration/")
+parser.add_argument('-query', dest="QUERY_URL", default="https://www.loc.gov/audio/?fa=access-restricted:false%7Conline-format:audio&q=%22No+known+restrictions%22+OR+%22No+known+copyright+restriction%22+OR+%22Library+is+not+aware+of+any+copyrights%22&st=gallery&fo=json", help="Query. See reference: https://libraryofcongress.github.io/data-exploration/")
 parser.add_argument('-out', dest="OUTPUT_FILE", default="output/loc/pd_audio/page_%s.json", help="JSON output file pattern")
 parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite existing data?")
 parser.add_argument('-probe', dest="PROBE", action="store_true", help="Just print details?")
-parser.add_argument('-threads', dest="THREADS", type=int, default=4, help="How many concurrent requests?")
+parser.add_argument('-delay', dest="DELAY", type=int, default=1, help="How many seconds to delay requests (to avoid rate limiting)?")
 a = parser.parse_args()
 
 page = 1
@@ -54,7 +53,6 @@ def processQueryUrl(p):
     if data and "results" in data and data["results"]:
         writeJSON(filename, data["results"], verbose=True)
 
-
 props = []
 
 for i in range(pages):
@@ -66,8 +64,14 @@ for i in range(pages):
         data = firstPage
     props.append((url, filename, data))
 
-pool = ThreadPool(getThreadCount(a.THREADS))
-results = pool.map(processQueryUrl, props)
-pool.close()
-pool.join()
-print("Done.")
+pageCount = len(props)
+for i, p in enumerate(props):
+    processQueryUrl(p)
+    printProgress(i+1, pageCount)
+    time.sleep(a.DELAY)
+
+# pool = ThreadPool(getThreadCount(a.THREADS))
+# results = pool.map(processQueryUrl, props)
+# pool.close()
+# pool.join()
+# print("Done.")

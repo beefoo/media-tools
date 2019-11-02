@@ -28,7 +28,7 @@ parser.add_argument('-out', dest="OUTPUT_FILE", default="output/loc/pd_audio/ite
 parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite existing data?")
 parser.add_argument('-probe', dest="PROBE", action="store_true", help="Just print details?")
 parser.add_argument('-threads', dest="THREADS", type=int, default=4, help="How many concurrent requests?")
-parser.add_argument('-delay', dest="DELAY", type=int, default=5, help="How many seconds to delay requests (to avoid rate limiting)?")
+parser.add_argument('-delay', dest="DELAY", type=int, default=1, help="How many seconds to delay requests (to avoid rate limiting)?")
 a = parser.parse_args()
 
 filenames = getFilenames(a.INPUT_FILES)
