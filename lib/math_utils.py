@@ -140,13 +140,20 @@ def formatDecimal(n, precision=1):
 def formatNumber(n):
     return "{:,}".format(n)
 
-def formatSeconds(s, separator=":", retainHours=False):
+def formatSeconds(s, separator=":", retainHours=False, showDays=False):
+    dayString = ''
+    if showDays:
+        secondsInADay = 24.0 * 60 * 60
+        if s > secondsInADay:
+            dayString = '%s%s' % (int(s / secondsInADay), separator)
+            s = s % secondsInADay
+            retainHours = True
     tString = time.strftime('%H:%M:%S', time.gmtime(s))
     if tString.startswith("00:") and not retainHours:
         tString = tString[3:]
     if separator != ":":
         tString = tString.replace(":", separator)
-    return tString
+    return dayString + tString
 
 def getRandomColor(seed=None):
     c = []
