@@ -209,8 +209,9 @@ if OVERWRITE or not os.path.isfile(IMAGE_FILE):
             for i, row in enumerate(rows):
                 sortedFingerprints.append(fingerprints[row["index"]])
                 if args.COLORFUL_IMAGES:
-                    hue = norm(math.log(max(0.001, row["hz"])), (math.log(20), math.log(2000)), limit=True)
-                    saturation = norm(row["clarity"], (24, 34), limit=True)
+                    nhz = norm(math.log(max(0.001, row["hz"])), (math.log(100), math.log(1000)), limit=True)
+                    hue, saturation, value = rgbToHsv(getColorGradientValue(nhz, name="inferno"))
+                    saturation = norm(row["clarity"], (30, 35), limit=True)
                     value = norm(row["power"], (0, 2), limit=True)
                     rgb = hsvToRgb((hue, saturation, value))
                     bgcolors.append(rgb)
