@@ -19,7 +19,7 @@ parser.add_argument('-cols2', dest="COLS2", default="original:url,releaseDate:ye
 parser.add_argument('-key', dest="KEY", default="identifier", help="Match on this key from the first file")
 parser.add_argument('-key2', dest="KEY2", default="digest", help="Match on this key from the second file")
 parser.add_argument('-out', dest="OUTPUT_FILE", default="", help="CSV output file; leave blank if update the first file")
-parser.add_argument('-probe', dest="PROBE", action="store_true", help="Show plot?")
+parser.add_argument('-probe', dest="PROBE", action="store_true", help="Just display info?")
 parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite value if it already exists?")
 a = parser.parse_args()
 

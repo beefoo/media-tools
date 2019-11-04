@@ -68,7 +68,8 @@ def readItem(fn):
 
     fileExt = getFileExt(assetUrl)
     destFn = itemId + fileExt
-    citationMla = item["cite_this"]["mla"]
+    contributor = "" if "contributor_names" not in itemMeta or len(itemMeta["contributor_names"]) < 1 else itemMeta["contributor_names"][0]
+    date = "" if "date" not in itemMeta else itemMeta["date"]
 
     return {
         "id": itemId,
@@ -76,7 +77,9 @@ def readItem(fn):
         "assetUrl": assetUrl,
         "filename": destFn,
         "title": itemMeta["title"],
-        "citationMla": citationMla
+        "contributor": contributor,
+        "date": date
+        # "citationMla": item["cite_this"]["mla"]
     }
 
 print("Reading metadata...")
