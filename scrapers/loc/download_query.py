@@ -24,6 +24,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-query', dest="QUERY_URL", default="https://www.loc.gov/audio/?fa=access-restricted:false%7Conline-format:audio&q=%22No+known+restrictions%22+OR+%22No+known+copyright+restriction%22+OR+%22Library+is+not+aware+of+any+copyrights%22&st=gallery&fo=json", help="Query. See reference: https://libraryofcongress.github.io/data-exploration/")
 parser.add_argument('-out', dest="OUTPUT_FILE", default="output/loc/pd_audio/page_%s.json", help="JSON output file pattern")
 parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite existing data?")
+parser.add_argument('-start', dest="START_PAGE", type=int, default=1, help="Will start the page numbering at this number for output files")
 parser.add_argument('-probe', dest="PROBE", action="store_true", help="Just print details?")
 parser.add_argument('-delay', dest="DELAY", type=int, default=1, help="How many seconds to delay requests (to avoid rate limiting)?")
 a = parser.parse_args()
@@ -54,10 +55,11 @@ def processQueryUrl(p):
         writeJSON(filename, data["results"], verbose=True)
 
 props = []
+pageOffset = a.START_PAGE - 1
 
 for i in range(pages):
     page = i + 1
-    filename = a.OUTPUT_FILE % zeroPad(page, pages)
+    filename = a.OUTPUT_FILE % zeroPad(page+pageOffset, pages+pageOffset)
     url = a.QUERY_URL + "&sp=%s" % page
     data = None
     if page == 1:
