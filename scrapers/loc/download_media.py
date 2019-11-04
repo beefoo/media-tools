@@ -48,6 +48,8 @@ def processItem(item):
     destPath = a.OUTPUT_DIR + item["filename"]
 
     if os.path.isfile(destPath) and not a.OVERWRITE:
+        progress += 1
+        printProgress(progress, rowCount)
         return
 
     downloadBinaryFile(item["assetUrl"], destPath)
