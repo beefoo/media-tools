@@ -34,16 +34,10 @@ filenames = getFilenames(a.INPUT_FILES)
 # Make sure output dirs exist
 makeDirectories(a.OUTPUT_FILE)
 
-print("Loading metadata...")
-pool = ThreadPool(getThreadCount(a.THREADS))
-items = pool.map(readJSON, filenames)
-pool.close()
-pool.join()
-
-print("Loaded %s items." % len(items))
-
-def readItem(item):
+def readItem(fn):
     global a
+
+    item = readJSON(fn)
 
     if not item or "resources" not in item or len(item["resources"]) < 1:
         return None
@@ -85,10 +79,9 @@ def readItem(item):
         "citationMla": citationMla
     }
 
-
 print("Reading metadata...")
 pool = ThreadPool(getThreadCount(a.THREADS))
-rows = pool.map(readItem, items)
+rows = pool.map(readItem, filenames)
 pool.close()
 pool.join()
 
