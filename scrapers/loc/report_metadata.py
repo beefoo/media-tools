@@ -46,7 +46,7 @@ itemLookup = {}
 for i, item in enumerate(items):
     itemUrl = item["id"]
     itemId = itemUrl.strip("/").split("/")[-1]
-    itemLookup[itemId] = item
+    itemLookup[str(itemId)] = item
 
 print("Total items retrieved from query: %s" % itemCount)
 print("Total items with valid audio: %s (%s%%)" % (fileCount, round(1.0*fileCount / itemCount * 100.0, 2)))
@@ -65,9 +65,10 @@ reportData = {}
 for key in reports:
     values = []
     for f in files:
-        metadata = itemLookup[f["id"]]
-        if key in metadata:
-            values += metadata[key]
+        if str(f["id"]) in itemLookup:
+            metadata = itemLookup[str(f["id"])]
+            if key in metadata:
+                values += metadata[key]
     if key == 'dates':
         # convert dates to years
         for j, v in enumerate(values):
@@ -88,7 +89,9 @@ for key in reports:
 # Make a histogram of dates
 years = []
 for f in files:
-    metadata = itemLookup[f["id"]]
+    if str(f["id"]) not in itemLookup:
+        continue
+    metadata = itemLookup[str(f["id"])]
     values = []
     if 'dates' in metadata:
         values = metadata['dates']
