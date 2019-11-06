@@ -11,7 +11,10 @@ from lib.audio_utils import *
 from lib.collection_utils import *
 from lib.io_utils import *
 from lib.math_utils import *
+from lib.processing_utils import *
 import librosa
+from multiprocessing import Pool
+from multiprocessing.dummy import Pool as ThreadPool
 import os
 from os.path import join
 import numpy as np
@@ -28,6 +31,7 @@ parser.add_argument('-max', dest="MAX_DUR", default=1000, type=int, help="Maximu
 parser.add_argument('-delta', dest="ONSET_DELTA", default=0.07, type=float, help="Onset delta; must be larger than 0")
 parser.add_argument('-out', dest="OUTPUT_FILE", default="tmp/samples.csv", help="CSV output file")
 parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite existing data?")
+parser.add_argument('-threads', dest="THREADS", default=4, type=int, help="Number of concurrent threads, -1 for all available")
 
 # arguments for managing large media sets
 parser.add_argument('-features', dest="FEATURES", action="store_true", help="Retrieve features?")
@@ -86,7 +90,6 @@ if os.path.isfile(OUTPUT_FILE) and not OVERWRITE and not MULTIFILE_OUTPUT:
     fieldNames, rows = readCsv(OUTPUT_FILE)
 rowCount = len(rows)
 
-progress = 0
 # files = files[:1]
 
 def getSamples(fn, sampleCount=-1):
@@ -114,7 +117,16 @@ headings = ["filename", "start", "dur"]
 if FEATURES:
     headings += ["power", "hz", "clarity", "note", "octave"]
 totalCount = 0
-for i, f in enumerate(files):
+progress = 0
+
+def processFile(f):
+    global totalCount
+    global fileCount
+    global rowCount
+    global progress
+    global rows
+    global samplesPerFile
+
     fn = f["filename"]
     basename = os.path.basename(fn)
     outputFilename = OUTPUT_FILE if not MULTIFILE_OUTPUT else OUTPUT_FILE % basename
@@ -130,12 +142,17 @@ for i, f in enumerate(files):
     else:
         result = getSamples(fn, samplesPerFile)
         # Progressively save samples per audio file
-        append = (i > 0 and not MULTIFILE_OUTPUT)
+        append = (progress > 0 and not MULTIFILE_OUTPUT)
         writeCsv(outputFilename, result, headings=headings, append=append)
         totalCount += len(result)
 
-    sys.stdout.write('\r')
-    sys.stdout.write("%s%%" % round(1.0*(i+1)/fileCount*100,1))
-    sys.stdout.flush()
+    progress += 1
+    printProgress(progress, fileCount)
+
+print("Getting file samples...")
+pool = ThreadPool(getThreadCount(args.THREADS))
+results = pool.map(processFile, files)
+pool.close()
+pool.join()
 
 print("%s samples in total." % totalCount)
