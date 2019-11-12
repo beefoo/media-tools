@@ -21,6 +21,7 @@ sys.path.insert(0,parentdir)
 from lib.io_utils import *
 from lib.collection_utils import *
 from lib.processing_utils import *
+from loclib import *
 
 # input
 parser = argparse.ArgumentParser()
@@ -30,52 +31,7 @@ parser.add_argument('-count', dest="DISPLAY_COUNT", default=25, type=int, help="
 parser.add_argument('-filter', dest="FILTER", default="", help="Filter string")
 a = parser.parse_args()
 
-fieldNames, files = readCsv(a.INPUT_FILE)
-filenames = getFilenames(a.INPUT_PAGES_FILES)
-
-filters = []
-if len(a.FILTER) > 0:
-    filters = parseFilterString(a.FILTER.strip())
-
-# Filter out invalid files
-files = filterWhere(files, [("duration", 0, ">"), ("hasAudio", 0, ">")])
-fileCount = len(files)
-
-items = []
-for fn in filenames:
-    items += readJSON(fn)
-itemCount = len(items)
-print("Read %s items" % itemCount)
-
-itemLookup = {}
-for i, item in enumerate(items):
-    itemUrl = item["id"]
-    itemId = itemUrl.strip("/").split("/")[-1]
-    itemLookup[str(itemId)] = item
-
-print("Total items retrieved from query: %s" % itemCount)
-print("Total items with valid audio: %s (%s%%)" % (fileCount, round(1.0*fileCount / itemCount * 100.0, 2)))
-
-
-def isValidFile(f, filters):
-    global itemLookup
-    valid = True
-    if str(f["id"]) in itemLookup:
-        if len(filters) > 0:
-            metadata = itemLookup[str(f["id"])]
-            for key, value, mode in filters:
-                if key not in metadata:
-                    valid = False
-                    break
-                if value not in metadata[key]:
-                    valid = False
-                    break
-    else:
-        valid = False
-
-    return valid
-
-files = [f for f in files if isValidFile(f, filters)]
+files, fieldNames, itemLookup, itemCount = getLocItemData(a)
 fileCount = len(files)
 print("Total items after filtering: %s (%s%%)" % (fileCount, round(1.0*fileCount / itemCount * 100.0, 2)))
 
