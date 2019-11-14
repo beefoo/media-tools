@@ -313,7 +313,7 @@ def getTextProperties(a):
     }
 
 def linesToImage(lines, fn, width, height, color="#ffffff", bgColor="#000000", tblockYOffset=0, tblockXOffset=0, x="auto", y="auto", resizeResolution=1.0, overwrite=False, bgImage=None):
-    if os.path.isfile(fn) and not overwrite:
+    if fn is not None and os.path.isfile(fn) and not overwrite:
         print("%s already exists." % fn)
         return
 
@@ -354,8 +354,11 @@ def linesToImage(lines, fn, width, height, color="#ffffff", bgColor="#000000", t
         rh = roundInt(1.0*height/resizeResolution)
         im = im.resize((rw, rh), resample=Image.LANCZOS)
 
-    im.save(fn)
-    print("Saved %s" % fn)
+    if fn is not None:
+        im.save(fn)
+        print("Saved %s" % fn)
+
+    return im
 
 def normalizeText(text):
     text = text.lower()
