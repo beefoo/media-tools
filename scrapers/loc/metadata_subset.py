@@ -33,3 +33,7 @@ a = parser.parse_args()
 
 files, fieldNames, itemLookup, itemCount = getLocItemData(a)
 fileCount = len(files)
+
+# Make sure output dirs exist
+makeDirectories(a.OUTPUT_FILE)
+writeCsv(a.OUTPUT_FILE, files, headings=fieldNames)
