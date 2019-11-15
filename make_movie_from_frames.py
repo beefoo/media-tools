@@ -171,7 +171,7 @@ if a.OVERWRITE:
     removeFiles(a.OUTPUT_FRAME % "*")
 
 tprops = getTextProperties(a)
-_, lineHeight, _ = getLineSize(tprops['h2']['font'], 'A')
+_, lineHeight, _ = getLineSize(tprops['h3']['font'], 'A')
 
 def getFrameFromTime(step, ms, image=False):
     global groupLookup
@@ -239,7 +239,7 @@ def doFrame(f):
             sourceFrame = getFrameFromTime(step, f['ms'], image=True)
             baseImage = sourceFrame['image']
             lines = addTextMeasurements([{
-                "type": 'h2',
+                "type": 'h3',
                 "text": step['text'],
                 "customProps": {
                     "margin": 0,

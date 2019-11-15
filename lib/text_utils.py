@@ -366,7 +366,7 @@ def linesToImage(lines, fn, width, height, color="#ffffff", bgColor="#000000", t
         mask = stagingImage.convert('L')
         mask = Image.blend(black, mask, alpha)
         overlay = Image.new('RGB', im.size, color)
-        im = Image.composite(im, overlay, mask)
+        im = Image.composite(overlay, im, mask)
 
     if fn is not None:
         im.save(fn)
