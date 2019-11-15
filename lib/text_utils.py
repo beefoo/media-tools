@@ -312,7 +312,7 @@ def getTextProperties(a):
         "table": getTextProperty(a, a.TABLE_PROPS)
     }
 
-def linesToImage(lines, fn, width, height, color="#ffffff", bgColor="#000000", tblockYOffset=0, tblockXOffset=0, x="auto", y="auto", resizeResolution=1.0, overwrite=False, bgImage=None):
+def linesToImage(lines, fn, width, height, color="#ffffff", bgColor="#000000", tblockYOffset=0, tblockXOffset=0, x="auto", y="auto", resizeResolution=1.0, overwrite=False, bgImage=None, alpha=1.0):
     if fn is not None and os.path.isfile(fn) and not overwrite:
         print("%s already exists." % fn)
         return
@@ -325,7 +325,12 @@ def linesToImage(lines, fn, width, height, color="#ffffff", bgColor="#000000", t
         y = (height - th) * 0.5 + tblockYOffset
 
     im = Image.new('RGB', (width, height), bgColor) if bgImage is None else bgImage.copy()
-    draw = ImageDraw.Draw(im)
+    stagingImage = None
+    if alpha < 1.0:
+        stagingImage = Image.new('RGB', (width, height), (0, 0, 0))
+        draw = ImageDraw.Draw(stagingImage)
+    else:
+        draw = ImageDraw.Draw(im)
 
     ty = y
     for line in lines:
@@ -353,6 +358,15 @@ def linesToImage(lines, fn, width, height, color="#ffffff", bgColor="#000000", t
         rw = roundInt(1.0*width/resizeResolution)
         rh = roundInt(1.0*height/resizeResolution)
         im = im.resize((rw, rh), resample=Image.LANCZOS)
+        if stagingImage is not None:
+            stagingImage = stagingImage.resize((rw, rh), resample=Image.LANCZOS)
+
+    if alpha < 1.0:
+        black = Image.new('L', stagingImage.size, 0)
+        mask = stagingImage.convert('L')
+        mask = Image.blend(black, mask, alpha)
+        overlay = Image.new('RGB', im.size, color)
+        im = Image.composite(im, overlay, mask)
 
     if fn is not None:
         im.save(fn)

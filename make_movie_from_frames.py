@@ -244,9 +244,7 @@ def doFrame(f):
             x = roundInt(width * 0.05)
             y = height - x - lineHeight
             c = roundInt(textAlpha * 255.0)
-            textImage = linesToImage(lines, None, width, height, color=(c, c, c), bgColor="#000000", x=x, y=y)
-            mask = textImage.convert('L')
-            baseImage = Image.composite(baseImage, textImage, mask)
+            baseImage = linesToImage(lines, None, width, height, color="#ffffff", bgColor="#000000", x=x, y=y, bgImage=baseImage, alpha=textAlpha)
 
     # No processing necessary, just copy frame over
     if baseImage is None:
