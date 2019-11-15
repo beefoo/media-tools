@@ -53,6 +53,7 @@ byGroup = groupList(instructions, a.GROUP_BY)
 groupLookup = createLookup(byGroup, a.GROUP_BY)
 
 frameStart = 0
+hasError = False
 for group in groupNames:
     groupData = groupLookup[group]
     frameCount = -1
@@ -64,6 +65,11 @@ for group in groupNames:
             frameCount = itemFrameCount
         elif frameCount != itemFrameCount:
             print("%s framecount (%s) differs from %s (%s)" % (groupData['items'][0]['frames'], frameCount, item['frames'], itemFrameCount))
+            hasError = True
+        # Check for audio file
+        if not os.path.isfile(item['audio']):
+            print("Error: could not find audio file %s" % item['audio'])
+            hasError = True
     groupLookup[group]['frameStart'] = frameStart
     groupLookup[group]['frameCount'] = frameCount
     groupLookup[group]['durMs'] = frameToMs(frameCount, a.FPS)
@@ -75,7 +81,7 @@ for group in groupNames:
 totalFrames = frameStart
 durationMs = groupLookup[groupNames[-1]]['endMs']
 
-if a.PROBE:
+if a.PROBE or hasError:
     sys.exit()
 
 def getGroupByTime(ms):
