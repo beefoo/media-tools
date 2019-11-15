@@ -32,6 +32,7 @@ parser.add_argument('-toffset', dest="TEXT_OFFSET", default=1000, type=int, help
 parser.add_argument('-tfade', dest="TEXT_FADE", default=500, type=int, help="Fade in/out text duration")
 parser.add_argument('-probe', dest="PROBE", action="store_true", help="Just view statistics")
 parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite existing frames?")
+parser.add_argument('-debug', dest="DEBUG", default=-1, type=int, help="Debug frame")
 a = parser.parse_args()
 aa = vars(a)
 
@@ -57,7 +58,7 @@ for group in groupNames:
     frameCount = -1
     # Q/A frame count
     for item in groupData['items']:
-        itemFrames = getFilenames(item['frames'])
+        itemFrames = getFilenames(item['frames'] % '*')
         itemFrameCount = len(itemFrames)
         if frameCount < 0:
             frameCount = itemFrameCount
@@ -140,7 +141,7 @@ for i, step in enumerate(instructions):
 audioFilename = replaceFileExtension(a.OUTPUT_FILE, ".mp3")
 
 # Do audio
-if not a.VIDEO_ONLY and (a.OVERWRITE or not os.path.isfile(audioFilename)):
+if not a.VIDEO_ONLY and (a.OVERWRITE or not os.path.isfile(audioFilename)) and a.DEBUG < 0:
 
     audioInstructions = []
 
@@ -261,9 +262,11 @@ def doFrame(f):
 
 for f in range(totalFrames):
     frame = f + 1
+    if a.DEBUG > 0 and frame != a.DEBUG:
+        continue
     ms = frameToMs(frame, a.FPS)
     filename = a.OUTPUT_FRAME % zeroPad(frame, totalFrames)
-    if not a.OVERWRITE and os.path.isfile(filename):
+    if not a.OVERWRITE and os.path.isfile(filename) and a.DEBUG < 0:
         continue
     videoFrames.append({
         "frame": frame,
@@ -278,5 +281,8 @@ pool.join()
 
 if a.VIDEO_ONLY:
     audioFilename = False
+
+if a.DEBUG > 0:
+    sys.exit()
 
 compileFrames(a.OUTPUT_FRAME, a.FPS, a.OUTPUT_FILE, getZeroPadding(totalFrames), audioFile=audioFilename)
