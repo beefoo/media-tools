@@ -30,6 +30,7 @@ parser.add_argument('-ao', dest="AUDIO_ONLY", action="store_true", help="Render 
 parser.add_argument('-vo', dest="VIDEO_ONLY", action="store_true", help="Render video only?")
 parser.add_argument('-toffset', dest="TEXT_OFFSET", default=1000, type=int, help="Start text fade in this much time after the frame fades in")
 parser.add_argument('-tfade', dest="TEXT_FADE", default=500, type=int, help="Fade in/out text duration")
+parser.add_argument('-tstyle', dest="TEXT_STYLE", default="h3", help="Text style: p, h1, h2, h3")
 parser.add_argument('-probe', dest="PROBE", action="store_true", help="Just view statistics")
 parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite existing frames?")
 parser.add_argument('-debug', dest="DEBUG", default=-1, type=int, help="Debug frame")
@@ -171,7 +172,7 @@ if a.OVERWRITE:
     removeFiles(a.OUTPUT_FRAME % "*")
 
 tprops = getTextProperties(a)
-_, lineHeight, _ = getLineSize(tprops['h3']['font'], 'A')
+_, lineHeight, _ = getLineSize(tprops[a.TEXT_STYLE]['font'], 'A')
 
 def getFrameFromTime(step, ms, image=False):
     global groupLookup
@@ -239,13 +240,8 @@ def doFrame(f):
             sourceFrame = getFrameFromTime(step, f['ms'], image=True)
             baseImage = sourceFrame['image']
             lines = addTextMeasurements([{
-                "type": 'h3',
-                "text": step['text'],
-                "customProps": {
-                    "margin": 0,
-                    "align": 'left',
-                    "lineHeight": 1
-                }
+                "type": a.TEXT_STYLE,
+                "text": step['text']
             }], tprops)
             width, height = baseImage.size
             x = roundInt(width * 0.05)

@@ -31,12 +31,7 @@ def drawFrame(filename, baseImage, text, textAlpha):
 
     lines = addTextMeasurements([{
         "type": 'h3',
-        "text": text,
-        "customProps": {
-            "margin": 0,
-            "align": 'left',
-            "lineHeight": 1
-        }
+        "text": text
     }], tprops)
     width, height = baseImage.size
     x = roundInt(width * 0.05)
