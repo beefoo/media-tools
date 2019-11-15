@@ -274,10 +274,16 @@ for f in range(totalFrames):
         "ms": ms
     })
 
-pool = ThreadPool(a.THREADS)
-pool.map(doFrame, videoFrames)
-pool.close()
-pool.join()
+threads = getThreadCount(a.THREADS)
+
+if threads > 1:
+    pool = ThreadPool(threads)
+    pool.map(doFrame, videoFrames)
+    pool.close()
+    pool.join()
+else:
+    for i, f in enumerate(videoFrames):
+        doFrame(f)
 
 if a.VIDEO_ONLY:
     audioFilename = False
