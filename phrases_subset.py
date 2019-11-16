@@ -22,6 +22,8 @@ parser.add_argument('-out', dest="OUTPUT_FILE", default="tmp/combined_samples.cs
 parser.add_argument('-sort', dest="SORT", default="clarity=desc", help="Query string to sort phrases by")
 parser.add_argument('-filter', dest="FILTER", default="", help="Query string to filter by")
 parser.add_argument('-lim', dest="LIMIT", default=-1, type=int, help="Target total sample count, -1 for everything")
+parser.add_argument('-limp', dest="LIMIT_PHRASES_PER_FILE", default=-1, type=int, help="Limit number of phrases to take per file, -1 for everything")
+parser.add_argument('-lims', dest="LIMIT_SAMPLES_PER_PHRASE", default=-1, type=int, help="Limit number of samples to take per phrase, -1 for everything")
 
 parser.add_argument('-probe', dest="PROBE", action="store_true", help="Just show the stats")
 a = parser.parse_args()
@@ -59,6 +61,17 @@ for i, p in enumerate(phrases):
 for i, s in enumerate(samples):
     samples[i]["end"] = s["start"] + s["dur"]
 
+if a.LIMIT_PHRASES_PER_FILE > 0:
+    phrasesByFilename = groupList(phrases, 'filename')
+    limitedPhrases = []
+    for i, group in enumerate(phrasesByFilename):
+        if group['count'] > a.LIMIT_PHRASES_PER_FILE:
+            groupPhrases = sortByQueryString(group['items'], a.SORT)
+            limitedPhrases += groupPhrases[:a.LIMIT_PHRASES_PER_FILE]
+        else:
+            limitedPhrases += group['items']
+    phrases = limitedPhrases
+
 phrases = sortByQueryString(phrases, a.SORT)
 
 if len(a.FILTER) > 0:
@@ -70,6 +83,9 @@ print("Collecting samples...")
 validSamples = []
 for i, p in enumerate(phrases):
     psamples = [s for s in samples if s["filename"]==p["filename"] and s["start"] >= p["start"] and s["end"] <= p["end"]]
+    if a.LIMIT_SAMPLES_PER_PHRASE > 0 and len(psamples) > a.LIMIT_SAMPLES_PER_PHRASE:
+        psamples = sorted(psamples, key=lambda s: s['start'])
+        psamples = psamples[:a.LIMIT_SAMPLES_PER_PHRASE]
     for j, s in enumerate(psamples):
         psamples[j]["phrase"] = i
     validSamples += psamples
@@ -87,6 +103,15 @@ for i, file in enumerate(files):
     files[i]['phrases'] = len(unique([s["phrase"] for s in validSamples if s["filename"]==file["filename"]]))
 
 if a.PROBE:
+    counts = getCounts(validSamples, "filename")
+    breakPoint = False
+    breakCount = 0
+    for value, count in counts:
+        breakCount += count
+        if a.LIMIT > 0 and breakCount > a.LIMIT and not breakPoint:
+            print('------ breakpoint %s' % a.LIMIT)
+            breakPoint = True
+        print("%s (%s%%)\t %s" % (count, round(1.0*count / sampleCount * 100.0, 2), value))
     sys.exit()
 
 writeCsv(a.OUTPUT_FILE, validSamples, headings=sampleFieldnames)
