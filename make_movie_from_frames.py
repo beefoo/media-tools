@@ -28,8 +28,8 @@ parser.add_argument('-groupby', dest="GROUP_BY", default="comp", help="Group ins
 parser.add_argument('-threads', dest="THREADS", default=6, type=int, help="Amount of parallel frames to process (too many may result in too many open files)")
 parser.add_argument('-ao', dest="AUDIO_ONLY", action="store_true", help="Render audio only?")
 parser.add_argument('-vo', dest="VIDEO_ONLY", action="store_true", help="Render video only?")
-parser.add_argument('-toffset', dest="TEXT_OFFSET", default=1000, type=int, help="Start text fade in this much time after the frame fades in")
-parser.add_argument('-tfade', dest="TEXT_FADE", default=500, type=int, help="Fade in/out text duration")
+parser.add_argument('-toffset', dest="TEXT_OFFSET", default=2000, type=int, help="Start text fade in this much time after the frame fades in")
+parser.add_argument('-tfade', dest="TEXT_FADE", default=2000, type=int, help="Fade in/out text duration")
 parser.add_argument('-tstyle', dest="TEXT_STYLE", default="h3", help="Text style: p, h1, h2, h3")
 parser.add_argument('-probe', dest="PROBE", action="store_true", help="Just view statistics")
 parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite existing frames?")
@@ -100,13 +100,13 @@ def getGroupByTime(ms):
 
 # Determine fade start/stop for each step
 for i, step in enumerate(instructions):
-    startMs = timecodeToMs(step["start"])
-    stepGroup = getGroupByTime(startMs)
+    startMs = timecodeToMs(step["start"]) # time this step starts in the full sequence
+    stepGroup = getGroupByTime(startMs) # time this frame group starts in sequence
     fadeIn = roundInt(step['fade'] * 1000)
     nextStep = instructions[i+1] if i < instructionCount-1 else None
     fadeOut = roundInt(nextStep['fade'] * 1000) if nextStep is not None else 0
 
-    groupStartMs = startMs - stepGroup['startMs']
+    groupStartMs = startMs - stepGroup['startMs'] # start time within the frame sequence
     durMs = timecodeToMs(nextStep["start"]) - startMs if nextStep is not None else stepGroup['durMs'] - groupStartMs
     groupEndMs = groupStartMs + durMs
 
@@ -187,14 +187,14 @@ def getFrameFromTime(step, ms, image=False):
 
     frameImage = None
     if image:
-        frameImage = Image.open(frameImage)
+        frameImage = Image.open(frameFilename)
 
     # determine alpha
     alpha = 1.0
     if step['fadeInDurMs'] > 0 and progressMs < step['fadeInDurMs']:
         alpha = 1.0 * progressMs / step['fadeInDurMs']
     elif step['fadeOutDurMs'] > 0 and ms > step['fadeOutStartMs']:
-        alpha = norm(ms, (step['fadeOutStartMs'], step['fadeOutEndMs']), limit=True)
+        alpha = 1.0 - norm(ms, (step['fadeOutStartMs'], step['fadeOutEndMs']), limit=True)
     alpha = ease(alpha)
 
     return {
@@ -206,7 +206,7 @@ def getFrameFromTime(step, ms, image=False):
 progress = 0
 def doFrame(f):
     global progress
-    global frameCount
+    global totalFrames
     global instructions
     global tprops
     global lineHeight
@@ -234,7 +234,8 @@ def doFrame(f):
         if f['ms'] < step['textFadeInEndMs']:
             textAlpha = norm(f['ms'], (step['textFadeInStartMs'], step['textFadeInEndMs']), limit=True)
         elif f['ms'] > step['textFadeOutStartMs']:
-            textAlpha = norm(f['ms'], (step['textFadeOutStartMs'], step['textFadeOutEndMs']), limit=True)
+            textAlpha = 1.0 - norm(f['ms'], (step['textFadeOutStartMs'], step['textFadeOutEndMs']), limit=True)
+        textAlpha = ease(textAlpha)
 
         if textAlpha > 0.0:
             sourceFrame = getFrameFromTime(step, f['ms'], image=True)
@@ -258,8 +259,9 @@ def doFrame(f):
         baseImage.save(f['filename'])
 
     progress += 1
-    printProgress(progress, frameCount)
+    printProgress(progress, totalFrames)
 
+videoFrames = []
 for f in range(totalFrames):
     frame = f + 1
     if a.DEBUG > 0 and frame != a.DEBUG:
