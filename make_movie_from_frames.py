@@ -101,7 +101,7 @@ def getGroupByTime(ms):
 # Determine fade start/stop for each step
 for i, step in enumerate(instructions):
     startMs = timecodeToMs(step["start"]) # time this step starts in the full sequence
-    stepGroup = getGroupByTime(startMs) # time this frame group starts in sequence
+    stepGroup = getGroupByTime(startMs) # get the group that is active at this time
     fadeIn = roundInt(step['fade'] * 1000)
     nextStep = instructions[i+1] if i < instructionCount-1 else None
     fadeOut = roundInt(nextStep['fade'] * 1000) if nextStep is not None else 0
@@ -126,11 +126,11 @@ for i, step in enumerate(instructions):
     instructions[i]['ms'] = startMs
     instructions[i]['durMs'] = durMs
     instructions[i]['endMs'] = startMs + durMs
-    instructions[i]['fadeInStartMs'] = groupStartMs
-    instructions[i]['fadeInEndMs'] = groupStartMs + fadeIn
+    instructions[i]['fadeInStartMs'] = startMs
+    instructions[i]['fadeInEndMs'] = startMs + fadeIn
     instructions[i]['fadeInDurMs'] = fadeIn
-    instructions[i]['fadeOutStartMs'] = groupEndMs - fadeOut
-    instructions[i]['fadeOutEndMs'] = groupEndMs
+    instructions[i]['fadeOutStartMs'] = startMs + durMs - fadeOut
+    instructions[i]['fadeOutEndMs'] = startMs + durMs
     instructions[i]['fadeOutDurMs'] = fadeOut
 
     if 'text' in step and len(step['text']) > 0:
@@ -144,6 +144,10 @@ for i, step in enumerate(instructions):
         instructions[i]['textFadeInEndMs'] = textFadeInEndMs
         instructions[i]['textFadeOutStartMs'] = textFadeOutStartMs
         instructions[i]['textFadeOutEndMs'] = textFadeOutEndMs
+
+# for i in instructions:
+#     print('%s -> %s (%s)' % (formatSeconds(i['fadeInStartMs']/1000.0), formatSeconds(i['fadeOutEndMs']/1000.0), os.path.basename(i['audio'])))
+# sys.exit()
 
 audioFilename = replaceFileExtension(a.OUTPUT_FILE, ".mp3")
 
@@ -177,11 +181,11 @@ _, lineHeight, _ = getLineSize(tprops[a.TEXT_STYLE]['font'], 'A')
 def getFrameFromTime(step, ms, image=False):
     global groupLookup
 
-    progressMs = ms - step['ms']
-    stepMs = step['fadeInStartMs'] + progressMs
-    frame = msToFrame(stepMs, a.FPS) + 1
-
     groupData = groupLookup[step[a.GROUP_BY]]
+    progressMs = ms - groupData['startMs']
+    frame = msToFrame(progressMs, a.FPS) + 1
+
+    frame = max(frame, 1)
     frame = min(frame, groupData['frameCount'])
     frameFilename = step['frames'] % zeroPad(frame, groupData['frameCount'])
 
@@ -190,11 +194,9 @@ def getFrameFromTime(step, ms, image=False):
         frameImage = Image.open(frameFilename)
 
     # determine alpha
-    alpha = 1.0
-    if step['fadeInDurMs'] > 0 and progressMs < step['fadeInDurMs']:
-        alpha = 1.0 * progressMs / step['fadeInDurMs']
-    elif step['fadeOutDurMs'] > 0 and ms > step['fadeOutStartMs']:
-        alpha = 1.0 - norm(ms, (step['fadeOutStartMs'], step['fadeOutEndMs']), limit=True)
+    alpha = 0.0
+    if step['fadeOutDurMs'] > 0 and ms > step['fadeOutStartMs']:
+        alpha = norm(ms, (step['fadeOutStartMs'], step['fadeOutEndMs']), limit=True)
     alpha = ease(alpha)
 
     return {
