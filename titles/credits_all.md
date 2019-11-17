@@ -50,8 +50,6 @@ _
 ### Vintage Cartoon Collection made available by
 ## The Internet Archive
 
-=${title};sampledata=ia_vintage_cartoons_subset_128x128.csv&metadata=ia_vintage_cartoons.csv
-
 _
 _
 _
