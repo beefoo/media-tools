@@ -205,16 +205,14 @@ if OVERWRITE or not os.path.isfile(IMAGE_FILE):
 
             if args.COLORFUL_IMAGES:
                 bgcolors = []
-                rows = addNormalizedValues(rows, PROP1, "n"+PROP1)
-                rows = addNormalizedValues(rows, PROP2, "n"+PROP2)
+                rows = addNormalizedValues(rows, 'color', 'nr')
+                rows = addNormalizedValues(rows, 'color2', 'ng')
+                rows = addNormalizedValues(rows, 'color3', 'nb')
 
             for i, row in enumerate(rows):
                 sortedFingerprints.append(fingerprints[row["index"]])
                 if args.COLORFUL_IMAGES:
-                    hue = row["n"+PROP1]
-                    saturation = lerp((0.5, 1.0), row["n"+PROP2])
-                    value = 1.0
-                    rgb = hsvToRgb((hue, saturation, value))
+                    rgb = (roundInt(row['nr']*255), roundInt(row['ng']*255), roundInt(row['nb']*255))
                     bgcolors.append(rgb)
             audioFingerprintsToImage(sortedFingerprints, IMAGE_FILE, cols=GRID_W, rows=GRID_H, width=IMAGE_W, height=IMAGE_H, bgcolors=bgcolors)
         else:
