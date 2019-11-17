@@ -110,12 +110,12 @@ for i, step in enumerate(instructions):
     durMs = timecodeToMs(nextStep["start"]) - startMs if nextStep is not None else stepGroup['durMs'] - groupStartMs
     groupEndMs = groupStartMs + durMs
 
-    # only fade in if there's enough time in the beginning
-    fadeIn = min(groupStartMs, fadeIn)
-
-    # only fade out if there's enough time in the end
-    fadeOut = min(stepGroup['durMs']-groupEndMs, fadeOut)
-    fadeOut = max(fadeOut, 0)
+    # # only fade in if there's enough time in the beginning
+    # fadeIn = min(groupStartMs, fadeIn)
+    #
+    # # only fade out if there's enough time in the end
+    # fadeOut = min(stepGroup['durMs']-groupEndMs, fadeOut)
+    # fadeOut = max(fadeOut, 0)
 
     # adjust start and duration based on fade
     groupStartMs -= roundInt(fadeIn * 0.5)
@@ -184,9 +184,7 @@ def getFrameFromTime(step, ms, image=False):
     groupData = groupLookup[step[a.GROUP_BY]]
     progressMs = ms - groupData['startMs']
     frame = msToFrame(progressMs, a.FPS) + 1
-
-    frame = max(frame, 1)
-    frame = min(frame, groupData['frameCount'])
+    frame = lim(frame, (1, groupData['frameCount']))
     frameFilename = step['frames'] % zeroPad(frame, groupData['frameCount'])
 
     frameImage = None
