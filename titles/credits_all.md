@@ -1,7 +1,9 @@
 ### U.S. government films made available by
 ## The National Archives and Records Administration
 
-=${title};cols=4&sampledata=ia_fedflixnara_subset_128x128.csv&metadata=ia_fedflixnara.csv
+### And digitized by
+## The National Technical Information Service (NTIS)
+## and Public.Resource.Org
 
 _
 _
@@ -20,8 +22,9 @@ _
 ### The Human Space Flight Collection created by
 ## The National Aeronautics and Space Administration
 
-=${title};cols=4&sampledata=ia_hsfc_subset_128x128.csv&metadata=ia_hsfc.csv
-
+_
+_
+_
 ### The Macaulay Library made available by
 ## The Cornell Lab of Ornithology
 
