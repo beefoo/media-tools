@@ -245,7 +245,7 @@ def doFrame(f):
                 "text": step['text']
             }], tprops)
             width, height = baseImage.size
-            x = roundInt(width * 0.05)
+            x = roundInt(width * 0.02)
             y = height - x - lineHeight
             c = roundInt(textAlpha * 255.0)
             baseImage = linesToImage(lines, None, width, height, color="#ffffff", bgColor="#000000", x=x, y=y, bgImage=baseImage, alpha=textAlpha)
