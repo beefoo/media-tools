@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import argparse
+import inspect
 import os
 from multiprocessing import Pool
 from multiprocessing.dummy import Pool as ThreadPool
@@ -8,6 +9,11 @@ from PIL import Image, ImageDraw
 from pprint import pprint
 import shutil
 import sys
+
+# add parent directory to sys path to import relative modules
+currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+parentdir = os.path.dirname(currentdir)
+sys.path.insert(0,parentdir)
 
 from lib.audio_mixer import *
 from lib.collection_utils import *
@@ -21,10 +27,10 @@ from lib.video_utils import *
 parser = argparse.ArgumentParser()
 addTextArguments(parser)
 parser.add_argument('-in', dest="INPUT_FILE", default="path/to/manifest.csv", help="Input csv instruction file")
+parser.add_argument('-collections', dest="COLLECTIONS_FILE", default="path/to/collections.csv", help="Input csv collections file")
 parser.add_argument('-outframe', dest="OUTPUT_FRAME", default="tmp/movie_frames/frame.%s.png", help="Output frames pattern")
 parser.add_argument('-out', dest="OUTPUT_FILE", default="output/movie.mp4", help="Output media file")
 parser.add_argument('-fps', dest="FPS", default=24, type=int, help="Output video frames per second")
-parser.add_argument('-groupby', dest="GROUP_BY", default="comp", help="Group instructions by")
 parser.add_argument('-threads', dest="THREADS", default=6, type=int, help="Amount of parallel frames to process (too many may result in too many open files)")
 parser.add_argument('-ao', dest="AUDIO_ONLY", action="store_true", help="Render audio only?")
 parser.add_argument('-vo', dest="VIDEO_ONLY", action="store_true", help="Render video only?")
@@ -37,8 +43,9 @@ parser.add_argument('-debug', dest="DEBUG", default=-1, type=int, help="Debug fr
 a = parser.parse_args()
 aa = vars(a)
 
-fieldNames, instructions = readCsv(a.INPUT_FILE)
+_, instructions = readCsv(a.INPUT_FILE)
 instructionCount = len(instructions)
+_, collections = readCsv(a.COLLECTIONS_FILE)
 makeDirectories([a.OUTPUT_FRAME, a.OUTPUT_FILE])
 
 if len(instructions) <= 0:
@@ -48,39 +55,58 @@ if len(instructions) <= 0:
 # Infer group order from instructions
 groupNames = []
 for i in instructions:
-    if i[a.GROUP_BY] not in groupNames:
-        groupNames.append(i[a.GROUP_BY])
-byGroup = groupList(instructions, a.GROUP_BY)
-groupLookup = createLookup(byGroup, a.GROUP_BY)
+    if i['comp'] not in groupNames:
+        groupNames.append(i['comp'])
 
-frameStart = 0
+# get frames for each collection
 hasError = False
-for group in groupNames:
-    groupData = groupLookup[group]
-    frameCount = -1
-    # Q/A frame count
-    for item in groupData['items']:
-        itemFrames = getFilenames(item['frames'] % '*')
-        itemFrameCount = len(itemFrames)
-        if frameCount < 0:
-            frameCount = itemFrameCount
-        elif frameCount != itemFrameCount:
-            print("%s framecount (%s) differs from %s (%s)" % (groupData['items'][0]['frames'], frameCount, item['frames'], itemFrameCount))
-            hasError = True
-        # Check for audio file
-        if not os.path.isfile(item['audio']):
-            print("Error: could not find audio file %s" % item['audio'])
-            hasError = True
-    groupLookup[group]['frameStart'] = frameStart
-    groupLookup[group]['frameCount'] = frameCount
-    groupLookup[group]['durMs'] = frameToMs(frameCount, a.FPS)
-    groupLookup[group]['startMs'] = frameToMs(frameStart, a.FPS)
-    groupLookup[group]['endMs'] = frameToMs(frameStart+frameCount, a.FPS)
-    print("%s: %s -> %s" % (group, formatSeconds(groupLookup[group]['startMs']/1000.0), formatSeconds(groupLookup[group]['endMs']/1000.0)))
-    frameStart += frameCount
+for i, c in enumerate(collections):
+    cAudioFiles = {}
+    cFrames = []
+    gFrameStart = 0
+    for j, groupName in enumerate(groupNames):
 
-totalFrames = frameStart
-durationMs = groupLookup[groupNames[-1]]['endMs']
+        cFramesFile = c['frame_dir'] + c['uid'] + '_' + groupName + '_frames/frame.*.png'
+        gFrames = sorted(getFilenames(cFramesFile, verbose=False))
+        gFrameCount = len(gFrames)
+
+        gAudioFilename = c['audio_dir'] + c['uid'] + '_' + zeroPad(j+1, 10) + '_' + groupName + '.mp3'
+        # Check for audio file
+        if not os.path.isfile(gAudioFilename):
+            print("Error: could not find audio file %s" % gAudioFilename)
+            hasError = True
+
+        cAudioFiles[groupName] = {
+            'filename': gAudioFilename,
+            'frameStart': gFrameStart,
+            'frameCount': gFrameCount,
+            'durMs': frameToMs(gFrameCount, a.FPS),
+            'startMs': frameToMs(gFrameStart, a.FPS),
+            'endMs': frameToMs(gFrameStart+gFrameCount, a.FPS)
+        }
+        gFrameStart += gFrameCount
+        cFrames += gFrames
+
+    collections[i]['audioFiles'] = cAudioFiles
+    collections[i]['frameFiles'] = cFrames
+
+# Check frameCounts
+frameCount = -1
+for c in collections:
+    cFrameCount = len(c['frameFiles'])
+    if frameCount < 0:
+        frameCount = cFrameCount
+    elif frameCount != cFrameCount:
+        print("%s framecount (%s) differs from %s (%s)" % (collections[0]['uid'], frameCount, c['uid'], cFrameCount))
+        hasError = True
+        break
+
+collectionLookup = createLookup(collections, 'uid')
+totalFrames = frameCount
+durationMs = frameToMs(totalFrames, a.FPS)
+
+print('Total frames: %s' % totalFrames)
+print('Duration: %s' % formatSeconds(durationMs/1000.0))
 
 if a.PROBE or hasError:
     sys.exit()
@@ -101,37 +127,53 @@ def getGroupByTime(ms):
 # Determine fade start/stop for each step
 for i, step in enumerate(instructions):
     startMs = timecodeToMs(step["start"]) # time this step starts in the full sequence
-    stepGroup = getGroupByTime(startMs) # get the group that is active at this time
-    fadeIn = roundInt(step['fade'] * 1000)
+    prevStep = instructions[i-1] if i > 0 else None
     nextStep = instructions[i+1] if i < instructionCount-1 else None
-    fadeOut = roundInt(nextStep['fade'] * 1000) if nextStep is not None else 0
+    fadeIn = roundInt(prevStep['fade'] * 1000) if prevStep is not None else 0
+    fadeOut = roundInt(step['fade'] * 1000)
+    durMs = timecodeToMs(nextStep["start"]) - startMs if nextStep is not None else durationMs - startMs
 
-    groupStartMs = startMs - stepGroup['startMs'] # start time within the frame sequence
-    durMs = timecodeToMs(nextStep["start"]) - startMs if nextStep is not None else stepGroup['durMs'] - groupStartMs
-    groupEndMs = groupStartMs + durMs
-
-    # # only fade in if there's enough time in the beginning
-    # fadeIn = min(groupStartMs, fadeIn)
-    #
-    # # only fade out if there's enough time in the end
-    # fadeOut = min(stepGroup['durMs']-groupEndMs, fadeOut)
-    # fadeOut = max(fadeOut, 0)
+    # Determine audio properties
+    collection = collectionLookup[step['uid']]
+    audio = collection['audioFiles'][step['comp']]
+    audioMs = startMs
+    audioStartMs = startMs - audio['startMs'] # start time within the audio file
+    audioDurMs = timecodeToMs(nextStep["start"]) - startMs if nextStep is not None else audio['durMs'] - audioStartMs
+    audioDurMs = min(audioDurMs, audio['durMs'] - audioStartMs)
+    audioEndMs = audioStartMs + audioDurMs
+    audioFadeIn = fadeIn
+    audioFadeOut = fadeOut
+    # only fade in if there's enough time in the beginning
+    audioFadeIn = min(audioStartMs, audioFadeIn)
+    # only fade out if there's enough time in the end
+    audioFadeOut = min(audio['durMs'] - audioEndMs, audioFadeOut)
+    audioFadeOut = max(audioFadeOut, 0)
 
     # adjust start and duration based on fade
-    groupStartMs -= roundInt(fadeIn * 0.5)
     startMs -= roundInt(fadeIn * 0.5)
     durMs += roundInt(fadeIn * 0.5)
     durMs += roundInt(fadeOut * 0.5)
 
+    # adjust start and duration based on fade
+    audioStartMs -= roundInt(audioFadeIn * 0.5)
+    audioMs -= roundInt(audioFadeIn * 0.5)
+    audioDurMs += roundInt(audioFadeIn * 0.5)
+    audioDurMs += roundInt(audioFadeOut * 0.5)
+
     instructions[i]['ms'] = startMs
     instructions[i]['durMs'] = durMs
     instructions[i]['endMs'] = startMs + durMs
-    instructions[i]['fadeInStartMs'] = startMs
     instructions[i]['fadeInEndMs'] = startMs + fadeIn
-    instructions[i]['fadeInDurMs'] = fadeIn
+    instructions[i]['fadeOutDurMs'] = fadeOut
     instructions[i]['fadeOutStartMs'] = startMs + durMs - fadeOut
     instructions[i]['fadeOutEndMs'] = startMs + durMs
-    instructions[i]['fadeOutDurMs'] = fadeOut
+
+    instructions[i]['audioFile'] = audio['filename']
+    instructions[i]['audioMs'] = audioMs
+    instructions[i]['audioStartMs'] = audioStartMs
+    instructions[i]['audioDurMs'] = audioDurMs
+    instructions[i]['audioFadeInDurMs'] = audioFadeIn
+    instructions[i]['audioFadeOutDurMs'] = audioFadeOut
 
     if 'text' in step and len(step['text']) > 0:
         textFadeDurMs = min(a.TEXT_FADE, roundInt((durMs - fadeIn - fadeOut - a.TEXT_OFFSET) * 0.5))
@@ -146,7 +188,7 @@ for i, step in enumerate(instructions):
         instructions[i]['textFadeOutEndMs'] = textFadeOutEndMs
 
 # for i in instructions:
-#     print('%s -> %s (%s)' % (formatSeconds(i['fadeInStartMs']/1000.0), formatSeconds(i['fadeOutEndMs']/1000.0), os.path.basename(i['audio'])))
+#     print('%s -> %s (%s)' % (formatSeconds(i['fadeInStartMs']/1000.0), formatSeconds(i['fadeOutEndMs']/1000.0), os.path.basename(i['audioFile'])))
 # sys.exit()
 
 audioFilename = replaceFileExtension(a.OUTPUT_FILE, ".mp3")
@@ -158,12 +200,12 @@ if not a.VIDEO_ONLY and (a.OVERWRITE or not os.path.isfile(audioFilename)) and a
 
     for i, step in enumerate(instructions):
         audioInstructions.append({
-            "ms": step['ms'],
-            "filename": step["audio"],
-            "start": step['fadeInStartMs'],
-            "dur": step['durMs'],
-            "fadeIn": step['fadeInDurMs'],
-            "fadeOut": step['fadeOutDurMs']
+            "ms": step['audioMs'],
+            "filename": step["audioFile"],
+            "start": step['audioStartMs'],
+            "dur": step['audioDurMs'],
+            "fadeIn": step['audioFadeInDurMs'],
+            "fadeOut": step['audioFadeOutDurMs']
         })
 
     mixAudio(audioInstructions, durationMs, audioFilename)
@@ -178,14 +220,14 @@ if a.OVERWRITE:
 tprops = getTextProperties(a)
 _, lineHeight, _ = getLineSize(tprops[a.TEXT_STYLE]['font'], 'A')
 
-def getFrameFromTime(step, ms, image=False):
-    global groupLookup
+def getFrameData(step, ms, frame, image=False):
+    global collectionLookup
+    global totalFrames
 
-    groupData = groupLookup[step[a.GROUP_BY]]
-    progressMs = ms - groupData['startMs']
-    frame = msToFrame(progressMs, a.FPS) + 1
-    frame = lim(frame, (1, groupData['frameCount']))
-    frameFilename = step['frames'] % zeroPad(frame, groupData['frameCount'])
+    cData = collectionLookup[step['uid']]
+    cFrames = cData['frameFiles']
+    frameIndex = lim(frame-1, (0, totalFrames-1))
+    frameFilename = cFrames[frameIndex]
 
     frameImage = None
     if image:
@@ -224,8 +266,8 @@ def doFrame(f):
     step = frameSteps[0]
 
     if len(frameSteps) > 1:
-        frame0 = getFrameFromTime(frameSteps[0], f['ms'], image=True)
-        frame1 = getFrameFromTime(frameSteps[1], f['ms'], image=True)
+        frame0 = getFrameData(frameSteps[0], f['ms'], f['frame'], image=True)
+        frame1 = getFrameData(frameSteps[1], f['ms'], f['frame'], image=True)
         baseImage = Image.blend(frame0['image'], frame1['image'], frame0['alpha'])
 
     # check if text is visible
@@ -238,7 +280,7 @@ def doFrame(f):
         textAlpha = ease(textAlpha)
 
         if textAlpha > 0.0:
-            sourceFrame = getFrameFromTime(step, f['ms'], image=True)
+            sourceFrame = getFrameData(step, f['ms'], f['frame'], image=True)
             baseImage = sourceFrame['image']
             lines = addTextMeasurements([{
                 "type": a.TEXT_STYLE,
@@ -252,7 +294,7 @@ def doFrame(f):
 
     # No processing necessary, just copy frame over
     if baseImage is None:
-        sourceFrame = getFrameFromTime(step, f['ms'])
+        sourceFrame = getFrameData(step, f['ms'], f['frame'])
         shutil.copyfile(sourceFrame['filename'], f['filename'])
 
     else:

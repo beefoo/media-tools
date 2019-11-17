@@ -55,7 +55,7 @@ def getFileExt(fn):
     basename = os.path.basename(fn)
     return "." + basename.split(".")[-1]
 
-def getFilenames(fileString):
+def getFilenames(fileString, verbose=True):
     files = []
     if "*" in fileString:
         files = glob.glob(fileString)
@@ -63,7 +63,8 @@ def getFilenames(fileString):
         files = [fileString]
     fileCount = len(files)
     files = sorted(files)
-    print("Found %s files" % fileCount)
+    if verbose:
+        print("Found %s files" % fileCount)
     return files
 
 def getFilesFromString(a):
