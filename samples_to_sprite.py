@@ -188,7 +188,8 @@ rows = addIndices(rows, "gridIndex")
 
 for i, row in enumerate(rows):
     # add label
-    label = os.path.basename(row["filename"]) + " " + formatSeconds(row["start"]/1000.0) + ", index: %s" % row["gridIndex"]
+    # label = os.path.basename(row["filename"]) + " " + formatSeconds(row["start"]/1000.0) + ", index: %s" % row["gridIndex"]
+    label = os.path.basename(row["filename"])
     sprites[row["index"]] += [label]
     # kind of a hack: only take one frame at time
     rows[i]["start"] = row["t"]
