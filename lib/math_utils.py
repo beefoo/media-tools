@@ -237,14 +237,15 @@ def parseNumber(string, alwaysFloat=False):
     except ValueError:
         return string
 
-def parseNumbers(arr):
+def parseNumbers(arr, keyExceptions=['id', 'identifier']):
     for i, item in enumerate(arr):
         if isinstance(item, (list,)):
             for j, v in enumerate(item):
                 arr[i][j] = parseNumber(v)
         else:
             for key in item:
-                arr[i][key] = parseNumber(item[key])
+                if key not in keyExceptions:
+                    arr[i][key] = parseNumber(item[key])
     return arr
 
 def piDigits():
