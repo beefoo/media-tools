@@ -218,6 +218,15 @@ def replaceFileExtension(fn, newExt):
 def supportsEncoding():
     return sys.version_info >= (3, 0)
 
+def stringToFilename(str):
+    # Remove invalid characters
+    str = re.sub('[^0-9a-zA-Z_]', '', str)
+
+    # Remove leading characters until we find a letter or number
+    str = re.sub('^[^0-9a-zA-Z]+', '', str)
+
+    return str
+
 def writeCsv(filename, arr, headings="auto", append=False, encoding="utf8"):
     if headings == "auto":
         headings = arr[0].keys() if len(arr) > 0 and type(arr[0]) is dict else None
