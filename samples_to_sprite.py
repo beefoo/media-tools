@@ -195,6 +195,10 @@ for i, row in enumerate(rows):
     rows[i]["start"] = row["t"]
     rows[i]["dur"] = 1
 
+# sort sprites and remove positions
+sprites = sorted(sprites, key=lambda s: (s[4], s[3]))
+sprites = [s[:3] + s[5:] for s in sprites]
+
 print("Generating image...")
 if OVERWRITE or not os.path.isfile(IMAGE_FILE):
     if args.IMAGE_SPRITE_MODE == "audio":
