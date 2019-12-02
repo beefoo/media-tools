@@ -3,16 +3,19 @@
 # File structure:
 # {provider}_{collection_name}_{format}
 #     - one_shots/
-#         + {item_name}_{item_id}_{sequence}_{timestamp}.{format}
+#         + {item_title}_{item_id}_{sequence}_{timestamp}.{format}
 #             - title
 #             - artist
 #             - year
 #     - attributions/
-#         + {item_name}_{item_id}.txt
-#             - citations
+#         + {item_title}_{item_id}.txt
+#             - title
+#             - contributors
+#             - year
+#             - provider
 #             - url
 #             - rights and access
-#     + {item_name}_{item_id}_{sequence}_{timestamp}.{format}
+#     + {item_title}_{item_id}_{sequence}_{timestamp}.{format}
 #         - title
 #         - artist
 #         - year
@@ -104,7 +107,10 @@ for item in items:
 # parse stuff for item
 for i, item in enumerate(items):
     items[i]['cleanTitle'] = stringToFilename(item['title'])
-    artist = item['contributor'] if 'contributor' in item else item['creator']
+    artist = item['contributors'] if 'contributors' in item else item['creator']
+    items[i]['contributors'] = artist.replace(' | ', '\n')
+    items[i]['rights'] = collection['rights']
+    items[i]['credit'] = collection['credit']
     # use performer as artist if exists, else use first
     if ' | ' in artist:
         persons = artist.split(' | ')
