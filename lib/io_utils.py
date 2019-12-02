@@ -193,6 +193,9 @@ def readJSON(filename):
             data = json.load(f)
     return data
 
+def removeDir(path):
+    shutil.rmtree(path)
+
 def removeFiles(listOrString):
     filenames = listOrString
     if not isinstance(listOrString, list) and "*" in listOrString:
@@ -253,3 +256,6 @@ def writeJSON(filename, data, verbose=True):
 def zeroPad(value, total):
     padding = getZeroPadding(total)
     return str(value).zfill(padding)
+
+def zipDir(filename, path):
+    shutil.make_archive(filename, 'zip', path)

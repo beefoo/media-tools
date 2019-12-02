@@ -35,7 +35,11 @@ def filterWhere(arr, filters):
 
     # Filter array
     for f in filters:
-        key, value, mode = f
+        mode = '='
+        if len(f) == 2:
+            key, value = f
+        else:
+            key, value, mode = f
         value = parseNumber(value)
         if mode == "<=":
             arr = [a for a in arr if key not in a or a[key] <= value]
@@ -55,6 +59,13 @@ def filterWhere(arr, filters):
             arr = [a for a in arr if key not in a or a[key] == value]
 
     return arr
+
+def findWhere(arr, filters):
+    results = filterWhere(arr, filters)
+    if len(results) < 1:
+        return None
+    else:
+        return results[0]
 
 def flattenList(arr):
     return [item for sublist in arr for item in sublist]
