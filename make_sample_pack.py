@@ -43,9 +43,7 @@ parser.add_argument('-idata', dest="ITEM_DATA_FILE", default="metadata/loc_john-
 parser.add_argument('-pdata', dest="PHRASE_DATA_FILE", default="phrasedata/loc_project_one_pd_av/%s.csv", help="Path for phrase data csv files")
 parser.add_argument('-sdata', dest="SAMPLE_DATA_FILE", default="sampledata/loc_john-and-ruby-lomax_subset_64x64_grid.csv", help="Input collection samples csv file")
 parser.add_argument('-dir', dest="MEDIA_DIRECTORY", default="path/to/samples/", help="Audio sample dir")
-parser.add_argument('-tmp', dest="TEMP_DIR", default="tmp/samplepack/", help="Temp dir")
 parser.add_argument('-id', dest="ID_KEY", default="id", help="Key that contains item identifier")
-parser.add_argument('-sid', dest="SAMPLE_ID", default="sourceFilename", help="Key to match samples to item")
 parser.add_argument('-ctmpl', dest="COLLECTION_TEMPLATE", default="templates/collection_readme_template.txt", help="Input template file for collection")
 parser.add_argument('-itmpl', dest="ITEM_TEMPLATE", default="templates/item_readme_template.txt", help="Input template file for item")
 parser.add_argument('-formats', dest="FORMATS", default="mp3,wav", help="List of formats to produce")
@@ -54,7 +52,7 @@ parser.add_argument('-cmin', dest="MIN_CLIP_DUR", default=200, type=int, help="M
 parser.add_argument('-cmax', dest="MAX_CLIP_DUR", default=4000, type=int, help="Maximum clip duration in ms")
 parser.add_argument('-provider', dest="PROVIDER", default="loc.gov", help="Provider name")
 parser.add_argument('-cid', dest="COLLECTION_ID", default="john-and-ruby-lomax", help="Collection id")
-parser.add_argument('-out', dest="OUTPUT_DIR", default="path/to/output/", help="Output dir")
+parser.add_argument('-out', dest="OUTPUT_DIR", default="output/samplepack_john-and-ruby-lomax/", help="Output dir")
 a = parser.parse_args()
 
 FORMATS = a.FORMATS.strip().split(',')
@@ -84,7 +82,6 @@ samplesByItemLookup = createLookup(samplesByItem, 'filename')
 filenames = set(unique([s['filename'] for s in samples]))
 items = [i for i in items if i['filename'] in filenames]
 items = sorted(items, key=lambda i: i['title'])
-itemLookup = createLookup(items, 'filename')
 
 # retrieve phrases
 print('Looking for valid phrases...')
@@ -119,20 +116,19 @@ for i, item in enumerate(items):
             if 'performer' in person.lower():
                 artist = person
                 break
-    items[i]['tags'] = {'title': item['title'], 'artist': artist, 'album': collection['display'], 'year': item['year']}
+    tags = {'title': item['title'], 'artist': artist, 'album': collection['display']}
+    if 'year' in item and item['year'] != '':
+        tags['year'] = item['year']
+    items[i]['tags'] = tags
 
 removeDir(a.OUTPUT_DIR)
-removeDir(a.TEMP_DIR)
-makeDirectories([a.TEMP_DIR])
 
 for format in FORMATS:
     folder_name = '{provider}_{collection_name}_{format}'.format(provider=a.PROVIDER, collection_name=a.COLLECTION_ID, format=format)
     folder_path = a.OUTPUT_DIR + folder_name '/'
     wav_folder_name = '{provider}_{collection_name}_wav'.format(provider=a.PROVIDER, collection_name=a.COLLECTION_ID)
     wav_folder_path = a.OUTPUT_DIR + wav_folder_name '/'
-    attributions_path = folder_path+'attributions/'
-    one_shot_path = folder_path+'one_shots/'
-    makeDirectories([one_shot_path, attributions_path])
+    makeDirectories([folder_path+'attributions/', folder_path+'one_shots/'])
 
     # make main readme file
     collectionText = collectionTemplate.format(**collection)
@@ -143,7 +139,7 @@ for format in FORMATS:
     for item in items:
         # make attribution
         itemText = itemTemplate.format(**item)
-        itemAttributePath = attributions_path + '%s_%s.txt' % (item['cleanTitle'], item[a.ID_KEY])
+        itemAttributePath = folder_path + 'attributions/' + '%s_%s.txt' % (item['cleanTitle'], item[a.ID_KEY])
         with open(itemAttributePath, "w") as f:
             f.write(itemText)
 
@@ -155,8 +151,8 @@ for format in FORMATS:
         # make phrases and items
         itemPhrases = phraseLookup[item['filename']]
         phrasesTotal = max(100, len(itemPhrases))
-        itemSamples = samplesByItemLookup[item['filename']]
-        samplesTotal = max(100, len(itemPhrases))
+        itemSamples = samplesByItemLookup[item['filename']]['items']
+        samplesTotal = max(100, len(itemSamples))
         clips = []
         for j, phrase in enumerate(itemPhrases):
             clip = phrase.copy()
@@ -173,10 +169,11 @@ for format in FORMATS:
 
         for j, clip in enumerate(clips):
             sequence = clip['sequence']
-            timestamp = formatSeconds(clip['start']/1000.0, separator="-", retainHours=True)
-            clipFilePath = clip['dir'] + '%s_%s_%s_%s.%s' % (item['cleanTitle'], item[a.ID_KEY], sequence, timestamp, format)
+            timestampF = formatSeconds(clip['start']/1000.0, separator="-", retainHours=True)
+            clipFilePath = clip['dir'] + '%s_%s_%s_%s.%s' % (item['cleanTitle'], item[a.ID_KEY], sequence, timestampF, format)
             clipTags = item['tags'].copy()
-            clipTags['title'] = item['title'] + ' %s %s' % (sequence, timestamp)
+            timestamp = formatSeconds(clip['start']/1000.0)
+            clipTags['title'] = clipTags['title'] + ' %s (%s)' % (sequence, timestamp)
             # if wav, build the audio clip
             if format == 'wav':
                 # make clip
