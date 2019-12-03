@@ -135,13 +135,15 @@ itemCount = len(items)
 if a.OVERWRITE:
     removeDir(a.OUTPUT_DIR)
 
+makeDirectories(a.OUTPUT_DIR)
+
 for format in FORMATS:
     print('Generating %ss...' % format)
     folder_name = '{provider}_{collection_name}_{format}'.format(provider=a.PROVIDER, collection_name=a.COLLECTION_ID, format=format)
     folder_path = a.OUTPUT_DIR + folder_name + '/'
     wav_folder_name = '{provider}_{collection_name}_wav'.format(provider=a.PROVIDER, collection_name=a.COLLECTION_ID)
     wav_folder_path = a.OUTPUT_DIR + wav_folder_name + '/'
-    makeDirectories([folder_path+'attributions/', folder_path+'one_shots/'])
+    makeDirectories([folder_path, folder_path+'attributions/', folder_path+'one_shots/'])
 
     # make main readme file
     collectionText = collectionTemplate.format(**collection)
