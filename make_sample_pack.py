@@ -210,5 +210,5 @@ for format in FORMATS:
 
     # zip the directory
     zipdir = folder_path.rstrip('/')
-    zipfilename = zipdir + '.zip'
+    zipfilename = zipdir
     zipDir(zipfilename, zipdir)
