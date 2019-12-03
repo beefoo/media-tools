@@ -88,6 +88,24 @@ def getFilesFromString(a):
 def getFilesInDir(dirname):
     return [os.path.join(dirname, f) for f in os.listdir(dirname) if os.path.isfile(os.path.join(dirname, f))]
 
+def getFilesizeString(fn):
+    str = 'Unknown'
+    if os.path.isfile(fn):
+        filesize = os.path.getsize(fn)
+        if filesize < 1000:
+            str = '%sb' % filesize
+        elif filesize < 1000000:
+            str = '%skb' % roundInt(filesize/1000.0)
+        elif filesize < 10000000:
+            str = '%smb' % roundInt(filesize/1000000.0)
+        elif filesize < 1000000000:
+            str = '%smb' % round(filesize/1000000.0, 1)
+        elif filesize < 10000000000:
+            str = '%sgb' % round(filesize/1000000.0, 1)
+        else:
+            str = '%sgb' % round(filesize/1000000.0, 2)
+    return str
+
 def getJSONFromURL(url):
     print("Downloading %s" % url)
     data = False
@@ -222,13 +240,14 @@ def supportsEncoding():
 def stringToFilename(str):
     # normalize whitespace
     str = str.replace('-', ' ')
+    str = str.replace('_', ' ')
     str = ' '.join(str.split())
 
     # Replace spaces with dashes
     str = re.sub('\s+', '-', str).strip()
 
     # Remove invalid characters
-    str = re.sub('[^0-9a-zA-Z_\-]', '', str)
+    str = re.sub('[^0-9a-zA-Z\-]', '', str)
 
     # Remove leading characters until we find a letter or number
     str = re.sub('^[^0-9a-zA-Z]+', '', str)
@@ -264,9 +283,12 @@ def writeCsv(filename, arr, headings="auto", append=False, encoding="utf8"):
     f.close()
     print("Wrote %s rows to %s" % (len(arr), filename))
 
-def writeJSON(filename, data, verbose=True):
+def writeJSON(filename, data, verbose=True, pretty=False):
     with open(filename, 'w') as f:
-        json.dump(data, f)
+        if pretty:
+            json.dump(data, f, indent=4)
+        else:
+            json.dump(data, f)
         if verbose:
             print("Wrote data to %s" % filename)
 
