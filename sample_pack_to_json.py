@@ -18,7 +18,7 @@ parser.add_argument('-id', dest="ID_KEY", default="id", help="Key that contains 
 parser.add_argument('-cid', dest="COLLECTION_UID", default="loc-john-and-ruby-lomax", help="Collection uid")
 parser.add_argument('-bout', dest="OUTPUT_BASE_DIR", default="", help="Output base dir")
 parser.add_argument('-aout', dest="OUTPUT_AUDIO_DIR", default="audio/samplepacks/", help="Output audio dir")
-parser.add_argument('-dout', dest="OUTPUT_DATA_FILE", default="_data/samplepack_%s.json", help="Output data file")
+parser.add_argument('-dout', dest="OUTPUT_DATA_FILE", default="_data/%s.json", help="Output data file")
 parser.add_argument('-pout', dest="OUTPUT_PACKAGE_DIR", default="samplepacks/", help="Output package dir")
 a = parser.parse_args()
 
@@ -57,6 +57,7 @@ for zipfilename in zipfilenames:
     if format == "mp3":
         print('Moving mp3 files over...')
         audiofiles = getFilenames(a.SAMPLE_PACK_DIR + basename + '/*.' + format)
+        oneshots = getFilenames(a.SAMPLE_PACK_DIR + basename + '/one_shots/*.' + format)
         for afile in audiofiles:
             baseAfilename = os.path.basename(afile)
             destAfilename = OUTPUT_AUDIO_DIR + baseAfilename
@@ -74,6 +75,9 @@ for zipfilename in zipfilenames:
                 'timestamp': timeStamp,
                 'url': item['url']
             })
+        jsonDataOut['segmentCount'] = len(audiofiles)
+        jsonDataOut['oneshotCount'] = len(oneshots)
+        jsonDataOut['totalCount'] = len(audiofiles) + len(oneshots)
 
 jsonDataOut["clips"] = sorted(jsonDataOut["clips"], key=lambda c: c['title'])
 writeJSON(OUTPUT_DATA_FILE, jsonDataOut, pretty=True)

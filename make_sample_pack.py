@@ -117,6 +117,8 @@ for i, item in enumerate(items):
     items[i]['rights'] = collection['rights']
     items[i]['credit'] = collection['credit']
     items[i]['collection_uid'] = collection['uid']
+    if 'provider' not in item:
+        items[i]['provider'] = collection['provider']
     # use performer as artist if exists, else use first
     if ' | ' in artist:
         persons = artist.split(' | ')
