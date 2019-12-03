@@ -194,7 +194,8 @@ def readJSON(filename):
     return data
 
 def removeDir(path):
-    shutil.rmtree(path)
+    if os.path.isdir(path):
+        shutil.rmtree(path, ignore_errors=True)
 
 def removeFiles(listOrString):
     filenames = listOrString
@@ -219,8 +220,15 @@ def supportsEncoding():
     return sys.version_info >= (3, 0)
 
 def stringToFilename(str):
+    # normalize whitespace
+    str = str.replace('-', ' ')
+    str = ' '.join(str.split())
+
+    # Replace spaces with dashes
+    str = re.sub('\s+', '-', str).strip()
+
     # Remove invalid characters
-    str = re.sub('[^0-9a-zA-Z_]', '', str)
+    str = re.sub('[^0-9a-zA-Z_\-]', '', str)
 
     # Remove leading characters until we find a letter or number
     str = re.sub('^[^0-9a-zA-Z]+', '', str)

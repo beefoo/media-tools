@@ -34,6 +34,7 @@ from lib.audio_utils import *
 from lib.collection_utils import *
 from lib.io_utils import *
 from lib.math_utils import *
+from lib.processing_utils import *
 
 # input
 parser = argparse.ArgumentParser()
@@ -46,7 +47,7 @@ parser.add_argument('-dir', dest="MEDIA_DIRECTORY", default="path/to/samples/", 
 parser.add_argument('-id', dest="ID_KEY", default="id", help="Key that contains item identifier")
 parser.add_argument('-ctmpl', dest="COLLECTION_TEMPLATE", default="templates/collection_readme_template.txt", help="Input template file for collection")
 parser.add_argument('-itmpl', dest="ITEM_TEMPLATE", default="templates/item_readme_template.txt", help="Input template file for item")
-parser.add_argument('-formats', dest="FORMATS", default="mp3,wav", help="List of formats to produce")
+parser.add_argument('-formats', dest="FORMATS", default="wav,mp3", help="List of formats to produce")
 parser.add_argument('-mdb', dest="MATCH_DB", default=-16, type=int, help="Match decibels, -9999 for none")
 parser.add_argument('-cmin', dest="MIN_CLIP_DUR", default=200, type=int, help="Minimum clip duration in ms")
 parser.add_argument('-cmax', dest="MAX_CLIP_DUR", default=4000, type=int, help="Maximum clip duration in ms")
@@ -55,7 +56,13 @@ parser.add_argument('-cid', dest="COLLECTION_ID", default="john-and-ruby-lomax",
 parser.add_argument('-out', dest="OUTPUT_DIR", default="output/samplepack_john-and-ruby-lomax/", help="Output dir")
 a = parser.parse_args()
 
-FORMATS = a.FORMATS.strip().split(',')
+formats = a.FORMATS.strip().split(',')
+
+# ensure wav is first in formats
+if 'wav' in formats:
+    formats.remove('wav')
+FORMATS = ['wav'] + formats
+
 collectionTemplate = ""
 with open(a.BASE_DATA_DIR+a.COLLECTION_TEMPLATE, 'r') as f:
     collectionTemplate = f.read()
@@ -108,6 +115,7 @@ for i, item in enumerate(items):
     items[i]['contributors'] = artist.replace(' | ', '\n')
     items[i]['rights'] = collection['rights']
     items[i]['credit'] = collection['credit']
+    items[i]['collection_uid'] = collection['uid']
     # use performer as artist if exists, else use first
     if ' | ' in artist:
         persons = artist.split(' | ')
@@ -121,13 +129,16 @@ for i, item in enumerate(items):
         tags['year'] = item['year']
     items[i]['tags'] = tags
 
+itemCount = len(items)
+
 removeDir(a.OUTPUT_DIR)
 
 for format in FORMATS:
+    print('Generating %ss...' % format)
     folder_name = '{provider}_{collection_name}_{format}'.format(provider=a.PROVIDER, collection_name=a.COLLECTION_ID, format=format)
-    folder_path = a.OUTPUT_DIR + folder_name '/'
+    folder_path = a.OUTPUT_DIR + folder_name + '/'
     wav_folder_name = '{provider}_{collection_name}_wav'.format(provider=a.PROVIDER, collection_name=a.COLLECTION_ID)
-    wav_folder_path = a.OUTPUT_DIR + wav_folder_name '/'
+    wav_folder_path = a.OUTPUT_DIR + wav_folder_name + '/'
     makeDirectories([folder_path+'attributions/', folder_path+'one_shots/'])
 
     # make main readme file
@@ -136,7 +147,7 @@ for format in FORMATS:
         f.write(collectionText)
 
     # go through each item
-    for item in items:
+    for index, item in enumerate(items):
         # make attribution
         itemText = itemTemplate.format(**item)
         itemAttributePath = folder_path + 'attributions/' + '%s_%s.txt' % (item['cleanTitle'], item[a.ID_KEY])
@@ -194,6 +205,8 @@ for format in FORMATS:
                     clipAudio.export(clipFilePath, format=format, tags=clipTags, bitrate="192k")
                 else:
                     clipAudio.export(clipFilePath, format=format, tags=clipTags)
+
+        printProgress(index+1, itemCount)
 
     # zip the directory
     zipdir = folder_path.rstrip('/')
