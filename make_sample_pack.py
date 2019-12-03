@@ -54,6 +54,7 @@ parser.add_argument('-cmax', dest="MAX_CLIP_DUR", default=4000, type=int, help="
 parser.add_argument('-provider', dest="PROVIDER", default="loc.gov", help="Provider name")
 parser.add_argument('-cid', dest="COLLECTION_ID", default="john-and-ruby-lomax", help="Collection id")
 parser.add_argument('-out', dest="OUTPUT_DIR", default="output/samplepack_john-and-ruby-lomax/", help="Output dir")
+parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite existing data?")
 a = parser.parse_args()
 
 formats = a.FORMATS.strip().split(',')
@@ -131,7 +132,8 @@ for i, item in enumerate(items):
 
 itemCount = len(items)
 
-removeDir(a.OUTPUT_DIR)
+if a.OVERWRITE:
+    removeDir(a.OUTPUT_DIR)
 
 for format in FORMATS:
     print('Generating %ss...' % format)
@@ -170,25 +172,29 @@ for format in FORMATS:
             clip['sequence'] = zeroPad(j+1, phrasesTotal)
             clip['dir'] = folder_path
             clip['wavdir'] = wav_folder_path
+            clip['cdur'] = max(phrase['dur'], a.MIN_CLIP_DUR)
             clips.append(clip)
         for j, sample in enumerate(itemSamples):
             clip = sample.copy()
             clip['sequence'] = zeroPad(j+1, samplesTotal)
             clip['dir'] = folder_path+'one_shots/'
             clip['wavdir'] = wav_folder_path+'one_shots/'
+            clip['cdur'] = lim(sample['dur'], (a.MIN_CLIP_DUR, a.MAX_CLIP_DUR))
             clips.append(clip)
 
         for j, clip in enumerate(clips):
             sequence = clip['sequence']
             timestampF = formatSeconds(clip['start']/1000.0, separator="-", retainHours=True)
             clipFilePath = clip['dir'] + '%s_%s_%s_%s.%s' % (item['cleanTitle'], item[a.ID_KEY], sequence, timestampF, format)
+            if not a.OVERWRITE and os.path.isfile(clipFilePath):
+                continue
             clipTags = item['tags'].copy()
             timestamp = formatSeconds(clip['start']/1000.0)
             clipTags['title'] = clipTags['title'] + ' %s (%s)' % (sequence, timestamp)
             # if wav, build the audio clip
             if format == 'wav':
                 # make clip
-                cdur = lim(clip['dur'], (a.MIN_CLIP_DUR, a.MAX_CLIP_DUR))
+                cdur = clip['cdur']
                 clipAudio = getAudioClip(itemAudio, clip['start'], cdur, itemAudioDurationMs)
                 clipAudio = applyAudioProperties(clipAudio, {
                     "matchDb": a.MATCH_DB,
