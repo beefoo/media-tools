@@ -186,11 +186,17 @@ else:
 
 rows = addIndices(rows, "gridIndex")
 
+filenames = sorted(unique([os.path.basename(row["filename"]) for row in rows]))
+notes = sorted(unique([row["note"] for row in rows]))
+
 for i, row in enumerate(rows):
     # add label
     # label = os.path.basename(row["filename"]) + " " + formatSeconds(row["start"]/1000.0) + ", index: %s" % row["gridIndex"]
-    label = os.path.basename(row["filename"])
-    sprites[row["index"]] += [label]
+    filename = os.path.basename(row["filename"])
+    filenameIndex = filenames.index(filename)
+    hz = round(row['hz'], 1)
+    noteIndex = notes.index(row['note'])
+    sprites[row["index"]] += [filenameIndex, hz, noteIndex]
     # kind of a hack: only take one frame at time
     rows[i]["start"] = row["t"]
     rows[i]["dur"] = 1
@@ -238,6 +244,8 @@ if OVERWRITE or not os.path.isfile(IMAGE_FILE):
 jsonData = {}
 jsonData["audioSpriteFiles"] = audioSpriteFiles
 jsonData["sprites"] = sprites
+jsonData["filenames"] = filenames
+jsonData["notes"] = notes
 jsonData["image"] = os.path.basename(IMAGE_FILE)
 jsonData["width"] = IMAGE_W
 jsonData["height"] = IMAGE_H
