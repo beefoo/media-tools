@@ -16,6 +16,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-in', dest="INPUT_FILE", default="tmp/samples.csv", help="Input csv file")
 parser.add_argument('-props', dest="PROPS", default="", help="Comma-separated list of properties to output; leave empty for all")
 parser.add_argument('-groups', dest="GROUPS", default="", help="Comma-separated list of groups to output")
+parser.add_argument('-lists', dest="LISTS", default="", help="Comma-separated list of lists to output")
 parser.add_argument('-filter', dest="FILTER", default="", help="Filter string")
 parser.add_argument('-sort', dest="SORT", default="", help="Sort string")
 parser.add_argument('-limit', dest="LIMIT", default=-1, type=int, help="Limit the number of results; -1 for all")
@@ -54,12 +55,24 @@ if len(GROUPS) > 0:
     for groupKey in GROUPS:
         groups[groupKey] = sorted(unique([r[groupKey] for r in rows]))
 
+LISTS = [p for p in a.LISTS.strip().split(",")] if len(a.LISTS) > 0 else []
+for i, r in enumerate(rows):
+    for listKey in LISTS:
+        rows[i][listKey] = r[listKey].split(" | ")
+if len(LISTS) > 0:
+    if groups is None:
+        groups = {}
+    for groupKey in LISTS:
+        groups[groupKey] = sorted(unique(flattenList([r[groupKey] for r in rows])))
+
 items = []
 for r in rows:
     item = {}
     for p in PROPS:
         if p in GROUPS:
             item[p] = groups[p].index(r[p])
+        elif p in LISTS:
+            item[p] = [groups[p].index(value) for value in r[p]]
         else:
             item[p] = r[p]
     items.append(item)
@@ -76,6 +89,8 @@ else:
 
 if groups is not None:
     jsonOut["groups"] = groups
+
+jsonOut["lists"] = LISTS
 
 makeDirectories(a.OUTPUT_FILE)
 writeJSON(a.OUTPUT_FILE, jsonOut)
