@@ -31,12 +31,13 @@ parser.add_argument('-threads', dest="THREADS", type=int, default=4, help="How m
 a = parser.parse_args()
 
 filenames = getFilenames(a.INPUT_FILES)
-addFieldnames = ["id", "url", "assetUrl", "filename", "title", "contributors", "date"]
+addFieldnames = ["id", "url", "assetUrl", "filename", "title", "contributors", "date", "subjects"]
 fieldNames = addFieldnames[:]
 rows = []
 rowLookup = None
 
 if not a.OVERWRITE and os.path.isfile(a.OUTPUT_FILE):
+    print("Existing file found.")
     existingFieldNames, rows = readCsv(a.OUTPUT_FILE)
     fieldNames = unionLists(addFieldnames, existingFieldNames)
     rowLookup = createLookup(rows, "id")
@@ -87,7 +88,8 @@ def readItem(fn):
     contributors = [] if "contributor_names" not in itemMeta or len(itemMeta["contributor_names"]) < 1 else itemMeta["contributor_names"]
     contributors = " | ".join(contributors)
     date = "" if "date" not in itemMeta else itemMeta["date"]
-
+    subjects = [] if "subject" not in itemMeta or len(itemMeta["subject"]) < 1 else itemMeta["subject"]
+    subjects = " | ".join(subjects)
     newData = {
         "id": itemId,
         "url": itemUrl,
@@ -95,7 +97,8 @@ def readItem(fn):
         "filename": destFn,
         "title": itemMeta["title"],
         "contributors": contributors,
-        "date": date
+        "date": date,
+        "subjects": subjects
     }
     returnData.update(newData)
     return returnData
@@ -109,6 +112,8 @@ pool.join()
 # Filter out invalid data
 rows = [row for row in rows if row is not None]
 print("Found %s valid items with assets" % len(rows))
+
+# print(fieldNames)
 
 if a.PROBE:
     sys.exit()
