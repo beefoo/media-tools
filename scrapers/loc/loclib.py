@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import inspect
 import os
+from pprint import pprint
 import sys
 
 # add parent directory to sys path to import relative modules
@@ -9,8 +10,9 @@ parentdir = os.path.dirname(currentdir)
 parentdir = os.path.dirname(parentdir)
 sys.path.insert(0,parentdir)
 
-from lib.io_utils import *
 from lib.collection_utils import *
+from lib.io_utils import *
+from lib.math_utils import *
 
 def isValidFile(f, filters, itemLookup):
     valid = True
@@ -36,6 +38,10 @@ def getLocItemData(a):
     filters = []
     if len(a.FILTER) > 0:
         filters = parseFilterString(a.FILTER.strip())
+
+    for i, f in enumerate(files):
+        files[i]['duration'] = f['duration'] if f['duration'] != '' else 0
+        files[i]['hasAudio'] = f['hasAudio'] if f['hasAudio'] != '' else 0
 
     # Filter out invalid files
     files = filterWhere(files, [("duration", 0, ">"), ("hasAudio", 0, ">")])

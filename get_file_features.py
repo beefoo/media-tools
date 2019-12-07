@@ -50,7 +50,7 @@ def processRow(row):
     duration = row[a.DURATION_KEY] if a.DURATION_KEY in row else 0
     hasAudio = row["hasAudio"] if "hasAudio" in row else 0
     hasVideo = row["hasVideo"] if "hasVideo" in row else 0
-    if duration <= 0 or duration == "" or a.OVERWRITE:
+    if duration == "" or duration <= 0 or a.OVERWRITE:
         types = getMediaTypes(row["filename"])
         hasAudio = 1 if "audio" in types else 0
         hasVideo = 1 if "video" in types else 0

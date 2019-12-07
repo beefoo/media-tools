@@ -63,7 +63,7 @@ def samplesToFiles(p):
         if a.INDEX_STYLE:
             outfilename = a.OUTPUT_FILE % zeroPad(sample["index"], sampleCount)
         else:
-            basename = getBasename(fn) + "_" + zeroPad(i+1, fsampleCount+1) + "_" + formatSeconds(sample["start"]/1000.0, separator="", retainHours=True) + "-" + formatSeconds((sample["start"]+sdur)/1000.0, separator="", retainHours=True)
+            basename = getBasename(fn) + "_" + zeroPad(i+1, fsampleCount+1) + "_" + formatSeconds(sample["start"]/1000.0, separator="-", retainHours=True)
             outfilename = a.OUTPUT_FILE % basename
 
         newSample = sample.copy()

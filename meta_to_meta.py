@@ -41,7 +41,7 @@ pattern = re.compile(PATTERN)
 rowCount = len(rows)
 noMatchCount = 0
 for i, row in enumerate(rows):
-    matches = pattern.match(row[COLUMN_KEY])
+    matches = pattern.match(str(row[COLUMN_KEY]))
 
     if not matches:
         # if a.PROBE:
