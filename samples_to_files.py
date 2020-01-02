@@ -25,6 +25,7 @@ parser.add_argument('-fadeout', dest="FADE_OUT", default=0.5, type=float, help="
 parser.add_argument('-maxd', dest="MAX_DUR", default=-1, type=int, help="Maximum duration in milliseconds, -1 for no limit")
 parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite existing data?")
 parser.add_argument('-index', dest="INDEX_STYLE", action="store_true", help="Filenames should be index style?")
+parser.add_argument('-fkey', dest="FILE_KEY", default="", help="Use this key for naming files; blank if use index/default")
 parser.add_argument('-threads', dest="THREADS", default=1, type=int, help="Number of threads")
 a = parser.parse_args()
 
@@ -62,6 +63,8 @@ def samplesToFiles(p):
         outfilename = ""
         if a.INDEX_STYLE:
             outfilename = a.OUTPUT_FILE % zeroPad(sample["index"], sampleCount)
+        elif len(a.FILE_KEY) > 0:
+            outfilename = a.OUTPUT_FILE % sample[a.FILE_KEY]
         else:
             basename = getBasename(fn) + "_" + zeroPad(i+1, fsampleCount+1) + "_" + formatSeconds(sample["start"]/1000.0, separator="-", retainHours=True)
             outfilename = a.OUTPUT_FILE % basename
