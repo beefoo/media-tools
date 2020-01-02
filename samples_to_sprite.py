@@ -141,7 +141,7 @@ for file in range(FILE_COUNT):
             "start": row["start"],
             "dur": row["dur"]
         })
-        sprites[row["index"]] = [file, ms, row["dur"]]
+        sprites[row["index"]] = [file, ms, row["start"], row["dur"]]
         ms += row["dur"]
     outfilename = AUDIO_FILE.replace(".mp3", ".%s.mp3" % zeroPad(file+1, FILE_COUNT))
     if not os.path.isfile(outfilename) or OVERWRITE:
@@ -202,8 +202,8 @@ for i, row in enumerate(rows):
     rows[i]["dur"] = 1
 
 # sort sprites and remove positions
-sprites = sorted(sprites, key=lambda s: (s[4], s[3]))
-sprites = [s[:3] + s[5:] for s in sprites]
+sprites = sorted(sprites, key=lambda s: (s[5], s[4]))
+sprites = [s[:4] + s[6:] for s in sprites]
 
 print("Generating image...")
 if OVERWRITE or not os.path.isfile(IMAGE_FILE):
