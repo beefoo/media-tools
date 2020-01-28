@@ -9,6 +9,7 @@ from multiprocessing import Pool
 from multiprocessing.dummy import Pool as ThreadPool
 import os
 from pprint import pprint
+import re
 import sys
 import time
 
@@ -33,11 +34,9 @@ a = parser.parse_args()
 
 filenames = getFilenames(a.INPUT_FILES)
 
-if a.PROBE:
-    sys.exit()
-
 # Make sure output dirs exist
-makeDirectories(a.OUTPUT_FILE)
+if not a.PROBE:
+    makeDirectories(a.OUTPUT_FILE)
 
 def processItem(item):
     global a
@@ -45,18 +44,30 @@ def processItem(item):
     itemUrl = item["id"]
 
     # url must follow pattern: http://www.loc.gov/item/{item id}/
-    if "/item/" not in itemUrl and "aka" in item:
-        for aka in item["aka"]:
-            if "/item/" in aka:
-                itemUrl = aka
+    urlPattern = re.compile(r"https?://www\.loc\.gov/item/([^/]+)/")
+    match = urlPattern.match(itemUrl)
+
+    # if url pattern does not match, check a.k.a.
+    if not match and "aka" in item:
+        for akaUrl in item["aka"]:
+            match = urlPattern.match(akaUrl)
+            if match:
+                itemUrl = akaUrl
                 break
 
-    itemId = itemUrl.strip("/").split("/")[-1]
+    if not match:
+        print("Could not find valid URL for %s" % itemUrl)
+        return "error"
+
+    itemId = match.group(1)
     filename = a.OUTPUT_FILE % itemId
     status = "error"
 
     if os.path.isfile(filename) and not a.OVERWRITE:
         return "exists"
+
+    if a.PROBE:
+        return "success"
 
     data = getJSONFromURL(itemUrl + "?fo=json")
     if data is not False:
@@ -83,7 +94,7 @@ print("Read %s items" % itemCount)
 for i, item in enumerate(items):
     status = processItem(item)
     printProgress(i+1, itemCount)
-    if status == "exists":
+    if status == "exists" or a.PROBE:
         continue
     elif status == "error":
         time.sleep(5)
