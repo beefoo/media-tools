@@ -21,6 +21,7 @@ sys.path.insert(0,parentdir)
 
 from lib.io_utils import *
 from lib.processing_utils import *
+from loclib import *
 
 # input
 parser = argparse.ArgumentParser()
@@ -41,25 +42,11 @@ if not a.PROBE:
 def processItem(item):
     global a
 
-    itemUrl = item["id"]
+    itemId, itemUrl = getLocItemId(item)
 
-    # url must follow pattern: http://www.loc.gov/item/{item id}/
-    urlPattern = re.compile(r"https?://www\.loc\.gov/item/([^/]+)/")
-    match = urlPattern.match(itemUrl)
-
-    # if url pattern does not match, check a.k.a.
-    if not match and "aka" in item:
-        for akaUrl in item["aka"]:
-            match = urlPattern.match(akaUrl)
-            if match:
-                itemUrl = akaUrl
-                break
-
-    if not match:
-        print("Could not find valid URL for %s" % itemUrl)
+    if itemId is None or itemUrl is None:
         return "error"
 
-    itemId = match.group(1)
     filename = a.OUTPUT_FILE % itemId
     status = "error"
 

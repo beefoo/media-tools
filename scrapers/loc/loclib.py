@@ -2,6 +2,7 @@
 import inspect
 import os
 from pprint import pprint
+import re
 import sys
 
 # add parent directory to sys path to import relative modules
@@ -30,6 +31,28 @@ def isValidFile(f, filters, itemLookup):
         valid = False
 
     return valid
+
+def getLocItemId(apiItem):
+    itemUrl = apiItem["id"]
+
+    # url must follow pattern: http://www.loc.gov/item/{item id}/
+    urlPattern = re.compile(r"https?://www\.loc\.gov/item/([^/]+)/")
+    match = urlPattern.match(itemUrl)
+
+    # if url pattern does not match, check a.k.a.
+    if not match and "aka" in apiItem:
+        for akaUrl in apiItem["aka"]:
+            match = urlPattern.match(akaUrl)
+            if match:
+                itemUrl = akaUrl
+                break
+
+    if not match:
+        print("Could not find valid URL for %s" % itemUrl)
+        return (None, None)
+
+    itemId = match.group(1)
+    return (itemId, itemUrl)
 
 def getLocItemData(a):
     fieldNames, files = readCsv(a.INPUT_FILE)

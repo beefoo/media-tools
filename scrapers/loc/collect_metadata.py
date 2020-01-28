@@ -20,6 +20,7 @@ sys.path.insert(0,parentdir)
 
 from lib.io_utils import *
 from lib.processing_utils import *
+from loclib import *
 
 # input
 parser = argparse.ArgumentParser()
@@ -44,7 +45,8 @@ if not a.OVERWRITE and os.path.isfile(a.OUTPUT_FILE):
     rowLookup = createLookup(rows, "id")
 
 # Make sure output dirs exist
-makeDirectories(a.OUTPUT_FILE)
+if not a.PROBE:
+    makeDirectories(a.OUTPUT_FILE)
 
 def readItem(fn):
     global a
@@ -53,15 +55,22 @@ def readItem(fn):
     item = readJSON(fn)
     hasExistingData = rowLookup is not None
 
-    if not item or "resources" not in item or len(item["resources"]) < 1:
+    if "item" not in item:
+        print("No item meta in %s" % fn)
         return None
 
     itemMeta = item["item"]
-    itemUrl = itemMeta["id"]
-    itemId = itemUrl.strip("/").split("/")[-1]
+    itemId, itemUrl = getLocItemId(itemMeta)
+    if itemId is None or itemUrl is None:
+        return None
+
+    if not item or "resources" not in item or len(item["resources"]) < 1:
+        print("No resources found for %s" % itemUrl)
+        return None
 
     # ignore playlists
     if "number_playlist_qty" in item and len(item["number_playlist_qty"]) > 0:
+        print("%s is a playlist; skipping..." % itemUrl)
         return None
 
     returnData = {}
@@ -97,7 +106,7 @@ def readItem(fn):
             break
 
     if assetUrl is None:
-        print("Could not find download asset for %s" % itemId)
+        print("Could not find download asset for %s" % fn)
         return None
 
     if assetUrl.startswith('//'):
