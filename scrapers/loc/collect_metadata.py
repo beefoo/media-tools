@@ -27,6 +27,7 @@ parser.add_argument('-in', dest="INPUT_FILES", default="output/loc/pd_audio/item
 parser.add_argument('-out', dest="OUTPUT_FILE", default="tmp/loc/lc_pd_audio.csv", help="File to write data to")
 parser.add_argument('-probe', dest="PROBE", action="store_true", help="Just print details?")
 parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite existing data?")
+parser.add_argument('-streaming', dest="ALLOW_STREAMING", action="store_true", help="Should we download streaming media if no download option is available?")
 parser.add_argument('-threads', dest="THREADS", type=int, default=4, help="How many concurrent requests?")
 a = parser.parse_args()
 
@@ -59,21 +60,40 @@ def readItem(fn):
     itemUrl = itemMeta["id"]
     itemId = itemUrl.strip("/").split("/")[-1]
 
+    # ignore playlists
+    if "number_playlist_qty" in item and len(item["number_playlist_qty"]) > 0:
+        return None
+
     returnData = {}
     if hasExistingData and itemId in rowLookup:
         returnData = rowLookup[itemId]
 
     assetUrl = None
+    downloadableAssetUrl = None
     for resource in item["resources"]:
         if "files" in resource:
             for rf in resource["files"]:
                 for rff in rf:
                     if "download" in rff:
                         assetUrl = rff["download"]
+                        downloadableAssetUrl = assetUrl
                         break
-                if assetUrl is not None:
+                    # if there's no download option, take the streaming option
+                    if a.ALLOW_STREAMING and "derivatives" in rff and len(rff["derivatives"]) > 0 and assetUrl is None:
+                        validTypes = [".mp3", ".mp4", ".wav", ".mov", ".avi", ".ogg", ".ogv", ".mkv", ".wma"]
+                        for deriv in rff["derivatives"]:
+                            if "derivativeUrl" in deriv:
+                                derivativeUrl = deriv["derivativeUrl"]
+                                if derivativeUrl:
+                                    ext = getFileExt(derivativeUrl)
+                                    if ext in validTypes:
+                                        assetUrl = derivativeUrl
+                                        break
+
+                if downloadableAssetUrl is not None:
                     break
-        if assetUrl is not None:
+
+        if downloadableAssetUrl is not None:
             break
 
     if assetUrl is None:

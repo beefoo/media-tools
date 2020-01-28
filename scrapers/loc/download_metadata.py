@@ -43,6 +43,14 @@ def processItem(item):
     global a
 
     itemUrl = item["id"]
+
+    # url must follow pattern: http://www.loc.gov/item/{item id}/
+    if "/item/" not in itemUrl and "aka" in item:
+        for aka in item["aka"]:
+            if "/item/" in aka:
+                itemUrl = aka
+                break
+
     itemId = itemUrl.strip("/").split("/")[-1]
     filename = a.OUTPUT_FILE % itemId
     status = "error"
@@ -78,6 +86,6 @@ for i, item in enumerate(items):
     if status == "exists":
         continue
     elif status == "error":
-        time.sleep(60)
+        time.sleep(5)
     else:
         time.sleep(a.DELAY)
