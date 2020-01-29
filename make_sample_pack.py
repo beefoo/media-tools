@@ -2,11 +2,6 @@
 
 # File structure:
 # {provider}_{collection_name}_{format}
-#     - one_shots/
-#         + {item_title}_{item_id}_{sequence}_{timestamp}.{format}
-#             - title
-#             - artist
-#             - year
 #     - attributions/
 #         + {item_title}_{item_id}.txt
 #             - title
@@ -15,10 +10,16 @@
 #             - provider
 #             - url
 #             - rights and access
-#     + {item_title}_{item_id}_{sequence}_{timestamp}.{format}
-#         - title
-#         - artist
-#         - year
+#     - excerpts/
+#        + {item_title}_{item_id}_{sequence}_{timestamp}.{format}
+#            - title
+#            - artist
+#            - year
+#     - one_shots/
+#         + {item_title}_{item_id}_{sequence}_{timestamp}.{format}
+#             - title
+#             - artist
+#             - year
 #     - README.txt
 #         - title
 #         - url
@@ -147,7 +148,7 @@ for format in FORMATS:
     folder_path = a.OUTPUT_DIR + folder_name + '/'
     wav_folder_name = '{provider}_{collection_name}_wav'.format(provider=a.PROVIDER, collection_name=a.COLLECTION_ID)
     wav_folder_path = a.OUTPUT_DIR + wav_folder_name + '/'
-    makeDirectories([folder_path, folder_path+'attributions/', folder_path+'one_shots/'])
+    makeDirectories([folder_path, folder_path+'attributions/', folder_path+'excerpts/', folder_path+'one_shots/'])
 
     # make main readme file
     collectionText = collectionTemplate.format(**collection)
@@ -176,8 +177,8 @@ for format in FORMATS:
         for j, phrase in enumerate(itemPhrases):
             clip = phrase.copy()
             clip['sequence'] = zeroPad(j+1, phrasesTotal)
-            clip['dir'] = folder_path
-            clip['wavdir'] = wav_folder_path
+            clip['dir'] = folder_path+'excerpts/'
+            clip['wavdir'] = wav_folder_path+'excerpts/'
             clip['cdur'] = max(phrase['dur'], a.MIN_CLIP_DUR)
             clips.append(clip)
         for j, sample in enumerate(itemSamples):
