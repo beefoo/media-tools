@@ -44,7 +44,7 @@ print("Median item duration: %s" % formatSeconds(medianSeconds))
 print("Min item duration: %s" % formatSeconds(minSeconds))
 print("Max item duration: %s" % formatSeconds(maxSeconds))
 
-reports = ['subject', 'partof', 'contributor', 'language']
+reports = ['subject', 'partof', 'contributor', 'language', 'dates']
 reportData = {}
 for key in reports:
     values = []
