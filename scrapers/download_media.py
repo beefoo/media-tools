@@ -36,7 +36,7 @@ makeDirectories(a.OUTPUT_DIR)
 # Get existing data
 fieldNames, rows = readCsv(a.INPUT_FILE)
 if "filename" not in fieldNames:
-    fieldNames.append("filename")
+    print("Filename not provided; will use ID for this")
 fileCount = len(rows)
 
 if len(a.FILTER) > 0:
@@ -54,8 +54,9 @@ for i, row in enumerate(rows):
         print("Could not find %s in row %s" % (a.ID_KEY, i+1))
         continue
 
-    filepath = a.OUTPUT_DIR % row[a.ID_KEY]
-    filename = os.path.basename(filepath)
+    ext = getFileExt(url)
+    filename = row[a.ID_KEY] + ext if "filename" not in row else row["filename"]
+    filepath = a.OUTPUT_DIR % filename
     if a.PROBE:
         if not os.path.isfile(filepath):
             nofileCount += 1

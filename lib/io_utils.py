@@ -38,6 +38,26 @@ def downloadBinaryFile(url, filename, overwrite=False):
         shutil.copyfileobj(response.raw, f)
     del response
 
+def downloadFile(url, filename, headers={}, save=True, overwrite=False):
+    contents = ""
+
+    if os.path.isfile(filename) and not overwrite:
+        print("%s already exists." % filename)
+        with open(filename, "r", encoding="utf8", errors="replace") as f:
+            contents = f.read()
+        if len(contents) > 0:
+            return contents
+
+    print("Downloading %s to %s..." % (url, filename))
+    r = requests.get(url)
+    contents = r.text
+
+    if save:
+        with open(filename, "w", encoding="utf8", errors="replace") as f:
+            f.write(contents)
+
+    return contents
+
 def framesExist(filePattern, frameCount):
     padZeros = getZeroPadding(frameCount)
     exist = True
