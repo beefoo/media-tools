@@ -9,6 +9,8 @@ import time
 import sys
 
 def addNormalizedValues(arr, key, nkey):
+    if len(arr) < 1:
+        return arr
     values = [v[key] for v in arr]
     range = (min(values), max(values))
     for i, entry in enumerate(arr):
