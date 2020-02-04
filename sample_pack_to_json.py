@@ -56,7 +56,7 @@ for zipfilename in zipfilenames:
     # move the phrase files over if mp3
     if format == "mp3":
         print('Moving mp3 files over...')
-        audiofiles = getFilenames(a.SAMPLE_PACK_DIR + basename + '/*.' + format)
+        audiofiles = getFilenames(a.SAMPLE_PACK_DIR + basename + '/excerpts/*.' + format)
         oneshots = getFilenames(a.SAMPLE_PACK_DIR + basename + '/one_shots/*.' + format)
         for afile in audiofiles:
             baseAfilename = os.path.basename(afile)
