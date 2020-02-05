@@ -30,6 +30,7 @@
 import argparse
 import os
 import sys
+import yaml
 
 from lib.audio_utils import *
 from lib.collection_utils import *
@@ -40,14 +41,14 @@ from lib.processing_utils import *
 # input
 parser = argparse.ArgumentParser()
 parser.add_argument('-basedir', dest="BASE_DATA_DIR", default="data/", help="Base directory for each data file")
-parser.add_argument('-cdata', dest="COLLECTION_DATA_FILE", default="collectiondata/citizen_dj_collections.csv", help="Input collection csv file")
+parser.add_argument('-cdata', dest="COLLECTION_DATA_FILE", default="collectiondata/collection.yml", help="Input collection yml file")
 parser.add_argument('-idata', dest="ITEM_DATA_FILE", default="metadata/loc_john-and-ruby-lomax.csv", help="Input collection items csv file")
 parser.add_argument('-pdata', dest="PHRASE_DATA_FILE", default="phrasedata/loc_project_one_pd_av/%s.csv", help="Path for phrase data csv files")
 parser.add_argument('-sdata', dest="SAMPLE_DATA_FILE", default="sampledata/loc_john-and-ruby-lomax_subset_64x64_grid.csv", help="Input collection samples csv file")
 parser.add_argument('-dir', dest="MEDIA_DIRECTORY", default="path/to/samples/", help="Audio sample dir")
 parser.add_argument('-id', dest="ID_KEY", default="id", help="Key that contains item identifier")
-parser.add_argument('-ctmpl', dest="COLLECTION_TEMPLATE", default="templates/collection_readme_template.txt", help="Input template file for collection")
-parser.add_argument('-itmpl', dest="ITEM_TEMPLATE", default="templates/item_readme_template.txt", help="Input template file for item")
+parser.add_argument('-ctmpl', dest="COLLECTION_TEMPLATE", default="projects/citizen_dj/templates/collection_readme_template.txt", help="Input template file for collection")
+parser.add_argument('-itmpl', dest="ITEM_TEMPLATE", default="projects/citizen_dj/templates/item_readme_template.txt", help="Input template file for item")
 parser.add_argument('-formats', dest="FORMATS", default="wav,mp3", help="List of formats to produce")
 parser.add_argument('-mdb', dest="MATCH_DB", default=-16, type=int, help="Match decibels, -9999 for none")
 parser.add_argument('-sw', dest="SAMPLE_WIDTH", default=3, type=int, help="Sample width (bit depth); 1->8, 2->16, 3->24, 4->32-bit")
@@ -68,21 +69,20 @@ if 'wav' in formats:
 FORMATS = ['wav'] + formats
 
 collectionTemplate = ""
-with open(a.BASE_DATA_DIR+a.COLLECTION_TEMPLATE, 'r') as f:
+with open(a.COLLECTION_TEMPLATE, 'r') as f:
     collectionTemplate = f.read()
 
 itemTemplate = ""
-with open(a.BASE_DATA_DIR+a.ITEM_TEMPLATE, 'r') as f:
+with open(a.ITEM_TEMPLATE, 'r') as f:
     itemTemplate = f.read()
 
-_, collections = readCsv(a.BASE_DATA_DIR+a.COLLECTION_DATA_FILE)
 _, items = readCsv(a.BASE_DATA_DIR+a.ITEM_DATA_FILE)
 _, samples = readCsv(a.BASE_DATA_DIR+a.SAMPLE_DATA_FILE)
 PHRASE_PATH = a.BASE_DATA_DIR + a.PHRASE_DATA_FILE
 
-collection = findWhere(collections, ("id", a.COLLECTION_ID))
-if collection is None:
-    print("Could not find %s" % a.COLLECTION_ID)
+collection = yaml.load(a.COLLECTION_DATA_FILE)
+if not collection:
+    print("Could not find %s" % a.COLLECTION_DATA_FILE)
     sys.exit()
 
 # group samples by item
@@ -130,7 +130,7 @@ for i, item in enumerate(items):
             if 'performer' in person.lower():
                 artist = person
                 break
-    tags = {'title': item['title'], 'artist': artist, 'album': collection['display']}
+    tags = {'title': item['title'], 'artist': artist, 'album': collection['title']}
     if 'year' in item and item['year'] != '':
         tags['year'] = item['year']
     items[i]['tags'] = tags
