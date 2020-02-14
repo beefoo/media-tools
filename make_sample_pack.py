@@ -69,21 +69,30 @@ if 'wav' in formats:
 FORMATS = ['wav'] + formats
 
 collectionTemplate = ""
-with open(a.COLLECTION_TEMPLATE, 'r') as f:
+with open(a.COLLECTION_TEMPLATE, 'r', encoding="utf8") as f:
     collectionTemplate = f.read()
 
 itemTemplate = ""
-with open(a.ITEM_TEMPLATE, 'r') as f:
+with open(a.ITEM_TEMPLATE, 'r', encoding="utf8") as f:
     itemTemplate = f.read()
 
 _, items = readCsv(a.BASE_DATA_DIR+a.ITEM_DATA_FILE)
 _, samples = readCsv(a.BASE_DATA_DIR+a.SAMPLE_DATA_FILE)
 PHRASE_PATH = a.BASE_DATA_DIR + a.PHRASE_DATA_FILE
 
-collection = yaml.load(a.COLLECTION_DATA_FILE)
+collection = False
+with open(a.COLLECTION_DATA_FILE, 'r', encoding="utf8") as f:
+    lines = f.read().splitlines()[1:-1]
+    contents = "\n".join(lines)
+    collection = yaml.load(contents, Loader=yaml.FullLoader)
+
 if not collection:
     print("Could not find %s" % a.COLLECTION_DATA_FILE)
     sys.exit()
+
+# collectionText = collectionTemplate.format(**collection)
+# print(collectionText)
+# sys.exit()
 
 # group samples by item
 samplesByItem = groupList(samples, 'filename')
