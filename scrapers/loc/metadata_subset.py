@@ -29,10 +29,14 @@ parser.add_argument('-in', dest="INPUT_FILE", default="tmp/loc/lc_pd_audio.csv",
 parser.add_argument('-pages', dest="INPUT_PAGES_FILES", default="output/loc/pd_audio/page_*.json", help="File pattern for json files downloaded from download_query.py")
 parser.add_argument('-filter', dest="FILTER", default="", help="Filter string")
 parser.add_argument('-out', dest="OUTPUT_FILE", default="output/lc_bd_audio_subset.csv", help="Output .csv file")
+parser.add_argument('-probe', dest="PROBE", action="store_true", help="Just print details?")
 a = parser.parse_args()
 
 files, fieldNames, itemLookup, itemCount = getLocItemData(a)
 fileCount = len(files)
+
+if a.PROBE:
+    sys.exit()
 
 # Make sure output dirs exist
 makeDirectories(a.OUTPUT_FILE)
