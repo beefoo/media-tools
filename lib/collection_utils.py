@@ -74,6 +74,9 @@ def getCounts(arr, key):
     counter = collections.Counter([v[key] for v in arr])
     return counter.most_common()
 
+def getDuplicates(arr):
+    return [item for item, count in collections.Counter(arr).items() if count > 1]
+
 def groupList(arr, groupBy, sort=False, desc=True):
     groups = []
     arr = sorted(arr, key=itemgetter(groupBy))
