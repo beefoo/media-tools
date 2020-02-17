@@ -23,6 +23,7 @@ parser.add_argument('-threads', dest="THREADS", default=3, type=int, help="Numbe
 parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite existing non-zero durations?")
 parser.add_argument('-verbose', dest="VERBOSE", action="store_true", help="More details?")
 parser.add_argument('-progressive', dest="PROGRESSIVE_SAVE", action="store_true", help="Save as files are read?")
+parser.add_argument('-audio', dest="FORCE_AUDIO", action="store_true", help="Force read files as audio?")
 a = parser.parse_args()
 
 # Parse arguments
@@ -36,7 +37,7 @@ makeDirectories(OUTPUT_FILE)
 
 # get unique video files
 print("Reading files...")
-fieldNames, rows, rowCount = getFilesFromString(a)
+fieldNames, rows, rowCount = getFilesFromString(a, prependKey="filepath")
 rows = addIndices(rows)
 
 # add keys
@@ -52,21 +53,23 @@ def processRow(row):
     global progress
 
     if a.VERBOSE:
-        print("Reading %s" % row["filename"])
+        print("Reading %s" % row["filepath"])
 
     duration = row[a.DURATION_KEY] if a.DURATION_KEY in row else 0
     hasAudio = row["hasAudio"] if "hasAudio" in row else 0
     hasVideo = row["hasVideo"] if "hasVideo" in row else 0
+
     if duration == "" or duration <= 0 or a.OVERWRITE:
-        types = getMediaTypes(row["filename"])
+        types = getMediaTypes(row["filepath"])
         hasAudio = 1 if "audio" in types else 0
         hasVideo = 1 if "video" in types else 0
         if hasAudio > 0 or hasVideo > 0:
-            if hasAudio > 0 and hasVideo < 1:
-                duration = getDurationFromAudioFile(row["filename"], ACCURATE)
+            if hasAudio > 0 and hasVideo < 1 or a.FORCE_AUDIO:
+                duration = getDurationFromAudioFile(row["filepath"], ACCURATE)
+                if ACCURATE:
+                    duration = duration / 1000.0
             else:
-                duration = getDurationFromFile(row["filename"], ACCURATE)
-    row["filename"] = os.path.basename(row["filename"])
+                duration = getDurationFromFile(row["filepath"], ACCURATE)
     row[a.DURATION_KEY] = duration
     row["hasAudio"] = hasAudio
     row["hasVideo"] = hasVideo
@@ -77,6 +80,7 @@ def processRow(row):
 if a.PROGRESSIVE_SAVE or a.THREADS == 1:
     for i, row in enumerate(rows):
         rows[i] = processRow(row)
+
         if a.PROGRESSIVE_SAVE:
             writeCsv(OUTPUT_FILE, rows, headings=fieldNames)
 
@@ -87,5 +91,5 @@ else:
     pool.close()
     pool.join()
 
-rows = sorted(rows, key=lambda r: r["filename"])
-writeCsv(OUTPUT_FILE, rows, headings=fieldNames)
+    rows = sorted(rows, key=lambda r: r["filename"])
+    writeCsv(OUTPUT_FILE, rows, headings=fieldNames)

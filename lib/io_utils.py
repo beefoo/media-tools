@@ -87,7 +87,7 @@ def getFilenames(fileString, verbose=True):
         print("Found %s files" % fileCount)
     return files
 
-def getFilesFromString(a):
+def getFilesFromString(a, prependKey="filename"):
     aa = vars(a)
     # Read files
     files = []
@@ -101,7 +101,7 @@ def getFilesFromString(a):
     fileCount = len(files)
 
     if fromManifest and "MEDIA_DIRECTORY" in aa:
-        files = prependAll(files, ("filename", a.MEDIA_DIRECTORY))
+        files = prependAll(files, ("filename", a.MEDIA_DIRECTORY, prependKey))
 
     return (fieldNames, files, fileCount)
 
