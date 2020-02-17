@@ -21,6 +21,8 @@ parser.add_argument('-fast', dest="FAST_NOT_ACCURATE", action="store_true", help
 parser.add_argument('-out', dest="OUTPUT_FILE", default="", help="Output csv file; leave blank if same as input")
 parser.add_argument('-threads', dest="THREADS", default=3, type=int, help="Number of concurrent threads, -1 for all available")
 parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite existing non-zero durations?")
+parser.add_argument('-verbose', dest="VERBOSE", action="store_true", help="More details?")
+parser.add_argument('-progressive', dest="PROGRESSIVE_SAVE", action="store_true", help="Save as files are read?")
 a = parser.parse_args()
 
 # Parse arguments
@@ -49,6 +51,9 @@ def processRow(row):
     global ACCURATE
     global progress
 
+    if a.VERBOSE:
+        print("Reading %s" % row["filename"])
+
     duration = row[a.DURATION_KEY] if a.DURATION_KEY in row else 0
     hasAudio = row["hasAudio"] if "hasAudio" in row else 0
     hasVideo = row["hasVideo"] if "hasVideo" in row else 0
@@ -58,7 +63,7 @@ def processRow(row):
         hasVideo = 1 if "video" in types else 0
         if hasAudio > 0 or hasVideo > 0:
             if hasAudio > 0 and hasVideo < 1:
-                duration = getDurationFromAudioFile(row["filename"])
+                duration = getDurationFromAudioFile(row["filename"], ACCURATE)
             else:
                 duration = getDurationFromFile(row["filename"], ACCURATE)
     row["filename"] = os.path.basename(row["filename"])
@@ -69,11 +74,18 @@ def processRow(row):
     printProgress(progress, rowCount)
     return row
 
-print("Getting file features...")
-pool = ThreadPool(getThreadCount(a.THREADS))
-results = pool.map(processRow, rows)
-pool.close()
-pool.join()
+if a.PROGRESSIVE_SAVE or a.THREADS == 1:
+    for i, row in enumerate(rows):
+        rows[i] = processRow(row)
+        if a.PROGRESSIVE_SAVE:
+            writeCsv(OUTPUT_FILE, rows, headings=fieldNames)
+
+else:
+    print("Getting file features...")
+    pool = ThreadPool(getThreadCount(a.THREADS))
+    results = pool.map(processRow, rows)
+    pool.close()
+    pool.join()
 
 rows = sorted(rows, key=lambda r: r["filename"])
 writeCsv(OUTPUT_FILE, rows, headings=fieldNames)
