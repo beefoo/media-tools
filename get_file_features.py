@@ -42,10 +42,12 @@ for key in keysToAdd:
     if key not in fieldNames:
         fieldNames.append(key)
 
+progress = 0
 def processRow(row):
     global a
     global rowCount
     global ACCURATE
+    global progress
 
     duration = row[a.DURATION_KEY] if a.DURATION_KEY in row else 0
     hasAudio = row["hasAudio"] if "hasAudio" in row else 0
@@ -63,7 +65,8 @@ def processRow(row):
     row[a.DURATION_KEY] = duration
     row["hasAudio"] = hasAudio
     row["hasVideo"] = hasVideo
-    printProgress(row["index"]+1, rowCount)
+    progress += 1
+    printProgress(progress, rowCount)
     return row
 
 print("Getting file features...")
