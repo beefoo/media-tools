@@ -424,8 +424,13 @@ def getPitch(y, sr, fft=2048):
         binIndex = magnitudes[:, t].argmax()
     pitch = pitches[binIndex, t]
 
-    contrast = librosa.feature.spectral_contrast(y=y, sr=sr)
-    clarity = np.mean(contrast[:, t])
+    try:
+        contrast = librosa.feature.spectral_contrast(y=y, sr=sr)
+        clarity = np.mean(contrast[:, t])
+    except librosa.util.exceptions.ParameterError as err:
+        print("librosa error: {0}".format(err))
+        clarity = 0.0
+
     harmonics = pitches[peaks, t]
 
     return pitch, clarity, harmonics
