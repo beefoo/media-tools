@@ -59,6 +59,7 @@ parser.add_argument('-provider', dest="PROVIDER", default="loc.gov", help="Provi
 parser.add_argument('-cid', dest="COLLECTION_ID", default="john-and-ruby-lomax", help="Collection id")
 parser.add_argument('-out', dest="OUTPUT_DIR", default="output/samplepack_john-and-ruby-lomax/", help="Output dir")
 parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite existing data?")
+parser.add_argument('-noitem', dest="NO_ITEM_PAGE", action="store_true", help="External source has no item page?")
 a = parser.parse_args()
 
 formats = a.FORMATS.strip().split(',')
@@ -79,6 +80,9 @@ with open(a.ITEM_TEMPLATE, 'r', encoding="utf8") as f:
 _, items = readCsv(a.BASE_DATA_DIR+a.ITEM_DATA_FILE)
 _, samples = readCsv(a.BASE_DATA_DIR+a.SAMPLE_DATA_FILE)
 PHRASE_PATH = a.BASE_DATA_DIR + a.PHRASE_DATA_FILE
+
+for i, item in enumerate(items):
+    items[i]['title'] = str(item['title'])
 
 collection = False
 with open(a.COLLECTION_DATA_FILE, 'r', encoding="utf8") as f:
@@ -101,7 +105,7 @@ samplesByItemLookup = createLookup(samplesByItem, 'filename')
 # filter items
 filenames = set(unique([s['filename'] for s in samples]))
 items = [i for i in items if i['filename'] in filenames]
-items = sorted(items, key=lambda i: i['title'])
+items = sorted(items, key=lambda i: str(i['title']))
 
 # retrieve phrases
 print('Looking for valid phrases...')
@@ -129,6 +133,8 @@ for i, item in enumerate(items):
     items[i]['rights'] = collection['rights']
     items[i]['credit'] = collection['credit']
     items[i]['collection_uid'] = collection['uid']
+    if a.NO_ITEM_PAGE:
+        items[i]['url'] = collection['source_url']
     if 'provider' not in item:
         items[i]['provider'] = collection['provider']
     # use performer as artist if exists, else use first

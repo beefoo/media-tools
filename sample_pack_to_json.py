@@ -79,5 +79,5 @@ for zipfilename in zipfilenames:
         jsonDataOut['oneshotCount'] = len(oneshots)
         jsonDataOut['totalCount'] = len(audiofiles) + len(oneshots)
 
-jsonDataOut["clips"] = sorted(jsonDataOut["clips"], key=lambda c: c['title'])
+jsonDataOut["clips"] = sorted(jsonDataOut["clips"], key=lambda c: str(c['title']))
 writeJSON(OUTPUT_DATA_FILE, jsonDataOut, pretty=True)

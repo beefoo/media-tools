@@ -19,19 +19,26 @@ parser.add_argument('-groups', dest="GROUPS", default="", help="Comma-separated 
 parser.add_argument('-lists', dest="LISTS", default="", help="Comma-separated list of lists to output")
 parser.add_argument('-filter', dest="FILTER", default="", help="Filter string")
 parser.add_argument('-sort', dest="SORT", default="", help="Sort string")
+parser.add_argument('-replace', dest="REPLACE_STRING", default="", help="Query string of keys to rename, e.g. keyFind=keyReplace&key2Find=key2Replace")
 parser.add_argument('-limit', dest="LIMIT", default=-1, type=int, help="Limit the number of results; -1 for all")
 parser.add_argument('-light', dest="LIGHT", action="store_true", help="Output the data in a 'light' format")
 parser.add_argument('-out', dest="OUTPUT_FILE", default="output/samples.json", help="Output json file")
 a = parser.parse_args()
 # Parse arguments
 
-PROPS = [p for p in a.PROPS.strip().split(",")]
+props = [p for p in a.PROPS.strip().split(",")]
 
 # Read files
 fieldNames, rows = readCsv(a.INPUT_FILE)
-if len(PROPS) < 1:
-    PROPS = fieldNames
+if len(props) < 1:
+    props = fieldNames
 rowCount = len(rows)
+
+for i, row in enumerate(rows):
+    if "id" in row:
+        rows[i]["id"] = str(row["id"])
+    if "title" in row:
+        rows[i]["title"] = str(row["title"])
 
 if len(a.FILTER) > 0:
     rows = filterByQueryString(rows, a.FILTER)
@@ -42,6 +49,10 @@ if len(a.SORT) > 0:
     rows = sortByQueryString(rows, a.SORT)
     rowCount = len(rows)
     print("%s rows after sorting" % rowCount)
+
+replaceKeys = {}
+if len(a.REPLACE_STRING) > 0:
+    replaceKeys = parseQueryString(a.REPLACE_STRING, parseNumbers=False)
 
 if a.LIMIT > 0 and len(rows) > a.LIMIT:
     rows = rows[:a.LIMIT]
@@ -68,21 +79,28 @@ if len(LISTS) > 0:
 items = []
 for r in rows:
     item = {}
-    for p in PROPS:
+    for p in props:
+        pnew = p
+        if p in replaceKeys:
+            pnew = replaceKeys[p]
         if p in GROUPS:
-            item[p] = groups[p].index(r[p])
+            item[pnew] = groups[p].index(r[p])
         elif p in LISTS:
-            item[p] = [groups[p].index(value) for value in r[p]]
+            item[pnew] = [groups[p].index(value) for value in r[p]]
         else:
-            item[p] = r[p]
+            item[pnew] = r[p]
     items.append(item)
+
+for i, p in enumerate(props):
+    if p in replaceKeys:
+        props[i] = replaceKeys[p]
 
 jsonOut = {}
 if a.LIGHT:
-    jsonOut["itemHeadings"] = PROPS
+    jsonOut["itemHeadings"] = props
     jrows = []
     for r in items:
-        jrows.append([r[p] for p in PROPS])
+        jrows.append([r[p] for p in props])
     jsonOut["items"] = jrows
 else:
     jsonOut["items"] = items

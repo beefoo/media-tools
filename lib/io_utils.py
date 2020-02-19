@@ -257,22 +257,23 @@ def replaceFileExtension(fn, newExt):
 def supportsEncoding():
     return sys.version_info >= (3, 0)
 
-def stringToFilename(str):
+def stringToFilename(string):
+    string = str(string)
     # normalize whitespace
-    str = str.replace('-', ' ')
-    str = str.replace('_', ' ')
-    str = ' '.join(str.split())
+    string = string.replace('-', ' ')
+    string = string.replace('_', ' ')
+    string = ' '.join(string.split())
 
     # Replace spaces with dashes
-    str = re.sub('\s+', '-', str).strip()
+    string = re.sub('\s+', '-', string).strip()
 
     # Remove invalid characters
-    str = re.sub('[^0-9a-zA-Z\-]', '', str)
+    string = re.sub('[^0-9a-zA-Z\-]', '', string)
 
     # Remove leading characters until we find a letter or number
-    str = re.sub('^[^0-9a-zA-Z]+', '', str)
+    string = re.sub('^[^0-9a-zA-Z]+', '', string)
 
-    return str
+    return string
 
 def writeCsv(filename, arr, headings="auto", append=False, encoding="utf8"):
     if headings == "auto":
