@@ -65,7 +65,7 @@ makeDirectories(a.OUTPUT_FILE)
 
 for row in rows:
     lines = prependLines[:]
-    values = addValues[:] + [{"key": p, "value": row[p]} for p in PROPS]
+    values = [{"key": p, "value": row[p]} for p in PROPS] + addValues[:]
 
     for v in values:
         keynew = v["key"]
@@ -83,7 +83,7 @@ for row in rows:
 
     filenameOut = a.OUTPUT_FILE % row[a.FILENAME_KEY]
     with open(filenameOut, "w", encoding="utf8") as f:
-        f.writelines(lines)
+        f.write('\n'.join(lines))
         print("Wrote to %s" % filenameOut)
 
 print("Done.")

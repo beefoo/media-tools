@@ -15,6 +15,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-sdir', dest="SAMPLE_PACK_DIR", default="output/samplepack_john-and-ruby-lomax/", help="Base directory for sample packs")
 parser.add_argument('-idata', dest="ITEM_DATA_FILE", default="metadata/loc_john-and-ruby-lomax.csv", help="Input collection items csv file")
 parser.add_argument('-id', dest="ID_KEY", default="id", help="Key that contains item identifier")
+parser.add_argument('-url', dest="URL_KEY", default="url", help="Key that contains URL")
 parser.add_argument('-cid', dest="COLLECTION_UID", default="loc-john-and-ruby-lomax", help="Collection uid")
 parser.add_argument('-bout', dest="OUTPUT_BASE_DIR", default="", help="Output base dir")
 parser.add_argument('-aout', dest="OUTPUT_AUDIO_DIR", default="audio/samplepacks/", help="Output audio dir")
@@ -73,7 +74,7 @@ for zipfilename in zipfilenames:
                 'filename': baseAfilename,
                 'title': item['title'],
                 'timestamp': timeStamp,
-                'url': item['url']
+                'url': item[a.URL_KEY]
             })
         jsonDataOut['segmentCount'] = len(audiofiles)
         jsonDataOut['oneshotCount'] = len(oneshots)
