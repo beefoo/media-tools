@@ -1,0 +1,49 @@
+// collection_id={collection_id} // the external/source identifier
+// collection_uid={collection_uid} // internal identifier for use in file naming
+// data_base_dir={data_base_dir} // base directory for output of content to be synced in the cloud
+// media_dir={media_dir} // directory for where media is downloaded to
+// app_dir={app_dir} // directory of the web app
+
+// 1. scrape data and download media
+python3 scrapers/loc/download_query.py -query "https://www.loc.gov/collections/{collection_id}/?fo=json" -out "{data_base_dir}scrapers/loc/{collection_uid}/page_%s.json"
+python3 scrapers/loc/download_metadata.py -in "{data_base_dir}scrapers/loc/{collection_uid}/*.json" -out "{data_base_dir}scrapers/loc/{collection_uid}/items/%s.json"
+python3 scrapers/loc/collect_metadata.py -in "{data_base_dir}scrapers/loc/{collection_uid}/items/*.json" -out "{data_base_dir}metadata/{collection_uid}.csv"
+python3 scrapers/loc/download_media.py -in "{data_base_dir}metadata/{collection_uid}.csv" -out "{media_dir}"
+
+// 2. process and analyze media
+python3 get_file_features.py -in "{data_base_dir}metadata/{collection_uid}.csv" -dir "{media_dir}"
+python3 scrapers/loc/report_metadata.py -in "{data_base_dir}metadata/{collection_uid}.csv" -pages "{data_base_dir}scrapers/loc/{collection_uid}/*.json"
+python3 audio_to_samples.py -in "{data_base_dir}metadata/{collection_uid}.csv" -dir "{media_dir}" -out "{data_base_dir}sampledata/{collection_uid}/%s.csv" -delta 0.05 -max " -1" -features -overwrite
+python3 items_to_phrases.py -in "{data_base_dir}metadata/{collection_uid}.csv" -dir "{data_base_dir}sampledata/{collection_uid}/" -out "{data_base_dir}phrasedata/{collection_uid}/" -params "minc=24.0"
+python3 collect_phrases.py -in "{data_base_dir}metadata/{collection_uid}.csv" -dir "{data_base_dir}phrasedata/{collection_uid}/"
+python3 get_sample_features.py -in "{data_base_dir}metadata/{collection_uid}.csv" -dir "{data_base_dir}sampledata/{collection_uid}/"
+
+// 3. see stats
+python3 stats_histogram.py -in "{data_base_dir}metadata/{collection_uid}.csv" -plot "duration,samples,medianPower,medianHz,medianClarity,phrases"
+python3 stats_totals.py -in "{data_base_dir}metadata/{collection_uid}.csv" -props "duration,samples,phrases"
+
+// 4. create a subset
+// python3 filter_csv.py -in "{data_base_dir}metadata/{collection_uid}.csv" -filter "samples>50"
+python3 phrases_subset.py -in "{data_base_dir}metadata/{collection_uid}.csv" -pdir "{data_base_dir}phrasedata/{collection_uid}/" -sdir "{data_base_dir}sampledata/{collection_uid}/" -out "{data_base_dir}sampledata/{collection_uid}_subset_64x64.csv" -sort "clarity=desc" -limp 8 -lims 16 -lim 4096
+
+// 5. prep for "explore" interface
+python3 filter_csv.py -in "{data_base_dir}sampledata/{collection_uid}_subset_64x64.csv" -sort "clarity=desc" -limit 4096 -out "{data_base_dir}sampledata/{collection_uid}_subset_64x64_grid.csv"
+python3 samples_to_tsne.py -in "{data_base_dir}sampledata/{collection_uid}_subset_64x64_grid.csv" -dir "{media_dir}" -components 2 -angle 0.1 -cache "tmp/{collection_uid}_subset_64x64_features.p" -threads 4 -rate 50 -overwrite
+python3 samples_to_tsne.py -in "{data_base_dir}sampledata/{collection_uid}_subset_64x64_grid.csv" -dir "{media_dir}" -components 3 -prefix "color" -angle 0.1 -cache "tmp/{collection_uid}_subset_64x64_features.p" -threads 4 -rate 50
+python samples_to_grid.py -in "{data_base_dir}sampledata/{collection_uid}_subset_64x64_grid.csv" -grid "64x64"
+python3 samples_to_fingerprints.py -in "{data_base_dir}sampledata/{collection_uid}_subset_64x64_grid.csv" -dir "{media_dir}" -out "tmp/{collection_uid}_subset_64x64_fingerprints.p" -log
+python3 samples_to_sprite.py -in "{data_base_dir}sampledata/{collection_uid}_subset_64x64_grid.csv" -dir "{media_dir}" -id "{collection_uid}" -width 2048 -height 2048 -cell "32x32" -count 6 -cdurmax 300 -mode audio -outaud "{app_dir}audio/sprites/{{uid}}/{{uid}}.mp3" -outdat "{app_dir}data/spritedata/{{uid}}.json" -outimg "{app_dir}img/sprites/{{uid}}.png" -fingerprints "tmp/{collection_uid}_subset_64x64_fingerprints.p" -colorful
+
+// 6. prep for "remix" interface
+python3 samples_to_files.py -in "{data_base_dir}sampledata/{collection_uid}_subset_64x64.csv" -dir "{media_dir}" -out "output/{collection_uid}_subset_64x64/%s.wav" -dout "{data_base_dir}sampledata/{collection_uid}_subset_64x64_clips.csv" -rvb 0 -mdb " -9999" -fadein "0.1" -fadeout "0.1" -maxd 1000 -overwrite -threads 3
+python3 normalize_audio.py -in "{data_base_dir}sampledata/{collection_uid}_subset_64x64_clips.csv" -dir "output/{collection_uid}_subset_64x64/" -out "output/{collection_uid}_subset_64x64_normalized/" -group "sourceFilename"
+python3 convert_audio.py -in "output/{collection_uid}_subset_64x64_normalized/*.wav" -out "{app_dir}audio/collections/{collection_uid}/%s.mp3" -overwrite
+python3 csv_to_json.py -in "{data_base_dir}sampledata/{collection_uid}_subset_64x64_clips.csv" -props "id,sourceFilename,sourceStart,phrase" -groups "sourceFilename" -out "{app_dir}data/sampledata/{collection_uid}.json" -light
+python3 meta_to_meta.py -in "{data_base_dir}metadata/{collection_uid}.csv" -key "date" -pattern "([12][0-9]{{3}}).*" -features "year"
+// python3 update_meta.py -in "{data_base_dir}metadata/{collection_uid}.csv" -key "id" -rkey "url" -find "(.*)" -repl "https://www.loc.gov/item/\1/"
+python3 update_meta.py -in "{data_base_dir}metadata/{collection_uid}.csv" -key "id" -rkey "embed_url" -find "(.*)" -repl "https://www.loc.gov/item/\1/?embed=resources"
+python3 csv_to_json.py -in "{data_base_dir}metadata/{collection_uid}.csv" -props "title,filename,year,contributors,subjects,url,embed_url" -out "{app_dir}data/metadata/{collection_uid}.json" -filter "phrases>0" -lists "contributors,subjects" -light
+
+// 7. prep for "download & use" interface (sample packs)
+python3 make_sample_pack.py -basedir "{data_base_dir}" -dir "{media_dir}" -cdata "{app_dir}_use/{collection_uid}.md" -idata "metadata/{collection_uid}.csv" -pdata "phrasedata/{collection_uid}/%s.csv" -sdata "sampledata/{collection_uid}_subset_64x64_grid.csv" -id "id" -provider "loc.gov" -cid "{collection_id}" -out "output/samplepack_{collection_uid}/"
+python3 sample_pack_to_json.py -idata "{data_base_dir}metadata/{collection_uid}.csv" -bout "{app_dir}" -sdir "output/samplepack_{collection_uid}/" -id "id" -cid "{collection_uid}"
