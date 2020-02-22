@@ -95,6 +95,12 @@ for i, p in enumerate(phrases):
 sampleCount = len(validSamples)
 print("Found %s valid samples" % sampleCount)
 
+if a.LIMIT > 0 and sampleCount < a.LIMIT:
+    print("** Try increasing -limp or -lims to get more valid samples **")
+
+elif a.LIMIT > 0 and (sampleCount-50) > a.LIMIT:
+    print("** Try reducing -limp or -lims to get your valid sample count closer to %s **" % a.LIMIT)
+
 validFileCount = len(unique([s["filename"] for s in validSamples]))
 print("Found %s unique files" % validFileCount)
 
