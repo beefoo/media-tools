@@ -24,7 +24,10 @@ def isValidFile(f, filters, itemLookup):
                 if key not in metadata:
                     valid = False
                     break
-                if value not in metadata[key]:
+                if mode == "=" and value not in metadata[key]:
+                    valid = False
+                    break
+                if mode == "!=" and value in metadata[key]:
                     valid = False
                     break
     else:

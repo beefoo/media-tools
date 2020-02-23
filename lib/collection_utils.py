@@ -98,7 +98,7 @@ def parseFilterString(str):
         return []
     conditionStrings = str.split("&")
     conditions = []
-    modes = ["<=", ">=", "~=", ">", "<", "="]
+    modes = ["<=", ">=", "~=", "!=", "!~=", ">", "<", "="]
     for cs in conditionStrings:
         for mode in modes:
             if mode in cs:
