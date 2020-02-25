@@ -45,7 +45,7 @@ The scripts in this repository were mostly designed for analyzing/visualizing ve
 Download all movie metadata from Internet Archive that are in the [Fedflix collection](https://archive.org/details/FedFlix) and created by the [National Archives](https://archive.org/details/FedFlix?and[]=creator%3A%22national+archives+and+records+administration%22) and save to CSV file:
 
 ```
-python scrapers/internet_archive/download_metadata.py \
+python ingesters/internet_archive/download_metadata.py \
 -query " collection:(FedFlix) AND mediatype:(movies) AND creator:(national archives and records administration)" \
 -out "tmp/ia_fedflixnara.csv"
 ```
@@ -59,7 +59,7 @@ For details on how to construct a search query, visit the [Internet Archive's ad
 Next, you can download the assets from each of the movies retrieved from the previous step. You can add a flag to indicate how many parallel downloads to run, e.g. `-threads 3`. Make sure output directory has plenty of space. This particular collection has a 100GB+ of files.
 
 ```
-python scrapers/internet_archive/download_media.py \
+python ingesters/internet_archive/download_media.py \
 -in "tmp/ia_fedflixnara.csv" \
 -out "tmp/downloads/ia_fedflixnara/"
 ```

@@ -5,14 +5,14 @@
 // app_dir={app_dir} // directory of the web app
 
 // 1. scrape data and download media
-python3 scrapers/loc/download_query.py -query "https://www.loc.gov/collections/{collection_id}/?fo=json" -out "{data_base_dir}scrapers/loc/{collection_uid}/page_%s.json"
-python3 scrapers/loc/download_metadata.py -in "{data_base_dir}scrapers/loc/{collection_uid}/*.json" -out "{data_base_dir}scrapers/loc/{collection_uid}/items/%s.json"
-python3 scrapers/loc/collect_metadata.py -in "{data_base_dir}scrapers/loc/{collection_uid}/items/*.json" -out "{data_base_dir}metadata/{collection_uid}.csv"
-python3 scrapers/loc/download_media.py -in "{data_base_dir}metadata/{collection_uid}.csv" -out "{media_dir}"
+python3 ingesters/loc/download_query.py -query "https://www.loc.gov/collections/{collection_id}/?fo=json" -out "{data_base_dir}ingesters/loc/{collection_uid}/page_%s.json"
+python3 ingesters/loc/download_metadata.py -in "{data_base_dir}ingesters/loc/{collection_uid}/*.json" -out "{data_base_dir}ingesters/loc/{collection_uid}/items/%s.json"
+python3 ingesters/loc/collect_metadata.py -in "{data_base_dir}ingesters/loc/{collection_uid}/items/*.json" -out "{data_base_dir}metadata/{collection_uid}.csv"
+python3 ingesters/loc/download_media.py -in "{data_base_dir}metadata/{collection_uid}.csv" -out "{media_dir}"
 
 // 2. process and analyze media
 python3 get_file_features.py -in "{data_base_dir}metadata/{collection_uid}.csv" -dir "{media_dir}"
-python3 scrapers/loc/report_metadata.py -in "{data_base_dir}metadata/{collection_uid}.csv" -pages "{data_base_dir}scrapers/loc/{collection_uid}/*.json"
+python3 ingesters/loc/report_metadata.py -in "{data_base_dir}metadata/{collection_uid}.csv" -pages "{data_base_dir}ingesters/loc/{collection_uid}/*.json"
 python3 audio_to_samples.py -in "{data_base_dir}metadata/{collection_uid}.csv" -dir "{media_dir}" -out "{data_base_dir}sampledata/{collection_uid}/%s.csv" -delta 0.05 -max " -1" -features -overwrite
 python3 items_to_phrases.py -in "{data_base_dir}metadata/{collection_uid}.csv" -dir "{data_base_dir}sampledata/{collection_uid}/" -out "{data_base_dir}phrasedata/{collection_uid}/" -params "minc=24.0"
 python3 collect_phrases.py -in "{data_base_dir}metadata/{collection_uid}.csv" -dir "{data_base_dir}phrasedata/{collection_uid}/"
