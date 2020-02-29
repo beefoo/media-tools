@@ -55,6 +55,7 @@ parser.add_argument('-sw', dest="SAMPLE_WIDTH", default=3, type=int, help="Sampl
 parser.add_argument('-sr', dest="SAMPLE_RATE", default=48000, type=int, help="Sample rate in hz")
 parser.add_argument('-cmin', dest="MIN_CLIP_DUR", default=200, type=int, help="Minimum clip duration in ms")
 parser.add_argument('-cmax', dest="MAX_CLIP_DUR", default=4000, type=int, help="Maximum clip duration in ms")
+parser.add_argument('-cpad', dest="PAD_CLIP_DUR", default=250, type=int, help="Add this many ms to one-shots")
 parser.add_argument('-provider', dest="PROVIDER", default="loc.gov", help="Provider name")
 parser.add_argument('-cid', dest="COLLECTION_ID", default="john-and-ruby-lomax", help="Collection id")
 parser.add_argument('-out', dest="OUTPUT_DIR", default="output/samplepack_john-and-ruby-lomax/", help="Output dir")
@@ -201,7 +202,7 @@ for format in FORMATS:
             clip['sequence'] = zeroPad(j+1, samplesTotal)
             clip['dir'] = folder_path+'one_shots/'
             clip['wavdir'] = wav_folder_path+'one_shots/'
-            clip['cdur'] = lim(sample['dur'], (a.MIN_CLIP_DUR, a.MAX_CLIP_DUR))
+            clip['cdur'] = lim(sample['dur']+a.PAD_CLIP_DUR, (a.MIN_CLIP_DUR, a.MAX_CLIP_DUR))
             clips.append(clip)
 
         for j, clip in enumerate(clips):
