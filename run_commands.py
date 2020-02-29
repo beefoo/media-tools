@@ -25,4 +25,4 @@ for command in lines:
     print(command)
     if a.PROBE:
         continue
-    finished = subprocess.check_call(command)
+    finished = subprocess.check_call(command, shell=True)
