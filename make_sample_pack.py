@@ -55,6 +55,7 @@ parser.add_argument('-sw', dest="SAMPLE_WIDTH", default=3, type=int, help="Sampl
 parser.add_argument('-sr', dest="SAMPLE_RATE", default=48000, type=int, help="Sample rate in hz")
 parser.add_argument('-cmin', dest="MIN_CLIP_DUR", default=200, type=int, help="Minimum clip duration in ms")
 parser.add_argument('-cmax', dest="MAX_CLIP_DUR", default=4000, type=int, help="Maximum clip duration in ms")
+parser.add_argument('-pmax', dest="MAX_PHRASE_DUR", default=-1, type=int, help="Maximum phrase duration in ms, -1 for none")
 parser.add_argument('-cpad', dest="PAD_CLIP_DUR", default=250, type=int, help="Add this many ms to one-shots")
 parser.add_argument('-provider', dest="PROVIDER", default="loc.gov", help="Provider name")
 parser.add_argument('-cid', dest="COLLECTION_ID", default="john-and-ruby-lomax", help="Collection id")
@@ -196,6 +197,8 @@ for format in FORMATS:
             clip['dir'] = folder_path+'excerpts/'
             clip['wavdir'] = wav_folder_path+'excerpts/'
             clip['cdur'] = max(phrase['dur'], a.MIN_CLIP_DUR)
+            if a.MAX_PHRASE_DUR > 0:
+                clip['cdur'] = min(phrase['dur'], a.MAX_PHRASE_DUR)
             clips.append(clip)
         for j, sample in enumerate(itemSamples):
             clip = sample.copy()

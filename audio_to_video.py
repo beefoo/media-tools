@@ -29,7 +29,7 @@ a = parser.parse_args()
 makeDirectories(a.OUTPUT_DIR)
 
 # Read files
-fieldNames, files, fileCount = getFilesFromString(args)
+fieldNames, files, fileCount = getFilesFromString(a)
 
 # Check for valid audio
 if "duration" in fieldNames and "hasAudio" in fieldNames:
