@@ -121,9 +121,9 @@ def getFilesizeString(fn):
         elif filesize < 1000000000:
             str = '%smb' % round(filesize/1000000.0, 1)
         elif filesize < 10000000000:
-            str = '%sgb' % round(filesize/1000000.0, 1)
+            str = '%sgb' % round(filesize/1000000000.0, 1)
         else:
-            str = '%sgb' % round(filesize/1000000.0, 2)
+            str = '%sgb' % round(filesize/1000000000.0, 2)
     return str
 
 def getJSONFromURL(url):
