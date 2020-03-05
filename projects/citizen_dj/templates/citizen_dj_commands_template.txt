@@ -33,6 +33,7 @@ python3 samples_to_tsne.py -in "{data_base_dir}sampledata/{collection_uid}_subse
 python samples_to_grid.py -in "{data_base_dir}sampledata/{collection_uid}_subset_64x64_grid.csv" -grid "64x64"
 python3 samples_to_fingerprints.py -in "{data_base_dir}sampledata/{collection_uid}_subset_64x64_grid.csv" -dir "{media_dir}" -out "tmp/{collection_uid}_subset_64x64_fingerprints.p" -log
 python3 samples_to_sprite.py -in "{data_base_dir}sampledata/{collection_uid}_subset_64x64_grid.csv" -dir "{media_dir}" -id "{collection_uid}" -width 2048 -height 2048 -cell "32x32" -count 6 -cdurmax 300 -mode audio -outaud "{app_dir}audio/sprites/{{uid}}/{{uid}}.mp3" -outdat "{app_dir}data/spritedata/{{uid}}.json" -outimg "{app_dir}img/sprites/{{uid}}.png" -fingerprints "tmp/{collection_uid}_subset_64x64_fingerprints.p" -colorful
+python3 images_to_thumbnails.py -in "{app_dir}img/sprites/*.png" -out "{app_dir}img/thumbnails/" -width 480 -height 120
 
 // 6. prep for "remix" interface
 python3 samples_to_files.py -in "{data_base_dir}sampledata/{collection_uid}_subset_64x64.csv" -dir "{media_dir}" -out "output/{collection_uid}_subset_64x64/%s.wav" -dout "{data_base_dir}sampledata/{collection_uid}_subset_64x64_clips.csv" -rvb 0 -mdb " -9999" -fadein "0.1" -fadeout "0.1" -maxd 1000 -overwrite -threads 3
