@@ -32,7 +32,7 @@ Not all of these are required for individual scripts, but covers what's needed f
 
 - [scikit-learn](https://scikit-learn.org/stable/) for statistics and machine learning features (e.g. TSNE, clustering, classification)
 - [Multicore-TSNE](https://github.com/DmitryUlyanov/Multicore-TSNE) for faster TSNE
-- [RasterFairy](https://github.com/Quasimondo/RasterFairy) for transforming point cloud to grid
+- [RasterFairy](https://github.com/pechyonkin/RasterFairy-Py3) for transforming point cloud to grid
 - [Requests](http://docs.python-requests.org/en/master/) for making remote web requests for scraping metadata
 - [Curl](https://curl.haxx.se/) for binary downloads
 

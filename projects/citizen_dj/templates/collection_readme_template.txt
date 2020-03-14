@@ -1,13 +1,12 @@
 Collection name: {title}
-Retrieved from: https://citizen-dj.loc.gov/{uid}/use/
+Retrieved from: https://citizen-dj.labs.loc.gov/{uid}/use/
 View on {provider} for more details: {source_url}
 
 Rights and access:
 {rights}
 
 Suggested credit:
-{credit}
-Citizen DJ
+Citizen DJ, {credit}
 
 Please refer to `/attributions/` folder for item details and how to credit each item
 

@@ -131,8 +131,8 @@ for item in items:
 for i, item in enumerate(items):
     items[i]['cleanTitle'] = stringToFilename(item['title'])
     artist = item['contributors'] if 'contributors' in item else item['creator']
-    items[i]['contributors'] = artist.replace(' | ', '\n')
-    items[i]['rights'] = collection['rights']
+    items[i]['contributors'] = listToHumanString(artist.split(' | '))
+    items[i]['rights'] = collection['item_rights']
     items[i]['credit'] = collection['credit']
     items[i]['collection_uid'] = collection['uid']
     if a.NO_ITEM_PAGE:

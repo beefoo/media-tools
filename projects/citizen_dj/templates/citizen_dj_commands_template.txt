@@ -30,7 +30,7 @@ python3 phrases_subset.py -in "{data_base_dir}metadata/{collection_uid}.csv" -pd
 python3 filter_csv.py -in "{data_base_dir}sampledata/{collection_uid}_subset_64x64.csv" -sort "clarity=desc" -limit 4096 -out "{data_base_dir}sampledata/{collection_uid}_subset_64x64_grid.csv"
 python3 samples_to_tsne.py -in "{data_base_dir}sampledata/{collection_uid}_subset_64x64_grid.csv" -dir "{media_dir}" -components 2 -angle 0.1 -cache "tmp/{collection_uid}_subset_64x64_features.p" -threads 4 -rate 50 -overwrite
 python3 samples_to_tsne.py -in "{data_base_dir}sampledata/{collection_uid}_subset_64x64_grid.csv" -dir "{media_dir}" -components 3 -prefix "color" -angle 0.1 -cache "tmp/{collection_uid}_subset_64x64_features.p" -threads 4 -rate 50
-python samples_to_grid.py -in "{data_base_dir}sampledata/{collection_uid}_subset_64x64_grid.csv" -grid "64x64"
+python3 samples_to_grid.py -in "{data_base_dir}sampledata/{collection_uid}_subset_64x64_grid.csv" -grid "64x64"
 python3 samples_to_fingerprints.py -in "{data_base_dir}sampledata/{collection_uid}_subset_64x64_grid.csv" -dir "{media_dir}" -out "tmp/{collection_uid}_subset_64x64_fingerprints.p" -log
 python3 samples_to_sprite.py -in "{data_base_dir}sampledata/{collection_uid}_subset_64x64_grid.csv" -dir "{media_dir}" -id "{collection_uid}" -width 2048 -height 2048 -cell "32x32" -count 6 -cdurmax 300 -mode audio -outaud "{app_dir}audio/sprites/{{uid}}/{{uid}}.mp3" -outdat "{app_dir}data/spritedata/{{uid}}.json" -outimg "{app_dir}img/sprites/{{uid}}.png" -fingerprints "tmp/{collection_uid}_subset_64x64_fingerprints.p" -colorful
 python3 images_to_thumbnails.py -in "{app_dir}img/sprites/*.png" -out "{app_dir}img/thumbnails/" -width 480 -height 120

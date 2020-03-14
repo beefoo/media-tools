@@ -93,6 +93,26 @@ def groupList(arr, groupBy, sort=False, desc=True):
         groups = sorted(groups, key=lambda k: k["count"], reverse=reversed)
     return groups
 
+def listToHumanString(arr):
+    arr = [str(value).strip() for value in arr]
+    arrLen = len(arr);
+    if arrLen < 1:
+        return "Unknown";
+    if arrLen < 2:
+        return arr[0]
+    if arrLen < 3:
+        return ' and '.join(arr)
+
+    string = ''
+    for i, value in enumerate(arr):
+        if i == arrLen-1:
+            string += value
+        elif i == arrLen-2:
+            string += (value + ', and ')
+        else:
+            string += (value + ', ')
+    return string
+
 def parseFilterString(str):
     if len(str) <= 0:
         return []
