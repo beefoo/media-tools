@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 
-# python fx.py -pad 3000
-# python fx.py -effect distortion -amounts "1,2,4,8,16,24,32,48" -out ../output/distortion_test.mp3
-# python fx.py -effect lowpass -amounts "50,100,200,400,800,1600,3200,6400" -out ../output/lowpass_test.mp3
-# python fx.py -effect bass -amounts " -20,-10,-5,5,10,20" -out ../output/bass_test.mp3
-# python fx.py -effect echo -amounts "10,50,100,500,1000" -out ../output/echo_test.mp3
+# python3 tests/fx.py -pad 3000
+# python3 tests/fx.py -effect distortion -amounts "1,2,4,8,16,24,32,48" -out output/distortion_test.mp3
+# python3 tests/fx.py -effect lowpass -amounts "50,100,200,400,800,1600,3200,6400" -out output/lowpass_test.mp3
+# python3 tests/fx.py -effect bass -amounts " -20,-10,-5,5,10,20" -out output/bass_test.mp3
+# python3 tests/fx.py -effect echo -amounts "10,50,100,500,1000" -out output/echo_test.mp3
+# python3 tests/fx.py -effect bass -amounts " -20,-10,-5,5,10,20,-20:50,-10:50,-5:50,5:50,10:50,20:50" -out output/lowpass_test.mp3
 
 import argparse
 import inspect
@@ -18,6 +19,7 @@ currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfram
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0,parentdir)
 from lib.audio_utils import addFx
+from lib.math_utils import *
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-in', dest="INPUT_FILE", default="media/sample/chromatic_scale_piano_c4-b4.wav", help="Input file")
@@ -34,9 +36,16 @@ filename = args.INPUT_FILE
 clipStart = args.CLIP_START
 clipDur = args.CLIP_DUR
 effect = args.EFFECT
-amounts = [float(amt) for amt in args.AMOUNTS.strip().split(",")]
+amounts = args.AMOUNTS.strip().split(",")
 pad = args.PAD
 outputFile = args.OUTPUT_FILE
+
+for i, value in enumerate(amounts):
+    if ":" in value:
+        amounts[i] = tuple([parseNumber(v) for v in value.split(":")])
+    else:
+        amounts[i] = parseNumber(value)
+pprint(amounts)
 
 # Make sure output dir exist
 outDir = os.path.dirname(outputFile)
@@ -52,7 +61,7 @@ audio = AudioSegment.empty()
 audio.set_channels(clip.channels)
 audio.set_sample_width(clip.sample_width)
 audio.set_frame_rate(clip.frame_rate)
-audio += clip
+audio += clip + AudioSegment.silent(duration=pad)
 
 for amount in amounts:
     if effect=="echo":

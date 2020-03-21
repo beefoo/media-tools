@@ -191,6 +191,7 @@ for format in FORMATS:
         itemSamples = samplesByItemLookup[item['filename']]['items']
         samplesTotal = max(100, len(itemSamples))
         clips = []
+        itemPhrases = sorted(itemPhrases, key=lambda p: p['start'])
         for j, phrase in enumerate(itemPhrases):
             clip = phrase.copy()
             clip['sequence'] = zeroPad(j+1, phrasesTotal)
@@ -200,6 +201,7 @@ for format in FORMATS:
             if a.MAX_PHRASE_DUR > 0:
                 clip['cdur'] = min(phrase['dur'], a.MAX_PHRASE_DUR)
             clips.append(clip)
+        itemSamples = sorted(itemSamples, key=lambda s: s['start'])
         for j, sample in enumerate(itemSamples):
             clip = sample.copy()
             clip['sequence'] = zeroPad(j+1, samplesTotal)

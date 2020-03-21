@@ -36,7 +36,12 @@ def addFx(sound, effects, pad=3000, fade_in=100, fade_out=100):
         elif effect == "lowpass":
             chain.lowpass(value)
         elif effect == "bass":
-            chain.lowshelf(gain=value)
+            frequency = 100
+            gain = value
+            if isinstance(value, tuple):
+                gain, frequency = value
+            print("%s, %s" % (gain, frequency))
+            chain.highshelf(gain=gain, frequency=frequency)
         elif effect == "echo":
             echoStr = "echo 0.8 0.9"
             amount = value
