@@ -50,18 +50,19 @@ parser.add_argument('-id', dest="ID_KEY", default="id", help="Key that contains 
 parser.add_argument('-ctmpl', dest="COLLECTION_TEMPLATE", default="projects/citizen_dj/templates/collection_readme_template.txt", help="Input template file for collection")
 parser.add_argument('-itmpl', dest="ITEM_TEMPLATE", default="projects/citizen_dj/templates/item_readme_template.txt", help="Input template file for item")
 parser.add_argument('-formats', dest="FORMATS", default="wav,mp3", help="List of formats to produce")
-parser.add_argument('-mdb', dest="MATCH_DB", default=-16, type=int, help="Match decibels, -9999 for none")
+parser.add_argument('-mdb', dest="MATCH_DB", default=-3, type=int, help="Match decibels, -9999 for none")
 parser.add_argument('-sw', dest="SAMPLE_WIDTH", default=3, type=int, help="Sample width (bit depth); 1->8, 2->16, 3->24, 4->32-bit")
 parser.add_argument('-sr', dest="SAMPLE_RATE", default=48000, type=int, help="Sample rate in hz")
 parser.add_argument('-cmin', dest="MIN_CLIP_DUR", default=200, type=int, help="Minimum clip duration in ms")
 parser.add_argument('-cmax', dest="MAX_CLIP_DUR", default=4000, type=int, help="Maximum clip duration in ms")
 parser.add_argument('-pmax', dest="MAX_PHRASE_DUR", default=-1, type=int, help="Maximum phrase duration in ms, -1 for none")
-parser.add_argument('-cpad', dest="PAD_CLIP_DUR", default=250, type=int, help="Add this many ms to one-shots")
+parser.add_argument('-cpad', dest="PAD_CLIP_DUR", default=0, type=int, help="Add this many ms to one-shots")
 parser.add_argument('-provider', dest="PROVIDER", default="loc.gov", help="Provider name")
 parser.add_argument('-cid', dest="COLLECTION_ID", default="john-and-ruby-lomax", help="Collection id")
 parser.add_argument('-out', dest="OUTPUT_DIR", default="output/samplepack_john-and-ruby-lomax/", help="Output dir")
 parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite existing data?")
 parser.add_argument('-noitem', dest="NO_ITEM_PAGE", action="store_true", help="External source has no item page?")
+parser.add_argument('-probe', dest="PROBE", action="store_true", help="Just print details?")
 a = parser.parse_args()
 
 formats = a.FORMATS.strip().split(',')
@@ -154,10 +155,11 @@ for i, item in enumerate(items):
 
 itemCount = len(items)
 
-if a.OVERWRITE:
+if a.OVERWRITE and not a.PROBE:
     removeDir(a.OUTPUT_DIR)
 
-makeDirectories(a.OUTPUT_DIR)
+if not a.PROBE:
+    makeDirectories(a.OUTPUT_DIR)
 
 for format in FORMATS:
     print('Generating %ss...' % format)
@@ -165,20 +167,23 @@ for format in FORMATS:
     folder_path = a.OUTPUT_DIR + folder_name + '/'
     wav_folder_name = '{provider}_{collection_name}_wav'.format(provider=a.PROVIDER, collection_name=a.COLLECTION_ID)
     wav_folder_path = a.OUTPUT_DIR + wav_folder_name + '/'
-    makeDirectories([folder_path, folder_path+'attributions/', folder_path+'excerpts/', folder_path+'one_shots/'])
+    if not a.PROBE:
+        makeDirectories([folder_path, folder_path+'attributions/', folder_path+'excerpts/', folder_path+'one_shots/'])
 
     # make main readme file
-    collectionText = collectionTemplate.format(**collection)
-    with open(folder_path+"README.txt", "w") as f:
-        f.write(collectionText)
+    if not a.PROBE:
+        collectionText = collectionTemplate.format(**collection)
+        with open(folder_path+"README.txt", "w") as f:
+            f.write(collectionText)
 
     # go through each item
     for index, item in enumerate(items):
         # make attribution
-        itemText = itemTemplate.format(**item)
-        itemAttributePath = folder_path + 'attributions/' + '%s_%s.txt' % (item['cleanTitle'], item[a.ID_KEY])
-        with open(itemAttributePath, "w") as f:
-            f.write(itemText)
+        if not a.PROBE:
+            itemText = itemTemplate.format(**item)
+            itemAttributePath = folder_path + 'attributions/' + '%s_%s.txt' % (item['cleanTitle'], item[a.ID_KEY])
+            with open(itemAttributePath, "w") as f:
+                f.write(itemText)
 
         itemAudio = itemAudioDurationMs = None
         if format == 'wav':
@@ -225,12 +230,14 @@ for format in FORMATS:
                 cdur = clip['cdur']
                 clipAudio = getAudioClip(itemAudio, clip['start'], cdur, itemAudioDurationMs)
                 clipAudio = applyAudioProperties(clipAudio, {
+                    "useMaxDBFS": True,
                     "matchDb": a.MATCH_DB,
                     "fadeIn": min(100, roundInt(clip["dur"] * 0.1)),
                     "fadeOut": min(100, roundInt(clip["dur"] * 0.1))
                 })
                 clipAudio = clipAudio.set_sample_width(a.SAMPLE_WIDTH)
-                clipAudio.export(clipFilePath, format=format, tags=clipTags)
+                if not a.PROBE:
+                    clipAudio.export(clipFilePath, format=format, tags=clipTags)
             # if not wav, simply read the wav file and convert to other format
             else:
                 clipFilenameWav = replaceFileExtension(os.path.basename(clipFilePath), '.wav')
@@ -238,14 +245,16 @@ for format in FORMATS:
                 clipAudio = getAudio(clipFilePathWav, sampleWidth=a.SAMPLE_WIDTH, sampleRate=a.SAMPLE_RATE)
                 clipAudio = clipAudio.set_sample_width(a.SAMPLE_WIDTH)
 
-                if format == "mp3":
-                    clipAudio.export(clipFilePath, format=format, tags=clipTags, bitrate="192k")
-                else:
-                    clipAudio.export(clipFilePath, format=format, tags=clipTags)
+                if not a.PROBE:
+                    if format == "mp3":
+                        clipAudio.export(clipFilePath, format=format, tags=clipTags, bitrate="192k")
+                    else:
+                        clipAudio.export(clipFilePath, format=format, tags=clipTags)
 
         printProgress(index+1, itemCount)
 
     # zip the directory
-    zipdir = folder_path.rstrip('/')
-    zipfilename = zipdir
-    zipDir(zipfilename, zipdir)
+    if not a.PROBE:
+        zipdir = folder_path.rstrip('/')
+        zipfilename = zipdir
+        zipDir(zipfilename, zipdir)

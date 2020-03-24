@@ -88,7 +88,8 @@ def applyAudioProperties(audio, props, sfx=True, fxPad=3000):
     p = props
     if "matchDb" in p and p["matchDb"] > -9999:
         maxMatchDb = p["maxMatchDb"] if "maxMatchDb" in p else -1
-        audio = matchDb(audio, p["matchDb"], maxMatchDb)
+        useMaxDBFS = ("useMaxDBFS" in p)
+        audio = matchDb(audio, p["matchDb"], maxMatchDb, useMaxDBFS)
     if "maxDb" in p and p["maxDb"] > -9999:
         audio = maxDb(audio, p["maxDb"])
     if "reverse" in p and p["reverse"]:
@@ -507,10 +508,17 @@ def makeBlankAudio(duration, fn, sampleWidth=4, sampleRate=48000, channels=2):
     baseAudio.export(fn, format=format)
     print("Created blank audio: %s" % fn)
 
-def matchDb(audio, targetDb, maxMatchDb=None):
-    deltaDb = targetDb - audio.dBFS
+def matchDb(audio, targetDb, maxMatchDb=None, useMaxDBFS=False):
     if maxMatchDb is not None:
-        deltaDb = min(deltaDb, maxMatchDb)
+        targetDb = min(targetDb, maxMatchDb)
+    deltaDb = 0
+    if useMaxDBFS:
+        deltaDb = targetDb - audio.max_dBFS
+    else:
+        deltaDb = targetDb - audio.dBFS
+    # if maxMatchDb is not None:
+    #     deltaDb = min(deltaDb, maxMatchDb)
+    # print(deltaDb)
     return audio.apply_gain(deltaDb)
 
 def maxDb(audio, db):
