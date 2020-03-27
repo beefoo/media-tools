@@ -1,0 +1,20 @@
+{
+  "samplesFile": "E:/Dropbox/citizen_dj/music_production/data/cal91.csv",
+  "samplesQuery": "active>0",
+  "sampleMediaDir": "D:/citizen_dj/downloads/loc/",
+  "outFile": "output/cal91_240bpm.wav",
+  "stemFiles": "output/cal91/%s.wav",
+  "bpm": 240,
+  "beatsPerMeasure": 4,
+  "notesPerMeasure": 16,
+  "samplesPerPhrase": 4,
+  "repeatPhrases": 4,
+  "swing": 0.5,
+  "phrasePattern": [
+    [1,0,0,0, 0,0,0,0, 0,0,1,0, 0,0,0,0],
+    [0,0,0,0, 1,0,0,0, 0,0,0,0, 0,0,1,0],
+    [0,0,1,0, 0,0,0,0, 1,0,0,0, 0,0,0,0],
+    [0,0,0,0, 0,0,1,0, 0,0,0,0, 1,0,0,0]
+  ],
+  "masterDb": 9.0
+}

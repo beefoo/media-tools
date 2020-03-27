@@ -27,6 +27,7 @@ parser.add_argument('-mindb', dest="MIN_DB", default=-22, type=float, help="Targ
 parser.add_argument('-maxdb', dest="MAX_DB", default=-6, type=float, help="Target maximum decibels")
 parser.add_argument('-out', dest="OUTPUT_FILE", default="", help="Output samples csv file; leave blank if same as input file")
 parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite existing media files?")
+parser.add_argument('-probe', dest="PROBE", action="store_true", help="Just display details?")
 a = parser.parse_args()
 
 OUTPUT_FILE = a.OUTPUT_FILE if len(a.OUTPUT_FILE) > 0 else a.SAMPLE_FILE
@@ -134,6 +135,10 @@ for drum in drumGroups:
                 "updateIndex": updateIndex
             })
     # print("=====")
+
+if a.PROBE:
+
+    sys.exit()
 
 print("Generating %s files" % len(modifiers))
 addRows = []
