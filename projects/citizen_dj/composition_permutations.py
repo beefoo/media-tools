@@ -20,6 +20,8 @@ from lib.collection_utils import *
 from lib.io_utils import *
 from lib.math_utils import *
 
+from djlib import *
+
 parser = argparse.ArgumentParser()
 parser.add_argument('-config', dest="CONFIG_FILE", default="projects/citizen_dj/config/study-of-mimicry.json", help="Input json config file")
 a = parser.parse_args()
@@ -85,16 +87,50 @@ instructions = []
 phrase = samples[:samplesPerPhrase]
 ms = 0
 totalPhraseCount = sampleCount-samplesPerPhrase+1
+beatMs = roundInt(60.0 / config["bpm"] * 1000)
 for i in range(totalPhraseCount):
     progress = 1.0 * i / (totalPhraseCount-1)
-    beatMs = roundInt(60.0 / config["bpm"] * 1000)
     for j in range(times):
         baseVolume = lerp((1.0, 0.33), j/(times-1)) if times > 1 else 1.0
-        if 0.25 <= progress < 0.75 and i % 2 > 0:
-            baseVolume = lerp((0.33, 1.0), j/(times-1)) if times > 1 else 1.0
+        # if 0.25 <= progress < 0.75 and i % 2 > 0:
+        #     baseVolume = lerp((0.33, 1.0), j/(times-1)) if times > 1 else 1.0
         instructions += phraseToInstructions(phrase, config["phrasePattern"], ms, beatMs, baseVolume, config)
         ms += (beatMs * config["beatsPerMeasure"])
     phrase = samples[i+1:i+1+samplesPerPhrase]
 
 totalDuration = instructions[-1]["ms"] + instructions[-1]["dur"]
+
+def drumPatternsToInstructions(drumPatterns, startMs, endMs, config, baseVolume):
+    instructions = []
+    beatMs = roundInt(60.0 / config["drumsBpm"] * 1000)
+    measureMs = beatMs * config["beatsPerMeasure"]
+    swingMs = roundInt(beatMs / 4.0 * config["swing"])
+    measures = flattenList([pattern["bars"] for pattern in drumPatterns])
+    totalMs = startMs
+    while totalMs < endMs:
+        for i, measure in enumerate(measures):
+            divisions = len(measure)
+            divisionMs = 1.0 * measureMs / divisions
+            for j, note in enumerate(measure):
+                sSwingMs = 0 if j % 2 < 1 else swingMs
+                ms = roundInt(startMs + i * measureMs + j * divisionMs + sSwingMs)
+                volume = 1.0
+                for k, instrument in enumerate(note):
+                    instructions.append({
+                        "ms": ms,
+                        "filename": instrument["filename"],
+                        "start": 0,
+                        "dur": -1,
+                        "volume": baseVolume * volume
+                    })
+            totalMs += measureMs
+            if totalMs >= endMs:
+                 break
+        startMs = totalMs
+    instructions = [i for i in instructions if i["ms"] < endMs]
+    return instructions
+
+drumPatterns = loadDrumPatterns(config)
+instructions += drumPatternsToInstructions(drumPatterns, beatMs*32, totalDuration, config, baseVolume=0.33)
+
 mixAudio(instructions, totalDuration, config["outFile"], masterDb=config["masterDb"])

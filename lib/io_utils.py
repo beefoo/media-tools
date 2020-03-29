@@ -319,3 +319,15 @@ def zeroPad(value, total):
 
 def zipDir(filename, path):
     shutil.make_archive(filename, 'zip', path)
+
+def zipLists(rows, cols):
+    zipped = []
+    for row in rows:
+        item = {}
+        for j, col in enumerate(cols):
+            if j >= len(row):
+                print("Warning: not enough values in row")
+                continue
+            item[col] = row[j]
+        zipped.append(item)
+    return zipped

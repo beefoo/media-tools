@@ -16,5 +16,12 @@
     [0,0,1,0, 0,0,0,0, 1,0,0,0, 0,0,0,0],
     [0,0,0,0, 0,0,1,0, 0,0,0,0, 1,0,0,0]
   ],
-  "masterDb": 12.0
+  "masterDb": 14.0,
+
+  "drumPatternsFile": "C:/Users/brian/apps/citizendj-app/data/drum_patterns.json",
+  "drumPatternsQuery": "artist=James Brown&title=Soul Pride",
+  "drumsFile": "C:/Users/brian/apps/citizendj-app/data/drum_machines.json",
+  "drumsAudioDir": "C:/Users/brian/apps/citizendj-app/audio/drum_machines/",
+  "drumsQuery": "name=Roland TR-808",
+  "drumsBpm": 60
 }

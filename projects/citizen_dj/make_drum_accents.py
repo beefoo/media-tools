@@ -137,7 +137,7 @@ for drum in drumGroups:
     # print("=====")
 
 if a.PROBE:
-
+    pprint(modifiers)
     sys.exit()
 
 print("Generating %s files" % len(modifiers))
