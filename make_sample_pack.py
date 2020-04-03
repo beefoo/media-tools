@@ -173,8 +173,7 @@ for format in FORMATS:
     # make main readme file
     if not a.PROBE:
         collectionText = collectionTemplate.format(**collection)
-        with open(folder_path+"README.txt", "w") as f:
-            f.write(collectionText)
+        writeTextFile(folder_path+"README.txt", collectionText)
 
     # go through each item
     for index, item in enumerate(items):
@@ -182,8 +181,7 @@ for format in FORMATS:
         if not a.PROBE:
             itemText = itemTemplate.format(**item)
             itemAttributePath = folder_path + 'attributions/' + '%s_%s.txt' % (item['cleanTitle'], item[a.ID_KEY])
-            with open(itemAttributePath, "w") as f:
-                f.write(itemText)
+            writeTextFile(itemAttributePath, itemText)
 
         itemAudio = itemAudioDurationMs = None
         if format == 'wav':

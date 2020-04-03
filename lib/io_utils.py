@@ -313,6 +313,10 @@ def writeJSON(filename, data, verbose=True, pretty=False):
         if verbose:
             print("Wrote data to %s" % filename)
 
+def writeTextFile(filename, text):
+    with open(filename, "w", encoding="utf8", errors="replace") as f:
+        f.write(text)
+
 def zeroPad(value, total):
     padding = getZeroPadding(total)
     return str(value).zfill(padding)
