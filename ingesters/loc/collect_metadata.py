@@ -79,6 +79,8 @@ def readItem(fn):
 
     assetUrl = None
     downloadableAssetUrl = None
+    # validTypes = [".mp3", ".mp4", ".wav", ".mov", ".avi", ".ogg", ".ogv", ".mkv", ".wma"]
+    validTypes = [".mp3", ".mp4", ".wav", ".ogg", ".ogv", ".mkv", ".wma"]
     for resource in item["resources"]:
         if "files" in resource:
             for rf in resource["files"]:
@@ -89,7 +91,6 @@ def readItem(fn):
                         break
                     # if there's no download option, take the streaming option
                     if a.ALLOW_STREAMING and "derivatives" in rff and len(rff["derivatives"]) > 0 and assetUrl is None:
-                        validTypes = [".mp3", ".mp4", ".wav", ".mov", ".avi", ".ogg", ".ogv", ".mkv", ".wma"]
                         for deriv in rff["derivatives"]:
                             if "derivativeUrl" in deriv:
                                 derivativeUrl = deriv["derivativeUrl"]
@@ -98,6 +99,11 @@ def readItem(fn):
                                     if ext in validTypes:
                                         assetUrl = derivativeUrl
                                         break
+                    elif a.ALLOW_STREAMING and "url" in rff and assetUrl is None:
+                        ext = getFileExt(rff["url"])
+                        if ext in validTypes:
+                            assetUrl = rff["url"]
+                            break
 
                 if downloadableAssetUrl is not None:
                     break
