@@ -61,7 +61,8 @@ for s in symbols:
 validSymbols = sorted(unique(validSymbols))
 
 for i, r in enumerate(patterns):
-    patterns[i]["groupId"] = (r["artist"], r["title"], r["year"], r["category"])
+    # patterns[i]["groupId"] = (r["artist"], r["title"], r["year"], r["category"])
+     patterns[i]["groupId"] = (r["label"], r["category"])
 
 groupMeta = sorted(unique([r["groupId"] for r in patterns]))
 # pprint(groupMeta)
@@ -114,7 +115,8 @@ for s in validSymbols:
 jsonOut = {
     "patterns": patternData,
     "patternKey": patternKeyData,
-    "itemHeadings": ["artist", "title", "year", "category", "bpm", "bars"]
+    # "itemHeadings": ["artist", "title", "year", "category", "bpm", "bars"]
+    "itemHeadings": ["label", "category", "bpm", "bars"]
 }
 
 makeDirectories(a.OUTPUT_FILE)
