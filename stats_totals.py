@@ -23,7 +23,11 @@ a = parser.parse_args()
 PROPS = [p for p in a.PROPS.strip().split(",")]
 
 # Read files
-fieldNames, rows = readCsv(a.INPUT_FILE)
+filenames = getFilenames(a.INPUT_FILE)
+rows = []
+for fn in filenames:
+    _fieldNames, frows = readCsv(fn)
+    rows += frows
 rowCount = len(rows)
 
 if len(a.FILTER) > 0:
