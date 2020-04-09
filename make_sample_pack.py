@@ -175,6 +175,8 @@ for format in FORMATS:
         collectionText = collectionTemplate.format(**collection)
         writeTextFile(folder_path+"README.txt", collectionText)
 
+    manifest = []
+
     # go through each item
     for index, item in enumerate(items):
         # make attribution
@@ -200,9 +202,10 @@ for format in FORMATS:
             clip['sequence'] = zeroPad(j+1, phrasesTotal)
             clip['dir'] = folder_path+'excerpts/'
             clip['wavdir'] = wav_folder_path+'excerpts/'
-            clip['cdur'] = max(phrase['dur'], a.MIN_CLIP_DUR)
+            clip['clipDur'] = max(phrase['dur'], a.MIN_CLIP_DUR)
+            clip['clipType'] = 'excerpt'
             if a.MAX_PHRASE_DUR > 0:
-                clip['cdur'] = min(phrase['dur'], a.MAX_PHRASE_DUR)
+                clip['clipDur'] = min(phrase['dur'], a.MAX_PHRASE_DUR)
             clips.append(clip)
         itemSamples = sorted(itemSamples, key=lambda s: s['start'])
         for j, sample in enumerate(itemSamples):
@@ -210,13 +213,21 @@ for format in FORMATS:
             clip['sequence'] = zeroPad(j+1, samplesTotal)
             clip['dir'] = folder_path+'one_shots/'
             clip['wavdir'] = wav_folder_path+'one_shots/'
-            clip['cdur'] = lim(sample['dur']+a.PAD_CLIP_DUR, (a.MIN_CLIP_DUR, a.MAX_CLIP_DUR))
+            clip['clipDur'] = lim(sample['dur']+a.PAD_CLIP_DUR, (a.MIN_CLIP_DUR, a.MAX_CLIP_DUR))
+            clip['clipType'] = 'one_shot'
             clips.append(clip)
 
         for j, clip in enumerate(clips):
             sequence = clip['sequence']
             timestampF = formatSeconds(clip['start']/1000.0, separator="-", retainHours=True)
-            clipFilePath = clip['dir'] + '%s_%s_%s_%s.%s' % (item['cleanTitle'], item[a.ID_KEY], sequence, timestampF, format)
+            clipFilename = '%s_%s_%s_%s.%s' % (item['cleanTitle'], item[a.ID_KEY], sequence, timestampF, format)
+            clipFilePath = clip['dir'] + clipFilename
+            # add information for manifest
+            clips[j]['clipFilename'] = clipFilename
+            clips[j]['itemId'] = item[a.ID_KEY]
+            clips[j]['itemFilename'] = item['filename']
+            clips[j]['itemUrl'] = item['url']
+            clips[j]['itemTitle'] = item['title']
             if not a.OVERWRITE and os.path.isfile(clipFilePath):
                 continue
             clipTags = item['tags'].copy()
@@ -225,8 +236,8 @@ for format in FORMATS:
             # if wav, build the audio clip
             if format == 'wav':
                 # make clip
-                cdur = clip['cdur']
-                clipAudio = getAudioClip(itemAudio, clip['start'], cdur, itemAudioDurationMs)
+                clipDur = clip['clipDur']
+                clipAudio = getAudioClip(itemAudio, clip['start'], clipDur, itemAudioDurationMs)
                 clipAudio = applyAudioProperties(clipAudio, {
                     "useMaxDBFS": True,
                     "matchDb": a.MATCH_DB,
@@ -249,7 +260,17 @@ for format in FORMATS:
                     else:
                         clipAudio.export(clipFilePath, format=format, tags=clipTags)
 
+        manifest += clips
+
         printProgress(index+1, itemCount)
+
+    # Create manifest for excerpts
+    excerptManifest = [clip for clip in manifest if clip['clipType']=='excerpt']
+    writeCsv(folder_path+'excerpts.csv', excerptManifest, headings=['clipFilename', 'start', 'dur', 'itemId', 'itemFilename', 'itemUrl', 'itemTitle'])
+
+    # Create manifest for one-shots
+    oneshotManifest = [clip for clip in manifest if clip['clipType']=='one_shot']
+    writeCsv(folder_path+'one_shots.csv', oneshotManifest, headings=['clipFilename', 'start', 'dur', 'itemId', 'itemFilename', 'itemUrl', 'itemTitle'])
 
     # zip the directory
     if not a.PROBE:

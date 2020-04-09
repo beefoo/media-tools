@@ -48,3 +48,4 @@ python3 csv_to_json.py -in "{data_base_dir}metadata/{collection_uid}.csv" -props
 // 7. prep for "download & use" interface (sample packs)
 python3 make_sample_pack.py -basedir "{data_base_dir}" -dir "{media_dir}" -cdata "{app_dir}_use/{collection_uid}.md" -idata "metadata/{collection_uid}.csv" -pdata "phrasedata/{collection_uid}/%s.csv" -sdata "sampledata/{collection_uid}_subset_64x64_grid.csv" -id "id" -provider "loc.gov" -cid "{collection_id}" -out "output/samplepack_{collection_uid}/"
 python3 sample_pack_to_json.py -idata "{data_base_dir}metadata/{collection_uid}.csv" -bout "{app_dir}" -sdir "output/samplepack_{collection_uid}/" -id "id" -cid "{collection_uid}"
+python3 csv_to_json.py -in "output/samplepack_{collection_uid}/loc.gov_{collection_id}_mp3/excerpts.csv" -props "clipFilename,start,dur,itemFilename" -out "{app_dir}data/phrasedata/{collection_uid}.json" -groups "itemFilename" -light
