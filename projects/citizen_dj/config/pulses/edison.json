@@ -11,10 +11,10 @@
   "swing": 0.5,
   "masterDb": 15.0,
 
-  "drumPatternsFile": "C:/Users/brian/apps/citizendj-app/data/drum_patterns.json",
+  "drumPatternsFile": "projects/citizen_dj/data/drum_patterns.csv",
   "drumPatternsQuery": "artist=DJ Shadow&title=Organ Donor",
-  "drumsFile": "C:/Users/brian/apps/citizendj-app/data/drum_machines.json",
-  "drumsAudioDir": "C:/Users/brian/apps/citizendj-app/audio/drum_machines/",
-  "drumsQuery": "name=Akai MPC",
+  "drumsFile": "projects/citizen_dj/data/drum_machines.csv",
+  "drumsAudioDir": "E:/Dropbox/citizen_dj/drumkits/wav/",
+  "drumsQuery": "drumkit=Akai MPC",
   "drumsBpm": 75
 }

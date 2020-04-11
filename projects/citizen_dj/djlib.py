@@ -18,13 +18,14 @@ def drumPatternsToInstructions(drumPatterns, startMs, endMs, config, baseVolume)
     beatMs = roundInt(60.0 / config["drumsBpm"] * 1000)
     measureMs = beatMs * config["beatsPerMeasure"]
     swingMs = roundInt(beatMs / 4.0 * config["swing"])
-    measures = flattenList([pattern["bars"] for pattern in drumPatterns])
+    # measures = flattenList([pattern["bars"] for pattern in drumPatterns])
     totalMs = startMs
     while totalMs < endMs:
-        for i, measure in enumerate(measures):
-            divisions = len(measure)
+        for i, pattern in enumerate(drumPatterns):
+            notes = pattern["notes"]
+            divisions = len(notes)
             divisionMs = 1.0 * measureMs / divisions
-            for j, note in enumerate(measure):
+            for j, note in enumerate(notes):
                 sSwingMs = 0 if j % 2 < 1 else swingMs
                 ms = roundInt(startMs + i * measureMs + j * divisionMs + sSwingMs)
                 volume = 1.0
@@ -51,20 +52,25 @@ def drumPatternsToInstructions(drumPatterns, startMs, endMs, config, baseVolume)
 
 def loadDrumPatterns(config):
     c = config
-    drumPatterns = readJSON(c["drumPatternsFile"])
-    drumPatterns = zipLists(drumPatterns["patterns"], drumPatterns["itemHeadings"])
-    drumPatterns = filterByQueryString(drumPatterns, c["drumPatternsQuery"])
-    drums = readJSON(c["drumsFile"])
-    drumHeadings = drums["itemHeadings"]
-    drums = filterByQueryString(drums["drums"], c["drumsQuery"])
-    if len(drums) < 1:
-        print("No drums found for this query %s" % c["drumsQuery"])
-        return 0
-    drums = drums[0]["instruments"]
-    drums = zipLists(drums, drumHeadings)
+
+    # read drums
+    _, drums = readCsv(c["drumsFile"])
+    if "drumsQuery" in config:
+        drums = filterByQueryString(drums, config["drumsQuery"])
+    drumCount = len(drums)
+    print("%s drums after filtering" % drumCount)
+
+    # read drum patterns
+    _, drumPatterns = readCsv(c["drumPatternsFile"])
+    if "drumPatternsQuery" in config:
+        drumPatterns = filterByQueryString(drumPatterns, config["drumPatternsQuery"])
+    drumPatternCount = len(drumPatterns)
+    print("%s drum patterns after filtering" % drumPatternCount)
 
     for i, drum in enumerate(drums):
         drums[i]["filename"] = c["drumsAudioDir"] + drum["filename"]
+        if drum["priority"] == "":
+            drums[i]["priority"] = 9999
 
     drumsByInstrument = groupList(drums, "instrument")
     for i, group in enumerate(drumsByInstrument):
@@ -73,9 +79,94 @@ def loadDrumPatterns(config):
 
     drumLookup = createLookup(drumsByInstrument, "instrument")
     for i, pattern in enumerate(drumPatterns):
-        for j, bar in enumerate(pattern["bars"]):
-            for k, note in enumerate(bar):
-                for l, instrumentKey in enumerate(note):
-                    drumPatterns[i]["bars"][j][k][l] = drumLookup[instrumentKey]["prioritizedDrum"] if instrumentKey in drumLookup else None
+        notes = []
+        for j in range(16):
+            key = str(j+1)
+            value = pattern[key]
+            instruments = []
+            if len(value) > 0:
+                for symbol in value.split(","):
+                    if symbol in drumLookup:
+                        instruments.append(drumLookup[symbol]["prioritizedDrum"])
+                    else:
+                        print("Could not find '%s' in drums" % symbol)
+            notes.append(instruments)
+        drumPatterns[i]["notes"] = notes
 
     return drumPatterns
+
+def loadSamplePatterns(config):
+    _, samples = readCsv(config["samplesFile"])
+    if "samplesQuery" in config:
+        samples = filterByQueryString(samples, config["samplesQuery"])
+    sampleCount = len(samples)
+    print("%s samples after filtering" % sampleCount)
+
+    divisions = 16
+    beatMs = 60.0 / config["bpm"] * 1000
+    barMs = beatMs * config["beatsPerMeasure"]
+    noteMs = 1.0 * barMs / divisions
+
+    for i, s in enumerate(samples):
+        notes = [s["s"+str(j+1)] for j in range(16)]
+        samples[i]["notes"] = notes
+        isEmpty = True
+        for n in notes:
+            if n != "":
+                isEmpty = False
+                break
+        samples[i]["isEmpty"] = isEmpty
+
+    defaultBarPatterns = [
+      [1,0,0,0, 0,0,0,0, 0,0,1,0, 0,0,0,0],
+      [0,0,0,0, 1,0,0,0, 0,0,0,0, 0,0,1,0],
+      [0,0,1,0, 0,0,0,0, 1,0,0,0, 0,0,0,0],
+      [0,0,0,0, 0,0,1,0, 0,0,0,0, 1,0,0,0]
+    ]
+
+    # group samples by section and bar
+    samplesBySection = groupList(samples, "section")
+    samplesBySection = sorted(samplesBySection, key=lambda k: k["section"])
+    for i, section in enumerate(samplesBySection):
+        sectionsByBar = groupList(section["items"], "bar")
+
+        # fill in bars if empty
+        for j, bar in enumerate(sectionsByBar):
+
+            barPattern = [p[:] for p in defaultBarPatterns]
+            # // manually uncheck pattern columns if previous beat is too long
+            for k, row in enumerate(bar["items"]):
+                nearestNoteDur = 1.0 * row["dur"] / noteMs
+                if nearestNoteDur >= 3.5:
+                    if k==0:
+                        barPattern[2][2] = 0
+                    elif k==1:
+                        barPattern[3][6] = 0
+                    elif k==2:
+                        barPattern[0][10] = 0
+                    elif k==3:
+                        barPattern[1][14] = 0
+            # assign auto-patterns if empty
+            for k, row in enumerate(bar["items"]):
+                if not row["isEmpty"]:
+                    continue
+                if k >= len(barPattern):
+                    continue
+                notes = barPattern[k]
+                sectionsByBar[j]["items"][k]["notes"] = notes
+
+        samplesBySection[i]["bars"] = sectionsByBar
+
+    for i, s in enumerate(samplesBySection):
+        samplesBySection[i]["sectionKey"] = str(s["section"])
+    sectionLookup = createLookup(samplesBySection, "sectionKey")
+
+    sectionSequence = []
+    for s in config["sectionSequence"]:
+        section, count = tuple(s)
+        sectionSequence.append({
+            "section": sectionLookup[str(section)],
+            "count": count
+        })
+
+    return sectionSequence

@@ -23,7 +23,7 @@ from lib.math_utils import *
 from djlib import *
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-config', dest="CONFIG_FILE", default="projects/citizen_dj/config/pulses-edison.json", help="Input json config file")
+parser.add_argument('-config', dest="CONFIG_FILE", default="projects/citizen_dj/config/pulses/edison.json", help="Input json config file")
 a = parser.parse_args()
 
 config = readJSON(a.CONFIG_FILE)
