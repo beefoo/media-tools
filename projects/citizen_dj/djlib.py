@@ -13,6 +13,42 @@ from lib.collection_utils import *
 from lib.io_utils import *
 from lib.math_utils import *
 
+def drumPatternsToInstructions(drumPatterns, startMs, endMs, config, baseVolume):
+    instructions = []
+    beatMs = roundInt(60.0 / config["drumsBpm"] * 1000)
+    measureMs = beatMs * config["beatsPerMeasure"]
+    swingMs = roundInt(beatMs / 4.0 * config["swing"])
+    measures = flattenList([pattern["bars"] for pattern in drumPatterns])
+    totalMs = startMs
+    while totalMs < endMs:
+        for i, measure in enumerate(measures):
+            divisions = len(measure)
+            divisionMs = 1.0 * measureMs / divisions
+            for j, note in enumerate(measure):
+                sSwingMs = 0 if j % 2 < 1 else swingMs
+                ms = roundInt(startMs + i * measureMs + j * divisionMs + sSwingMs)
+                volume = 1.0
+                if j % 8 < 1:
+                    volume = 1.0
+                elif j % 4 < 1:
+                    volume = 0.8
+                else:
+                    volume = 0.6
+                for k, instrument in enumerate(note):
+                    instructions.append({
+                        "ms": ms,
+                        "filename": instrument["filename"],
+                        "start": 0,
+                        "dur": -1,
+                        "volume": baseVolume * volume
+                    })
+            totalMs += measureMs
+            if totalMs >= endMs:
+                 break
+        startMs = totalMs
+    instructions = [i for i in instructions if i["ms"] < endMs]
+    return instructions
+
 def loadDrumPatterns(config):
     c = config
     drumPatterns = readJSON(c["drumPatternsFile"])

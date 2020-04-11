@@ -1,21 +1,14 @@
 {
-  "samplesFile": "E:/Dropbox/citizen_dj/music_production/data/mimicry.csv",
-  "samplesQuery": "active>0",
+  "samplesFile": "E:/Dropbox/citizen_dj/music_production/data/edision.csv",
+  "samplesQuery": "active>0&title=Onward, Christian soldiers!",
   "sampleMediaDir": "D:/citizen_dj/downloads/loc/",
-  "outFile": "output/mimicry.wav",
-  "stemFiles": "output/mimicry/%s.wav",
-  "bpm": 480,
+  "outFile": "output/onward_pulses.wav",
+  "stemFiles": "output/santa_pulses/%s.wav",
+  "bpm": 150,
   "beatsPerMeasure": 4,
   "notesPerMeasure": 16,
-  "samplesPerPhrase": 4,
   "repeatPhrases": 4,
   "swing": 0.5,
-  "phrasePattern": [
-    [1,0,0,0, 0,0,0,0, 0,0,1,0, 0,0,0,0],
-    [0,0,0,0, 1,0,0,0, 0,0,0,0, 0,0,1,0],
-    [0,0,1,0, 0,0,0,0, 1,0,0,0, 0,0,0,0],
-    [0,0,0,0, 0,0,1,0, 0,0,0,0, 1,0,0,0]
-  ],
   "masterDb": 15.0,
 
   "drumPatternsFile": "C:/Users/brian/apps/citizendj-app/data/drum_patterns.json",
@@ -23,5 +16,5 @@
   "drumsFile": "C:/Users/brian/apps/citizendj-app/data/drum_machines.json",
   "drumsAudioDir": "C:/Users/brian/apps/citizendj-app/audio/drum_machines/",
   "drumsQuery": "name=Akai MPC",
-  "drumsBpm": 60
+  "drumsBpm": 75
 }
