@@ -171,13 +171,6 @@ def parseHeadings(arr, headings):
         newArr.append(newItem)
     return newArr
 
-def parseQueryString(queryStr, parseNumbers=True):
-    query = dict([tuple(c.split("=")) for c in queryStr.strip().split("&")])
-    if parseNumbers:
-        for key in query:
-            query[key] = parseNumber(query[key])
-    return query
-
 def parseUnicode(arr):
     for i, item in enumerate(arr):
         if isinstance(item, (list,)):

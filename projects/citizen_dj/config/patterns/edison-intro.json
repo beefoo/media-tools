@@ -1,24 +1,25 @@
 {
   "samplesFile": "E:/Dropbox/citizen_dj/music_production/data/edision_intro_patterns.csv",
-  "samplesQuery": "",
-  "sampleMediaDir": "D:/citizen_dj/downloads/loc-edison/",
+  "samplesQuery": "active>0",
+  "sampleMediaDir": "E:/Dropbox/citizen_dj/music_production/audio/loc-edison/",
   "outFile": "output/edison_intro.wav",
   "stemFiles": "output/edison_intro/%s.wav",
   "bpm": 119,
   "beatsPerMeasure": 4,
   "notesPerMeasure": 16,
-  "swing": 0.5,
+  "swing": 0.25,
   "samplesVolume": 1.0,
   "masterDb": 9.0,
   "sampleSeed": 1,
 
-  "sectionSequence": [[1, 8], [2, 2], [1, 4], [2, 8], [1, 8], [2, 4], [3, 8], [1, 4], [2, 16]],
+  "sequenceFile": "E:/Dropbox/citizen_dj/music_production/data/edision_intro_seq.csv",
+  "sequenceQuery": "active>0",
 
-  "drumPatternsFile": "projects/citizen_dj/data/edison_intro_drum_patterns.csv",
+  "drumPatternsFile": "E:/Dropbox/citizen_dj/music_production/data/edison_intro_drum_patterns.csv",
   "drumPatternsQuery": "",
   "drumsFile": "projects/citizen_dj/data/drum_machines.csv",
-  "drumsQuery": "drumkit=Akai MPC",
-  "drumsAudioDir": "E:/Dropbox/citizen_dj/drumkits/wav/",
-  "drumsVolume": 0.5,
+  "drumsQuery": "drumkit=Roland CR-78",
+  "drumsAudioDir": "E:/Dropbox/citizen_dj/drumkits/nwav/",
+  "drumsVolume": 0.4,
   "drumSeed": 10
 }

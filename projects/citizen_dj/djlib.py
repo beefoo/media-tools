@@ -15,9 +15,9 @@ from lib.math_utils import *
 
 def drumPatternsToInstructions(drumPatterns, startMs, endMs, config, baseVolume):
     instructions = []
-    beatMs = roundInt(60.0 / config["drumsBpm"] * 1000)
+    beatMs = 60.0 / config["drumsBpm"] * 1000
     measureMs = beatMs * config["beatsPerMeasure"]
-    swingMs = roundInt(beatMs / 4.0 * config["swing"])
+    swingMs = beatMs / 4.0 * config["swing"]
     # measures = flattenList([pattern["bars"] for pattern in drumPatterns])
     totalMs = startMs
     while totalMs < endMs:
@@ -80,7 +80,7 @@ def loadDrumPatterns(config):
     drumLookup = createLookup(drumsByInstrument, "instrument")
     for i, pattern in enumerate(drumPatterns):
         notes = []
-        for j in range(16):
+        for j in range(config["notesPerMeasure"]):
             key = str(j+1)
             value = pattern[key]
             instruments = []
@@ -95,78 +95,73 @@ def loadDrumPatterns(config):
 
     return drumPatterns
 
-def loadSamplePatterns(config):
-    _, samples = readCsv(config["samplesFile"])
+def loadSampleSequence(config):
+    _, samplePatterns = readCsv(config["samplesFile"])
     if "samplesQuery" in config:
-        samples = filterByQueryString(samples, config["samplesQuery"])
-    sampleCount = len(samples)
-    print("%s samples after filtering" % sampleCount)
+        samplePatterns = filterByQueryString(samplePatterns, config["samplesQuery"])
+    samplePatternCount = len(samplePatterns)
+    print("%s sample patterns after filtering" % samplePatternCount)
 
-    divisions = 16
-    beatMs = 60.0 / config["bpm"] * 1000
-    barMs = beatMs * config["beatsPerMeasure"]
-    noteMs = 1.0 * barMs / divisions
+    # parse notes
+    for i, s in enumerate(samplePatterns):
+        notes = [s["s"+str(j+1)] for j in range(config["notesPerMeasure"])]
+        samplePatterns[i]["notes"] = notes
+        samplePatterns[i]["filename"] = config["sampleMediaDir"] + s["filename"]
+        nvol = 1.0 if "nvol" not in s or s["nvol"]=="" else s["nvol"]
+        samplePatterns[i]["volume"] = config["samplesVolume"] * nvol
 
-    for i, s in enumerate(samples):
-        notes = [s["s"+str(j+1)] for j in range(16)]
-        samples[i]["notes"] = notes
-        isEmpty = True
-        for n in notes:
-            if n != "":
-                isEmpty = False
-                break
-        samples[i]["isEmpty"] = isEmpty
+    # group samples by id
+    samplePatternsById = groupList(samplePatterns, "id")
+    samplePatternLookup = createLookup(samplePatternsById, "id")
 
-    defaultBarPatterns = [
-      [1,0,0,0, 0,0,0,0, 0,0,1,0, 0,0,0,0],
-      [0,0,0,0, 1,0,0,0, 0,0,0,0, 0,0,1,0],
-      [0,0,1,0, 0,0,0,0, 1,0,0,0, 0,0,0,0],
-      [0,0,0,0, 0,0,1,0, 0,0,0,0, 1,0,0,0]
-    ]
+    # read drum patterns
+    drumPatterns = loadDrumPatterns(config)
+    # normalize drum patterns
+    drumPatternsN = []
+    for i, dp in enumerate(drumPatterns):
+        itemLookup = {}
+        for j, note in enumerate(dp["notes"]):
+            for instrument in note:
+                fn = instrument["filename"]
+                if fn in itemLookup:
+                    itemLookup[fn]["notes"][j] = 1
+                else:
+                    notes = [0 for n in range(config["notesPerMeasure"])]
+                    notes[j] = 1
+                    item = instrument.copy()
+                    item["id"] = dp["id"]
+                    item["type"] = "drum"
+                    item["notes"] = notes
+                    item["volume"] = config["drumsVolume"]
+                    itemLookup[fn] = item
+        drumPatternsN += [itemLookup[key] for key in itemLookup]
 
-    # group samples by section and bar
-    samplesBySection = groupList(samples, "section")
-    samplesBySection = sorted(samplesBySection, key=lambda k: k["section"])
-    for i, section in enumerate(samplesBySection):
-        sectionsByBar = groupList(section["items"], "bar")
+    drumPatternsById = groupList(drumPatternsN, "id")
+    drumPatternLookup = createLookup(drumPatternsById, "id")
 
-        # fill in bars if empty
-        for j, bar in enumerate(sectionsByBar):
+    sequence = loadSequenceFile(config)
+    flattenedSequence = []
+    for i, step in enumerate(sequence):
+        patterns = []
+        if step["id"] != "" and step["id"] in samplePatternLookup:
+            patterns += samplePatternLookup[step["id"]]["items"]
+        if step["drumId"] != "" and step["drumId"] in drumPatternLookup:
+            patterns += drumPatternLookup[step["drumId"]]["items"]
+        step["patterns"] = patterns
+        for j in range(step["count"]):
+            flattenedSequence.append(step.copy())
 
-            barPattern = [p[:] for p in defaultBarPatterns]
-            # // manually uncheck pattern columns if previous beat is too long
-            for k, row in enumerate(bar["items"]):
-                nearestNoteDur = 1.0 * row["dur"] / noteMs
-                if nearestNoteDur >= 3.5:
-                    if k==0:
-                        barPattern[2][2] = 0
-                    elif k==1:
-                        barPattern[3][6] = 0
-                    elif k==2:
-                        barPattern[0][10] = 0
-                    elif k==3:
-                        barPattern[1][14] = 0
-            # assign auto-patterns if empty
-            for k, row in enumerate(bar["items"]):
-                if not row["isEmpty"]:
-                    continue
-                if k >= len(barPattern):
-                    continue
-                notes = barPattern[k]
-                sectionsByBar[j]["items"][k]["notes"] = notes
+    return flattenedSequence
 
-        samplesBySection[i]["bars"] = sectionsByBar
+def loadSequenceFile(config):
+    _, sequence = readCsv(config["sequenceFile"])
+    if "sequenceQuery" in config:
+        sequence = filterByQueryString(sequence, config["sequenceQuery"])
+    seqCount = len(sequence)
+    print("%s sequence steps after filtering" % seqCount)
 
-    for i, s in enumerate(samplesBySection):
-        samplesBySection[i]["sectionKey"] = str(s["section"])
-    sectionLookup = createLookup(samplesBySection, "sectionKey")
+    for i, step in enumerate(sequence):
+        sequence[i]["options"] = parseQueryString(step["options"], doParseNumbers=True) if step["options"] != "" else False
+        sequence[i]["drumOptions"] = parseQueryString(step["drumOptions"], doParseNumbers=True) if step["drumOptions"] != "" else False
 
-    sectionSequence = []
-    for s in config["sectionSequence"]:
-        section, count = tuple(s)
-        sectionSequence.append({
-            "section": sectionLookup[str(section)],
-            "count": count
-        })
-
-    return sectionSequence
+    return sequence

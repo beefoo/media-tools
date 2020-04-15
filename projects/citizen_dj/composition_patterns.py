@@ -30,25 +30,14 @@ config = readJSON(a.CONFIG_FILE)
 
 makeDirectories([config["outFile"], config["stemFiles"]])
 
-sectionSequence = loadSamplePatterns(config)
-totalMeasures = sum([s["count"] for s in sectionSequence])
-drumPatterns = loadDrumPatterns(config)
+sequence = loadSampleSequence(config)
+sequenceCount = len(sequence)
 
-def addSampleMeasure(startMs, section, sectionProgress, progress, config):
+def addSequenceStep(startMs, step, progress, config):
     # section -> bars -> notes
     c = config
     instructions = []
-    bars = section["bars"]
-    bar = bars[0]
-    secondaryBars = [] if len(bars) <= 1 else bars[1:]
-
-    # Logic for choosing another bar
-    if sectionProgress > 0:
-        seed = startMs + config["sampleSeed"]
-        chance = pseudoRandom(seed)
-        if chance > 0.5:
-            barIndex = pseudoRandom(seed, range=(0, len(secondaryBars)-1), isInt=True)
-            bar = secondaryBars[barIndex]
+    patterns = step["patterns"]
 
     divisions = 16
     beatMs = 60.0 / c["bpm"] * 1000
@@ -56,7 +45,10 @@ def addSampleMeasure(startMs, section, sectionProgress, progress, config):
     noteMs = 1.0 * barMs / divisions
     swingMs = noteMs * config["swing"]
     maxSDur = roundInt(noteMs * 2)
-    for i, sample in enumerate(bar["items"]):
+
+    for i, sample in enumerate(patterns):
+        # if sample["type"] != "drum":
+        #     continue
         for j, note in enumerate(sample["notes"]):
             if note == "" or note == 0:
                 continue
@@ -68,32 +60,31 @@ def addSampleMeasure(startMs, section, sectionProgress, progress, config):
                 volume = 0.9
             else:
                 volume = 0.8
-            sVolume = 1.0 if "nvol" not in sample or sample["nvol"]=="" else sample["nvol"]
+            dur = sample["dur"]
+            if note > 1:
+                dur = roundInt(note * noteMs)
+            # fadeIn = min(60, roundInt(dur*0.5))
+            # fadeOut = min(100, roundInt(dur*0.5))
             instructions.append({
                 "ms": roundInt(startMs + j * noteMs + sSwingMs),
-                "filename": config["sampleMediaDir"] + sample["filename"],
+                "filename": sample["filename"],
                 "start": sample["start"],
-                "dur": min(sample["dur"], maxSDur),
-                "volume": volume * sVolume * config["samplesVolume"]
+                # "dur": min(sample["dur"], maxSDur),
+                # "fadeIn": fadeIn,
+                # "fadeOut": fadeOut,
+                "dur": dur,
+                "volume": volume * sample["volume"]
             })
 
     return (instructions, barMs)
 
 instructions = []
 ms = 0
-measure = 0
-for i, s in enumerate(sectionSequence):
-
-    for j in range(s["count"]):
-        sectionProgress = 1.0 * j / (s["count"]-1) if s["count"] > 1 else 0
-        progress = 1.0 * measure / (totalMeasures-1)
-
-        sampleInstructions, measureDur = addSampleMeasure(ms, s["section"], sectionProgress, progress, config)
-        instructions += sampleInstructions
-        # instructions += addDrumMeasure(ms, drumPatterns, sectionProgress, progress, config)
-
-        measure += 1
-        ms += measureDur
+for i, step in enumerate(sequence):
+    progress = 1.0 * i / (sequenceCount-1) if sequenceCount > 1 else 0
+    stepInstructions, stepDur = addSequenceStep(ms, step, progress, config)
+    instructions += stepInstructions
+    ms += stepDur
 
 for i, step in enumerate(instructions):
     instructions[i]["endMs"] = step["ms"] + step["dur"]
