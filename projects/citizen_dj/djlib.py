@@ -1,3 +1,4 @@
+import copy
 import inspect
 import os
 from pprint import pprint
@@ -12,6 +13,59 @@ sys.path.insert(0,parentdir)
 from lib.collection_utils import *
 from lib.io_utils import *
 from lib.math_utils import *
+
+def applyStepOptions(step, index, sequence, config):
+    newStep = copy.deepcopy(step)
+
+    for key, group in step["groups"].items():
+        opt = group["options"]
+
+        if opt is False:
+            continue
+
+        # filter by category
+        if "only" in opt:
+            only = opt["only"]
+            if "," in only:
+                only = only.split(",")
+            newStep["groups"][key]["patterns"] = [item for item in newStep["groups"][key]["patterns"] if item["category"] in only]
+
+        # drop specific notes
+        if "drop" in opt:
+            dropNotes = []
+            if isInt(opt["drop"]):
+                dropNotes = [opt["drop"]-1]
+            else:
+                dropNotes = [parseNumber(n.strip())-1 for n in opt["drop"].split(",")]
+            for j, item in enumerate(newStep["groups"][key]["patterns"]):
+                for noteIndex in dropNotes:
+                    newStep["groups"][key]["patterns"][j]["notes"][noteIndex] = 0
+
+        # volume adjustments
+        if "volume" in opt:
+            for j, item in enumerate(newStep["groups"][key]["patterns"]):
+                newStep["groups"][key]["patterns"][j]["volume"] *= opt["volume"]
+
+        # overlap notes from the previous step
+        # if "overlap" in opt and index > 0 and key in sequence[index-1]["groups"]:
+        #     prevGroup = sequence[index-1]["groups"][key]
+        #     overlapAmount = opt["overlap"]
+        #     # turn off notes from overlap in previous step group
+        #     for j, item in enumerate(prevGroup["patterns"]):
+        #         noteCount = len(item["notes"])
+        #         for noteIndex, note in enumerate(item["notes"]):
+        #             if noteIndex >= (noteCount - overlapAmount):
+        #                 sequence[index-1]["groups"][key]["patterns"][j]["notes"][noteIndex] = 0
+        #     # add current pattern to previous step
+        #     for j, item in enumerate(group["patterns"]):
+        #         copiedItem = copy.deepcopy(item)
+        #         for noteIndex, note in enumerate(copiedItem["notes"]):
+        #             if noteIndex < overlapAmount:
+        #                 copiedItem["notes"][noteIndex] = 0
+        #         sequence[index-1]["groups"][key]["patterns"].append(copiedItem)
+
+    return newStep
+
 
 def drumPatternsToInstructions(drumPatterns, startMs, endMs, config, baseVolume):
     instructions = []
@@ -128,8 +182,9 @@ def loadSampleSequence(config):
                 else:
                     notes = [0 for n in range(config["notesPerMeasure"])]
                     notes[j] = 1
-                    item = instrument.copy()
+                    item = copy.deepcopy(instrument)
                     item["id"] = dp["id"]
+                    item["category"] = item["instrument"]
                     item["type"] = "drum"
                     item["notes"] = notes
                     item["volume"] = config["drumsVolume"]
@@ -140,16 +195,37 @@ def loadSampleSequence(config):
     drumPatternLookup = createLookup(drumPatternsById, "id")
 
     sequence = loadSequenceFile(config)
-    flattenedSequence = []
+    expandedSequence = []
     for i, step in enumerate(sequence):
-        patterns = []
+        groups = {}
         if step["id"] != "" and step["id"] in samplePatternLookup:
-            patterns += samplePatternLookup[step["id"]]["items"]
+            groups["samples"] = {
+                "patterns": samplePatternLookup[step["id"]]["items"],
+                "options": step["options"]
+            }
         if step["drumId"] != "" and step["drumId"] in drumPatternLookup:
-            patterns += drumPatternLookup[step["drumId"]]["items"]
-        step["patterns"] = patterns
+            groups["drums"] = {
+                "patterns": drumPatternLookup[step["drumId"]]["items"],
+                "options": step["drumOptions"]
+            }
+        step["groups"] = groups
         for j in range(step["count"]):
-            flattenedSequence.append(step.copy())
+            expandedSequence.append(copy.deepcopy(step))
+
+    # apply options
+    for i, step in enumerate(expandedSequence):
+        step = applyStepOptions(step, i, expandedSequence, config)
+        expandedSequence[i] = step
+
+    # flatten groups
+    flattenedSequence = []
+    for step in expandedSequence:
+        stepPatterns = []
+        for key, group in step["groups"].items():
+            stepPatterns += group["patterns"]
+        flattenedSequence.append({
+            "patterns": stepPatterns
+        })
 
     return flattenedSequence
 
