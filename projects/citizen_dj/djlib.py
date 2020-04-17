@@ -223,9 +223,9 @@ def loadSampleSequence(config):
         stepPatterns = []
         for key, group in step["groups"].items():
             stepPatterns += group["patterns"]
-        flattenedSequence.append({
-            "patterns": stepPatterns
-        })
+        copiedStep = copy.deepcopy(step)
+        copiedStep["patterns"] = stepPatterns
+        flattenedSequence.append(copiedStep)
 
     return flattenedSequence
 

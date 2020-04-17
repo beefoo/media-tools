@@ -38,9 +38,11 @@ def addSequenceStep(startMs, step, progress, config):
     c = config
     instructions = []
     patterns = step["patterns"]
+    speed = step["speed"]
 
     divisions = 16
     beatMs = 60.0 / c["bpm"] * 1000
+    beatMs = beatMs / speed
     barMs = beatMs * c["beatsPerMeasure"]
     noteMs = 1.0 * barMs / divisions
     swingMs = noteMs * config["swing"]
