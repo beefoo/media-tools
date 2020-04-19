@@ -1,5 +1,5 @@
 {
-  "samplesFile": "E:/Dropbox/citizen_dj/music_production/data/edision_intro_patterns.csv",
+  "samplesFile": "projects/citizen_dj/config/patterns/edison_intro_sample_patterns.csv",
   "samplesQuery": "active>0",
   "sampleMediaDir": "E:/Dropbox/citizen_dj/music_production/audio/loc-edison/",
   "outFile": "output/edison_intro.wav",
@@ -11,13 +11,13 @@
   "samplesVolume": 1.0,
   "masterDb": 9.0,
 
-  "sequenceFile": "E:/Dropbox/citizen_dj/music_production/data/edision_intro_seq.csv",
+  "sequenceFile": "projects/citizen_dj/config/patterns/edison_intro_seq.csv",
   "sequenceQuery": "active>0",
 
-  "drumPatternsFile": "E:/Dropbox/citizen_dj/music_production/data/edison_intro_drum_patterns.csv",
+  "drumPatternsFile": "projects/citizen_dj/config/patterns/edison_intro_drum_patterns.csv",
   "drumPatternsQuery": "",
   "drumsFile": "projects/citizen_dj/data/drum_machines.csv",
   "drumsQuery": "drumkit=Akai MPC",
   "drumsAudioDir": "E:/Dropbox/citizen_dj/drumkits/nwav/",
-  "drumsVolume": 0.5
+  "drumsVolume": 0.4
 }

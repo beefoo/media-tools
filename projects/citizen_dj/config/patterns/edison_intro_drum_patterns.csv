@@ -1,0 +1,19 @@
+id,sort,artist,title,label,year,category,bpm,bar,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+A1,170,Parliament,Come in Out of the Rain,90s funk pattern A,1990,break,84,1,k,,ho,,,k,"k,ho",,,,"k,h",,"sa,h",,h,k
+A2,171,Parliament,Come in Out of the Rain,90s funk pattern A,1990,break,84,2,"k,h",,ho,,sa,hg,ho,,hc,k,"k,h",,"sa,ha",hg,ha,"k,hg"
+A3,172,Parliament,Come in Out of the Rain,90s funk pattern A,1990,break,84,3,"k,ha",hg,ho,,sa,hg,ho,,,k,"k,h",,"sa,ha",hg,ha,"k,hg"
+A4,173,Parliament,Come in Out of the Rain,90s funk pattern A,1990,break,84,4,"k,ha",hg,ho,,sa,hg,ho,,,k,"k,h",,"sa,ha",hg,ha,"k,hg"
+B1,155,Charles Wright and The Watts 103rd Street Rhythm Band,Express Yourself,70s soul pattern G,1970,groove,92,1,"k,hc",h,h,"k,h","sa,h",h,h,"sg,h","k,h","sa,h",h,"k,h","sa,h",h,ho,
+B2,156,Charles Wright and The Watts 103rd Street Rhythm Band,Express Yourself,70s soul pattern G,1970,break,94,2,"k,h",hc,h,"k,h","sa,h",h,ha,"sg,h","k,h","sa,h",ha,"k,s,h","sa,h",h,"k,ha","sg,h"
+B3,157,Charles Wright and The Watts 103rd Street Rhythm Band,Express Yourself,70s soul pattern G,1970,break,94,3,"k,h","sa,h",ha,"k,h","sa,h",h,ha,"k,h","sa,h","k,h",ha,"s,h","k,h",h,"sa,h",h
+B4,158,Charles Wright and The Watts 103rd Street Rhythm Band,Express Yourself,70s soul pattern G,1970,break,94,4,"k,h",hc,h,"k,h","sa,h",h,ha,"s,h","k,h","sa,h",h,"k,h","sa,h","k,h",ha,"sa,h"
+B5,159,Charles Wright and The Watts 103rd Street Rhythm Band,Express Yourself,70s soul pattern G,1970,break,94,5,h,"k,h",h,"sa,h","k,h","s,h","s,h","k,h",ha,"sa,h","k,h","s,h","sa,h","k,h",h,"sb,h"
+B6,160,Charles Wright and The Watts 103rd Street Rhythm Band,Express Yourself,70s soul pattern G,1970,break,94,6,"k,h",hc,h,"k,h","sa,h",h,"sa,h",h,ha,"k,h",h,"sa,h",h,"k,h",ha,"sa,h"
+B7,161,Charles Wright and The Watts 103rd Street Rhythm Band,Express Yourself,70s soul pattern G,1970,break,94,7,h,"k,h",ha,"sa,h","k,h",h,"sa,h","k,h",ha,"sa,h","k,h","k,h","sa,h","k,h",ha,sb
+B8,162,Charles Wright and The Watts 103rd Street Rhythm Band,Express Yourself,70s soul pattern G,1970,break,94,8,"k,ha",h,h,"k,h","sa,h",h,ha,"sb,h","k,h",k,,k,"sa,h",h,ha,sb
+C1,164,Bill Withers,Use Me,70s soul pattern H,1972,groove,78,1,"k,h",h,"k,h",h,"r,h","k,h",h,"k,r,h","k,h","r,h","k,h","k,h","r,h","k,h",h,"k,r,h"
+C2,165,Bill Withers,Use Me,70s soul pattern H,1972,groove,78,2,"k,h",h,"k,h",h,"r,h","k,h",h,"r,h","k,h","k,ho",hc,"k,ho",hc,"k,ho",hc,"k,r,h"
+C3,166,Bill Withers,Use Me,70s soul pattern H,1972,break,77,3,"k,h",h,"k,h",h,"r,h","k,h",h,"k,r,h","k,h","r,h","k,h","k,h","r,h","k,h",h,"k,r,h"
+C4,167,Bill Withers,Use Me,70s soul pattern H,1972,break,77,4,"k,h",h,"k,h",h,"r,h","k,h",h,"r,h","k,h","k,h",h,"k,h","r,h",h,"k,ho",hc
+C5,168,Bill Withers,Use Me,70s soul pattern H,1972,break,77,5,"k,h",h,"k,h",h,"r,h","k,h",h,"k,r,h","k,h","r,h","k,h","k,h","r,h",h,"k,h","r,hc"
+C6,169,Bill Withers,Use Me,70s soul pattern H,1972,break,77,6,"k,h",h,"k,h",h,"r,h","k,h",h,"r,h","k,h","k,ho",hc,"k,ho",hc,"k,ho",hc,"r,h"

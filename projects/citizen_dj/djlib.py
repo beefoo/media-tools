@@ -46,6 +46,37 @@ def applyStepOptions(step, index, sequence, config):
             for j, item in enumerate(newStep["groups"][key]["patterns"]):
                 newStep["groups"][key]["patterns"][j]["volume"] *= opt["volume"]
 
+        # adjust speed of drums if necessary
+        speed = 1
+        if key == "drums":
+            if "drumSpeed" in config and config["drumSpeed"] < 1:
+                speed = config["drumSpeed"]
+            if "speed" in opt and opt["speed"] < 1:
+                speed = opt["speed"]
+        if speed < 1:
+            magnitude = int(1.0 / speed)
+            if magnitude in set([2, 4, 8]) and index % magnitude == 0:
+                basePatterns = newStep["groups"][key]["patterns"] # this is the pattern we are going to stretch into later measures
+                newNotesPerMeasure = int(config["notesPerMeasure"] / magnitude)
+                # create a set of stretched patterns based on basePattern
+                for i in range(magnitude):
+                    indexStart = int(i * newNotesPerMeasure)
+                    newPatterns = []
+                    for j, bp in enumerate(basePatterns):
+                        newPattern = copy.deepcopy(bp)
+                        newNotes = [0 for n in range(config["notesPerMeasure"])]
+                        for k in range(newNotesPerMeasure):
+                            newNotes[k*magnitude] = basePatterns[j]["notes"][indexStart+k]
+                        newPattern["notes"] = newNotes
+                        newPatterns.append(newPattern)
+                    if key not in sequence[index+i]["groups"]:
+                        sequence[index+i]["groups"][key] = {
+                            "options": {},
+                            "patterns": []
+                        }
+                    sequence[index+i]["groups"][key]["patterns"] = newPatterns
+                newStep["groups"][key]["patterns"] = sequence[index]["groups"][key]["patterns"]
+
         # overlap notes from the previous step
         # if "overlap" in opt and index > 0 and key in sequence[index-1]["groups"]:
         #     prevGroup = sequence[index-1]["groups"][key]
@@ -213,7 +244,8 @@ def loadSampleSequence(config):
             expandedSequence.append(copy.deepcopy(step))
 
     # apply options
-    for i, step in enumerate(expandedSequence):
+    for i in range(len(expandedSequence)):
+        step = expandedSequence[i]
         step = applyStepOptions(step, i, expandedSequence, config)
         expandedSequence[i] = step
 
