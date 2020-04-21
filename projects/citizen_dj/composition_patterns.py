@@ -24,6 +24,7 @@ from djlib import *
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-config', dest="CONFIG_FILE", default="projects/citizen_dj/config/patterns/edison-intro.json", help="Input json config file")
+parser.add_argument('-tracks', dest="TRACKS", action="store_true", help="Also output tracks?")
 a = parser.parse_args()
 
 config = readJSON(a.CONFIG_FILE)
@@ -63,7 +64,7 @@ def addSequenceStep(startMs, step, progress, config):
             else:
                 volume = 0.8
             dur = sample["dur"]
-            if note > 1:
+            if note > 1 or note > 0 and dur <= 0:
                 dur = roundInt(note * noteMs)
             # fadeIn = min(60, roundInt(dur*0.5))
             # fadeOut = min(100, roundInt(dur*0.5))
@@ -93,4 +94,4 @@ for i, step in enumerate(instructions):
 instructions = sorted(instructions, key=lambda step: step["endMs"])
 totalDuration = instructions[-1]["endMs"]
 
-mixAudio(instructions, totalDuration, config["outFile"], masterDb=config["masterDb"])
+mixAudio(instructions, totalDuration, config["outFile"], masterDb=config["masterDb"], outputTracks=a.TRACKS, tracksDir=config["stemFiles"])

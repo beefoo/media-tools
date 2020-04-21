@@ -97,43 +97,54 @@ def applyStepOptions(step, index, sequence, config):
 
     return newStep
 
+def loadBassPatterns(config):
+    _, bassPatterns = readCsv(config["bassPatternsFile"])
+    if "bassPatternsQuery" in config:
+        bassPatterns = filterByQueryString(bassPatterns, config["bassPatternsQuery"])
+    bassPatternCount = len(bassPatterns)
+    print("%s bass patterns after filtering" % bassPatternCount)
 
-def drumPatternsToInstructions(drumPatterns, startMs, endMs, config, baseVolume):
-    instructions = []
-    beatMs = 60.0 / config["drumsBpm"] * 1000
-    measureMs = beatMs * config["beatsPerMeasure"]
-    swingMs = beatMs / 4.0 * config["swing"]
-    # measures = flattenList([pattern["bars"] for pattern in drumPatterns])
-    totalMs = startMs
-    while totalMs < endMs:
-        for i, pattern in enumerate(drumPatterns):
-            notes = pattern["notes"]
-            divisions = len(notes)
-            divisionMs = 1.0 * measureMs / divisions
-            for j, note in enumerate(notes):
-                sSwingMs = 0 if j % 2 < 1 else swingMs
-                ms = roundInt(startMs + i * measureMs + j * divisionMs + sSwingMs)
-                volume = 1.0
-                if j % 8 < 1:
-                    volume = 1.0
-                elif j % 4 < 1:
-                    volume = 0.8
+    # parse notes
+    parsedPatterns = []
+    for i, item in enumerate(bassPatterns):
+        instrumentLookup = {}
+        notes = [item["s"+str(j+1)] for j in range(config["notesPerMeasure"])]
+        for j, note in enumerate(notes):
+            if len(note) < 1:
+                continue
+            instruments = [note]
+            if "," in note:
+                instruments = note.split(",")
+            for instrument in instruments:
+                if instrument in instrumentLookup:
+                    instrumentLookup[instrument]["notes"][j] = 1
                 else:
-                    volume = 0.6
-                for k, instrument in enumerate(note):
-                    instructions.append({
-                        "ms": ms,
-                        "filename": instrument["filename"],
+                    instrumentNotes = [0 for n in range(config["notesPerMeasure"])]
+                    instrumentNotes[j] = 1
+                    instrumentLookup[instrument] = {
+                        "id": item["id"],
+                        "type": "bass",
+                        "filename": config["bassAudioDir"] % instrument,
+                        "notes": instrumentNotes,
+                        "volume": config["bassVolume"],
                         "start": 0,
-                        "dur": -1,
-                        "volume": baseVolume * volume
-                    })
-            totalMs += measureMs
-            if totalMs >= endMs:
-                 break
-        startMs = totalMs
-    instructions = [i for i in instructions if i["ms"] < endMs]
-    return instructions
+                        "dur": 0
+                    }
+        parsedPatterns += [instrumentLookup[key] for key in instrumentLookup]
+
+    # adjust note durations
+    for i, item in enumerate(parsedPatterns):
+        count = 1
+        notes = item["notes"]
+        for j in range(config["notesPerMeasure"]):
+            index = config["notesPerMeasure"]-j-1
+            if notes[index] > 0:
+                parsedPatterns[i]["notes"][index] = count
+                count = 1
+            else:
+                count += 1
+
+    return parsedPatterns
 
 def loadDrumPatterns(config):
     c = config
@@ -178,29 +189,6 @@ def loadDrumPatterns(config):
             notes.append(instruments)
         drumPatterns[i]["notes"] = notes
 
-    return drumPatterns
-
-def loadSampleSequence(config):
-    _, samplePatterns = readCsv(config["samplesFile"])
-    if "samplesQuery" in config:
-        samplePatterns = filterByQueryString(samplePatterns, config["samplesQuery"])
-    samplePatternCount = len(samplePatterns)
-    print("%s sample patterns after filtering" % samplePatternCount)
-
-    # parse notes
-    for i, s in enumerate(samplePatterns):
-        notes = [s["s"+str(j+1)] for j in range(config["notesPerMeasure"])]
-        samplePatterns[i]["notes"] = notes
-        samplePatterns[i]["filename"] = config["sampleMediaDir"] + s["filename"]
-        nvol = 1.0 if "nvol" not in s or s["nvol"]=="" else s["nvol"]
-        samplePatterns[i]["volume"] = config["samplesVolume"] * nvol
-
-    # group samples by id
-    samplePatternsById = groupList(samplePatterns, "id")
-    samplePatternLookup = createLookup(samplePatternsById, "id")
-
-    # read drum patterns
-    drumPatterns = loadDrumPatterns(config)
     # normalize drum patterns
     drumPatternsN = []
     for i, dp in enumerate(drumPatterns):
@@ -222,8 +210,40 @@ def loadSampleSequence(config):
                     itemLookup[fn] = item
         drumPatternsN += [itemLookup[key] for key in itemLookup]
 
-    drumPatternsById = groupList(drumPatternsN, "id")
+    return drumPatternsN
+
+def loadSamplePatterns(config):
+    _, samplePatterns = readCsv(config["samplesFile"])
+    if "samplesQuery" in config:
+        samplePatterns = filterByQueryString(samplePatterns, config["samplesQuery"])
+    samplePatternCount = len(samplePatterns)
+    print("%s sample patterns after filtering" % samplePatternCount)
+
+    # parse notes
+    for i, s in enumerate(samplePatterns):
+        notes = [s["s"+str(j+1)] for j in range(config["notesPerMeasure"])]
+        samplePatterns[i]["notes"] = notes
+        samplePatterns[i]["filename"] = config["sampleMediaDir"] + s["filename"]
+        nvol = 1.0 if "nvol" not in s or s["nvol"]=="" else s["nvol"]
+        samplePatterns[i]["volume"] = config["samplesVolume"] * nvol
+
+    return samplePatterns
+
+def loadSampleSequence(config):
+    # load sample patterns
+    samplePatterns = loadSamplePatterns(config)
+    samplePatternsById = groupList(samplePatterns, "id")
+    samplePatternLookup = createLookup(samplePatternsById, "id")
+
+    # read drum patterns
+    drumPatterns = loadDrumPatterns(config)
+    drumPatternsById = groupList(drumPatterns, "id")
     drumPatternLookup = createLookup(drumPatternsById, "id")
+
+    # read bass patterns
+    # bassPatterns = loadBassPatterns(config)
+    # bassPatternsById = groupList(bassPatterns, "id")
+    # bassPatternLookup = createLookup(bassPatternsById, "id")
 
     sequence = loadSequenceFile(config)
     expandedSequence = []
@@ -239,6 +259,11 @@ def loadSampleSequence(config):
                 "patterns": drumPatternLookup[step["drumId"]]["items"],
                 "options": step["drumOptions"]
             }
+        # if step["bassId"] != "" and step["bassId"] in bassPatternLookup:
+        #     groups["bass"] = {
+        #         "patterns": bassPatternLookup[step["bassId"]]["items"],
+        #         "options": step["bassOptions"]
+        #     }
         step["groups"] = groups
         for j in range(step["count"]):
             expandedSequence.append(copy.deepcopy(step))
@@ -271,5 +296,6 @@ def loadSequenceFile(config):
     for i, step in enumerate(sequence):
         sequence[i]["options"] = parseQueryString(step["options"], doParseNumbers=True) if step["options"] != "" else False
         sequence[i]["drumOptions"] = parseQueryString(step["drumOptions"], doParseNumbers=True) if step["drumOptions"] != "" else False
+        sequence[i]["bassOptions"] = parseQueryString(step["bassOptions"], doParseNumbers=True) if step["bassOptions"] != "" else False
 
     return sequence

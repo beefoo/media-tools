@@ -1,5 +1,6 @@
 from lib.audio_utils import *
 from lib.collection_utils import *
+from lib.io_utils import *
 from lib.math_utils import *
 import os
 from pydub import AudioSegment
@@ -32,7 +33,7 @@ def makeTrack(duration, instructions, segments, sfx=True, sampleWidth=4, sampleR
         sys.stdout.flush()
     return baseAudio
 
-def mixAudio(instructions, duration, outfilename, sfx=True, sampleWidth=4, sampleRate=48000, channels=2, fxPad=3000, masterDb=0.0):
+def mixAudio(instructions, duration, outfilename, sfx=True, sampleWidth=4, sampleRate=48000, channels=2, fxPad=3000, masterDb=0.0, outputTracks=False, tracksDir="output/tracks/%s.wav"):
     # remove instructions with no volume
     instructions = [i for i in instructions if "volume" not in i or i["volume"] > 0]
     audioFiles = list(set([i["filename"] for i in instructions]))
@@ -82,6 +83,14 @@ def mixAudio(instructions, duration, outfilename, sfx=True, sampleWidth=4, sampl
         print("Making track %s of %s with %s segments and %s instructions..." % (i+1, trackCount, len(segments), len(trackInstructions)))
         trackAudio = makeTrack(duration, trackInstructions, segments, sfx=sfx, sampleWidth=sampleWidth, sampleRate=sampleRate, channels=channels, fxPad=fxPad)
         baseAudio = baseAudio.overlay(trackAudio)
+        if outputTracks:
+            trackfilename = tracksDir % getBasename(filename)
+            format = trackfilename.split(".")[-1]
+            # adjust master volume
+            if masterDb != 0.0:
+                trackAudio = trackAudio.apply_gain(masterDb)
+            trackAudio.export(trackfilename, format=format)
+            print("Wrote to %s" % trackfilename)
         print("Track %s of %s complete." % (i+1, trackCount))
 
     print("Writing to file...")
