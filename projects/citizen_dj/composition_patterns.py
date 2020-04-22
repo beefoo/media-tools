@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# python3 projects/citizen_dj/composition_permutations.py -config "projects/citizen_dj/config/cal-91.json"
+# python3 projects/citizen_dj/composition_patterns.py -tracks
 
 import argparse
 import inspect
