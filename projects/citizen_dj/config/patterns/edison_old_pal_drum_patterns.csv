@@ -1,0 +1,12 @@
+id,sort,artist,title,label,year,category,bpm,bar,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+A1,221,The Roots,You Got Me,90s hip hop pattern J,1999,groove,81,1,"k,ha",h,ha,h,"sa,h",h,ha,"k,h",ha,"k,h",ha,h,"sa,h",h,ha,h
+A2,222,The Roots,You Got Me,90s hip hop pattern J,1999,groove,81,2,"k,ha",h,ha,h,"sa,h",h,ha,h,ha,"k,h","k,ha",h,"sa,h",h,ha,"k,h"
+A3,223,The Roots,You Got Me,90s hip hop pattern J,1999,groove,81,3,"k,ha",h,ha,h,"sa,h",h,ha,"k,h",ha,"k,h",ha,h,"sa,h",h,ha,h
+A4,224,The Roots,You Got Me,90s hip hop pattern J,1999,groove,81,4,ha,h,"k,h",h,"sa,h","k,h",ha,h,"k,h",h,"k,h",h,"sa,h","k,h",ha,h
+B1,74,Paul Simon,50 Ways to Leave Your Lover,70s rock pattern B,1975,fill,102,1,k,h,sa,,h,sa,h,k,"k,ttt",,,,sb,s,s,s
+B2,115,Kool and the Gang,Love the Life You Live,70s R&B pattern D,1972,fill,126,1,sa,k,k,ta,k,k,tta,k,k,ttta,k,k,"ttta,s",k,"k,ttt,s",
+B3,108,Dennis Coffey and the Detroit Guitar Band,Scorpio,70s soul pattern F,1971,fill,118,1,k,,k,,,,,,k,,k,,sa,s,t,sg
+C1,54,Aretha Franklin,Rocksteady,70s soul pattern B,1972,5,105,1,"k,h",sg,"k,h",k,"sa,h",,"sa,h",sg,h,s,"k,h",k,"sa,h",,"sa,h",sg
+C2,55,Aretha Franklin,Rocksteady,70s soul pattern B,1972,5,105,2,"k,h",sg,"k,h","k,h","sa,h",,"sa,h",sg,"k,h",s,"k,h",k,"sa,h",,"sa,h",sg
+C3,56,Aretha Franklin,Rocksteady,70s soul pattern B,1972,5,105,3,"k,h",sg,"k,h",k,"sa,h",,"sa,h",sg,"k,h",s,"k,h",k,"sa,h",s,"k,h",s
+C4,57,Aretha Franklin,Rocksteady,70s soul pattern B,1972,5,105,4,"sa,h",k,h,s,"k,h","k,h","sa,h",,sa,"k,ho",,"k,ho",,"k,ho",,s

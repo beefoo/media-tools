@@ -295,7 +295,7 @@ def loadSequenceFile(config):
 
     for i, step in enumerate(sequence):
         sequence[i]["options"] = parseQueryString(step["options"], doParseNumbers=True) if step["options"] != "" else False
-        sequence[i]["drumOptions"] = parseQueryString(step["drumOptions"], doParseNumbers=True) if step["drumOptions"] != "" else False
-        sequence[i]["bassOptions"] = parseQueryString(step["bassOptions"], doParseNumbers=True) if step["bassOptions"] != "" else False
+        sequence[i]["drumOptions"] = parseQueryString(step["drumOptions"], doParseNumbers=True) if "drumOptions" in step and step["drumOptions"] != "" else False
+        sequence[i]["bassOptions"] = parseQueryString(step["bassOptions"], doParseNumbers=True) if "baseOptions" in step and step["bassOptions"] != "" else False
 
     return sequence

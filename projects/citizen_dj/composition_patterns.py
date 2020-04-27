@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # python3 projects/citizen_dj/composition_patterns.py -tracks
+# python3 projects/citizen_dj/composition_patterns.py -config "projects/citizen_dj/config/patterns/edison-old-pal.json" -tracks
 
 import argparse
 import inspect
@@ -95,3 +96,5 @@ instructions = sorted(instructions, key=lambda step: step["endMs"])
 totalDuration = instructions[-1]["endMs"]
 
 mixAudio(instructions, totalDuration, config["outFile"], masterDb=config["masterDb"], outputTracks=a.TRACKS, tracksDir=config["stemFiles"])
+
+print('\007')
