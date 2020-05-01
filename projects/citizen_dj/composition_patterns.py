@@ -20,6 +20,7 @@ from lib.audio_utils import *
 from lib.collection_utils import *
 from lib.io_utils import *
 from lib.math_utils import *
+from lib.processing_utils import *
 
 from djlib import *
 
@@ -69,7 +70,7 @@ def addSequenceStep(startMs, step, progress, config):
                 dur = roundInt(note * noteMs)
             # fadeIn = min(60, roundInt(dur*0.5))
             # fadeOut = min(100, roundInt(dur*0.5))
-            instructions.append({
+            step = {
                 "ms": roundInt(startMs + j * noteMs + sSwingMs),
                 "filename": sample["filename"],
                 "start": sample["start"],
@@ -78,7 +79,10 @@ def addSequenceStep(startMs, step, progress, config):
                 # "fadeOut": fadeOut,
                 "dur": dur,
                 "volume": volume * sample["volume"]
-            })
+            }
+            if "tempo" in sample:
+                step["tempo"] = sample["tempo"]
+            instructions.append(step)
 
     return (instructions, barMs)
 
@@ -97,4 +101,4 @@ totalDuration = instructions[-1]["endMs"]
 
 mixAudio(instructions, totalDuration, config["outFile"], masterDb=config["masterDb"], outputTracks=a.TRACKS, tracksDir=config["stemFiles"])
 
-print('\007')
+beep()

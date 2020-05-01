@@ -226,6 +226,8 @@ def loadSamplePatterns(config):
         samplePatterns[i]["filename"] = config["sampleMediaDir"] + s["filename"]
         nvol = 1.0 if "nvol" not in s or s["nvol"]=="" else s["nvol"]
         samplePatterns[i]["volume"] = config["samplesVolume"] * nvol
+        if "nstretch" in s and s["nstretch"] != "":
+            samplePatterns[i]["tempo"] = s["nstretch"]
 
     return samplePatterns
 

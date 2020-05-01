@@ -17,7 +17,7 @@
   "drumPatternsFile": "projects/citizen_dj/config/patterns/edison_old_pal_drum_patterns.csv",
   "drumPatternsQuery": "",
   "drumsFile": "projects/citizen_dj/data/drum_machines.csv",
-  "drumsQuery": "drumkit=Roland CR-78",
+  "drumsQuery": "drumkit=Akai MPC",
   "drumsAudioDir": "E:/Dropbox/citizen_dj/drumkits/nwav/",
   "drumsVolume": 1.0
 }

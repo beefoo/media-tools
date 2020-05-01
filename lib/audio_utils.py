@@ -27,13 +27,13 @@ def addFx(sound, effects, pad=3000, fade_in=100, fade_out=100):
 
     chain = AudioEffectsChain()
     for effect, value in effects:
-        if effect == "reverb":
+        if effect == "reverb" and value > 0:
             chain.reverb(reverberance=value)
-        elif effect == "distortion":
+        elif effect == "distortion" and value > 0:
             chain.overdrive(gain=value)
-        elif effect == "highpass":
+        elif effect == "highpass" and value > 0:
             chain.highpass(value)
-        elif effect == "lowpass":
+        elif effect == "lowpass" and value > 0:
             chain.lowpass(value)
         elif effect == "bass":
             frequency = 100
@@ -53,6 +53,8 @@ def addFx(sound, effects, pad=3000, fade_in=100, fade_out=100):
                 # amount between 10 (robot) and 1000 (mountains)
                 echoStr += " %s 0.3" % amount
             chain.custom(echoStr)
+        elif effect == "tempo" and value != 1.0 and value != 1:
+            chain.tempo(factor=value)
 
     # apply reverb effect
     fx = (chain)
@@ -109,8 +111,8 @@ def applyAudioProperties(audio, props, sfx=True, fxPad=3000):
             stretchAmount = 1.0 * p["stretchTo"] / p["dur"]
             audio = stretchSound(audio, stretchAmount)
         effects = []
-        for effect in ["reverb", "distortion", "highpass", "lowpass"]:
-            if effect in p and p[effect] > 0:
+        for effect in ["reverb", "distortion", "highpass", "lowpass", "bass", "echo", "tempo"]:
+            if effect in p and p[effect] != "":
                 effects.append((effect, p[effect]))
         if len(effects) > 0:
             audio = addFx(audio, effects, pad=fxPad)
