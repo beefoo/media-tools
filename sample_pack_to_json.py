@@ -46,7 +46,7 @@ for zipfilename in zipfilenames:
     basename = getBasename(zipfilename)
     format = basename.split('_')[-1]
     print('Processing %s' % format)
-    label = 'Download in 32-bit .wav format' if format == 'wav' else 'Download in 192 Kbps .mp3 format'
+    label = 'Download in 16-bit .wav format' if format == 'wav' else 'Download in 192 Kbps .mp3 format'
     comment = 'Ideal for production' if format == 'wav' else 'Ideal if you would just like to preview and browse this collection'
     jsonDataOut["packages"].append({
         'filename': basefilename,

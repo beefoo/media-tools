@@ -51,7 +51,7 @@ parser.add_argument('-ctmpl', dest="COLLECTION_TEMPLATE", default="projects/citi
 parser.add_argument('-itmpl', dest="ITEM_TEMPLATE", default="projects/citizen_dj/templates/item_readme_template.txt", help="Input template file for item")
 parser.add_argument('-formats', dest="FORMATS", default="wav,mp3", help="List of formats to produce")
 parser.add_argument('-mdb', dest="MATCH_DB", default=-3, type=int, help="Match decibels, -9999 for none")
-parser.add_argument('-sw', dest="SAMPLE_WIDTH", default=3, type=int, help="Sample width (bit depth); 1->8, 2->16, 3->24, 4->32-bit")
+parser.add_argument('-sw', dest="SAMPLE_WIDTH", default=2, type=int, help="Sample width (bit depth); 1->8, 2->16, 3->24, 4->32-bit")
 parser.add_argument('-sr', dest="SAMPLE_RATE", default=48000, type=int, help="Sample rate in hz")
 parser.add_argument('-cmin', dest="MIN_CLIP_DUR", default=200, type=int, help="Minimum clip duration in ms")
 parser.add_argument('-cmax', dest="MAX_CLIP_DUR", default=4000, type=int, help="Maximum clip duration in ms")
