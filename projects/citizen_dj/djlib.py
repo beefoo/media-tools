@@ -228,6 +228,8 @@ def loadSamplePatterns(config):
         samplePatterns[i]["volume"] = config["samplesVolume"] * nvol
         if "nstretch" in s and s["nstretch"] != "":
             samplePatterns[i]["tempo"] = s["nstretch"]
+        if "stretch" in s and s["stretch"] != "" and s["stretch"] > s["dur"]:
+            samplePatterns[i]["tempo"] = s["dur"] / s["stretch"]
 
     return samplePatterns
 

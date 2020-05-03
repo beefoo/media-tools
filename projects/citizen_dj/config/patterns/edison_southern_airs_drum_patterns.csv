@@ -1,0 +1,9 @@
+id,sort,artist,title,label,year,category,bpm,bar,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+A1,90,Melvin Bliss,Synthetic Substitution,70s soul pattern D,1973,groove,93,1,"k,h",,"k,h",,"sa,h",,h,k,h,k,"k,h",k,"sa,h",,h,k
+B1,101,24 Carat Black,Foodstamps,70s soul pattern E,1973,alt,94,1,"k,ha",r,h,k,"r,h",,"k,ra,ha",,,,h,,h,h,h,
+B2,102,24 Carat Black,Foodstamps,70s soul pattern E,1973,alt,94,2,"k,ha",r,hc,k,"r,h",,"k,ra,ha",,,,hc,,h,h,h,
+B3,107,Dennis Coffey and the Detroit Guitar Band,Scorpio,70s soul pattern F,1971,drop,118,1,k,,k,,,,,,k,,k,,,,,k
+B4,109,Dennis Coffey and the Detroit Guitar Band,Scorpio,70s soul pattern F,1971,groove,118,3,"k,ha",,h,,"sa,ha",,h,sg,ha,sg,"k,h",,ha,,"sa,h",
+B5,111,Dennis Coffey and the Detroit Guitar Band,Scorpio,70s soul pattern F,1971,groove,118,5,"k,ha",,h,,"sa,ha",,h,sg,ha,sg,"k,h",,ha,,"sa,h",
+C1,110,Dennis Coffey and the Detroit Guitar Band,Scorpio,70s soul pattern F,1971,fill,118,4,ha,sg,"k,h",,"sa,ha",sg,h,sa,ha,sa,"k,h",s,"sa,ha",s,t,s
+C2,112,Dennis Coffey and the Detroit Guitar Band,Scorpio,70s soul pattern F,1971,fill,118,6,ha,sg,"k,h",,"sa,ha",,h,sb,"sa,h",sa,,sb,"sa,ha",sa,sa,sa

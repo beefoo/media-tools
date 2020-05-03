@@ -2,6 +2,7 @@
 
 # python3 projects/citizen_dj/composition_patterns.py -tracks
 # python3 projects/citizen_dj/composition_patterns.py -config "projects/citizen_dj/config/patterns/edison-old-pal.json" -tracks
+# python3 projects/citizen_dj/composition_patterns.py -config "projects/citizen_dj/config/patterns/edison-southern-airs.json" -tracks
 
 import argparse
 import inspect
@@ -43,7 +44,7 @@ def addSequenceStep(startMs, step, progress, config):
     patterns = step["patterns"]
     speed = step["speed"]
 
-    divisions = 16
+    divisions = c["notesPerMeasure"]
     beatMs = 60.0 / c["bpm"] * 1000
     beatMs = beatMs / speed
     barMs = beatMs * c["beatsPerMeasure"]
