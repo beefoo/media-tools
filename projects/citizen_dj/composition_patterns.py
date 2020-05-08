@@ -3,6 +3,8 @@
 # python3 projects/citizen_dj/composition_patterns.py -tracks
 # python3 projects/citizen_dj/composition_patterns.py -config "projects/citizen_dj/config/patterns/edison-old-pal.json" -tracks
 # python3 projects/citizen_dj/composition_patterns.py -config "projects/citizen_dj/config/patterns/edison-southern-airs.json" -tracks
+# python3 projects/citizen_dj/composition_patterns.py -config "projects/citizen_dj/config/patterns/edison-onward.json" -tracks
+# python3 projects/citizen_dj/composition_patterns.py -config "projects/citizen_dj/config/patterns/edison-bubbles.json" -tracks
 
 import argparse
 import inspect
@@ -28,6 +30,7 @@ from djlib import *
 parser = argparse.ArgumentParser()
 parser.add_argument('-config', dest="CONFIG_FILE", default="projects/citizen_dj/config/patterns/edison-intro.json", help="Input json config file")
 parser.add_argument('-tracks', dest="TRACKS", action="store_true", help="Also output tracks?")
+parser.add_argument('-debug', dest="DEBUG", action="store_true", help="Just display the info?")
 a = parser.parse_args()
 
 config = readJSON(a.CONFIG_FILE)
@@ -99,6 +102,18 @@ for i, step in enumerate(instructions):
     instructions[i]["endMs"] = step["ms"] + step["dur"]
 instructions = sorted(instructions, key=lambda step: step["endMs"])
 totalDuration = instructions[-1]["endMs"]
+
+if a.DEBUG:
+
+    drums = []
+    for step in sequence:
+        if "drums" in step["groups"]:
+            drums += [item["instrument"] for item in step["groups"]["drums"]["patterns"]]
+    drums = unique(drums)
+    print("Drums:")
+    pprint(drums)
+
+    sys.exit()
 
 mixAudio(instructions, totalDuration, config["outFile"], masterDb=config["masterDb"], outputTracks=a.TRACKS, tracksDir=config["stemFiles"])
 

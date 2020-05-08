@@ -1,0 +1,14 @@
+id,sort,artist,title,label,year,category,bpm,bar,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+A1,31,Sharon Jones and the Dap Kings,Ain't It Hard,2000s soul pattern A,2002,break,113,1,"k,h",,h,,"sa,h",,h,,"sa,h",,"k,h",,"h,r",,"sa,h",sg
+A2,32,Sharon Jones and the Dap Kings,Ain't It Hard,2000s soul pattern A,2002,groove,113,2,h,sg,"k,h",sg,"sa,h",sg,"k,h",sg,h,sg,"k,h",,"sa,h",sg,"k,h",sg
+A3,33,Sharon Jones and the Dap Kings,Ain't It Hard,2000s soul pattern A,2002,break,113,3,"k,h",,"k,h",,"sa,h",,h,sa,h,s,"k,h",,"sa,h",,h,
+A4,34,Sharon Jones and the Dap Kings,Ain't It Hard,2000s soul pattern A,2002,fill,113,4,k,,,,k,,,,,,s,s,t,t,ttt,ttt
+B1,17,Bob James,Take Me to the Mardi Gras,70s smooth jazz pattern A,1975,3,104,1,"k,ha",,h,k,"sa,h",,"sg,h",sg,ha,sg,"k,h",,"sa,h",k,"sg,h",sg
+B2,18,Bob James,Take Me to the Mardi Gras,70s smooth jazz pattern A,1975,3,104,2,"k,ha",,h,k,"sa,h",,h,sa,ha,sg,"k,h",,"sa,h",,ho,
+B3,19,Bob James,Take Me to the Mardi Gras,70s smooth jazz pattern A,1975,3,104,3,"k,hac",,h,k,"sa,h",,h,sa,ha,sg,"k,h",,"sa,h",,"sg,h",sg
+B4,20,Bob James,Take Me to the Mardi Gras,70s smooth jazz pattern A,1975,3,104,4,"k,ha",sg,h,k,"sa,h",,h,sa,ha,sg,"k,h",sg,sa,sa,t,sg
+C1,190,Al Green,I'm Glad You're Mine,70s R&B pattern E,1972,break,81,1,"k,h",,h,,"r,h",,h,r,h,r,h,k,"r,h",r,h,r
+C2,191,Al Green,I'm Glad You're Mine,70s R&B pattern E,1972,fill,81,2,h,,"r,h",,"k,h",r,h,k,"r,h",r,ho,,,,ta,
+C3,192,Al Green,I'm Glad You're Mine,70s R&B pattern E,1972,break,81,3,"k,hc",,h,k,"r,h",,h,r,"k,h",r,h,k,"r,h",r,h,r
+C4,193,Al Green,I'm Glad You're Mine,70s R&B pattern E,1972,fill,81,4,h,k,h,,"r,h",,h,r,h,rg,ho,,,,ta,
+C5,189,Rufus Thomas,Do the Funky Penguin,70s funk pattern J,1971,fill,101,4,"k,h",sa,h,k,"sa,h",,"sa,h","k,ho",,sa,"k,ho",sb,sa,sa,sa,sa

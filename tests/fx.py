@@ -6,6 +6,7 @@
 # python3 tests/fx.py -effect bass -amounts " -20,-10,-5,5,10,20" -out output/bass_test.mp3
 # python3 tests/fx.py -effect echo -amounts "10,50,100,500,1000" -out output/echo_test.mp3
 # python3 tests/fx.py -effect bass -amounts " -20,-10,-5,5,10,20,-20:50,-10:50,-5:50,5:50,10:50,20:50" -out output/lowpass_test.mp3
+# python3 tests/fx.py -effect tempo -amounts "1,0.9,0.8,0.7,0.6,0.5" -out output/tempo_test.mp3
 
 import argparse
 import inspect

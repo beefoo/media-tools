@@ -28,7 +28,17 @@ def applyStepOptions(step, index, sequence, config):
             only = opt["only"]
             if "," in only:
                 only = only.split(",")
+            else:
+                only = [only]
             newStep["groups"][key]["patterns"] = [item for item in newStep["groups"][key]["patterns"] if item["category"] in only]
+
+        if "except" in opt:
+            _except = opt["except"]
+            if "," in _except:
+                _except = _except.split(",")
+            else:
+                _except = [_except]
+            newStep["groups"][key]["patterns"] = [item for item in newStep["groups"][key]["patterns"] if item["category"] not in _except]
 
         # drop specific notes
         if "drop" in opt:
@@ -245,9 +255,11 @@ def loadSampleSequence(config):
     drumPatternLookup = createLookup(drumPatternsById, "id")
 
     # read bass patterns
-    # bassPatterns = loadBassPatterns(config)
-    # bassPatternsById = groupList(bassPatterns, "id")
-    # bassPatternLookup = createLookup(bassPatternsById, "id")
+    bassPatternLookup = {}
+    if "bassPatternsFile" in config:
+        bassPatterns = loadBassPatterns(config)
+        bassPatternsById = groupList(bassPatterns, "id")
+        bassPatternLookup = createLookup(bassPatternsById, "id")
 
     sequence = loadSequenceFile(config)
     expandedSequence = []
@@ -263,11 +275,11 @@ def loadSampleSequence(config):
                 "patterns": drumPatternLookup[step["drumId"]]["items"],
                 "options": step["drumOptions"]
             }
-        # if step["bassId"] != "" and step["bassId"] in bassPatternLookup:
-        #     groups["bass"] = {
-        #         "patterns": bassPatternLookup[step["bassId"]]["items"],
-        #         "options": step["bassOptions"]
-        #     }
+        if "bassId" in step and step["bassId"] != "" and step["bassId"] in bassPatternLookup:
+            groups["bass"] = {
+                "patterns": bassPatternLookup[step["bassId"]]["items"],
+                "options": step["bassOptions"]
+            }
         step["groups"] = groups
         for j in range(step["count"]):
             expandedSequence.append(copy.deepcopy(step))
