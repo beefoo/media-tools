@@ -4,6 +4,7 @@
 # python3 projects/citizen_dj/composition_patterns.py -config "projects/citizen_dj/config/patterns/edison-old-pal.json" -tracks
 # python3 projects/citizen_dj/composition_patterns.py -config "projects/citizen_dj/config/patterns/edison-southern-airs.json" -tracks
 # python3 projects/citizen_dj/composition_patterns.py -config "projects/citizen_dj/config/patterns/edison-onward.json" -tracks
+# python3 projects/citizen_dj/composition_patterns.py -config "projects/citizen_dj/config/patterns/edison-holiday.json" -tracks
 # python3 projects/citizen_dj/composition_patterns.py -config "projects/citizen_dj/config/patterns/edison-bubbles.json" -tracks
 
 import argparse
