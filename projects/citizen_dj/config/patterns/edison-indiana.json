@@ -1,0 +1,23 @@
+{
+  "samplesFile": "projects/citizen_dj/config/patterns/edison_indiana_sample_patterns.csv",
+  "samplesQuery": "active>0",
+  "sampleMediaDir": "E:/Dropbox/citizen_dj/music_production/audio/loc-edison/",
+  "outFile": "output/edison_indiana.wav",
+  "stemFiles": "output/edison_indiana/%s.wav",
+  "bpm": 90,
+  "beatsPerMeasure": 4,
+  "notesPerMeasure": 16,
+  "swing": 0.25,
+  "samplesVolume": 1.0,
+  "masterDb": 0.0,
+
+  "sequenceFile": "projects/citizen_dj/config/patterns/edison_indiana_seq.csv",
+  "sequenceQuery": "active>0",
+
+  "drumPatternsFile": "projects/citizen_dj/config/patterns/edison_indiana_drum_patterns.csv",
+  "drumPatternsQuery": "",
+  "drumsFile": "E:/Dropbox/citizen_dj/music_production/audio/drums/WA_808_Drums/custom/drum_machine_data.csv",
+  "drumsQuery": "",
+  "drumsAudioDir": "E:/Dropbox/citizen_dj/music_production/audio/drums/WA_808_Drums/custom/",
+  "drumsVolume": 0.8
+}

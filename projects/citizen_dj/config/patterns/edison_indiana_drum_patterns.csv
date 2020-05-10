@@ -1,0 +1,14 @@
+id,sort,artist,title,label,year,category,bpm,bar,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+A1,120,James Brown,Funky Drummer,70s funk pattern H,1970,groove,97,1,h,h,"k,h",h,"s,h","k,ka,h",h,"sa,h",h,h,"k,h",h,"s,h","k,h",hb,"sa,h"
+A2,121,James Brown,Funky Drummer,70s funk pattern H,1970,break,101,2,"k,ka,h",h,"k,h",h,"sa,h",h,h,"sg,ho",hc,"sg,h","k,h","sg,h","sa,h","k,ho","sg,hc,hb","sg,h"
+A3,122,James Brown,Funky Drummer,70s funk pattern H,1970,break,101,3,"k,ka,h",h,"k,h",h,"sa,h",ho,hc,"sg,h","kg,h","sg,h","k,h","sg,h","sa,h","k,ho","sg,hc,hb","sg,h"
+A4,123,James Brown,Funky Drummer,70s funk pattern H,1970,break,101,4,"k,ka,h",h,"k,h",h,"sa,h",h,h,"sg,h","k,h","sg,h","k,h","s,h","sa,h","k,ho","sg,hc,hb","sg,h"
+A5,124,James Brown,Funky Drummer,70s funk pattern H,1970,break,101,5,"k,ka,h",h,"k,h",h,"sa,h","k,ho",hc,"sb,h","kg,h","sg,h","k,h","sg,h","sa,h","k,ha","ha,hb","k,sg,h"
+B1,27,Tower of Power,Squib Cakes,70s R&B pattern A,1974,3,112,1,"k,r",sg,"k,sg,h",k,"sa,h",,"sg,h",sg,h,sg,ho,sg,"sa,ho",,"sg,h","sg,hb"
+B2,28,Tower of Power,Squib Cakes,70s R&B pattern A,1974,3,112,2,k,sg,"sg,h",k,"sa,h",,"sg,h",sg,h,sg,"k,ho",sg,"sa,ho",,"sg,hc","sg,hb"
+B3,29,Tower of Power,Squib Cakes,70s R&B pattern A,1974,3,112,3,"k,h",sg,"sg,h",k,"sa,h",,"sa,h",sg,h,sg,sa,h,sa,h,"k,hb",h
+B4,30,Tower of Power,Squib Cakes,70s R&B pattern A,1974,3,112,4,k,"k,h",h,sa,sg,ho,s,h,ho,sg,h,sg,sa,sa,t,"sg,hb"
+C1,95,Carleen and the Groovers,Can We Rap,2000s funk pattern A,2004,11,117,1,"k,h",,k3,k,sa,,r,sb,"k,h",,k3,k,sa,,hc,s
+C2,96,Carleen and the Groovers,Can We Rap,2000s funk pattern A,2004,11,117,2,"k,h",,h,,"sa,h",,h,s,"k,h",s,"k,r",k,"sa,h",,hc,sb
+C3,97,Carleen and the Groovers,Can We Rap,2000s funk pattern A,2004,11,117,3,"k,h",,k3,k,sa,,r,sb,"k,h",,"k,h",,"sa,h",,hc,sb
+C4,98,Carleen and the Groovers,Can We Rap,2000s funk pattern A,2004,11,117,4,"k,h",s,,h,sa,"k,r",s,s,"k,h",s,"k,ha","k,ha",sa,"k,ha",s,s

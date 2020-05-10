@@ -240,6 +240,8 @@ def loadSamplePatterns(config):
             samplePatterns[i]["tempo"] = s["nstretch"]
         if "stretch" in s and s["stretch"] != "" and s["stretch"] > s["dur"]:
             samplePatterns[i]["tempo"] = s["dur"] / s["stretch"]
+        if "fadeout" in s and s["fadeout"] != "" and s["fadeout"] > 0:
+            samplePatterns[i]["fadeOut"] = s["fadeout"]
 
     return samplePatterns
 

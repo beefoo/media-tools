@@ -1,24 +1,24 @@
 id,sort,artist,title,label,year,category,bpm,bar,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
 A1,202,DJ Shadow,Organ Donor,90s hip hop pattern I,1997,drop,110,1,k,,,,k,,,,k,,sa,,sa,,k,sa
-A2,203,DJ Shadow,Organ Donor,90s hip hop pattern I,1997,groove,110,2,"k,h",,h,,"sa,h",,h,k,"k,h",,"k,h",,"sa,h",,h,
+A2,203,DJ Shadow,Organ Donor,90s hip hop pattern I,1997,groove,110,2,"k,h",,h,,"sa,h",,h,k,"k,h",,"k,ho",,"sa,h",,h,
 A3,204,DJ Shadow,Organ Donor,90s hip hop pattern I,1997,break,110,3,"k,h",,h,,"sa,h",,k,sa,h,sa,"k,h",,"sa,h",,ho,
-A4,205,DJ Shadow,Organ Donor,90s hip hop pattern I,1997,groove,110,4,"k,h",,h,,"sa,h",,h,k,"k,h",,"k,h",,"sa,h",,h,
+A4,205,DJ Shadow,Organ Donor,90s hip hop pattern I,1997,groove,110,4,"k,h",,h,,"sa,h",,h,k,"k,h",,"k,h",,"sa,ho",,h,
 A5,206,DJ Shadow,Organ Donor,90s hip hop pattern I,1997,break,110,5,"k,h",,"sa,h",,"sa,h",,"k,h",sa,h,sa,"k,h",,"sa,h",,ho,
-A6,207,DJ Shadow,Organ Donor,90s hip hop pattern I,1997,groove,110,6,"k,h",,h,,"sa,h",,h,k,"k,h",,"k,h",,"sa,h",,h,k
-A7,208,DJ Shadow,Organ Donor,90s hip hop pattern I,1997,fill,110,7,"sa,h",sa,"k,h",,"sa,h",,h,k,"sa,h",sa,"k,h",,"sa,h",,"sa,h",
-A8,209,DJ Shadow,Organ Donor,90s hip hop pattern I,1997,groove,110,8,"k,h",,h,,"sa,h",,h,k,"k,h",,h,,"sa,h",,h,
-A9,210,DJ Shadow,Organ Donor,90s hip hop pattern I,1997,fill,110,9,"k,h",,"k,h",,h,k,"sa,h",,"sa,h",,"k,h",sa,h,k,"k,h",sa
+A6,207,DJ Shadow,Organ Donor,90s hip hop pattern I,1997,groove,110,6,"k,h",,h,,"sa,h",,h,k,"k,h",,"k,ho",,"sa,h",,h,k
+A7,208,DJ Shadow,Organ Donor,90s hip hop pattern I,1997,fill,110,7,"sa,h",sa,"k,h",,"sa,h",,h,k,"sa,ho",sa,"k,h",,"sa,h",,"sa,h",
+A8,209,DJ Shadow,Organ Donor,90s hip hop pattern I,1997,groove,110,8,"k,h",,h,,"sa,h",,h,k,"k,h",,ho,,"sa,h",,h,
+A9,210,DJ Shadow,Organ Donor,90s hip hop pattern I,1997,fill,110,9,"k,h",,"k,h",,ho,k,"sa,h",,"sa,h",,"k,h",sa,h,k,"k,h",sa
 A10,211,DJ Shadow,Organ Donor,90s hip hop pattern I,1997,break,110,10,"k,h",,"k,h",,"sa,h",,h,sa,h,sa,"k,h",,"sa,h",,ho,
-A11,212,DJ Shadow,Organ Donor,90s hip hop pattern I,1997,break,110,11,h,sa,"k,h",,"sa,h",,h,k,h,k,"k,h",,"sa,h",,"sa,h",sa
-A12,213,DJ Shadow,Organ Donor,90s hip hop pattern I,1997,break,110,12,"k,h",,h,,"sa,h",,h,k,"k,h",sg,"k,h",,"sa,h",,h,sg
-A13,214,DJ Shadow,Organ Donor,90s hip hop pattern I,1997,break,110,13,"k,h",,h,,"sa,h",,"k,h",sa,h,sa,"k,h",,"sa,h",,h,sg
+A11,212,DJ Shadow,Organ Donor,90s hip hop pattern I,1997,break,110,11,h,sa,"k,ho",,"sa,h",,h,k,h,k,"k,h",,"sa,h",,"sa,h",sa
+A12,213,DJ Shadow,Organ Donor,90s hip hop pattern I,1997,break,110,12,"k,h",,h,,"sa,h",,h,k,"k,h",sg,"k,h",,"sa,ho",,h,sg
+A13,214,DJ Shadow,Organ Donor,90s hip hop pattern I,1997,break,110,13,"k,h",,h,,"sa,h",,"k,h",sa,h,sa,"k,ho",,"sa,h",,h,sg
 A14,215,DJ Shadow,Organ Donor,90s hip hop pattern I,1997,break,110,14,"k,h",,"k,h",,"sa,h",,h,k,"k,h",sg,"k,h",,"sa,h",,ho,sg
-A15,216,DJ Shadow,Organ Donor,90s hip hop pattern I,1997,break,110,15,"k,h",,"k,h",,"sa,h",,h,kg,"k,h",,"k,h",sa,h,kg,"k,h",sa
-A16,217,DJ Shadow,Organ Donor,90s hip hop pattern I,1997,break,110,16,"k,h",,"k,h",,"sa,h",,"k,h",,"k,h",sg,"k,h",,"sa,h",,h,k
-A17,218,DJ Shadow,Organ Donor,90s hip hop pattern I,1997,fill,110,17,"k,h",,"k,h",sa,"k,h",,h,k,h,sa,"k,h",,"sa,h",,h,sg
-A18,219,DJ Shadow,Organ Donor,90s hip hop pattern I,1997,fill,110,18,h,sa,"k,h",,h,k,"k,h",s,"k,h",sg,"kg,h",,"sa,h",,h,sg
-A19,220,DJ Shadow,Organ Donor,90s hip hop pattern I,1997,fill,110,19,"sa,h",sa,"k,h",,"sa,h",sa,"k,h",,"sa,h",sa,sa,"k,h",h,sa,"k,h",sa
-B1,156,Charles Wright and The Watts 103rd Street Rhythm Band,Express Yourself,70s soul pattern G,1970,break,94,2,"k,h",hc,h,"k,h","sa,h",h,ha,"sg,h","k,h","sa,h",ha,"k,s,h","sa,h",h,"k,ha","sg,h"
-B2,157,Charles Wright and The Watts 103rd Street Rhythm Band,Express Yourself,70s soul pattern G,1970,break,94,3,"k,h","sa,h",ha,"k,h","sa,h",h,ha,"k,h","sa,h","k,h",ha,"s,h","k,h",h,"sa,h",h
-B3,158,Charles Wright and The Watts 103rd Street Rhythm Band,Express Yourself,70s soul pattern G,1970,break,94,4,"k,h",hc,h,"k,h","sa,h",h,ha,"s,h","k,h","sa,h",h,"k,h","sa,h","k,h",ha,"sa,h"
-B4,159,Charles Wright and The Watts 103rd Street Rhythm Band,Express Yourself,70s soul pattern G,1970,break,94,5,h,"k,h",h,"sa,h","k,h","s,h","s,h","k,h",ha,"sa,h","k,h","s,h","sa,h","k,h",h,"sb,h"
+A15,216,DJ Shadow,Organ Donor,90s hip hop pattern I,1997,break,110,15,"k,h",,"k,h",,"sa,h",,ho,kg,"k,h",,"k,h",sa,h,kg,"k,h",sa
+A16,217,DJ Shadow,Organ Donor,90s hip hop pattern I,1997,break,110,16,"k,h",,"k,h",,"sa,h",,"k,h",,"k,h",sg,"k,h",,"sa,ho",,h,k
+A17,218,DJ Shadow,Organ Donor,90s hip hop pattern I,1997,fill,110,17,"k,h",,"k,h",sa,"k,h",,h,k,ho,sa,"k,ho",,"sa,h",,h,sg
+A18,219,DJ Shadow,Organ Donor,90s hip hop pattern I,1997,fill,110,18,h,sa,"k,h",,h,k,"k,h",s,"k,h",sg,"kg,h",,"sa,h",,ho,sg
+A19,220,DJ Shadow,Organ Donor,90s hip hop pattern I,1997,fill,110,19,"sa,ho",sa,"k,h",,"sa,h",sa,"k,h",,"sa,h",sa,sa,"k,h",h,sa,"k,h",sa
+B1,156,Charles Wright and The Watts 103rd Street Rhythm Band,Express Yourself,70s soul pattern G,1970,break,94,2,"k,h",hc,h,"k,h","sa,h",h,ha,"sg,h","k,h","sa,h",ha,"k,s,h","sa,ho",h,"k,ha","sg,h"
+B2,157,Charles Wright and The Watts 103rd Street Rhythm Band,Express Yourself,70s soul pattern G,1970,break,94,3,"k,h","sa,h",ha,"k,h","sa,h",h,ha,"k,h","sa,h","k,h",ha,"s,h","k,h",h,"sa,h",ho
+B3,158,Charles Wright and The Watts 103rd Street Rhythm Band,Express Yourself,70s soul pattern G,1970,break,94,4,"k,h",hc,h,"k,h","sa,h",h,ha,"s,h","k,h","sa,h",h,"k,h","sa,ho","k,h",ha,"sa,h"
+B4,159,Charles Wright and The Watts 103rd Street Rhythm Band,Express Yourself,70s soul pattern G,1970,break,94,5,h,"k,h",h,"sa,h","k,h","s,h","s,h","k,h",ha,"sa,h","k,h","s,h","sa,h","k,h",h,"sb,ho"

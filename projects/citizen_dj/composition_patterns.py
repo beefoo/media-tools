@@ -5,6 +5,7 @@
 # python3 projects/citizen_dj/composition_patterns.py -config "projects/citizen_dj/config/patterns/edison-southern-airs.json" -tracks
 # python3 projects/citizen_dj/composition_patterns.py -config "projects/citizen_dj/config/patterns/edison-onward.json" -tracks
 # python3 projects/citizen_dj/composition_patterns.py -config "projects/citizen_dj/config/patterns/edison-holiday.json" -tracks
+# python3 projects/citizen_dj/composition_patterns.py -config "projects/citizen_dj/config/patterns/edison-indiana.json" -tracks
 # python3 projects/citizen_dj/composition_patterns.py -config "projects/citizen_dj/config/patterns/edison-bubbles.json" -tracks
 
 import argparse
@@ -87,6 +88,8 @@ def addSequenceStep(startMs, step, progress, config):
             }
             if "tempo" in sample:
                 step["tempo"] = sample["tempo"]
+            if "fadeOut" in sample:
+                step["fadeOut"] = sample["fadeOut"]
             instructions.append(step)
 
     return (instructions, barMs)
