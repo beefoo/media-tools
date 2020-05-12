@@ -1,0 +1,7 @@
+id,sort,artist,title,label,year,category,bpm,bar,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+A1,37,Gary Numan,Films,80s new wave pattern A,1979,4,99,1,"k,c",k,h,k,"sa,h",,h,,"k,h",k,h,k,"sa,h",,h,
+A2,38,Gary Numan,Films,80s new wave pattern A,1979,4,99,2,k,k,h,k,"sa,h",,h,,"k,h",k,h,sa,sa,sa,k,k
+A3,39,Gary Numan,Films,80s new wave pattern A,1979,4,99,3,"k,c",k,h,k,"sa,h",,h,,"k,h",k,h,k,"sa,h",,h,
+A4,40,Gary Numan,Films,80s new wave pattern A,1979,4,99,4,k,k,h,k,"sa,h",,h,,"k,h",k,h,sa,sa,sa,k,k
+B1,72,Kool and the Gang,Chocolate Buttermilk,60s R&B pattern B,1969,7,113,1,"k,h",s,"k,h",k,"sa,h",sb,k,s,"k,h",sa,k,k,"sa,h","k,s",h,s
+B2,73,Kool and the Gang,Chocolate Buttermilk,60s R&B pattern B,1969,7,113,2,"k,h",s,"k,h",k,"sa,h",sb,k,sa,"k,h",sa,"k,h",k,"sa,h",s,"k,h",

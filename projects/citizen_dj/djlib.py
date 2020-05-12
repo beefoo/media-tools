@@ -267,9 +267,9 @@ def loadSampleSequence(config):
     expandedSequence = []
 
     groupKeys = {
-        "id": {"name": "samples", "lookup": samplePatternLookup},
-        "drumId": {"name": "drums", "lookup": drumPatternLookup},
-        "bassId": {"name": "bass", "lookup": bassPatternLookup}
+        "id": {"name": "samples", "optionsName": "options", "lookup": samplePatternLookup},
+        "drumId": {"name": "drums", "optionsName": "drumOptions", "lookup": drumPatternLookup},
+        "bassId": {"name": "bass", "optionsName": "bassOptions", "lookup": bassPatternLookup}
     }
     for i, step in enumerate(sequence):
         groups = {}
@@ -282,35 +282,12 @@ def loadSampleSequence(config):
                         patterns += group["lookup"][id]["items"]
                 groups[group["name"]] = {
                     "patterns": patterns,
-                    "options": step["options"]
+                    "options": step[group["optionsName"]]
                 }
 
-        if step["id"] != "":
-
-        if step["drumId"] != "":
-            groups["drums"] = {
-                "patterns": drumPatternLookup[step["drumId"]]["items"],
-                "options": step["drumOptions"]
-            }
-        if "bassId" in step and step["bassId"] != "":
-            groups["bass"] = {
-                "patterns": bassPatternLookup[step["bassId"]]["items"],
-                "options": step["bassOptions"]
-            }
-
-        if "appendToPrev" in step and step["appendToPrev"] != "" and step["appendToPrev"] > 0 and i > 0:
-            prevStep = sequence[i-1]
-            incr = 1
-            while prevStep["appendToPrev"] != "" and prevStep["appendToPrev"] > 0 and i-incr >= 0:
-                incr += 1
-                prevStep = sequence[i-incr]
-            for j in range(prevStep["count"]):
-                for key, group in groups.items():
-                    expandedSequence[-(j+1)][key]["patterns"] += group["patterns"]
-        else:
-            step["groups"] = groups
-            for j in range(step["count"]):
-                expandedSequence.append(copy.deepcopy(step))
+        step["groups"] = groups
+        for j in range(step["count"]):
+            expandedSequence.append(copy.deepcopy(step))
 
     # apply options
     for i in range(len(expandedSequence)):
