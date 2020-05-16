@@ -1,0 +1,10 @@
+id,sort,artist,title,label,year,category,bpm,bar,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
+A1,9,The Roots,Don't Say Nuthin,2000s hip hop pattern A,2004,2,99,1,"ka,k,h",,h,,"sa,h",,h,,h,,"ka,k,h",,"sa,h",k,h,
+A2,10,The Roots,Don't Say Nuthin,2000s hip hop pattern A,2004,2,99,2,"ka,k,h",,h,,"sa,h",,h,,h,,h,,"sa,h",k,h,
+A3,66,The Roots,75 Bars,2000s hip hop pattern B,2008,6,108,1,"ka,k,hc",,"k,h",,"sa,ho",,,s,"k,hc",,"ka,k,h",,"sa,ho",,,s
+A4,67,The Roots,75 Bars,2000s hip hop pattern B,2008,6,108,2,"ka,k,h",,"k,h",,"s,h",,"sa,h",,"k,hc",s,"ka,k",,"sa,h",,hc,s
+B1,80,Outkast,SpottieOttieDopaliscious,90s hip hop pattern E,1998,groove,63,1,"ka,k,rg",rg,"k,rg",rg,r,rg,rg,"k,rg","k,rg",rg,"ka,k,rg",rg,"r,rg",rg,rg,ra
+B2,81,Outkast,SpottieOttieDopaliscious,90s hip hop pattern E,1998,groove,63,2,"ka,k,rg",rg,"k,rg",rg,r,rg,,"k,rg","k,rg",rg,"ka,k,rg",rg,r,r,rg,r
+C1,218,DJ Shadow,Organ Donor,90s hip hop pattern I,1997,fill,110,17,"ka,k,r",,"k,r",sa,"k,r",,r,k,r,sa,"ka,k,r",,"sa,r",,r,sg
+C2,219,DJ Shadow,Organ Donor,90s hip hop pattern I,1997,fill,110,18,r,sa,"k,r",,r,k,"k,r",s,"ka,k,r",sg,"kg,r",,"sa,r",,r,sg
+C3,220,DJ Shadow,Organ Donor,90s hip hop pattern I,1997,fill,110,19,"sa,r",sa,"ka,k,r",,"sa,r",sa,"k,r",,"sa,r",sa,sa,"k,r",r,sa,"k,r",sa
