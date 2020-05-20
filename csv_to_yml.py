@@ -42,11 +42,11 @@ if len(a.FILTER) > 0:
 
 replaceKeys = {}
 if len(a.REPLACE_STRING) > 0:
-    replaceKeys = parseQueryString(a.REPLACE_STRING, parseNumbers=False)
+    replaceKeys = parseQueryString(a.REPLACE_STRING, doParseNumbers=False)
 
 addValues = []
 if len(a.ADD_VALUES) > 0:
-    addValues = parseQueryString(a.ADD_VALUES, parseNumbers=True)
+    addValues = parseQueryString(a.ADD_VALUES, doParseNumbers=True)
     addValues = [{"key": key, "value": addValues[key]} for key in addValues]
 
 prependLines = []
