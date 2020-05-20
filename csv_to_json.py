@@ -52,7 +52,7 @@ if len(a.SORT) > 0:
 
 replaceKeys = {}
 if len(a.REPLACE_STRING) > 0:
-    replaceKeys = parseQueryString(a.REPLACE_STRING, parseNumbers=False)
+    replaceKeys = parseQueryString(a.REPLACE_STRING, doParseNumbers=False)
 
 if a.LIMIT > 0 and len(rows) > a.LIMIT:
     rows = rows[:a.LIMIT]
