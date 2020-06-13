@@ -45,6 +45,11 @@ def downloadMedia(row):
     url = row[a.URL_KEY]
     id = url.split("/")[-1] if "id" not in row else row["id"]
 
+    existFns = getFilenames("%s.*" % (a.OUTPUT_DIR + id))
+    if len(existFns) > 0 and not a.OVERWRITE:
+        print("%s already exists" % id)
+        return None
+
     command = ['youtube-dl'] # We need -L because the URL redirects
     if id is not None:
         command += ['-o', id+'.%(ext)s']
@@ -82,7 +87,10 @@ def downloadMedia(row):
     fileext = getFileExt(fn)
     filepath = a.OUTPUT_DIR + id + fileext
     shutil.move(fn, filepath)
-    os.remove(fn)
+    try:
+        os.remove(fn)
+    except FileNotFoundError:
+        return None
 
     return None
 
