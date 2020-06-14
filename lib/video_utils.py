@@ -373,7 +373,7 @@ def containImage(img, w, h, resampleType="default", bgcolor=[0,0,0]):
     baseImg.paste(resized, (pasteX, pasteY))
     return baseImg
 
-def fillImage(img, w, h, resampleType="default"):
+def fillImage(img, w, h, resampleType="default", anchorX=0.5, anchorY=0.5):
     vw, vh = img.size
     resampleType = Image.LANCZOS if resampleType=="default" else resampleType
 
@@ -397,9 +397,9 @@ def fillImage(img, w, h, resampleType="default"):
     x = 0
     y = 0
     if vratio > ratio:
-        x = roundInt((newW - w) * 0.5)
+        x = roundInt((newW - w) * anchorX)
     else:
-        y = roundInt((newH - h) * 0.5)
+        y = roundInt((newH - h) * anchorY)
     x1 = x + w
     y1 = y + h
     cropped = resized.crop((x, y, x1, y1))

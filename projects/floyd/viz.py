@@ -115,7 +115,7 @@ for fn in maskFiles:
         "item": items[0]
     })
 
-frames = [frames[0]]
+# frames = [frames[0]]
 
 def processFrame(frame):
     global a
@@ -138,19 +138,18 @@ def processFrame(frame):
 
         # crop the image based on mask
         itemW, itemH = itemImg.size
-        itemScale = item["scale"]
-        itemOffsetX = item["offsetx"]
-        itemOffsetY = item["offsety"]
-        if itemScale > 1.0:
-            itemTargetW, itemTargetH = (roundInt(itemW * itemScale), roundInt(itemH * itemScale))
-            itemImg = itemImg.resize((itemTargetW, itemTargetH))
-            itemOffsetX -= roundInt((itemTargetW-itemW) * 0.5)
-            itemOffsetY -= roundInt((itemTargetH-itemH) * 0.5)
-        croppedImg = fillImage(itemImg, maskW, maskH)
+        if item["scale"] > 1.0:
+            scaledW = roundInt(itemW * item["scale"])
+            scaledH = roundInt(itemH * item["scale"])
+            scaledImg = itemImg.resize((scaledW, scaledH))
+            x = roundInt((scaledW-itemW)*item["anchorX"])
+            y = roundInt((scaledH-itemH)*item["anchorY"])
+            itemImg = scaledImg.crop((x, y, x+itemW, y+itemH))
+        croppedImg = fillImage(itemImg, maskW, maskH, anchorX=item["anchorX"], anchorY=item["anchorY"])
 
         # mask and paste the image
         itemBaseImage = Image.new(mode="RGB", size=(frame["width"], frame["height"]), color=(0, 0, 0))
-        itemBaseImage.paste(croppedImg, (state["x"]+itemOffsetX, state["y"]+itemOffsetY))
+        itemBaseImage.paste(croppedImg, (state["x"], state["y"]))
         baseImage = Image.composite(baseImage, itemBaseImage, maskImg)
 
     baseImage.save(frame["filename"])
