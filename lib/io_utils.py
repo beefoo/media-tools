@@ -224,6 +224,13 @@ def readJSON(filename):
             data = json.load(f)
     return data
 
+def readTextFile(filename):
+    contents = ""
+    if os.path.isfile(filename):
+        with open(filename, "r", encoding="utf8", errors="replace") as f:
+            contents = f.read()
+    return contents
+
 def removeDir(path):
     if os.path.isdir(path):
         shutil.rmtree(path, ignore_errors=True)

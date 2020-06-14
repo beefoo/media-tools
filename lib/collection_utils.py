@@ -113,6 +113,10 @@ def listToHumanString(arr):
             string += (value + ', ')
     return string
 
+def listToTupleList(arr):
+    it = iter(arr)
+    return zip(it, it)
+
 def parseFilterString(str):
     if len(str) <= 0:
         return []

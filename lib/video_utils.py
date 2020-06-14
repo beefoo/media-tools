@@ -495,10 +495,13 @@ def getSolidPixels(color, width=100, height=100):
     pixels[:,:] = color
     return pixels
 
-def getVideoClipImage(video, videoDur, clip, t=None, resizeMode="fill", resampleType="default"):
+def getVideoClipImage(video, videoDur, clip=None, t=None, resizeMode="fill", resampleType="default"):
     videoT = clip["t"] / 1000.0 if t is None else t / 1000.0
-    cw = roundInt(clip["width"])
-    ch = roundInt(clip["height"])
+    cw = None
+    ch = None
+    if clip is not None:
+        cw = roundInt(clip["width"])
+        ch = roundInt(clip["height"])
     delta = videoDur - videoT
     # check if we need to loop video clip
     if delta < 0:
@@ -511,10 +514,24 @@ def getVideoClipImage(video, videoDur, clip, t=None, resizeMode="fill", resample
         videoPixels = video.get_frame(videoT)
     except IOError:
         print("Could not read pixels for %s at time %s" % (video.filename, videoT))
+        if ch is None or cw is None:
+            cw = 1280
+            ch = 720
         videoPixels = np.zeros((ch, cw, 3), dtype='uint8')
     clipImg = Image.fromarray(videoPixels, mode="RGB")
-    clipImg = resizeImage(clipImg, cw, ch, resizeMode, resampleType)
+    if cw is not None and ch is not None:
+        clipImg = resizeImage(clipImg, cw, ch, resizeMode, resampleType)
     return clipImg
+
+def getVideoClipImageFromFile(fn, nt=0.5):
+    video = VideoFileClip(fn, audio=False)
+    videoDur = video.duration
+    t = nt * videoDur
+
+    image = getVideoClipImage(video, videoDur, clip=None, t=t)
+    video.reader.close()
+    del video
+    return image
 
 def getRotation(clip):
     rotation = clip["rotation"] if "rotation" in clip else 0.0
