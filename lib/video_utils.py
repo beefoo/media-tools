@@ -526,7 +526,7 @@ def getVideoClipImage(video, videoDur, clip=None, t=None, resizeMode="fill", res
 def getVideoClipImageFromFile(fn, nt=0.5):
     video = VideoFileClip(fn, audio=False)
     videoDur = video.duration
-    t = nt * videoDur
+    t = nt * videoDur * 1000
 
     image = getVideoClipImage(video, videoDur, clip=None, t=t)
     video.reader.close()

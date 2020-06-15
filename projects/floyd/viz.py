@@ -17,6 +17,7 @@ parentdir = os.path.dirname(parentdir)
 sys.path.insert(0,parentdir)
 
 from floydlib import *
+from lib.audio_mixer import *
 from lib.audio_utils import *
 from lib.collection_utils import *
 from lib.io_utils import *
@@ -34,9 +35,13 @@ parser.add_argument('-width', dest="WIDTH", default=3840, type=int, help="Output
 parser.add_argument('-height', dest="HEIGHT", default=2160, type=int, help="Output height")
 parser.add_argument('-fps', dest="FPS", default=30, type=int, help="Frames per second")
 parser.add_argument('-dur', dest="DURATION", default=60.0, type=float, help="Output duration in seconds")
+parser.add_argument('-mdb', dest="MATCH_DB", default=-16.0, type=float, help="Each track should match this decibel level")
+parser.add_argument('-awindow', dest="AUDIO_WINDOW_SIZE", default=20, type=int, help="This many tracks to play at once")
+parser.add_argument('-db', dest="MASTER_DB", default=0.0, type=float, help="Apply +/- db to final master track")
 parser.add_argument('-out', dest="OUTPUT_FILE", default="output/floyd_viz.mp4", help="Path to output file")
 parser.add_argument('-threads', dest="THREADS", default=3, type=int, help="Number of concurrent threads")
 parser.add_argument('-probe', dest="PROBE", action="store_true", help="Just display details?")
+parser.add_argument('-debug', dest="DEBUG", action="store_true", help="Spit out just one frame?")
 parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite existing frames / audio?")
 a = parser.parse_args()
 
@@ -56,6 +61,7 @@ for i, row in enumerate(rows):
     rows[i]["end"] = end
     rows[i]["nstart"] = nstart
     rows[i]["nend"] = nend
+    rows[i]["clipDuration"] = end - start
     rows[i]["duration"] = videoDur
 
 # Make sure output dirs exist
@@ -115,11 +121,15 @@ for fn in maskFiles:
         "item": items[0]
     })
 
-# frames = [frames[0]]
+if a.DEBUG:
+    frames = [frames[0]]
 
 def processFrame(frame):
     global a
     global states
+
+    if os.path.isfile(frame["filename"]):
+        return True
 
     baseImage = Image.new(mode="RGB", size=(frame["width"], frame["height"]), color=(0, 0, 0))
     print("Processing %s..." % frame["filename"])
@@ -130,9 +140,9 @@ def processFrame(frame):
         item = state["item"]
 
         # retrieve image at an offset time
-        msOffset = roundInt(item["offset"] * item["duration"])
-        itemMs = (frame["ms"] + msOffset) % item["duration"]
-        ntime = 1.0 * itemMs / item["duration"]
+        msOffset = roundInt(1.0 * item["offset"] * item["clipDuration"])
+        itemMs = (frame["ms"] + msOffset) % item["clipDuration"]
+        ntime = 1.0 * itemMs / item["clipDuration"]
         ntime = lerp((item["nstart"], item["nend"]), ntime)
         itemImg = getVideoClipImageFromFile(item["filepath"], nt=ntime)
 
@@ -161,3 +171,65 @@ pool = ThreadPool(getThreadCount(a.THREADS))
 results = pool.map(processFrame, frames)
 pool.close()
 pool.join()
+
+print("Finished processing frames")
+
+if a.DEBUG:
+    sys.exit()
+
+audioFilename = replaceFileExtension(a.OUTPUT_FILE, ".mp3")
+if not os.path.isfile(audioFilename) or a.OVERWRITE:
+    stateCount = len(states)
+    steps = stateCount
+    stepDurationMs = roundInt(1.0 * durationMs / steps)
+    instructions = []
+    for i in range(steps):
+        stepMs = roundInt(1.0 * durationMs / steps * i)
+        stepEndMs = stepMs + stepDurationMs
+        stepStates = []
+        if i < stateCount-a.AUDIO_WINDOW_SIZE:
+            stepStates = states[i:i+a.AUDIO_WINDOW_SIZE]
+        else:
+            leftover = a.AUDIO_WINDOW_SIZE - (stateCount-i)
+            stepStates = states[i:] + states[:leftover]
+            if len(stepStates) != a.AUDIO_WINDOW_SIZE:
+                print("Window size error: %s" % len(stepStates))
+                sys.exit()
+
+        for j, state in enumerate(stepStates):
+            item = state["item"]
+            # items in the center are the loudest
+            nvolume = 1.0 * j / (a.AUDIO_WINDOW_SIZE - 1)
+            nvolume = ease(nvolume, invert=True)
+            nvolume = lerp((0.25, 1.0), nvolume)
+            # determine item start ms
+            msOffset = roundInt(item["offset"] * item["clipDuration"])
+            itemMs = (stepMs + msOffset) % item["clipDuration"] + item["start"]
+            # loop audio for duration of step
+            playedMs = 0
+            ms = stepMs
+            while playedMs < stepDurationMs:
+                dur = item["clipDuration"] - itemMs
+                dur = min(dur, stepDurationMs-playedMs)
+                if dur < 1:
+                    break
+                instruction = {
+                    "ms": roundInt(ms),
+                    "filename": item["filepath"],
+                    "start": itemMs,
+                    "dur": dur,
+                    "matchDb": a.MATCH_DB,
+                    "volume": nvolume
+                }
+                instructions.append(instruction)
+                playedMs += dur
+                ms += dur
+                itemMs = (ms + msOffset) % item["clipDuration"] + item["start"]
+
+    mixAudio(instructions, durationMs, audioFilename, masterDb=a.MASTER_DB)
+else:
+    print("%s already exists." % audioFilename)
+
+print("Compiling frames and encoding...")
+compileFrames(a.OUTPUT_FRAME, a.FPS, a.OUTPUT_FILE, getZeroPadding(totalFrames), audioFile=audioFilename)
+print("Done.")
