@@ -541,6 +541,9 @@ def getRotation(clip):
 def hasAudio(filename):
     return ("audio" in getMediaTypes(filename))
 
+def isVideoExtension(ext):
+    return (ext in ['.mp4', '.mov', '.avi', '.wmv'])
+
 def loadVideoPixelData(clips, fps, cacheDir="tmp/", width=None, height=None, verifyData=True, cache=True, resizeMode="fill"):
     # load videos
     filenames = list(set([clip.props["filename"] for clip in clips]))

@@ -45,15 +45,16 @@ def parseLayoutFile(svgFile):
                 "width": width,
                 "height": height,
                 "x2": x+width,
-                "y2": y+height
+                "y2": y+height,
+                "points": [(x, y), (x+width, y), (x+width, y+height), (x, y+height)]
             })
 
         # parse polygons
         for polygon in g.find_all("polygon"):
             if not polygon.has_attr("points"):
                 continue
-            points = [float(p) for p in polygon["points"].split(" ")]
-            points = listToTupleList(points)
+            L = [float(p) for p in polygon["points"].split(" ")]
+            points = listToTupleList(L)
             x, y, x2, y2 = bboxFromPoints(points)
             shapes.append({
                 "x": x,
@@ -61,7 +62,8 @@ def parseLayoutFile(svgFile):
                 "width": x2-x,
                 "height": y2-y,
                 "x2": x2,
-                "y2": y2
+                "y2": y2,
+                "points": [(L[i], L[i+1]) for i in range(0, len(L), 2)]
             })
 
         if len(shapes) < 1:
@@ -85,6 +87,8 @@ def parseLayoutFile(svgFile):
                 "x2": x2,
                 "y2": y2
             }
+
+        item["shapes"] = shapes
 
         items.append(item)
 
