@@ -38,8 +38,8 @@ python3 images_to_thumbnails.py -in "{app_dir}img/sprites/*.png" -out "{app_dir}
 
 // 6. prep for "remix" interface
 python3 samples_to_files.py -in "{data_base_dir}sampledata/{collection_uid}_subset_64x64.csv" -dir "{media_dir}" -out "output/{collection_uid}_subset_64x64/%s.wav" -dout "{data_base_dir}sampledata/{collection_uid}_subset_64x64_clips.csv" -rvb 0 -mdb " -9999" -fadein "0.1" -fadeout "0.1" -maxd 1000 -overwrite -threads 3
-python3 normalize_audio.py -in "{data_base_dir}sampledata/{collection_uid}_subset_64x64_clips.csv" -dir "output/{collection_uid}_subset_64x64/" -out "output/{collection_uid}_subset_64x64_normalized/" -group "sourceFilename"
-python3 convert_audio.py -in "output/{collection_uid}_subset_64x64_normalized/*.wav" -out "{app_dir}audio/collections/{collection_uid}/%s.mp3" -overwrite
+python3 normalize_audio.py -in "{data_base_dir}sampledata/{collection_uid}_subset_64x64_clips.csv" -dir "output/{collection_uid}_subset_64x64/" -out "{asset_dir}audio/collections/{collection_uid}/" -group "sourceFilename"
+python3 convert_audio.py -in "{asset_dir}audio/collections/{collection_uid}/*.wav" -out "{app_dir}audio/collections/{collection_uid}/%s.mp3" -overwrite
 python3 csv_to_json.py -in "{data_base_dir}sampledata/{collection_uid}_subset_64x64_clips.csv" -props "id,sourceFilename,sourceStart,dur,phrase" -groups "sourceFilename" -out "{app_dir}data/sampledata/{collection_uid}.json" -light
 python3 meta_to_meta.py -in "{data_base_dir}metadata/{collection_uid}.csv" -key "date" -pattern "([12][0-9]{{3}}).*" -features "year"
 // python3 update_meta.py -in "{data_base_dir}metadata/{collection_uid}.csv" -key "id" -rkey "url" -find "(.*)" -repl "https://www.loc.gov/item/\1/"
@@ -48,5 +48,5 @@ python3 csv_to_json.py -in "{data_base_dir}metadata/{collection_uid}.csv" -props
 
 // 7. prep for "download & use" interface (sample packs)
 python3 make_sample_pack.py -basedir "{data_base_dir}" -dir "{media_dir}" -cdata "{app_dir}_use/{collection_uid}.md" -idata "metadata/{collection_uid}.csv" -pdata "phrasedata/{collection_uid}/%s.csv" -sdata "sampledata/{collection_uid}_subset_64x64_grid.csv" -id "id" -provider "loc.gov" -cid "{collection_id}" -out "output/samplepack_{collection_uid}/"
-python3 sample_pack_to_json.py -idata "{data_base_dir}metadata/{collection_uid}.csv" -bout "{app_dir}" -pout "{asset_dir}samplepacks/" -sdir "output/samplepack_{collection_uid}/" -id "id" -cid "{collection_uid}"
+python3 sample_pack_to_json.py -idata "{data_base_dir}metadata/{collection_uid}.csv" -bout "{app_dir}" -asout "{asset_dir}" -sdir "output/samplepack_{collection_uid}/" -id "id" -cid "{collection_uid}"
 python3 csv_to_json.py -in "output/samplepack_{collection_uid}/loc.gov_{collection_id}_mp3/excerpts.csv" -props "clipFilename,start,dur,itemFilename" -out "{app_dir}data/phrasedata/{collection_uid}.json" -groups "itemFilename" -light

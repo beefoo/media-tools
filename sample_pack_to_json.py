@@ -20,6 +20,7 @@ parser.add_argument('-cid', dest="COLLECTION_UID", default="loc-john-and-ruby-lo
 parser.add_argument('-bout', dest="OUTPUT_BASE_DIR", default="", help="Output base dir")
 parser.add_argument('-aout', dest="OUTPUT_AUDIO_DIR", default="audio/samplepacks/", help="Output audio dir")
 parser.add_argument('-dout', dest="OUTPUT_DATA_FILE", default="_data/%s.json", help="Output data file")
+parser.add_argument('-asout', dest="OUTPUT_ASSETS_DIR", default="", help="Output data file")
 parser.add_argument('-pout', dest="OUTPUT_PACKAGE_DIR", default="samplepacks/", help="Output package dir")
 a = parser.parse_args()
 
@@ -28,9 +29,10 @@ itemLookup = createLookup(items, a.ID_KEY)
 
 OUTPUT_AUDIO_DIR = a.OUTPUT_BASE_DIR + a.OUTPUT_AUDIO_DIR + a.COLLECTION_UID + '/'
 OUTPUT_DATA_FILE = a.OUTPUT_BASE_DIR + a.OUTPUT_DATA_FILE % a.COLLECTION_UID
-OUTPUT_PACKAGE_DIR = a.OUTPUT_PACKAGE_DIR
+OUTPUT_PACKAGE_DIR = a.OUTPUT_ASSETS_DIR + a.OUTPUT_PACKAGE_DIR
+OUTPUT_WAV_AUDIO_DIR = a.OUTPUT_ASSETS_DIR + a.OUTPUT_AUDIO_DIR + a.COLLECTION_UID + '/'
 
-makeDirectories([OUTPUT_AUDIO_DIR, OUTPUT_DATA_FILE, OUTPUT_PACKAGE_DIR])
+makeDirectories([OUTPUT_AUDIO_DIR, OUTPUT_DATA_FILE, OUTPUT_PACKAGE_DIR, OUTPUT_WAV_AUDIO_DIR])
 
 zipfilenames = getFilenames(a.SAMPLE_PACK_DIR + '*.zip')
 
@@ -43,12 +45,12 @@ for zipfilename in zipfilenames:
     destFilename = OUTPUT_PACKAGE_DIR + basefilename
     # move zipfile over
     shutil.copyfile(zipfilename, destFilename)
-    # remove dest dir and copy over source dir
-    sourceDir = zipfilename[:(len(zipfilename)-4)] + "/"
-    destDir = destFilename[:(len(destFilename)-4)] + "/"
-    print("Moving %s to %s..." % (sourceDir, destDir))
-    removeDir(destDir)
-    shutil.copytree(sourceDir, destDir)
+    # # remove dest dir and copy over source dir
+    # sourceDir = zipfilename[:(len(zipfilename)-4)] + "/"
+    # destDir = destFilename[:(len(destFilename)-4)] + "/"
+    # print("Moving %s to %s..." % (sourceDir, destDir))
+    # removeDir(destDir)
+    # shutil.copytree(sourceDir, destDir)
     basename = getBasename(zipfilename)
     format = basename.split('_')[-1]
     print('Processing %s' % format)
@@ -85,6 +87,14 @@ for zipfilename in zipfilenames:
         jsonDataOut['segmentCount'] = len(audiofiles)
         jsonDataOut['oneshotCount'] = len(oneshots)
         jsonDataOut['totalCount'] = len(audiofiles) + len(oneshots)
+
+    elif format == "wav":
+        print("Moving wav files over...")
+        audiofiles = getFilenames(a.SAMPLE_PACK_DIR + basename + '/excerpts/*.' + format)
+        for afile in audiofiles:
+            baseAfilename = os.path.basename(afile)
+            destAfilename = OUTPUT_WAV_AUDIO_DIR + baseAfilename
+            shutil.copyfile(afile, destAfilename)
 
 jsonDataOut["clips"] = sorted(jsonDataOut["clips"], key=lambda c: str(c['title']))
 writeJSON(OUTPUT_DATA_FILE, jsonDataOut, pretty=True)
