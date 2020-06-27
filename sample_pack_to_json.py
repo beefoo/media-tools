@@ -28,7 +28,7 @@ itemLookup = createLookup(items, a.ID_KEY)
 
 OUTPUT_AUDIO_DIR = a.OUTPUT_BASE_DIR + a.OUTPUT_AUDIO_DIR + a.COLLECTION_UID + '/'
 OUTPUT_DATA_FILE = a.OUTPUT_BASE_DIR + a.OUTPUT_DATA_FILE % a.COLLECTION_UID
-OUTPUT_PACKAGE_DIR = a.OUTPUT_BASE_DIR + a.OUTPUT_PACKAGE_DIR
+OUTPUT_PACKAGE_DIR = a.OUTPUT_PACKAGE_DIR
 
 makeDirectories([OUTPUT_AUDIO_DIR, OUTPUT_DATA_FILE, OUTPUT_PACKAGE_DIR])
 
@@ -43,6 +43,12 @@ for zipfilename in zipfilenames:
     destFilename = OUTPUT_PACKAGE_DIR + basefilename
     # move zipfile over
     shutil.copyfile(zipfilename, destFilename)
+    # remove dest dir and copy over source dir
+    sourceDir = zipfilename[:(len(zipfilename)-4)] + "/"
+    destDir = destFilename[:(len(destFilename)-4)] + "/"
+    print("Moving %s to %s..." % (sourceDir, destDir))
+    removeDir(destDir)
+    shutil.copytree(sourceDir, destDir)
     basename = getBasename(zipfilename)
     format = basename.split('_')[-1]
     print('Processing %s' % format)
