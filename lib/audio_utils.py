@@ -7,7 +7,7 @@ from lib.math_utils import *
 from lib.processing_utils import *
 import numpy as np
 import os
-from PIL import Image
+from PIL import Image, ImageDraw
 from pprint import pprint
 import pydub
 from pydub import AudioSegment
@@ -149,6 +149,43 @@ def audioFingerprintsToImage(fingerprints, filename, cols, rows, width, height, 
     # if dmismatch:
     #     print("Warning: fingerprint dimensions differs from cell dimensions")
 
+# https://gist.github.com/mixxorz/abb8a2f22adbdb6d387f
+def audioToWaveform(audio, width, height, filename, bgColor=(0, 0, 0, 0), waveColor=(0, 0, 0, 255)):
+    if len(audio) < 1:
+        print("No audio data")
+        return
+
+    centerY = int(height/2)
+    peaks = calculateAudioPeaks(audio, chunkCount=width, dbCeiling=centerY)
+    im = Image.new('RGBA', (len(peaks), height), bgColor)
+    draw = ImageDraw.Draw(im)
+
+    for index, value in enumerate(peaks, start=0):
+        if value <= 0:
+            continue
+        x = index
+        y0 = centerY - value
+        y1 = value * 2
+        draw.line((x, y0, x, y1), fill=waveColor)
+
+    im.save(filename)
+
+# Returns a list of audio level peaks
+# https://gist.github.com/mixxorz/abb8a2f22adbdb6d387f
+def calculateAudioPeaks(audio, chunkCount=256, dbCeiling=64):
+    if len(audio) < chunkCount:
+        chunkCount = len(audio)
+    chunk_length = len(audio) / chunkCount
+
+    loudness_of_chunks = [
+        audio[i * chunk_length: (i + 1) * chunk_length].rms
+        for i in range(chunkCount)]
+
+    max_rms = max(0.0001, max(loudness_of_chunks) * 1.00)
+
+    return [int((loudness / max_rms) * dbCeiling)
+            for loudness in loudness_of_chunks]
+
 # Note: sample_width -> bit_depth conversions: 1->8, 2->16, 3->24, 4->32
 # 24/32 bit depth and 48K sample rates are industry standards
 def getAudio(filename, sampleWidth=4, sampleRate=48000, channels=2, verbose=True):
@@ -199,7 +236,8 @@ def getAudioClip(audio, clipStart, clipDur, audioDurationMs=None, clipFadeIn=10,
     # add a fade in/out to avoid clicking
     fadeInDur = min(clipFadeIn, newClipDur)
     fadeOutDur = min(clipFadeOut, newClipDur)
-    clip = clip.fade_in(fadeInDur).fade_out(fadeOutDur)
+    if fadeInDur > 0 or fadeOutDur > 0:
+        clip = clip.fade_in(fadeInDur).fade_out(fadeOutDur)
 
     return clip
 
