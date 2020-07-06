@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import argparse
+from lib.collection_utils import *
 from lib.io_utils import *
 from lib.processing_utils import *
 from lib.video_utils import *
@@ -16,13 +17,25 @@ import tarfile
 # input
 parser = argparse.ArgumentParser()
 parser.add_argument('-in', dest="INPUT_FILE", default="path/to/*.ext1", help="Input file pattern")
+parser.add_argument('-filter', dest="FILTER", default="", help="Filter string if input file is csv file")
+parser.add_argument('-dir', dest="MEDIA_DIRECTORY", default="", help="Media directory if input file is csv file")
 parser.add_argument('-out', dest="OUTPUT_FILE", default="path/to/%s.ext2", help="Output file pattern")
 parser.add_argument('-threads', dest="THREADS", default=3, type=int, help="Number of concurrent threads, -1 for all available")
 parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite existing wavs?")
 parser.add_argument('-probe', dest="PROBE", action="store_true", help="Just output commands?")
 a = parser.parse_args()
 
-filenames = getFilenames(a.INPUT_FILE)
+filenames = []
+if a.INPUT_FILE.endswith(".csv"):
+    fieldNames, files, fileCount = getFilesFromString(a)
+    if len(a.FILTER) > 0:
+        files = filterByQueryString(files, a.FILTER)
+        fileCount = len(files)
+        print("%s files after filtering" % fileCount)
+    filenames = [f["filename"] for f in files]
+else:
+    filenames = getFilenames(a.INPUT_FILE)
+
 if len(filenames) < 1:
     print("No files found")
     sys.exit()

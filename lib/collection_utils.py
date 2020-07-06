@@ -55,6 +55,8 @@ def filterWhere(arr, filters):
             arr = [a for a in arr if key not in a or a[key] != value]
         elif mode == "!~=":
             arr = [a for a in arr if key not in a or value not in a[key]]
+        elif mode == "?=":
+            arr = [a for a in arr if key not in a or a[key] != ""]
         else:
             arr = [a for a in arr if key not in a or a[key] == value]
 
@@ -122,7 +124,7 @@ def parseFilterString(str):
         return []
     conditionStrings = str.split("&")
     conditions = []
-    modes = ["<=", ">=", "~=", "!=", "!~=", ">", "<", "="]
+    modes = ["<=", ">=", "~=", "!=", "!~=", "?=", ">", "<", "="]
     for cs in conditionStrings:
         for mode in modes:
             if mode in cs:
