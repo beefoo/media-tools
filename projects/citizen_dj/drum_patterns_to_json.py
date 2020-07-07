@@ -62,32 +62,32 @@ validSymbols = sorted(unique(validSymbols))
 
 for i, r in enumerate(patterns):
     # patterns[i]["groupId"] = (r["artist"], r["title"], r["year"], r["category"])
-     patterns[i]["groupId"] = (r["label"], r["category"])
-
-groupMeta = sorted(unique([r["groupId"] for r in patterns]))
-# pprint(groupMeta)
-patternGroups = groupList(patterns, "groupId")
+    label = r["label"] + " ["
+    if not isNumber(r["category"]):
+        label += r["category"] + " "
+    label += str(r["bar"]) + "]"
+    patterns[i]["label"] = label
+patterns = sorted(patterns, key=lambda r: r["label"])
 
 patternData = []
-for group in patternGroups:
-    index = groupMeta.index(group["groupId"])
-    bars = sorted(group["items"], key=lambda g: g["bar"])
-    barsData = []
-    for b in bars:
-        barData = []
-        for n in range(16):
-            key = str(n+1)
-            value = b[key]
-            instruments = []
-            if len(value) > 0:
-                for symbol in value.split(","):
-                    if symbol in validSymbols:
-                        instruments.append(symbol)
-            barData.append(instruments)
-        barsData.append(barData)
-    row = list(groupMeta[index])
-    row.append(bars[0]["bpm"])
-    row.append(barsData)
+for r in patterns:
+
+    barData = []
+    for n in range(16):
+        key = str(n+1)
+        value = r[key]
+        instruments = []
+        if len(value) > 0:
+            for symbol in value.split(","):
+                if symbol in validSymbols:
+                    instruments.append(symbol)
+        barData.append(instruments)
+
+    row = []
+    row.append(r["id"])
+    row.append(r["label"])
+    row.append(r["bpm"])
+    row.append(barData)
     patternData.append(row)
 
 patternKeyData = {}
@@ -116,7 +116,7 @@ jsonOut = {
     "patterns": patternData,
     "patternKey": patternKeyData,
     # "itemHeadings": ["artist", "title", "year", "category", "bpm", "bars"]
-    "itemHeadings": ["label", "category", "bpm", "bars"]
+    "itemHeadings": ["id", "name", "bpm", "pattern"]
 }
 
 makeDirectories(a.OUTPUT_FILE)
