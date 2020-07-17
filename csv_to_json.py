@@ -64,7 +64,10 @@ groups = None
 if len(GROUPS) > 0:
     groups = {}
     for groupKey in GROUPS:
-        groups[groupKey] = sorted(unique([r[groupKey] for r in rows]))
+        groupKeyNew = groupKey
+        if groupKey in replaceKeys:
+            groupKeyNew = replaceKeys[groupKey]
+        groups[groupKeyNew] = sorted(unique([r[groupKey] for r in rows]))
 
 LISTS = [p for p in a.LISTS.strip().split(",")] if len(a.LISTS) > 0 else []
 for i, r in enumerate(rows):
@@ -74,7 +77,10 @@ if len(LISTS) > 0:
     if groups is None:
         groups = {}
     for groupKey in LISTS:
-        groups[groupKey] = sorted(unique(flattenList([r[groupKey] for r in rows])))
+        groupKeyNew = groupKey
+        if groupKey in replaceKeys:
+            groupKeyNew = replaceKeys[groupKey]
+        groups[groupKeyNew] = sorted(unique(flattenList([r[groupKey] for r in rows])))
 
 items = []
 for r in rows:
@@ -84,9 +90,9 @@ for r in rows:
         if p in replaceKeys:
             pnew = replaceKeys[p]
         if p in GROUPS:
-            item[pnew] = groups[p].index(r[p])
+            item[pnew] = groups[pnew].index(r[p])
         elif p in LISTS:
-            item[pnew] = [groups[p].index(value) for value in r[p]]
+            item[pnew] = [groups[pnew].index(value) for value in r[p]]
         else:
             item[pnew] = r[p]
     items.append(item)

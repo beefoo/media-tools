@@ -37,7 +37,7 @@ python3 samples_to_sprite.py -in "{data_base_dir}sampledata/{collection_uid}_sub
 python3 images_to_thumbnails.py -in "{app_dir}img/sprites/*.png" -out "{app_dir}img/thumbnails/" -width 480 -height 120
 
 // 6. prep for "remix" interface
-python3 csv_to_json.py -in "{data_base_dir}sampledata/{collection_uid}_subset_64x64_clips.csv" -props "id,sourceFilename,sourceStart,dur,phrase" -groups "sourceFilename" -out "{app_dir}data/sampledata/{collection_uid}.json" -light
+python3 csv_to_json.py -in "{data_base_dir}sampledata/{collection_uid}_subset_64x64.csv" -props "filename,start,dur,phrase" -replace "filename=sourceFilename&start=sourceStart" -groups "filename" -out "{app_dir}data/sampledata/{collection_uid}.json" -light
 python3 meta_to_meta.py -in "{data_base_dir}metadata/{collection_uid}.csv" -key "date" -pattern "([12][0-9]{{3}}).*" -features "year"
 // python3 update_meta.py -in "{data_base_dir}metadata/{collection_uid}.csv" -key "id" -rkey "url" -find "(.*)" -repl "https://www.loc.gov/item/\1/"
 python3 update_meta.py -in "{data_base_dir}metadata/{collection_uid}.csv" -key "id" -rkey "embed_url" -find "(.*)" -repl "https://www.loc.gov/item/\1/?embed=resources"
