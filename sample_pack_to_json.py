@@ -22,6 +22,7 @@ parser.add_argument('-aout', dest="OUTPUT_AUDIO_DIR", default="audio/samplepacks
 parser.add_argument('-dout', dest="OUTPUT_DATA_FILE", default="_data/%s.json", help="Output data file")
 parser.add_argument('-asout', dest="OUTPUT_ASSETS_DIR", default="", help="Output data file")
 parser.add_argument('-pout', dest="OUTPUT_PACKAGE_DIR", default="samplepacks/", help="Output package dir")
+parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite existing media files?")
 a = parser.parse_args()
 
 _, items = readCsv(a.ITEM_DATA_FILE)
@@ -44,7 +45,8 @@ for zipfilename in zipfilenames:
     basefilename = os.path.basename(zipfilename)
     destFilename = OUTPUT_PACKAGE_DIR + basefilename
     # move zipfile over
-    shutil.copyfile(zipfilename, destFilename)
+    if a.OVERWRITE or not os.path.isfile(destFilename):
+        shutil.copyfile(zipfilename, destFilename)
     # # remove dest dir and copy over source dir
     # sourceDir = zipfilename[:(len(zipfilename)-4)] + "/"
     # destDir = destFilename[:(len(destFilename)-4)] + "/"
@@ -67,10 +69,12 @@ for zipfilename in zipfilenames:
         print('Moving mp3 files over...')
         audiofiles = getFilenames(a.SAMPLE_PACK_DIR + basename + '/excerpts/*.' + format)
         oneshots = getFilenames(a.SAMPLE_PACK_DIR + basename + '/one_shots/*.' + format)
+        itemClips = {}
         for afile in audiofiles:
             baseAfilename = os.path.basename(afile)
             destAfilename = OUTPUT_AUDIO_DIR + baseAfilename
-            shutil.copyfile(afile, destAfilename)
+            if a.OVERWRITE or not os.path.isfile(destAfilename):
+                shutil.copyfile(afile, destAfilename)
             # item
             baseAname = getBasename(afile)
             itemId = baseAname.split('_')[1]
@@ -78,12 +82,20 @@ for zipfilename in zipfilenames:
             if timeStamp.startswith("00:"):
                 timeStamp = timeStamp[3:]
             item = itemLookup[itemId]
-            jsonDataOut["clips"].append({
-                'filename': baseAfilename,
-                'title': item['title'],
-                'timestamp': timeStamp,
-                'url': item[a.URL_KEY]
+            uid = str(item['id'])
+            if uid not in itemClips:
+                itemClips[uid] = {
+                    'id': uid,
+                    'title': str(item['title']),
+                    'url': item[a.URL_KEY],
+                    'clips': []
+                }
+            itemClips[uid]['clips'].append({
+                'filename': getBasename(baseAfilename),
+                'timeStamp': timeStamp,
+                'start': timecodeToMs(timeStamp) + 1000
             })
+        jsonDataOut["items"] = sorted([itemClips[uid] for uid in itemClips], key=lambda item: str(item['title']))
         jsonDataOut['segmentCount'] = len(audiofiles)
         jsonDataOut['oneshotCount'] = len(oneshots)
         jsonDataOut['totalCount'] = len(audiofiles) + len(oneshots)
@@ -94,7 +106,7 @@ for zipfilename in zipfilenames:
         for afile in audiofiles:
             baseAfilename = os.path.basename(afile)
             destAfilename = OUTPUT_WAV_AUDIO_DIR + baseAfilename
-            shutil.copyfile(afile, destAfilename)
+            if a.OVERWRITE or not os.path.isfile(destAfilename):
+                shutil.copyfile(afile, destAfilename)
 
-jsonDataOut["clips"] = sorted(jsonDataOut["clips"], key=lambda c: str(c['title']))
 writeJSON(OUTPUT_DATA_FILE, jsonDataOut, pretty=True)
