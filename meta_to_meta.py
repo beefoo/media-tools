@@ -40,6 +40,7 @@ makeDirectories(OUTPUT_FILE)
 pattern = re.compile(PATTERN)
 rowCount = len(rows)
 noMatchCount = 0
+noMatches = []
 for i, row in enumerate(rows):
     matches = pattern.match(str(row[COLUMN_KEY]))
 
@@ -47,6 +48,7 @@ for i, row in enumerate(rows):
         # if a.PROBE:
         #     print("Did not match: %s" % row[COLUMN_KEY])
         noMatchCount += 1
+        noMatches.append(row[COLUMN_KEY])
     elif a.PROBE:
         print("Matched %s" % row[COLUMN_KEY])
 
@@ -65,6 +67,8 @@ print("Matched %s files" % (rowCount-noMatchCount))
 print("Did not match %s files" % noMatchCount)
 
 if a.PROBE:
+    if len(noMatches) > 0:
+        pprint(noMatches)
     sys.exit()
 
 writeCsv(OUTPUT_FILE, rows, headings)

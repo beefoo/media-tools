@@ -150,13 +150,13 @@ def audioFingerprintsToImage(fingerprints, filename, cols, rows, width, height, 
     #     print("Warning: fingerprint dimensions differs from cell dimensions")
 
 # https://gist.github.com/mixxorz/abb8a2f22adbdb6d387f
-def audioToWaveform(audio, width, height, filename, bgColor=(0, 0, 0, 0), waveColor=(0, 0, 0, 255)):
+def audioToWaveform(audio, width, height, filename, bgColor=(0, 0, 0, 0), waveColor=(0, 0, 0, 255), resolution=4):
     if len(audio) < 1:
         print("No audio data")
         return
 
     centerY = int(height/2)
-    peaks = calculateAudioPeaks(audio, chunkCount=width, dbCeiling=centerY)
+    peaks = calculateAudioPeaks(audio, chunkCount=width*resolution, dbCeiling=centerY)
     im = Image.new('RGBA', (len(peaks), height), bgColor)
     draw = ImageDraw.Draw(im)
 
@@ -167,6 +167,10 @@ def audioToWaveform(audio, width, height, filename, bgColor=(0, 0, 0, 0), waveCo
         y0 = centerY - value
         y1 = value * 2
         draw.line((x, y0, x, y1), fill=waveColor)
+
+    if resolution > 1:
+        newWidth = roundInt(1.0 * len(peaks) / resolution)
+        im = im.resize((newWidth, height), resample=Image.LANCZOS)
 
     im.save(filename)
 

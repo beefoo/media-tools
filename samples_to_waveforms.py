@@ -19,6 +19,7 @@ parser.add_argument('-dkey', dest="DUR_KEY", default="", help="Key for duration 
 parser.add_argument('-width', dest="IMAGE_WIDTH", default=800, type=int, help="Width of image")
 parser.add_argument('-height', dest="IMAGE_HEIGHT", default=100, type=int, help="Height of image")
 parser.add_argument('-threads', dest="THREADS", default=3, type=int, help="Number of threads")
+parser.add_argument('-res', dest="RESOLUTION", default=4, type=int, help="The resolution of the data. E.g. 4 = 4 chunks per pixel")
 parser.add_argument('-out', dest="OUTPUT_DIR", default="output/waveforms/%s.png", help="Output directory")
 parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite existing images?")
 a = parser.parse_args()
@@ -45,7 +46,7 @@ def sampleToWaveform(s):
     audio = getAudio(filename)
     if len(a.START_KEY) and len(a.DUR_KEY):
         audio = getAudioClip(audio, s[a.START_KEY], s[a.DUR_KEY], clipFadeIn=0, clipFadeOut=0)
-    audioToWaveform(audio, a.IMAGE_WIDTH, a.IMAGE_HEIGHT, imageFilename)
+    audioToWaveform(audio, a.IMAGE_WIDTH, a.IMAGE_HEIGHT, imageFilename, resolution=a.RESOLUTION)
     print("Wrote to %s" % imageFilename)
 
 pool = ThreadPool(getThreadCount(a.THREADS))
