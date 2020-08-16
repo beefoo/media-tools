@@ -26,7 +26,9 @@ parser.add_argument('-out', dest="OUTPUT_FILE", default="output/%s.md", help="Ou
 a = parser.parse_args()
 # Parse arguments
 
-PROPS = [p for p in a.PROPS.strip().split(",")]
+PROPS = []
+if len(a.PROPS) > 0:
+    PROPS = [p for p in a.PROPS.strip().split(",")]
 
 # Read files
 fieldNames, rows = readCsv(a.INPUT_FILE)

@@ -243,7 +243,7 @@ def parseNumber(string, alwaysFloat=False):
     except ValueError:
         return string
 
-def parseNumbers(arr, keyExceptions=['id', 'identifier']):
+def parseNumbers(arr, keyExceptions=['id', 'identifier', 'uid']):
     for i, item in enumerate(arr):
         if isinstance(item, (list,)):
             for j, v in enumerate(item):
