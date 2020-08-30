@@ -2,7 +2,6 @@ import colorsys
 from lib.math_utils import *
 import numpy as np
 
-
 def getColorGradient(name="inferno", multiply=255, toInt=True):
     data = []
     if name == "magma":
@@ -1809,6 +1808,25 @@ def getColorGradient(name="inferno", multiply=255, toInt=True):
         data = np.rint(data)
         data = data.astype(np.uint8)
     return data
+
+def getColorGradientMatrix(nvalues, name="inferno", easingFunction="linear"):
+    h, w = nvalues.shape
+    cdata = getColorGradient(name=name)
+    clen = len(cdata)
+
+    newShape = (h, w, 3)
+    newValues = np.zeros(newShape, dtype=np.uint8)
+
+    for y in range(h):
+        for x in range(w):
+            nvalue = nvalues[y, x]
+            if easingFunction != "linear":
+                nvalue = ease(nvalue, easingFunction)
+            cindex = roundInt(nvalue * (clen-1))
+            color = tuple(cdata[cindex])
+            newValues[y, x] = color
+
+    return newValues
 
 def getColorGradientValue(nvalue, name="inferno", easingFunction="linear"):
     if easingFunction != "linear":
