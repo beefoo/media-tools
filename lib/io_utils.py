@@ -275,7 +275,7 @@ def stringToFilename(string):
 
     return string
 
-def writeCsv(filename, arr, headings="auto", append=False, encoding="utf8"):
+def writeCsv(filename, arr, headings="auto", append=False, encoding="utf8", verbose=True):
     if headings == "auto":
         headings = arr[0].keys() if len(arr) > 0 and type(arr[0]) is dict else None
     mode = 'w' if not append else 'a'
@@ -302,7 +302,8 @@ def writeCsv(filename, arr, headings="auto", append=False, encoding="utf8"):
             row = d
         writer.writerow(row)
     f.close()
-    print("Wrote %s rows to %s" % (len(arr), filename))
+    if verbose:
+        print("Wrote %s rows to %s" % (len(arr), filename))
 
 def writeJSON(filename, data, verbose=True, pretty=False):
     with open(filename, 'w') as f:

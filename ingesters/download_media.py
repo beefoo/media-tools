@@ -21,10 +21,11 @@ from lib.processing_utils import *
 # input
 parser = argparse.ArgumentParser()
 parser.add_argument('-in', dest="INPUT_FILE", default="tmp/metadata.csv", help="Path to csv file")
+parser.add_argument('-asset', dest="ASSET_URL", default="", help="Key to retrieve asset url from")
 parser.add_argument('-id', dest="ID_KEY", default="assetId", help="Key to retrieve identifier from")
-parser.add_argument('-url', dest="URL", default="https://download.com/asset/%s.mp4", help="Url pattern")
+parser.add_argument('-url', dest="URL_PATTERN", default="https://download.com/asset/%s.mp4", help="Url pattern if applicable")
 parser.add_argument('-limit', dest="LIMIT", default=-1, type=int, help="Limit downloads; -1 for no limit")
-parser.add_argument('-out', dest="OUTPUT_DIR", default="media/downloads/%s.mp4", help="Output directory")
+parser.add_argument('-out', dest="OUTPUT_DIR", default="media/downloads/", help="Output directory")
 parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite existing data?")
 parser.add_argument('-filter', dest="FILTER", default="", help="Query string to filter by")
 parser.add_argument('-probe', dest="PROBE", action="store_true", help="Just output debug info")
@@ -33,36 +34,51 @@ a = parser.parse_args()
 # Make sure output dirs exist
 makeDirectories(a.OUTPUT_DIR)
 
-# Get existing data
-fieldNames, rows = readCsv(a.INPUT_FILE)
-if "filename" not in fieldNames:
-    print("Filename not provided; will use ID for this")
-fileCount = len(rows)
+filenames = [a.INPUT_FILE]
+if "*" in a.INPUT_FILE:
+    filenames = getFilenames(a.INPUT_FILE)
+    print("Found %s files" % len(filenames))
 
-if len(a.FILTER) > 0:
-    rows = filterByQueryString(rows, a.FILTER)
-    fileCount = len(rows)
-    print("Found %s rows after filtering" % fileCount)
-
-if a.LIMIT > 0:
-    rows = rows[:a.LIMIT]
-
+downloads = 0
 nofileCount = 0
-for i, row in enumerate(rows):
-    url = a.URL % row[a.ID_KEY] if a.ID_KEY in row else False
-    if not url:
-        print("Could not find %s in row %s" % (a.ID_KEY, i+1))
-        continue
+for filename in filenames:
 
-    ext = getFileExt(url)
-    filename = row[a.ID_KEY] + ext if "filename" not in row else row["filename"]
-    filepath = a.OUTPUT_DIR % filename
-    if a.PROBE:
-        if not os.path.isfile(filepath):
-            nofileCount += 1
-    else:
-        downloadBinaryFile(url, filepath, a.OVERWRITE)
-        printProgress(i+1, fileCount)
+    if a.LIMIT > 0 and downloads >= a.LIMIT:
+        print("Reached download limit.")
+        break
+
+    # Get existing data
+    fieldNames, rows = readCsv(filename)
+    if "filename" not in fieldNames:
+        print("Filename not provided; will use ID for this")
+    fileCount = len(rows)
+
+    if len(a.FILTER) > 0:
+        rows = filterByQueryString(rows, a.FILTER)
+        fileCount = len(rows)
+        print("Found %s rows after filtering" % fileCount)
+
+    for i, row in enumerate(rows):
+        url = ""
+        if len(a.ASSET_URL) < 1:
+            url = a.URL_PATTERN % row[a.ID_KEY] if a.ID_KEY in row else ""
+        else:
+            url = row[a.ASSET_URL]
+
+        if len(url) < 1:
+            print("Could not find url for item %s" % row[a.ID_KEY])
+            continue
+
+        ext = getFileExt(url)
+        filename = row[a.ID_KEY] + ext if "filename" not in row else row["filename"]
+        filepath = a.OUTPUT_DIR + filename
+        if a.PROBE:
+            if not os.path.isfile(filepath):
+                nofileCount += 1
+        else:
+            downloadBinaryFile(url, filepath, a.OVERWRITE)
+            downloads += 1
+            printProgress(i+1, fileCount)
 
 if a.PROBE:
     print("%s files to download" % nofileCount)
