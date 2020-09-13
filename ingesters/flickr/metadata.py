@@ -28,7 +28,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-key', dest="API_KEY", default="", help="Your Flickr API key")
 parser.add_argument('-secret', dest="API_SECRET", default="", help="Your Flickr API secret")
 parser.add_argument('-user', dest="USER", default="biodivlibrary", help="Name of user")
-parser.add_argument('-props', dest="PROPERTY_LIST", default="id,title,description,license,views,tags,taken", help="Your Flickr API secret")
+parser.add_argument('-props', dest="PROPERTY_LIST", default="id,title,description,license,views,tags,taken", help="List of properties to retrieve")
+parser.add_argument('-sizes', dest="SIZE_LIST", default="Small,Medium,Large,Original", help="List of image sizes to retrieve: https://www.flickr.com/services/api/flickr.photos.getSizes.html")
 parser.add_argument('-out', dest="OUTPUT_FILE", default="tmp/biodivlibrary_page_%s.csv", help="Output file")
 parser.add_argument('-page', dest="START_PAGE", default=1, type=int, help="Page to start on")
 parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite existing data?")
@@ -36,6 +37,7 @@ parser.add_argument('-probe', dest="PROBE", action="store_true", help="Just prin
 a = parser.parse_args()
 
 PROPS = [p.strip() for p in a.PROPERTY_LIST.split(",")]
+SIZE_LIST = [p.strip() for p in a.SIZE_LIST.split(",")]
 IS_MULTI_OUTPUT = ("%" in a.OUTPUT_FILE)
 
 flickr_api.set_keys(api_key = a.API_KEY, api_secret = a.API_SECRET)
@@ -45,7 +47,9 @@ makeDirectories([a.OUTPUT_FILE])
 
 user = flickr_api.Person.findByUserName(a.USER)
 rows = []
-fieldNames = PROPS[:] + ["width", "height", "imageUrl", "sourceUrl"]
+fieldNames = PROPS[:]
+for sizeLabel in SIZE_LIST:
+    fieldNames += ["width%s" % sizeLabel, "height%s" % sizeLabel, "imageUrl%s" % sizeLabel, "sourceUrl%s" % sizeLabel]
 rowLookup = None
 
 if not a.OVERWRITE and os.path.isfile(a.OUTPUT_FILE) and not IS_MULTI_OUTPUT:
@@ -66,6 +70,7 @@ while True:
         rows = []
         outputFile = outputFile % page
         if os.path.isfile(outputFile) and not a.OVERWRITE:
+            page += 1
             continue
 
     photos = user.getPublicPhotos(per_page = 500, page=page)
@@ -103,19 +108,13 @@ while True:
                 value = value.replace("\n", " ")
             meta[p] = value
 
-
-        largest = None
         # print(sizes)
         for key, size in sizes.items():
-            if largest is None:
-                largest = size
-            elif size["width"] > largest["width"]:
-                largest = size
-
-        meta["width"] = size["width"]
-        meta["height"] = size["height"]
-        meta["imageUrl"] = size["source"]
-        meta["sourceUrl"] = size["url"]
+            if size["label"] in SIZE_LIST:
+                meta["width%s" % size["label"]] = size["width"]
+                meta["height%s" % size["label"]] = size["height"]
+                meta["imageUrl%s" % size["label"]] = size["source"]
+                meta["sourceUrl%s" % size["label"]] = size["url"]
 
         rows.append(meta)
 
