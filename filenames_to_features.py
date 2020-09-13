@@ -22,6 +22,7 @@ parser.add_argument('-out', dest="OUTPUT_FILE", default="media/sampler/double-ba
 parser.add_argument('-append', dest="APPEND", default=1, type=int, help="Append to existing data?")
 parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite existing data?")
 parser.add_argument('-plot', dest="PLOT", action="store_true", help="Show plot?")
+parser.add_argument('-probe', dest="PROBE", action="store_true", help="Just output details?")
 args = parser.parse_args()
 
 # Parse arguments
@@ -48,7 +49,7 @@ if os.path.isfile(OUTPUT_FILE) and not OVERWRITE and not APPEND:
     sys.exit()
 
 # Open existing file
-fieldNames = ["filename", "dur", "start"]
+fieldNames = ["filename"]
 if os.path.isfile(OUTPUT_FILE) and APPEND:
     fieldNames, oldRows = readCsv(OUTPUT_FILE)
     if set(PATTERN_FEATURES).issubset(set(fieldNames)) and not OVERWRITE:
@@ -76,9 +77,6 @@ def getFeatures(row):
     for j, feature in enumerate(PATTERN_FEATURES):
         row[feature] = matches.group(j+1)
 
-    if "dur" not in row or OVERWRITE:
-        row["dur"] = getDurationFromAudioFile(row["filepath"])
-        row["start"] = 0
     sys.stdout.write('\r')
     sys.stdout.write("%s%%" % round(1.0*progress/(fileCount-1)*100,1))
     sys.stdout.flush()
@@ -97,4 +95,7 @@ headings = fieldNames[:]
 for feature in PATTERN_FEATURES:
     if feature not in headings:
         headings.append(feature)
+
+if args.PROBE:
+    sys.exit()
 writeCsv(OUTPUT_FILE, rows, headings)
