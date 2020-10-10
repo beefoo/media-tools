@@ -25,6 +25,7 @@ parser.add_argument('-lim', dest="LIMIT", default=-1, type=int, help="Target tot
 parser.add_argument('-limp', dest="LIMIT_PHRASES_PER_FILE", default=-1, type=int, help="Limit number of phrases to take per file, -1 for everything")
 parser.add_argument('-lims', dest="LIMIT_SAMPLES_PER_PHRASE", default=-1, type=int, help="Limit number of samples to take per phrase, -1 for everything")
 
+parser.add_argument('-auto', dest="AUTO_MODE", action="store_true", help="Automatically adjust -limp and -lims parameters")
 parser.add_argument('-probe', dest="PROBE", action="store_true", help="Just show the stats")
 a = parser.parse_args()
 
@@ -61,46 +62,74 @@ for i, p in enumerate(phrases):
 for i, s in enumerate(samples):
     samples[i]["end"] = s["start"] + s["dur"]
 
-if a.LIMIT_PHRASES_PER_FILE > 0:
-    phrasesByFilename = groupList(phrases, 'filename')
-    limitedPhrases = []
-    for i, group in enumerate(phrasesByFilename):
-        if group['count'] > a.LIMIT_PHRASES_PER_FILE:
-            groupPhrases = sortByQueryString(group['items'], a.SORT)
-            limitedPhrases += groupPhrases[:a.LIMIT_PHRASES_PER_FILE]
-        else:
-            limitedPhrases += group['items']
-    phrases = limitedPhrases
+def getValidSamples(phrases, samples, limitPhrasesPerFile, limitSamplesPerPhrase, auto=False, maxLimp=16):
+    global a
 
-phrases = sortByQueryString(phrases, a.SORT)
+    print("Trying to get valid samples with limp %s and lims %s" % (limitPhrasesPerFile, limitSamplesPerPhrase))
 
-if len(a.FILTER) > 0:
-    phrases = filterByQueryString(phrases, a.FILTER)
-    phraseCount = len(phrases)
-    print("Found %s phrases after filtering" % phraseCount)
+    validPhrases = phrases[:]
+    if limitPhrasesPerFile > 0:
+        phrasesByFilename = groupList(validPhrases, 'filename')
+        limitedPhrases = []
+        for i, group in enumerate(phrasesByFilename):
+            if group['count'] > limitPhrasesPerFile:
+                groupPhrases = sortByQueryString(group['items'], a.SORT)
+                limitedPhrases += groupPhrases[:limitPhrasesPerFile]
+            else:
+                limitedPhrases += group['items']
+        validPhrases = limitedPhrases
 
-print("Collecting samples...")
-validSamples = []
-for i, p in enumerate(phrases):
-    psamples = [s for s in samples if s["filename"]==p["filename"] and s["start"] >= p["start"] and s["end"] <= p["end"]]
-    if a.LIMIT_SAMPLES_PER_PHRASE > 0 and len(psamples) > a.LIMIT_SAMPLES_PER_PHRASE:
-        psamples = sorted(psamples, key=lambda s: s['start'])
-        psamples = psamples[:a.LIMIT_SAMPLES_PER_PHRASE]
-    for j, s in enumerate(psamples):
-        psamples[j]["phrase"] = i
-    validSamples += psamples
-    if a.LIMIT > 0 and len(validSamples) > a.LIMIT:
-        break
+    validPhrases = sortByQueryString(validPhrases, a.SORT)
 
+    if len(a.FILTER) > 0:
+        validPhrases = filterByQueryString(validPhrases, a.FILTER)
+        phraseCount = len(validPhrases)
+        print("Found %s phrases after filtering" % phraseCount)
+
+    print("Collecting samples...")
+    validSamples = []
+    for i, p in enumerate(validPhrases):
+        psamples = [s for s in samples if s["filename"]==p["filename"] and s["start"] >= p["start"] and s["end"] <= p["end"]]
+        if limitSamplesPerPhrase > 0 and len(psamples) > limitSamplesPerPhrase:
+            psamples = sorted(psamples, key=lambda s: s['start'])
+            psamples = psamples[:limitSamplesPerPhrase]
+        for j, s in enumerate(psamples):
+            psamples[j]["phrase"] = i
+        validSamples += psamples
+        if a.LIMIT > 0 and len(validSamples) > a.LIMIT:
+            break
+
+    sampleCount = len(validSamples)
+    print("Found %s valid samples" % sampleCount)
+
+    if a.LIMIT > 0 and sampleCount < a.LIMIT:
+        print("** Try increasing -limp or -lims to get more valid samples **")
+
+        if auto and limitPhrasesPerFile > 0:
+            print("...automatically incrementing -limp by one...")
+            # increment limp
+            limitPhrasesPerFile += 1
+
+            # we've reached the max, just return everything
+            if limitPhrasesPerFile >= maxLimp:
+                limitPhrasesPerFile = -1
+                return getValidSamples(phrases, samples, limitPhrasesPerFile, limitSamplesPerPhrase, auto=False)
+
+            return getValidSamples(phrases, samples, limitPhrasesPerFile, limitSamplesPerPhrase, auto=True)
+
+    elif a.LIMIT > 0 and (sampleCount-50) > a.LIMIT:
+        print("** Try reducing -limp or -lims to get your valid sample count closer to %s **" % a.LIMIT)
+
+    return validSamples
+
+limitPhrasesPerFile = a.LIMIT_PHRASES_PER_FILE
+limitSamplesPerPhrase = a.LIMIT_SAMPLES_PER_PHRASE
+if a.AUTO_MODE:
+    limitPhrasesPerFile = 1 # start at one, then increment until valid
+if a.AUTO_MODE and limitSamplesPerPhrase < 1:
+    limitSamplesPerPhrase = 16
+validSamples = getValidSamples(phrases, samples, limitPhrasesPerFile, limitSamplesPerPhrase, a.AUTO_MODE)
 sampleCount = len(validSamples)
-print("Found %s valid samples" % sampleCount)
-
-if a.LIMIT > 0 and sampleCount < a.LIMIT:
-    print("** Try increasing -limp or -lims to get more valid samples **")
-
-elif a.LIMIT > 0 and (sampleCount-50) > a.LIMIT:
-    print("** Try reducing -limp or -lims to get your valid sample count closer to %s **" % a.LIMIT)
-
 validFileCount = len(unique([s["filename"] for s in validSamples]))
 print("Found %s unique files" % validFileCount)
 
