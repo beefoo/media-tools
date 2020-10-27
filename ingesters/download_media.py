@@ -37,6 +37,7 @@ makeDirectories(a.OUTPUT_DIR)
 filenames = [a.INPUT_FILE]
 if "*" in a.INPUT_FILE:
     filenames = getFilenames(a.INPUT_FILE)
+    filenames = sorted(filenames)
     print("Found %s files" % len(filenames))
 
 downloads = 0
@@ -79,6 +80,9 @@ for filename in filenames:
             downloadBinaryFile(url, filepath, a.OVERWRITE)
             downloads += 1
             printProgress(i+1, fileCount)
+
+        if a.LIMIT > 0 and downloads >= a.LIMIT:
+            break
 
 if a.PROBE:
     print("%s files to download" % nofileCount)

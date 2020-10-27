@@ -54,7 +54,7 @@ for i, row in enumerate(rows):
 
     for j, feature in enumerate(PATTERN_FEATURES):
         # check to see if we can overwrite
-        if feature in row and not a.OVERWRITE and len(row[feature]) > 0:
+        if feature in row and not a.OVERWRITE and len(str(row[feature])) > 0:
             continue
         if matches:
             rows[i][feature] = matches.group(j+1)
