@@ -130,9 +130,9 @@ def resizeCanvas(im, cw, ch):
     newImg = pasteImage(canvasImg, im, x, y)
     return newImg
 
-def rotateImage(im, angle):
+def rotateImage(im, angle, expand=False):
     if abs(angle) > 0.0:
-        im = im.rotate(360.0-angle, expand=False, resample=Image.BICUBIC, fillcolor=(0,0,0,0))
+        im = im.rotate(360.0-angle, expand=expand, resample=Image.BICUBIC, fillcolor=(0,0,0,0))
     return im
 
 def rotatePixels(pixels, angle, resize=None):
@@ -152,6 +152,27 @@ def saveBlankFrame(fn, width, height, bgColor="#000000", overwrite=False, verbos
     im.save(fn)
     if verbose:
         print("Saved %s" % fn)
+
+def toEightBit(filename, toFilename):
+    im = Image.open(filename)
+
+    # PIL complains if you don't load explicitly
+    im.load()
+
+    # Get the alpha band
+    alpha = im.split()[-1]
+
+    # convert to RGB, then to 8-bit color
+    im = im.convert('RGB').convert('P', palette=Image.ADAPTIVE, colors=255)
+
+    # Set all pixel values below 128 to 255, and the rest to 0
+    mask = Image.eval(alpha, lambda a: 255 if a <= 128 else 0)
+
+    # Paste the color of index 255 and use alpha as a mask
+    im.paste(255, mask)
+
+    # The transparency index is 255
+    im.save(toFilename, transparency=255)
 
 def updateAlpha(im, alpha):
     im = im.convert("RGBA")
