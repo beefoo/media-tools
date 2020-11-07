@@ -6,9 +6,9 @@ from PIL import Image
 from pprint import pprint
 import sys
 
+from lib.image_utils import *
 from lib.io_utils import *
 from lib.math_utils import *
-from lib.video_utils import *
 
 # input
 parser = argparse.ArgumentParser()

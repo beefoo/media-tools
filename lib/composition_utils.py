@@ -2,6 +2,7 @@
 from lib.audio_mixer import *
 from lib.audio_utils import getDurationFromAudioFile
 from lib.clip import *
+from lib.image_utils import *
 from lib.io_utils import *
 from lib.math_utils import *
 from lib.sampler import *

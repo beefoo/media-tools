@@ -2,6 +2,7 @@
 
 import argparse
 import csv
+from lib.image_utils import *
 from lib.io_utils import *
 from lib.math_utils import *
 from lib.video_utils import *

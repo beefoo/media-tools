@@ -8,6 +8,7 @@ from PIL import Image
 from scipy import stats
 import sys
 
+from lib.image_utils import *
 from lib.math_utils import *
 from lib.processing_utils import *
 from lib.video_utils import *

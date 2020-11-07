@@ -27,6 +27,7 @@ parser.add_argument('-url', dest="URL_PATTERN", default="https://download.com/as
 parser.add_argument('-limit', dest="LIMIT", default=-1, type=int, help="Limit downloads; -1 for no limit")
 parser.add_argument('-out', dest="OUTPUT_DIR", default="media/downloads/", help="Output directory")
 parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite existing data?")
+parser.add_argument('-sort', dest="SORT", default="", help="Query string to sort by")
 parser.add_argument('-filter', dest="FILTER", default="", help="Query string to filter by")
 parser.add_argument('-probe', dest="PROBE", action="store_true", help="Just output debug info")
 a = parser.parse_args()
@@ -54,6 +55,10 @@ for filename in filenames:
         print("Filename not provided; will use ID for this")
     fileCount = len(rows)
 
+    if len(a.SORT) > 0:
+        rows = sortByQueryString(rows, a.SORT)
+        print("Sorted: %s" % a.SORT)
+
     if len(a.FILTER) > 0:
         rows = filterByQueryString(rows, a.FILTER)
         fileCount = len(rows)
@@ -76,10 +81,14 @@ for filename in filenames:
         if a.PROBE:
             if not os.path.isfile(filepath):
                 nofileCount += 1
+                downloads += 1
         else:
             downloadBinaryFile(url, filepath, a.OVERWRITE)
             downloads += 1
-            printProgress(i+1, fileCount)
+            total = fileCount
+            if a.LIMIT > 0:
+                total = a.LIMIT
+            printProgress(i+1, total)
 
         if a.LIMIT > 0 and downloads >= a.LIMIT:
             break

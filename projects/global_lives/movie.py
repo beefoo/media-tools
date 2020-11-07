@@ -17,6 +17,7 @@ sys.path.insert(0,parentdir)
 
 from lib.collection_utils import *
 from lib.composition_utils import *
+from lib.image_utils import *
 from lib.math_utils import *
 from lib.io_utils import *
 from lib.processing_utils import *
