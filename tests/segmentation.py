@@ -13,6 +13,8 @@ First let's import some necessary libraries:
 
 from matplotlib import pyplot as plt
 from gluoncv import model_zoo, data, utils
+from pprint import pprint
+import sys
 
 ######################################################################
 # Load a pretrained model
@@ -27,6 +29,9 @@ from gluoncv import model_zoo, data, utils
 # with a default context of `cpu(0)`.
 
 net = model_zoo.get_model('mask_rcnn_resnet50_v1b_coco', pretrained=True)
+
+pprint(net.classes)
+sys.exit()
 
 ######################################################################
 # Pre-process an image

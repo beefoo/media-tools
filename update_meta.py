@@ -36,7 +36,7 @@ if UPDATE_COLUMN_KEY not in headings:
 makeDirectories(OUTPUT_FILE)
 
 for i, row in enumerate(rows):
-    value = row[a.COLUMN_KEY]
+    value = str(row[a.COLUMN_KEY])
     newValue = re.sub(FIND_PATTERN, REPLACE_PATTERN, value)
     rows[i][UPDATE_COLUMN_KEY] = newValue
     if a.PROBE:

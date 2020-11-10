@@ -76,7 +76,7 @@ for filename in filenames:
             continue
 
         ext = getFileExt(url)
-        filename = row[a.ID_KEY] + ext if "filename" not in row else row["filename"]
+        filename = str(row[a.ID_KEY]) + ext if "filename" not in row else row["filename"]
         filepath = a.OUTPUT_DIR + filename
         if a.PROBE:
             if not os.path.isfile(filepath):

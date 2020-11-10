@@ -172,7 +172,7 @@ def toEightBit(filename, toFilename):
     im.paste(255, mask)
 
     # The transparency index is 255
-    im.save(toFilename, transparency=255)
+    im.save(toFilename, transparency=255, optimize=True)
 
 def updateAlpha(im, alpha):
     im = im.convert("RGBA")
