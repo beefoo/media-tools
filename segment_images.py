@@ -86,7 +86,9 @@ for i, result in enumerate(results):
             "x": x0,
             "y": y0,
             "width": segmentW,
-            "height": segmentH
+            "height": segmentH,
+            "srcWidth": width,
+            "srcHeight": height
         })
         # make the mask
         mask = masks[j] * 255
