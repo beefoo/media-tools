@@ -19,6 +19,7 @@ parser.add_argument('-out', dest="OUTPUT_DIR", default="output/segments/", help=
 # parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite existing data?")
 parser.add_argument('-blur', dest="BLUR_RADIUS", default=0.0, type=float, help="Guassian blur radius, e.g. 2.0")
 parser.add_argument('-thresh', dest="THRESHOLD", default=0.99, type=float, help="Only include segments with at least this score")
+parser.add_argument('-class', dest="CLASSIFICATION", default="", help="Only include this class; leave blank if all classes are valid")
 parser.add_argument('-validate', dest="VALIDATE", action="store_true", help="Validate images?")
 parser.add_argument('-debug', dest="DEBUG", action="store_true", help="Display plot of first result?")
 a = parser.parse_args()
@@ -65,6 +66,8 @@ for i, result in enumerate(results):
 
     for j in range(validCount):
         label = net.classes[int(ids[j, 0])]
+        if len(a.CLASSIFICATION) > 0 and label != a.CLASSIFICATION:
+            continue
         score = scores[j, 0]
         x0, y0, x1, y1 = tuple(bboxes[j].tolist())
         print(" - Found %s: %s" % (label, score))

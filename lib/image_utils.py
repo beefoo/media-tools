@@ -153,8 +153,10 @@ def saveBlankFrame(fn, width, height, bgColor="#000000", overwrite=False, verbos
     if verbose:
         print("Saved %s" % fn)
 
-def toEightBit(filename, toFilename):
-    im = Image.open(filename)
+def toEightBit(filenameOrImage, toFilename):
+    im = filenameOrImage
+    if isinstance(filenameOrImage, str):
+        im = Image.open(filenameOrImage)
 
     # PIL complains if you don't load explicitly
     im.load()

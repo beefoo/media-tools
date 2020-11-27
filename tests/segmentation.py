@@ -30,8 +30,8 @@ import sys
 
 net = model_zoo.get_model('mask_rcnn_resnet50_v1b_coco', pretrained=True)
 
-pprint(net.classes)
-sys.exit()
+# pprint(net.classes)
+# sys.exit()
 
 ######################################################################
 # Pre-process an image
