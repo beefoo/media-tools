@@ -15,8 +15,11 @@ import sys
 parser = argparse.ArgumentParser()
 parser.add_argument('-in', dest="INPUT_FILE", default="tmp/metadata.csv", help="Input metdata csv")
 parser.add_argument('-sf', dest="SAMPLE_FILE", default="tmp/sampledata.csv", help="Input sampledata csv")
+parser.add_argument('-filter', dest="SAMPLE_FILTER", default="", help="Filter query for sampledata csv")
 parser.add_argument('-tmpl', dest="TEMPLATE", default="${title}", help="Template for printing")
-parser.add_argument('-sort', dest="SORT_BY", default="ntext", help="Either text for lastWord")
+parser.add_argument('-mkey', dest="META_KEY", default="filename", help="Key to match on in metadata file")
+parser.add_argument('-skey', dest="SAMPLE_KEY", default="filename", help="Key to match on in sample file")
+parser.add_argument('-sort', dest="SORT_BY", default="ntext", help="Either text or lastWord")
 a = parser.parse_args()
 aa = vars(a)
 aa["TEMPLATE"] = a.TEMPLATE.strip()
@@ -24,9 +27,13 @@ aa["TEMPLATE"] = a.TEMPLATE.strip()
 _, meta = readCsv(a.INPUT_FILE)
 _, samples = readCsv(a.SAMPLE_FILE)
 
+if len(a.SAMPLE_FILTER) > 0:
+    samples = filterByQueryString(samples, a.SAMPLE_FILTER)
+    print("%s samples after filtering" % len(samples))
+
 # filter out meta that isn't in sampledata
-ufilenames = set([s["filename"] for s in samples])
-meta = [d for d in meta if d["filename"] in ufilenames]
+ufilenames = set([s[a.SAMPLE_KEY] for s in samples])
+meta = [d for d in meta if d[a.META_KEY] in ufilenames]
 
 keys = [ele[1] for ele in Formatter().parse(a.TEMPLATE) if ele[1]]
 tmpl = Template(a.TEMPLATE)

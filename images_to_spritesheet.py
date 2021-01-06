@@ -47,14 +47,14 @@ limit = a.ROWS * a.COLS
 if a.LIMIT > 0:
     limit = min(limit, a.LIMIT)
 rows = rows[:limit]
-imageW = a.CELL_W * a.ROWS
-imageH = a.CELL_H * a.COLS
+imageW = a.CELL_W * a.COLS
+imageH = a.CELL_H * a.ROWS
 bgColor = (0,0,0)
 imageMode = "RGB"
 if a.HAS_ALPHA:
     bgColor = (0,0,0,0)
     imageMode = "RGBA"
-baseImg = Image.new(mode=imageMode, size=(imageW, imageW), color=bgColor)
+baseImg = Image.new(mode=imageMode, size=(imageW, imageH), color=bgColor)
 
 for i, row in enumerate(rows):
     im = Image.open(row["filename"])

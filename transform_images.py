@@ -20,6 +20,7 @@ parser.add_argument('-dir', dest="INPUT_DIR", default="tmp/images/", help="Input
 parser.add_argument('-filter', dest="FILTER", default="", help="Filter string")
 parser.add_argument('-fkey', dest="FILENAME_COL", default="filename", help="Filename column name")
 parser.add_argument('-rotate', dest="ROTATE", default="", help="Degrees to rotate; can be a number or column name")
+parser.add_argument('-rotatev', dest="ROTATE_ABSOLUTE_VALUE", default=0, type=int, help="Degrees to rotate in degrees")
 parser.add_argument('-maxd', dest="MAX_DIMENSION", default=-1, type=int, help="Maximum dimension of the image; -1 if none")
 parser.add_argument('-ld', dest="TARGET_LONGEST_DIMENSION", default=-1, type=int, help="Target dimension of the longest side; -1 if none")
 parser.add_argument('-flipx', dest="FLIP_X", default="", help="Flip left-to-right if negative value")
@@ -49,6 +50,9 @@ def parseParamValue(string, row):
 for i, row in enumerate(rows):
     fn = a.INPUT_DIR + row[a.FILENAME_COL]
 
+    if not os.path.isfile(fn):
+        continue
+
     im = Image.open(fn)
 
     if len(a.FLIP_X) > 0:
@@ -64,7 +68,10 @@ for i, row in enumerate(rows):
     if len(a.ROTATE) > 0:
         degrees = parseParamValue(a.ROTATE, row)
         if isNumber(degrees):
+            degrees += a.ROTATE_ABSOLUTE_VALUE
             im = rotateImage(im, degrees, expand=True)
+        elif a.ROTATE_ABSOLUTE_VALUE != 0:
+            im = rotateImage(im, a.ROTATE_ABSOLUTE_VALUE, expand=True)
 
     w, h = im.size
 
