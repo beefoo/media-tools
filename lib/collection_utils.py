@@ -3,6 +3,8 @@ import collections
 import itertools
 from operator import itemgetter
 from pprint import pprint
+import random
+
 from lib.math_utils import *
 
 def addIndices(arr, keyName="index", startIndex=0):
@@ -192,7 +194,16 @@ def sortBy(arr, sorters, targetLen=None):
             key, direction = s
         reversed = (direction == "desc")
 
-        arr = sorted(arr, key=lambda k: k[key], reverse=reversed)
+        # if key is random, use direction as seed
+        if key == "random":
+            seed = 2
+            try:
+                seed = int(direction)
+            except ValueError:
+                seed = 2
+            random.Random(seed).shuffle(arr)
+        else:
+            arr = sorted(arr, key=lambda k: k[key], reverse=reversed)
 
         if 0.0 < trim < 1.0:
             count = int(round(len(arr) * trim))
