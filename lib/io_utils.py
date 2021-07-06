@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import bz2
 import csv
 import glob
 import json
@@ -10,6 +11,7 @@ from pprint import pprint
 import re
 import shutil
 import sys
+import zipfile
 
 try:
     import requests
@@ -224,6 +226,19 @@ def readJSON(filename):
             data = json.load(f)
     return data
 
+# Line-delimited JSON: https://en.wikipedia.org/wiki/JSON_streaming#Line-delimited_JSON
+def readLDJSON(filename):
+    data = []
+    with open(filename, encoding="utf8") as f:
+        for line in f:
+            row = None
+            try:
+                row = json.loads(line)
+                data.append(row)
+            except json.decoder.JSONDecodeError:
+                row = None
+    return data
+
 def readTextFile(filename):
     contents = ""
     if os.path.isfile(filename):
@@ -245,6 +260,10 @@ def removeFiles(listOrString):
     for fn in filenames:
         if os.path.isfile(fn):
             os.remove(fn)
+
+def resolveRedirect(url):
+    r = requests.head(url, allow_redirects=True)
+    return r.url
 
 def replaceWhitespace(string, replaceWith=" "):
     return re.sub('\s+', replaceWith, string).strip() if isinstance(string, str) else string
@@ -274,6 +293,32 @@ def stringToFilename(string):
     string = re.sub('^[^0-9a-zA-Z]+', '', string)
 
     return string
+
+def unzipFile(filename):
+    if not os.path.isfile(filename):
+        print(f'Could not find file: {filename}')
+        return
+
+    if filename.endswith(".bz2"):
+        data = None
+        newFilename = filename[:-4] # assuming the filepath ends with .bz2
+        with bz2.open(filename, "rb") as f:
+            data = f.read()
+
+        if data is not None:
+            with open(newFilename, "wb") as f:
+                f.write(data)
+        else:
+            print(f'Could not decompress file: {filename}')
+
+    elif filename.endswith(".zip"):
+        dirname = filename[:-4] # assuming the filepath ends with .zip
+        with zipfile.ZipFile(filename, 'r') as f:
+            f.extractall(dirname)
+
+    else:
+        print('Unrecognized compression type')
+
 
 def writeCsv(filename, arr, headings="auto", append=False, encoding="utf8", verbose=True):
     if headings == "auto":
