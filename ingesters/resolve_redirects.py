@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 
-# python3 ingesters/resolve_redirects/
-
 import argparse
 import inspect
 import math
@@ -24,8 +22,9 @@ parser.add_argument('-in', dest="INPUT_FILE", default="tmp/metadata.csv", help="
 parser.add_argument('-url', dest="URL_KEY", default="record_link", help="Key to retrieve url from")
 parser.add_argument('-new', dest="NEW_URL_KEY", default="resolved_url", help="New key to store resolved URL")
 parser.add_argument('-out', dest="OUTPUT_FILE", default="", help="Path to csv file; leave blank to update INPUT_FILE")
-parser.add_argument('-delay', dest="DELAY", type=int, default=1, help="How many seconds to delay requests (to avoid rate limiting)?")
-parser.add_argument('-probe', dest="PROBE", action="store_true", help="Just output debug info")
+parser.add_argument('-delay', dest="DELAY", type=float, default=0.25, help="How many seconds to delay requests (to avoid rate limiting)?")
+parser.add_argument('-progressive', dest="PROGRESSIVE_DOWNLOAD", action="store_true", help="Save results as you get them?")
+parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite existing values?")
 a = parser.parse_args()
 
 OUTPUT_FILE = a.OUTPUT_FILE if len(a.OUTPUT_FILE) > 0 else a.INPUT_FILE
@@ -33,9 +32,18 @@ OUTPUT_FILE = a.OUTPUT_FILE if len(a.OUTPUT_FILE) > 0 else a.INPUT_FILE
 fieldNames, rows = readCsv(a.INPUT_FILE)
 rowCount = len(rows)
 
+if a.NEW_URL_KEY not in fieldNames:
+    fieldNames.append(a.NEW_URL_KEY)
+
+# Make sure output dirs exist
+makeDirectories(OUTPUT_FILE)
+
 for i, row in enumerate(rows):
     url = row[a.URL_KEY]
+    existingValue = row[a.NEW_URL_KEY] if a.NEW_URL_KEY in row else ""
     newURL = False
+    if existingValue != "" and not a.OVERWRITE:
+        continue
     if isinstance(url, str) and url != "":
         newURL = resolveRedirect(url)
         print(f' {url} -> {newURL}')
@@ -43,18 +51,14 @@ for i, row in enumerate(rows):
         print(f' Invalid URL: {newURL}')
         newURL = ""
     rows[i][a.NEW_URL_KEY] = newURL
+    if a.PROGRESSIVE_DOWNLOAD:
+        writeCsv(OUTPUT_FILE, rows, headings=fieldNames, verbose=False)
     printProgress(i+1, rowCount)
     if a.DELAY > 0:
         time.sleep(a.DELAY)
 
-if a.PROBE:
-    sys.exit()
+if not a.PROGRESSIVE_DOWNLOAD:
+    print("Writing file...")
+    writeCsv(OUTPUT_FILE, rows, headings=fieldNames)
 
-# Make sure output dirs exist
-makeDirectories(a.OUTPUT_FILE)
-
-if a.NEW_URL_KEY not in fields:
-    fieldNames.append(a.NEW_URL_KEY)
-
-print("Writing file...")
-writeCsv(OUTPUT_FILE, rows, headings=fieldNames)
+print("Done.")
