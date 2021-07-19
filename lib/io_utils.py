@@ -223,7 +223,10 @@ def readJSON(filename):
     data = {}
     if os.path.isfile(filename):
         with open(filename, encoding="utf8") as f:
-            data = json.load(f)
+            try:
+                data = json.load(f)
+            except json.decoder.JSONDecodeError:
+                data = {}
     return data
 
 # Line-delimited JSON: https://en.wikipedia.org/wiki/JSON_streaming#Line-delimited_JSON
