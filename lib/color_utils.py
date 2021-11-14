@@ -1836,11 +1836,18 @@ def getColorGradientValue(nvalue, name="inferno", easingFunction="linear"):
     cindex = roundInt(nvalue * (clen-1))
     return tuple(cdata[cindex])
 
+def hexToRgb(hex):
+  # "#FFFFFF" -> [255,255,255]
+  return [int(hex[i:i+2], 16) for i in range(1,6,2)]
+
 def hsvToRgb(hsv):
     # assumes hsv is float between zero and 1
     h, s, v = hsv
     r, g, b = colorsys.hsv_to_rgb(h, s, v)
     return (roundInt(r*255.0), roundInt(g*255.0), roundInt(b*255.0))
+
+def rgbToHex(rgb, prefix="#"):
+    return prefix + '%02x%02x%02x' % tuple(rgb)
 
 def rgbToHsv(rgb):
     r, g, b = rgb
