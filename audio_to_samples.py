@@ -150,9 +150,13 @@ def processFile(f):
     printProgress(progress, fileCount)
 
 print("Getting file samples...")
-pool = ThreadPool(getThreadCount(args.THREADS))
-results = pool.map(processFile, files)
-pool.close()
-pool.join()
+if args.THREADS == 1:
+    for f in files:
+        processFile(f)
+else:
+    pool = ThreadPool(getThreadCount(args.THREADS))
+    results = pool.map(processFile, files)
+    pool.close()
+    pool.join()
 
 print("%s samples in total." % totalCount)

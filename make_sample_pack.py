@@ -131,7 +131,11 @@ for item in items:
 # parse stuff for item
 for i, item in enumerate(items):
     items[i]['cleanTitle'] = stringToFilename(item['title'])
-    artist = item['contributors'] if 'contributors' in item else item['creator']
+    artist = item['contributors'] if 'contributors' in item else None
+    if artist is None and 'creator' in item:
+        artist = item['creator']
+    if artist is None:
+        artist = 'Unknown'
     items[i]['contributors'] = listToHumanString(artist.split(' | '))
     items[i]['rights'] = collection['item_rights']
     items[i]['credit'] = collection['credit']
