@@ -34,7 +34,7 @@ parser.add_argument('-threads', dest="THREADS", type=int, default=4, help="How m
 a = parser.parse_args()
 
 filenames = getFilenames(a.INPUT_FILES)
-addFieldnames = ["id", "url", "assetUrl", "filename", "title", "contributors", "date", "subjects"]
+addFieldnames = ["id", "url", "assetUrl", "filename", "title", "contributors", "date", "subjects", "locations"]
 fieldNames = addFieldnames[:]
 rows = []
 rowLookup = None
@@ -126,6 +126,9 @@ def readItem(fn):
     date = "" if "date" not in itemMeta else itemMeta["date"]
     subjects = [] if "subject" not in itemMeta or len(itemMeta["subject"]) < 1 else itemMeta["subject"]
     subjects = " | ".join(subjects)
+    locations = [] if "location" not in itemMeta or len(itemMeta["location"]) < 1 else itemMeta["location"]
+    locations = [list(loc.keys())[0] for loc in locations]
+    locations = " | ".join(locations)
     newData = {
         "id": itemId,
         "url": itemUrl,
@@ -134,7 +137,8 @@ def readItem(fn):
         "title": itemMeta["title"],
         "contributors": contributors,
         "date": date,
-        "subjects": subjects
+        "subjects": subjects,
+        "locations": locations
     }
     returnData.update(newData)
     return returnData
