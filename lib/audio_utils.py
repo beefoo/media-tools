@@ -539,7 +539,7 @@ def getPowerFromTimecodes(timecodes, method="max"):
     return powerData
 
 def getStft(y, n_fft=2048, hop_length=512):
-    return librosa.feature.rmse(S=librosa.stft(y, n_fft=n_fft, hop_length=hop_length))[0]
+    return librosa.feature.rms(S=librosa.stft(y, n_fft=n_fft, hop_length=hop_length))[0]
 
 def loadAudioData(fn, sr=None):
     return librosa.load(fn, sr=sr)
