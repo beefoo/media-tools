@@ -29,12 +29,17 @@ parser.add_argument('-in', dest="INPUT_FILES", default="output/loc/pd_audio/item
 parser.add_argument('-out', dest="OUTPUT_FILE", default="tmp/loc/lc_pd_audio.csv", help="File to write data to")
 parser.add_argument('-probe', dest="PROBE", action="store_true", help="Just print details?")
 parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite existing data?")
+parser.add_argument('-add', dest="ADD_FIELDS", default="", help="List of additional fields to pull from item")
 parser.add_argument('-streaming', dest="ALLOW_STREAMING", action="store_true", help="Should we download streaming media if no download option is available?")
 parser.add_argument('-threads', dest="THREADS", type=int, default=4, help="How many concurrent requests?")
 a = parser.parse_args()
 
 filenames = getFilenames(a.INPUT_FILES)
 addFieldnames = ["id", "url", "assetUrl", "filename", "title", "contributors", "date", "subjects", "locations"]
+additionalFieldnames = []
+if a.ADD_FIELDS != "":
+    additionalFieldnames = [f.strip() for f in a.ADD_FIELDS.split(",")]
+addFieldnames += additionalFieldnames
 fieldNames = addFieldnames[:]
 rows = []
 rowLookup = None
@@ -127,7 +132,7 @@ def readItem(fn):
     subjects = [] if "subject" not in itemMeta or len(itemMeta["subject"]) < 1 else itemMeta["subject"]
     subjects = " | ".join(subjects)
     locations = [] if "location" not in itemMeta or len(itemMeta["location"]) < 1 else itemMeta["location"]
-    locations = [list(loc.keys())[0] for loc in locations]
+    # locations = [list(loc.keys())[0] for loc in locations]
     locations = " | ".join(locations)
     newData = {
         "id": itemId,
@@ -140,14 +145,22 @@ def readItem(fn):
         "subjects": subjects,
         "locations": locations
     }
+    for fieldname in additionalFieldnames:
+        if fieldname in itemMeta:
+            newData[fieldname] = itemMeta[fieldname]
     returnData.update(newData)
     return returnData
 
 print("Reading metadata...")
-pool = ThreadPool(getThreadCount(a.THREADS))
-rows = pool.map(readItem, filenames)
-pool.close()
-pool.join()
+if a.THREADS == 1:
+    rows = []
+    for fn in filenames:
+        rows.append(readItem(fn))
+else:
+    pool = ThreadPool(getThreadCount(a.THREADS))
+    rows = pool.map(readItem, filenames)
+    pool.close()
+    pool.join()
 
 # Filter out invalid data
 rows = [row for row in rows if row is not None]
