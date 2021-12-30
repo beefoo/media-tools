@@ -271,6 +271,10 @@ def getAudioSamples(fn, min_dur=50, max_dur=-1, fft=2048, hop_length=512, backtr
         try:
             y, sr = loadAudioData(fn)
             duration = int(getDurationFromAudioData(y, sr) * 1000)
+        except ValueError:
+            duration = 0
+            y = None
+            sr = None
         except audioop.error:
             duration = 0
             y = None
@@ -332,6 +336,8 @@ def getAudioSimilarity(test, references):
     return 1.0 * sumValue / refCount
 
 def getDurationFromAudioData(y, sr):
+    if sr is None or y is None or sr <= 0:
+        return 0
     ylen = len(y)
     return 1.0 * ylen / sr
 
@@ -342,6 +348,8 @@ def getDurationFromAudioFile(fn, accurate=False):
             try:
                 y, sr = loadAudioData(getAudioFile(fn))
                 duration = int(getDurationFromAudioData(y, sr) * 1000)
+            except ValueError:
+                duration = 0
             except audioop.error:
                 duration = 0
         else:

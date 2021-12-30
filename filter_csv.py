@@ -28,7 +28,11 @@ fieldNames, rows = readCsv(a.INPUT_FILE)
 rowCount = len(rows)
 
 if len(a.FILTER) > 0:
-    rows = filterByQueryString(rows, a.FILTER)
+    filterString = a.FILTER
+    if filterString.endswith(".csv"):
+        _, filterRows = readCsv(filterString)
+        filterString = "&".join([f'{row["field"]}{row["comparator"]}{row["value"]}' for row in filterRows])
+    rows = filterByQueryString(rows, filterString)
     rowCount = len(rows)
     print("%s rows after filtering" % rowCount)
 

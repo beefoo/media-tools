@@ -28,43 +28,73 @@ def dequeue(arr, count):
 def filterByQueryString(arr, queryString):
     return filterWhere(arr, parseFilterString(queryString))
 
-def filterWhere(arr, filters):
+def filterWhere(arr, filters, caseSensitive=False):
     if isinstance(filters, tuple):
         filters = [filters]
 
     if len(arr) <= 0:
         return arr
 
-    # Filter array
-    for f in filters:
-        mode = '='
-        if len(f) == 2:
-            key, value = f
-        else:
-            key, value, mode = f
-        value = parseNumber(value)
-        if mode == "<=":
-            arr = [a for a in arr if key not in a or a[key] <= value]
-        elif mode == ">=":
-            arr = [a for a in arr if key not in a or a[key] >= value]
-        elif mode == "<":
-            arr = [a for a in arr if key not in a or a[key] < value]
-        elif mode == ">":
-            arr = [a for a in arr if key not in a or a[key] > value]
-        elif mode == "~=":
-            arr = [a for a in arr if key not in a or value in a[key]]
-        elif mode == "!=":
-            arr = [a for a in arr if key not in a or a[key] != value]
-        elif mode == "!~=":
-            arr = [a for a in arr if key not in a or value not in a[key]]
-        elif mode == "?=":
-            arr = [a for a in arr if key not in a or a[key] != ""]
-        elif mode == "!?=":
-            arr = [a for a in arr if key not in a or a[key] == ""]
-        else:
-            arr = [a for a in arr if key not in a or a[key] == value]
+    validArr = []
+    for item in arr:
+        itemIsValid = True
+        for f in filters:
+            comparator = '='
+            if len(f) == 2:
+                key, value = f
+            else:
+                key, value, comparator = f
+            value = str(value)
+            if key not in item:
+                continue
+            itemValue = str(item[key])
+            if not caseSensitive:
+                value = value.lower()
+                itemValue = itemValue.lower()
+            if comparator in ["<", ">", "<=", ">="]:
+                value = parseNumber(value)
+                itemValue = parseNumber(itemValue)
+                if not isNumber(value) or not isNumber(itemValue):
+                    if itemValue == "":
+                        continue
+                    itemIsValid = False
+                    print(f'Warning: trying to compare non-numbers: {value} {comparator} {itemValue}')
+                    break
 
-    return arr
+            if comparator == "<=" and itemValue > value:
+                itemIsValid = False
+                break
+            elif comparator == ">=" and itemValue < value:
+                itemIsValid = False
+                break
+            elif comparator == "<" and itemValue >= value:
+                itemIsValid = False
+                break
+            elif comparator == ">" and itemValue <= value:
+                itemIsValid = False
+                break
+            elif comparator == "!~=" and value in itemValue: # excludes
+                itemIsValid = False
+                break
+            elif comparator == "~=" and value not in itemValue: # includes
+                itemIsValid = False
+                break
+            elif comparator == "!?=" and itemValue != "": # is empty
+                itemIsValid = False
+                break
+            elif comparator == "?=" and itemValue == "": # not empty
+                itemIsValid = False
+                break
+            elif comparator == "!=" and itemValue == value:
+                itemIsValid = False
+                break
+            elif comparator == "=" and itemValue != value:
+                itemIsValid = False
+                break
+        if itemIsValid:
+            validArr.append(item)
+
+    return validArr
 
 def findWhere(arr, filters):
     results = filterWhere(arr, filters)
@@ -128,7 +158,7 @@ def parseFilterString(str):
         return []
     conditionStrings = str.split("&")
     conditions = []
-    modes = ["<=", ">=", "~=", "!=", "!~=", "!?=", "?=", ">", "<", "="]
+    modes = ["<=", ">=", "!~=", "~=", "!=", "!?=", "?=", ">", "<", "="]
     for cs in conditionStrings:
         for mode in modes:
             if mode in cs:
