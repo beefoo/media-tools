@@ -81,6 +81,9 @@ for zipfilename in zipfilenames:
             timeStamp = baseAname.split('_')[-1].replace('-', ':')
             if timeStamp.startswith("00:"):
                 timeStamp = timeStamp[3:]
+            if itemId not in itemLookup:
+                print(f'Warning: could not find item id {itemId}')
+                continue
             item = itemLookup[itemId]
             uid = str(item['id'])
             if uid not in itemClips:

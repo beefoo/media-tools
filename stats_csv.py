@@ -101,8 +101,8 @@ for prop in PROPS:
         percent = round(1.0 * count / vcount * 100.0, 1)
         if value == "":
             value = "<empty>"
-        # print(f'{formatNumber(count)} ({percent}%)\t{value}')
-        print(f'{value} ({percent}%)')
+        print(f'{formatNumber(count)} ({percent}%)\t{value}')
+        # print(f'{value} ({percent}%)')
         row = {}
         row[prop] = value
         row["count"] = count
