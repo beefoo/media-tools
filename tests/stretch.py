@@ -5,49 +5,50 @@ import inspect
 import numpy as np
 import os
 from pprint import pprint
-from pydub import AudioSegment
 import sys
 
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0,parentdir)
-from lib.audio_utils import stretchSound
+
+from lib.audio_mixer import *
+from lib.audio_utils import *
+from lib.io_utils import *
+from lib.math_utils import *
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-in', dest="INPUT_FILE", default="../media/downloads/vivaldi/01_-_Vivaldi_Spring_mvt_1_Allegro.mp3", help="Input file")
+parser.add_argument('-in', dest="INPUT_FILE", default="media/sample/sonata.mp3", help="Input file")
 parser.add_argument('-start', dest="CLIP_START", default=0, type=int, help="Clip start in ms")
-parser.add_argument('-dur', dest="CLIP_DUR", default=3100, type=int, help="Clip duration in ms")
-parser.add_argument('-stretch', dest="STRETCH_AMOUNTS", default="1.5,2,4,8", help="Amounts to stretch (1 = no stretch)")
-parser.add_argument('-out', dest="OUTPUT_FILE", default="../output/stretch_test.mp3", help="Output media file")
-args = parser.parse_args()
+parser.add_argument('-dur', dest="CLIP_DUR", default=-1, type=int, help="Clip duration in ms, -1 for whole clip")
+parser.add_argument('-stretch', dest="STRETCH_AMOUNTS", default="1,1.5,2,4,8,16", help="Amounts to stretch (1 = no stretch)")
+parser.add_argument('-out', dest="OUTPUT_FILE", default="output/stretch_test.mp3", help="Output media file")
+a = parser.parse_args()
 
 # Parse arguments
-filename = args.INPUT_FILE
-clipStart = args.CLIP_START
-clipDur = args.CLIP_DUR
-stretchAmounts = [float(amt) for amt in args.STRETCH_AMOUNTS.split(",")]
-outputFile = args.OUTPUT_FILE
-
-# Make sure output dir exist
-outDir = os.path.dirname(outputFile)
-if not os.path.exists(outDir):
-    os.makedirs(outDir)
+filename = a.INPUT_FILE
+clipStart = a.CLIP_START
+clipDur = a.CLIP_DUR
+stretchAmounts = [float(amt) for amt in a.STRETCH_AMOUNTS.split(",")]
 
 fformat = filename.split(".")[-1]
-clip = AudioSegment.from_file(filename, format=fformat)
-clip = clip[clipStart:(clipStart+clipDur)]
-clip = clip.fade_out(min(100, clipDur))
+audio = getAudio(a.INPUT_FILE)
+audioDuration = len(audio)
+if clipDur <= 0:
+    clipDur = audioDuration
 
-audio = AudioSegment.empty()
-audio.set_channels(clip.channels)
-audio.set_sample_width(clip.sample_width)
-audio.set_frame_rate(clip.frame_rate)
-audio += clip
+totalDuration = sum([amt*clipDur for amt in stretchAmounts])
+instructions = []
 
-for amount in stretchAmounts:
-    audio += stretchSound(clip, amount)
-    print("Processed %sx" % amount)
+ms = 0
+for amt in stretchAmounts:
+    instructions.append({
+        "ms": roundInt(ms),
+        "filename": a.INPUT_FILE,
+        "start": clipStart,
+        "dur": clipDur,
+        "stretch": amt
+    })
+    ms += amt * clipDur
 
-fformat = outputFile.split(".")[-1]
-audio.export(outputFile, format=fformat)
-print("Created %s" % outputFile)
+makeDirectories(a.OUTPUT_FILE)
+mixAudio(instructions, totalDuration, a.OUTPUT_FILE)

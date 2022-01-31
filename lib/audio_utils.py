@@ -707,7 +707,7 @@ def paulStretch(samplerate, smp, stretch, windowsize_seconds=0.25, onset_level=1
 
         #write the output to wav file
         # outfile.writeframes(int16(output.ravel(1)*32767.0).tostring())
-        sdata = np.append(sdata, output.ravel(1), axis=0)
+        sdata = np.append(sdata, output.ravel(order='F'), axis=0)
 
         if get_next_buf:
             start_pos+=displace_pos

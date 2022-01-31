@@ -55,8 +55,11 @@ if not os.path.exists(outDir):
 
 fformat = filename.split(".")[-1]
 clip = AudioSegment.from_file(filename, format=fformat)
-clip = clip[clipStart:(clipStart+clipDur)]
-clip = clip.fade_out(min(100, clipDur))
+if clipStart > 0 or clipDur > 0:
+    clip = clip[clipStart:(clipStart+clipDur)]
+    clip = clip.fade_out(min(100, clipDur))
+else:
+    clip = clip[:]
 
 audio = AudioSegment.empty()
 audio.set_channels(clip.channels)
