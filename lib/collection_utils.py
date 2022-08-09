@@ -237,8 +237,10 @@ def sortBy(arr, sorters, targetLen=None):
         else:
             arr = sorted(arr, key=lambda k: k[key], reverse=reversed)
 
-        if 0.0 < trim < 1.0:
-            count = int(round(len(arr) * trim))
+        if 0.0 < trim < 1.0 or trim > 1.0:
+            count = int(trim)
+            if 0.0 < trim < 1.0:
+                count = int(round(len(arr) * trim))
             if targetLen is not None:
                 count = max(count, targetLen)
             arr = arr[:count]
