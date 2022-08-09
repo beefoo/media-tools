@@ -1,0 +1,13 @@
+#
+####### requirements.txt #######
+#
+# Run: pip install -r requirements.txt
+
+librosa
+moviepy
+Pillow
+pydub
+pysndfx
+rasterfairy-py3
+requests
+scikit-learn
