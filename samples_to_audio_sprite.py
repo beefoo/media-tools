@@ -20,13 +20,15 @@ parser.add_argument('-dir', dest="INPUT_DIR", default="path/to/audio/", help="Di
 parser.add_argument('-out', dest="OUT_AUDIO", default="output/sprite.mp3", help="Output audio file")
 parser.add_argument('-data', dest="OUT_DATA", default="output/sprite.json", help="Output data file")
 parser.add_argument('-sort', dest="SORT", default="", help="Query string to sort by")
-parser.add_argument('-filter', dest="FILTER", default="samples>0", help="Query string to filter by")
+parser.add_argument('-filter', dest="FILTER", default="", help="Query string to filter by")
 parser.add_argument('-lim', dest="LIMIT", default=-1, type=int, help="Target total sample count, -1 for everything")
+parser.add_argument('-reverb', dest="REVERB", default=0, type=int, help="Add reverb (0-100)")
 parser.add_argument('-probe', dest="PROBE", action="store_true", help="Just show the stats")
 a = parser.parse_args()
 
 fieldNames, samples = readCsv(a.INPUT_FILE)
 sampleCount = len(samples)
+fxPad = 1000
 print("Found %s samples" % sampleCount)
 
 if len(a.SORT) > 0:
@@ -47,15 +49,19 @@ pad = 10
 instructions = []
 jsonData = {}
 for i, s in enumerate(samples):
-    fn = s["filename"]
+    fn = a.INPUT_DIR + s["filename"]
     start = s["start"]
     dur = s["dur"]
-    instructions.append({
+    instruction = {
         "filename": fn,
         "start": start,
         "dur": dur,
         "ms": ms
-    })
+    }
+    if a.REVERB > 0:
+        instruction["reverb"] = a.REVERB
+        dur += fxPad
+    instructions.append(instruction)
     jsonData[str(i)] = [ms, dur]
     ms += pad + dur
 totalDuration = ms
@@ -64,5 +70,8 @@ print("Total duration: %s" % formatSeconds(roundInt(totalDuration / 1000.0)))
 if a.PROBE:
     sys.exit()
 
-mixAudio(instructions, totalDuration, a.OUT_AUDIO, sfx=False)
+if a.REVERB > 0:
+    mixAudio(instructions, totalDuration, a.OUT_AUDIO, sfx=True, fxPad=fxPad)
+else:
+    mixAudio(instructions, totalDuration, a.OUT_AUDIO, sfx=False)
 writeJSON(a.OUT_DATA, jsonData)
