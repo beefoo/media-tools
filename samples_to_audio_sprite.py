@@ -28,7 +28,7 @@ a = parser.parse_args()
 
 fieldNames, samples = readCsv(a.INPUT_FILE)
 sampleCount = len(samples)
-fxPad = 1000
+fxPad = 500
 print("Found %s samples" % sampleCount)
 
 if len(a.SORT) > 0:

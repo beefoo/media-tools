@@ -1,0 +1,72 @@
+# -*- coding: utf-8 -*-
+
+import argparse
+import inspect
+import os
+from pprint import pprint
+import subprocess
+import sys
+
+# add parent directory to sys path to import relative modules
+currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+parentdir = os.path.dirname(currentdir)
+parentdir = os.path.dirname(parentdir)
+sys.path.insert(0,parentdir)
+
+from lib.collection_utils import *
+from lib.io_utils import *
+
+parser = argparse.ArgumentParser()
+parser.add_argument('-ids', dest="IDS", default="00694031,00694032,00694035,00694037,00694038,00694040,00694046,00694094,00694098,00694100", help="List of item ids")
+parser.add_argument('-meta', dest="METADATA_FILE", default="E:/Dropbox/citizen_dj/metadata/loc-edison.csv", help="Metadata file")
+parser.add_argument('-sd', dest="SAMPLE_DATA_DIR", default="E:/Dropbox/citizen_dj/sampledata/loc-edison/{filename}.csv", help="Sample data directory")
+parser.add_argument('-dir', dest="AUDIO_FILE_DIR", default="D:/citizen_dj/downloads/loc-edison/", help="Directory of input audio files")
+parser.add_argument('-sort', dest="SORT", default="clarity=desc=100&dur=asc=50&power=asc=20", help="Query string to sort by")
+parser.add_argument('-out', dest="OUTPUT_FILE", default="tmp/culturecraft_samples.csv", help="Path to output sample file")
+parser.add_argument('-reverb', dest="REVERB", default=0, type=int, help="Add reverb (0-100)")
+parser.add_argument('-probe', dest="PROBE", action="store_true", help="Just display details?")
+a = parser.parse_args()
+
+_, items = readCsv(a.METADATA_FILE)
+itemLookup = createLookup(items, 'id')
+ids = a.IDS.split(",")
+
+allSamples = []
+sampleFields = []
+for id in ids:
+    if id not in itemLookup:
+        print(f'Could not find id {id}')
+        continue
+    item = itemLookup[id]
+    filename = item['filename']
+    samplefile = a.SAMPLE_DATA_DIR.format(filename=filename)
+    if not os.isfile(samplefile):
+        print(f'Could not find file {samplefile}')
+        continue
+    fields, samples = readCsv(samplefile)
+    if len(sampleFields) <= 0:
+        sampleFields = fields
+    if len(a.SORT) > 0:
+        samples = sortByQueryString(samples, a.SORT)
+    allSamples += samples
+
+print(f'{len(allSamples)} samples in total')
+
+if a.PROBE:
+    sys.exit()
+
+makeDirectories(a.OUTPUT_FILE)
+writeCsv(a.OUTPUT_FILE, allSamples, headings=sampleFields)
+
+
+command = [sys.executable, 'samples_to_audio_sprite.py',
+            '-in', a.OUTPUT_FILE, 
+            '-dir', a.AUDIO_FILE_DIR,
+            '-out', 'output/culturecraft_sounds.mp3',
+            '-data', 'output/culturecraft_sounds.json',
+            '-reverb', str(a.REVERB)]
+if OVERWRITE:
+    command.append('-overwrite')
+print("------")
+print(" ".join(command))
+finished = subprocess.check_call(command)
