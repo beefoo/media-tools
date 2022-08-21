@@ -23,6 +23,8 @@ parser.add_argument('-sd', dest="SAMPLE_DATA_DIR", default="E:/Dropbox/citizen_d
 parser.add_argument('-dir', dest="AUDIO_FILE_DIR", default="D:/citizen_dj/downloads/loc-edison/", help="Directory of input audio files")
 parser.add_argument('-sort', dest="SORT", default="clarity=desc=100&dur=asc=50&power=asc=20", help="Query string to sort by")
 parser.add_argument('-out', dest="OUTPUT_FILE", default="tmp/culturecraft_samples.csv", help="Path to output sample file")
+parser.add_argument('-outaudio', dest="OUT_AUDIO", default="output/culturecraft_sounds.mp3", help="Output audio file")
+parser.add_argument('-outdata', dest="OUT_DATA", default="output/culturecraft_sounds.json", help="Output data file")
 parser.add_argument('-reverb', dest="REVERB", default=0, type=int, help="Add reverb (0-100)")
 parser.add_argument('-probe', dest="PROBE", action="store_true", help="Just display details?")
 a = parser.parse_args()
@@ -31,6 +33,7 @@ _, items = readCsv(a.METADATA_FILE)
 itemLookup = createLookup(items, 'id')
 ids = a.IDS.split(",")
 
+items = {}
 allSamples = []
 sampleFields = []
 for id in ids:
@@ -48,6 +51,16 @@ for id in ids:
         sampleFields = fields
     if len(a.SORT) > 0:
         samples = sortByQueryString(samples, a.SORT)
+    if id not in items:
+        rstart = len(allSamples)
+        rstop = rstart + len(samples)
+        sprites = [str(i) for i in range(rstart, rstop)]
+        items[id] = {
+            "id": id,
+            "title": item["title"],
+            "url": item["url"],
+            "sprites": sprites
+        }
     allSamples += samples
 
 print(f'{len(allSamples)} samples in total')
@@ -58,15 +71,19 @@ if a.PROBE:
 makeDirectories(a.OUTPUT_FILE)
 writeCsv(a.OUTPUT_FILE, allSamples, headings=sampleFields)
 
-
 command = [sys.executable, 'samples_to_audio_sprite.py',
             '-in', a.OUTPUT_FILE, 
             '-dir', a.AUDIO_FILE_DIR,
-            '-out', 'output/culturecraft_sounds.mp3',
-            '-data', 'output/culturecraft_sounds.json',
+            '-out', a.OUT_AUDIO,
+            '-data', a.OUT_DATA,
             '-reverb', str(a.REVERB)]
-if OVERWRITE:
-    command.append('-overwrite')
 print("------")
 print(" ".join(command))
 finished = subprocess.check_call(command)
+
+jsonData = readJSON(a.OUT_DATA)
+newJsonData = {
+    "sprites": jsonData,
+    "groups": [items[key] for key in items]
+}
+writeJSON(a.OUT_DATA, jsonData)
