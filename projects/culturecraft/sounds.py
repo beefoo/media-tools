@@ -43,7 +43,7 @@ for id in ids:
     item = itemLookup[id]
     filename = item['filename']
     samplefile = a.SAMPLE_DATA_DIR.format(filename=filename)
-    if not os.isfile(samplefile):
+    if not os.path.isfile(samplefile):
         print(f'Could not find file {samplefile}')
         continue
     fields, samples = readCsv(samplefile)
@@ -86,4 +86,4 @@ newJsonData = {
     "sprites": jsonData,
     "groups": [items[key] for key in items]
 }
-writeJSON(a.OUT_DATA, jsonData)
+writeJSON(a.OUT_DATA, newJsonData)
