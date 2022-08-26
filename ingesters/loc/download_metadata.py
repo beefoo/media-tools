@@ -33,7 +33,21 @@ parser.add_argument('-threads', dest="THREADS", type=int, default=4, help="How m
 parser.add_argument('-delay', dest="DELAY", type=int, default=1, help="How many seconds to delay requests (to avoid rate limiting)?")
 a = parser.parse_args()
 
-filenames = getFilenames(a.INPUT_FILES)
+print("Reading query data...")
+items = []
+
+if a.INPUT_FILES.endswith(".csv"):
+    _, items = readCsv(a.INPUT_FILES)
+    for i, item in enumerate(items):
+        if 'url' in item:
+            items[i]['id'] = item['url']
+else:
+    filenames = getFilenames(a.INPUT_FILES)
+    for fn in filenames:
+        items += readJSON(fn)
+
+itemCount = len(items)
+print("Read %s items" % itemCount)
 
 # Make sure output dirs exist
 if not a.PROBE:
@@ -63,12 +77,7 @@ def processItem(item):
 
     return status
 
-print("Reading query data...")
-items = []
-for fn in filenames:
-    items += readJSON(fn)
-itemCount = len(items)
-print("Read %s items" % itemCount)
+
 
 # Don't do threading to avoid rate limit error
 # print("Downloading metadata...")
