@@ -17,7 +17,7 @@ from lib.collection_utils import *
 from lib.io_utils import *
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-ids', dest="IDS", default="00694027,00694029,00694030,00694031,00694033,00694034,00694035,00694036,00694038,00694040,00694056,00694087,00694088,00694091,00694092,00694094,00694098,00694105", help="List of item ids")
+parser.add_argument('-ids', dest="IDS", default="00694029,00694030,00694031,00694035,00694038,00694040,00694087,00694088,00694092,00694094,00694098", help="List of item ids")
 parser.add_argument('-meta', dest="METADATA_FILE", default="E:/Dropbox/citizen_dj/metadata/loc-edison.csv", help="Metadata file")
 parser.add_argument('-sd', dest="SAMPLE_DATA_DIR", default="E:/Dropbox/citizen_dj/sampledata/loc-edison/{filename}.csv", help="Sample data directory")
 parser.add_argument('-dir', dest="AUDIO_FILE_DIR", default="D:/citizen_dj/downloads/loc-edison/", help="Directory of input audio files")
