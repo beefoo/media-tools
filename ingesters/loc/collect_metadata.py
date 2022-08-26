@@ -92,9 +92,12 @@ def readItem(fn):
             for rf in resource["files"]:
                 for rff in rf:
                     if "download" in rff:
-                        assetUrl = rff["download"]
-                        downloadableAssetUrl = assetUrl
-                        break
+                        
+                        ext = getFileExt(rff["download"])
+                        if ext in validTypes:
+                            assetUrl = rff["download"]
+                            downloadableAssetUrl = assetUrl
+                            break
                     # if there's no download option, take the streaming option
                     if a.ALLOW_STREAMING and "derivatives" in rff and len(rff["derivatives"]) > 0 and assetUrl is None:
                         for deriv in rff["derivatives"]:
