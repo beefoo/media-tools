@@ -27,12 +27,12 @@ a = parser.parse_args()
 # Parse arguments
 
 props = [p for p in a.PROPS.strip().split(",")]
+props = [p for p in props if len(p) > 0]
 
 # Read files
 fieldNames, rows = readCsv(a.INPUT_FILE)
 if len(props) < 1:
     props = fieldNames
-props = [p for p in props if len(p.strip()) > 0]
 rowCount = len(rows)
 
 for i, row in enumerate(rows):
