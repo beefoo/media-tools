@@ -7,6 +7,7 @@ librosa
 moviepy
 Pillow
 pydub
+pyopencl
 pysndfx
 rasterfairy-py3
 requests

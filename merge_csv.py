@@ -20,6 +20,7 @@ parser.add_argument('-key', dest="KEY", default="identifier", help="Match on thi
 parser.add_argument('-key2', dest="KEY2", default="digest", help="Match on this key from the second file")
 parser.add_argument('-out', dest="OUTPUT_FILE", default="", help="CSV output file; leave blank if update the first file")
 parser.add_argument('-probe', dest="PROBE", action="store_true", help="Just display info?")
+parser.add_argument('-verbose', dest="VERBOSE", action="store_true", help="Display detailed info?")
 parser.add_argument('-overwrite', dest="OVERWRITE", action="store_true", help="Overwrite value if it already exists?")
 a = parser.parse_args()
 
@@ -64,6 +65,8 @@ for i, row in enumerate(rows):
         for j, colFrom in enumerate(cols2From):
             rows[i][cols2To[j]] = row2[colFrom]
     else:
+        if a.VERBOSE:
+            print(f'Could not find {key}')
         noMatchCount += 1
     printProgress(i+1, rowCount)
 
