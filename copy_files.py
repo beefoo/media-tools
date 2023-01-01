@@ -19,15 +19,14 @@ parser.add_argument('-out', dest="OUT_DIR", default="media/sampler/double-bass/"
 parser.add_argument('-probe', dest="PROBE", action="store_true", help="Just output details?")
 a = parser.parse_args()
 
-# get files
-fieldNames, rows = readCsv(a.INPUT_FILE)
+fieldNames, files, fileCount = getFilesFromString(a)
 
 # filter if necessary
 if len(a.FILTER) > 0:
-    rows = filterByQueryString(rows, a.FILTER)
-rowCount = len(rows)
+    files = filterByQueryString(files, a.FILTER)
+    fileCount = len(files)
 
-filenames = unique([row["filename"] for row in rows])
+filenames = unique([f["filename"] for f in files])
 print("%s files to move" % len(filenames))
 if a.PROBE:
     sys.exit()
@@ -35,8 +34,9 @@ if a.PROBE:
 makeDirectories([a.OUT_DIR])
 
 for fn in filenames:
-    fileFrom = a.INPUT_DIR + fn
-    fileTo = a.OUT_DIR + fn
+    basename = os.path.basename(fn)
+    fileFrom = fn
+    fileTo = a.OUT_DIR + basename
     shutil.copyfile(fileFrom, fileTo)
 
 print("Done.")

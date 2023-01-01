@@ -79,6 +79,8 @@ def getFileExt(fn):
 
 def getFilenames(fileString, verbose=True):
     files = []
+    if "**" in fileString:
+        files = glob.glob(fileString, recursive=True)
     if "*" in fileString:
         files = glob.glob(fileString)
     else:
@@ -103,7 +105,12 @@ def getFilesFromString(a, prependKey="filename"):
     fileCount = len(files)
 
     if fromManifest and "MEDIA_DIRECTORY" in aa:
-        files = prependAll(files, ("filename", a.MEDIA_DIRECTORY, prependKey))
+        fileDir = ""
+        if "INPUT_DIR" in aa:
+            fileDir = a.INPUT_DIR
+        elif "MEDIA_DIRECTORY" in aa:
+            fileDir = a.MEDIA_DIRECTORY
+        files = prependAll(files, ("filename", fileDir, prependKey))
 
     return (fieldNames, files, fileCount)
 
