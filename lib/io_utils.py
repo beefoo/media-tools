@@ -30,6 +30,9 @@ def appendToBasename(fn, appendString):
     i = len(fn) - extLen
     return fn[:i] + appendString + fn[i:]
 
+def copyfile(src, dst):
+    shutil.copyfile(src, dst)
+
 def downloadBinaryFile(url, filename, overwrite=False):
     if os.path.isfile(filename) and not overwrite:
         print("%s already exists." % filename)
