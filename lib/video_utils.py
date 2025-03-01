@@ -8,13 +8,13 @@ from lib.gpu_utils import *
 from lib.image_utils import *
 from lib.math_utils import *
 from lib.processing_utils import *
-from moviepy.editor import VideoFileClip
+from moviepy import VideoFileClip
 import multiprocessing
 from multiprocessing import Pool
 from multiprocessing.dummy import Pool as ThreadPool
 import numpy as np
 import os
-from PIL import Image, ImageDraw, ImageFilter
+from PIL import Image, ImageDraw
 from pprint import pprint
 import subprocess
 import sys
@@ -599,7 +599,7 @@ def loadVideoPixelDataFromFrames(frames, clips, containerW, containerH, fps, cac
         clipCompare = np.zeros((2, clipCount), dtype=np.int32)
         ccfunction = customClipToArrFunction
         # override custom clip arr function for calcuation
-        if customClipToArrCalcFunction is "default":
+        if customClipToArrCalcFunction == "default":
             ccfunction = None
         elif customClipToArrCalcFunction is not None:
             ccfunction = customClipToArrCalcFunction
