@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import argparse
 import inspect
 import os
 from PIL import Image, ImageFont, ImageDraw
@@ -18,12 +19,18 @@ from lib.processing_utils import *
 from lib.text_utils import *
 from lib.video_utils import *
 
+parser = argparse.ArgumentParser()
+parser.add_argument('--scene', dest="SCENE", default="intro", help="intro or outro")
+parser.add_argument('--out', dest="OUTPUT_FILE", default="mixed-messages-intro.mp4", help="Filename of output file")
+parser.add_argument('--debug', dest="DEBUG", action="store_true", help="Just display details?")
+a = parser.parse_args()
+
 # Config
-debug = False
+debug = a.DEBUG
 projectPath = "projects/mixed_messages/"
 outPath = "output/mixed_messages/"
-framesPath = "output/mixed_messages/frames/{fn}.png"
-outputFile = "output/mixed_messages/mixed-messages-intro.mp4"
+framesPath = f"output/mixed_messages/{a.SCENE}-frames/{{fn}}.png"
+outputFile = f"output/mixed_messages/{a.OUTPUT_FILE}"
 frameWidth = 1920
 frameHeight = 1080
 fps = 30
@@ -34,6 +41,9 @@ letterSpacing = 0
 titleTop = 0.333
 margin = 0.1
 bgColor = "#1b1b1c"
+fontPath = f"{projectPath}JetBrainsMono-ExtraBold.ttf"
+fontSizeTitle = 180 * multiplier
+fontSizeSubtitle = 120 * multiplier
 title = [
     {"text": "Mixed", "color": "#eb67ff"},
     {"text": "Messages", "color": "#ffc800"}
@@ -50,15 +60,24 @@ holdDur = int(0.25 * 1000)
 titleHoldDur = int(4 * 1000)
 holdEndDur = int(0.5 * 1000)
 
+if a.SCENE == "outro":
+    title = [
+        {"text": "Try it out", "color": "#d8dbde"},
+    ]
+    subtitle = [
+        {"text": "mixed", "color": "#eb67ff"},
+        {"text": "messages", "color": "#ffc800"},
+        {"text": ".brianfoo.com", "color": "#d8dbde"},
+    ]
+    fontSizeSubtitle = 80 * multiplier
+    titleHoldDur = int(5 * 1000)
+
 # Handle output folders
 makeDirectories(framesPath)
 if not debug:
     removeFiles(framesPath.format(fn="*"))
 
 # Fonts
-fontPath = f"{projectPath}JetBrainsMono-ExtraBold.ttf"
-fontSizeTitle = 180 * multiplier
-fontSizeSubtitle = 120 * multiplier
 titleFont = ImageFont.truetype(font=fontPath, size=fontSizeTitle)
 subtitleFont = ImageFont.truetype(font=fontPath, size=fontSizeSubtitle)
 
@@ -79,11 +98,13 @@ def getCharData(texts, y, font, letterSpacing, canvasWidth):
         
         for letter in letters:
             x0, y0, x1, y1 = font.getbbox(letter)
+            w = x1 - x0 if letter != " " else roundInt((x1 - x0) * 0.5)
+            h = y1 - y0
             chars.append({
                 "text": letter,
                 "y": y,
-                "w": x1 - x0,
-                "h": y1 - y0,
+                "w": w,
+                "h": h,
                 "color": text["color"],
                 "font": font
             })
